@@ -4,14 +4,19 @@
   "private": true,
   "description": "Personal finance tracker for two: photo-based receipt parsing via Gemini, Google Sheets as storage, Apps Script web app.",
   "scripts": {
-    "push": "clasp push",
+    "lint": "eslint src",
+    "push": "npm run lint && clasp push",
+    "push:force": "clasp push",
     "pull": "clasp pull",
     "open": "clasp open",
     "deploy": "clasp deploy",
     "logs": "clasp logs"
   },
   "devDependencies": {
-    "@google/clasp": "^2.4.2"
+    "@eslint/js": "^9.0.0",
+    "@google/clasp": "^2.4.2",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
   },
   "engines": {
     "node": ">=18"

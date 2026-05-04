@@ -181,9 +181,28 @@ localStorage.setItem('financeTracker.userEmail', 'yurii@example.com');
 
 ```bash
 # редагуєш src/* локально
-git add . && git commit -m "..."
-npx clasp push
+npm run lint            # ad-hoc перевірка (опційно — push робить це автоматично)
+npm run push            # запускає lint, потім clasp push
 # тестуєш у браузері через deployment URL
+git add . && git commit -m "..."
 ```
 
 Якщо хтось правив код у браузері Apps Script — `npx clasp pull` синхронізує локально (рідкісний випадок; уникай).
+
+### Linting
+
+ESLint flat config у `eslint.config.mjs` ловить:
+- **SyntaxError-и** включно з класичною JSDoc-міною — `*/` всередині `/** ... */` блоку (приклад з реального досвіду цього проєкту).
+- **Виклики undefined globals.** Preset `globals.googleappsscript` знає Apps Script API: `SpreadsheetApp`, `UrlFetchApp`, `Utilities`, `LockService`, `XmlService`, тощо.
+- **Cross-file project globals.** Apps Script ділить один глобальний scope, тому `Config`, `Domain`, `Storage`, `Fx`, `Smoke` (та Phase 2 заглушки `AiClient`, `Gemini`, `OpenAi`, `Anthropic`) задекларовані у конфігу.
+- **Невикористані змінні** як warning. Префікс `_` ігнорується (`^_` rule) — для приватних helper-ів типу `_Config_requireProp`.
+
+Команди:
+
+| Команда | Що робить |
+|---|---|
+| `npm run lint` | eslint src/ — ad-hoc перевірка |
+| `npm run push` | lint + clasp push — **рекомендований** шлях |
+| `npm run push:force` | clasp push без lint — escape hatch для аварійних ситуацій |
+
+Якщо ESLint помилково заблокує валідний код — або `push:force`, або додай вузький disable-коментар (`/* eslint-disable-next-line no-undef */`) і подумай, чи rule справді корисний (можливо, бракує global у конфігу).

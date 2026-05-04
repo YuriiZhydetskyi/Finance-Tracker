@@ -783,3 +783,151 @@ finance-tracker/
 `data-model.md` — авторитетне джерело істини про схему. Включає всі правила: identity (ULID), date/time formats, money precision, currency, FX fallback, snapshot, hard-delete, lock, schema-evolution.
 
 Залишилось: запитати користувача перед `git init` і першими коммітами.
+
+---
+
+## Повідомлення 11 — Користувач
+
+Я вже закоммітив. Які наступні кроки?
+
+## Відповідь 11 — Claude
+
+Наступне — Phase 1: Sheet creation + Apps Script + Domain/Config/Storage/Fx.
+
+Розклад:
+- Я пишу 6 файлів у src/ (appsscript.json, Config, Domain, Storage, Fx, Smoke).
+- Користувач паралельно робить ручні кроки: Sheet, Categories seed, Drive folder, Gemini key, clasp setup.
+
+Запитав про мову коментарів і чи лишати Smoke.js у репо.
+
+---
+
+## Повідомлення 12 — Користувач
+
+Англійською. Smoke.js — у репо. Перш ніж писати, дай детальні інструкції що треба зробити.
+
+## Відповідь 12 — Claude
+
+Дав чек-лист на 11 кроків:
+1. Створити Sheet з 5 листами + точними заголовками (TSV вставки).
+2. Заповнити Categories seed (TSV).
+3. Format date/timestamp колонок як Plain text.
+4. Locale → United States (для крапки як decimal).
+5. Записати SHEET_ID.
+6. Розшарити Sheet (опційно зараз).
+7. Drive-папка `FinanceTracker/Receipts` + DRIVE_FOLDER_ID.
+8. Gemini API key (для Phase 2).
+9. `npm install`.
+10. Apps Script API → ON.
+11. `clasp login` + `clasp create --type webapp --rootDir ./src`.
+
+---
+
+## Повідомлення 13 — Користувач
+
+Поділився SHEET_ID, DRIVE_FOLDER_ID, **Gemini API key (у відкритому вигляді)** і output `clasp create`. Запитав чи все правильно.
+
+## Відповідь 13 — Claude
+
+### 🚨 API key compromised
+
+Ключ опинився в чаті — отже у логах Anthropic, в моєму контексті, в terminal scrollback. Real blast radius малий (free tier rate-limit), але принцип нульовий: ключі **ніколи** не потрапляють у чат, код, Git. Інструкція:
+
+1. Зайти на aistudio.google.com/apikey
+2. Видалити старий ключ
+3. Створити новий — мені не показувати
+
+### Стратегія зберігання — три категорії
+
+| Категорія | Приклади | Де живе |
+|---|---|---|
+| Секрети | GEMINI_API_KEY | Apps Script Properties (server-side, encrypted) |
+| Resource IDs | SHEET_ID, DRIVE_FOLDER_ID | Apps Script Properties (теж — щоб клон репо працював без правок коду) |
+| Публічні константи | AI_PROVIDER, money precision, EMAIL_ALIASES | Config.js у Git |
+
+`Config.js` читає Script Properties через getter-и. `.gitignore` уже має `.env`/`*.key`/`secrets.json` як safety net.
+
+### Як налаштувати Script Properties
+
+`npx clasp open` → Project Settings → Script Properties → додати 3 рядки: SHEET_ID, DRIVE_FOLDER_ID, GEMINI_API_KEY (новий).
+
+### clasp create OK
+
+Output показав scriptId `1euzE...` (це публічний — у `.clasp.json`). `appsscript.json` склонований, `Code.js` не створений (видаляти нічого).
+
+`.claspignore` warning — нормально, зробимо у Phase 3 коли з'явиться `ui/` підпапка.
+
+---
+
+## Повідомлення 14 — Користувач
+
+Приступай до наступної фази.
+
+## Відповідь 14 — Claude
+
+### Phase 1 — code execution
+
+Написано 6 файлів у src/:
+
+| File | Bytes | Purpose |
+|---|---|---|
+| `appsscript.json` | 489 | Manifest: Europe/Berlin TZ, OAuth scopes, MYSELF web app access |
+| `Config.js` | 2211 | Script Properties getters + public constants (AI_PROVIDER, decimals, sheet names, ECB URLs) |
+| `Domain.js` | 12494 | JSDoc types, ULID generator (Crockford Base32), time helpers, money/qty/fx rounding, consumed_by parser, validators, factories (makeReceipt/makeItem/makeProduct), patch helpers |
+| `Storage.js` | 14612 | CRUD over 5 sheets with LockService, header-name based column lookup (schema-evolution safe), cascade delete for receipts |
+| `Fx.js` | 4879 | ECB daily/90d XML parsing, refreshDaily/backfill90Days, getRate with fallback rule (latest ≤ date), installDailyTrigger |
+| `Smoke.js` | 6009 | 7 manual smoke tests with top-level wrappers for editor's Run dropdown |
+
+### Архітектурні деталі
+
+- **Namespacing через `const Module = {...}`** — Apps Script не має import/export, але всі файли діляться глобальним scope. Const-обгортки дають `Storage.appendReceipt()`, `Domain.ulid()`.
+- **Header-name lookup у Storage** — `_getHeaderIndex(sheetName)` мапить header-string на column-index. Schema-evolution rule (додати колонку в кінець) не ламає існуючий код.
+- **Rounding-on-write через Domain factories** — `Domain.makeReceipt(input)` округлює money перед валідацією. Storage просто пише валідні дані.
+- **Cascade delete** — `Storage.deleteReceipt(id)` видаляє і Receipt, і всі його Items одним lock-протекторованим транзакційним блоком.
+- **FX direction** — ECB публікує EUR→CCY, ми зберігаємо CCY→EUR (взаємний). Документовано у Fx.js header.
+- **Daily trigger** — `Fx.installDailyTrigger()` додає cron на 08:00 Berlin (ECB публікує ~16:00 CET попереднього дня).
+- **Smoke wrappers глобальні** — `function smokeIdentity()` exposed at top level так Apps Script editor бачить їх у Run dropdown.
+
+### Виправлення `.clasp.json`
+
+clasp при `--rootDir ./src` поклав `.clasp.json` всередину `src/`, де `rootDir: ./src` резолвиться у `src/src/` (поломка). Перенесено у корінь репо. Видалено obsolete `.gitkeep`.
+
+---
+
+## Повідомлення 15 — Користувач
+
+`npx clasp push` впав із SyntaxError на Storage.js:10 (`Unexpected token ')'`). Запитує — чи можна поставити лінтер локально, щоб такі речі ловились до push.
+
+## Відповідь 15 — Claude
+
+### Корінь проблеми
+
+JSDoc-блок Storage.js містив `Domain.make*/applyPatch` — послідовність `*/` закрила коментар передчасно, `applyPatch).` стало кодом → SyntaxError. Класична JSDoc-міна.
+
+Grep по `*/` показав, що це **єдине** проблемне місце у `src/`. Решта `*/` — нормальні кінці JSDoc-блоків.
+
+### Plan mode
+
+Перейшов у plan mode (другий раз). Існуючий план був про Phase 0 — перезаписав під поточну задачу.
+
+### Зміни
+
+1. **Bug fix** — `src/Storage.js:10`:
+   ```diff
+   - *     by the time it reaches Storage (via Domain.make*/applyPatch).
+   + *     by the time it reaches Storage (via Domain factories or applyPatch helpers).
+   ```
+
+2. **`eslint.config.mjs`** (новий) — ESLint 9 flat config:
+   - Source type `script` (Apps Script не використовує ES modules).
+   - Globals: `globals.googleappsscript` preset + project namespaces (Config, Domain, Storage, Fx, Smoke + Phase 2 заглушки AiClient/Gemini/OpenAi/Anthropic).
+   - Base — `@eslint/js` recommended.
+   - М'яке `no-unused-vars` з `^_` ignore-pattern.
+
+3. **`package.json`** — devDeps + scripts:
+   - Додано: `eslint`, `@eslint/js`, `globals`.
+   - `npm run lint` — eslint src.
+   - `npm run push` — `npm run lint && clasp push` (lint завжди передує deploy).
+   - `npm run push:force` — `clasp push` без lint, як escape hatch.
+
+ESLint використовує Espree (Acorn-based) парсер — той самий клас, що Apps Script. SyntaxError ловиться локально до push.
