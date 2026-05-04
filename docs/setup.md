@@ -39,10 +39,12 @@ npx clasp login
 
 1. Відкрий [sheets.new](https://sheets.new).
 2. Перейменуй на `Finance Tracker`.
-3. Створи 5 листів (вкладки): `Receipts`, `Items`, `Products`, `Categories`, `FxRates`. Видали дефолтний `Sheet1`.
+3. Створи 4 листи (вкладки): `Receipts`, `Items`, `Products`, `Categories`. Видали дефолтний `Sheet1`.
 4. У кожному листі заповни заголовки колонок строго за схемою з [data-model.md](data-model.md). Один заголовок = одна клітинка в першому рядку.
 5. У листі `Categories` заповни початковий seed (20 категорій з data-model.md).
 6. Скопіюй Sheet ID з URL. URL виглядає як `https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit` — потрібна частина між `/d/` і `/edit`.
+
+> Курси валют (UAH→EUR) зберігаються **на самих чеках** як audit trail. Окремого листа `FxRates` немає — конвертація live при збереженні UAH-чеку через NBU API. Див. [ADR-0004](decisions/0004-multi-currency-eur-base.md).
 
 ## Крок 4. Створення Apps Script проєкту
 

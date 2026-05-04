@@ -15,13 +15,12 @@ const assert = require('node:assert');
 
 const { fakes, resetAllFakes, Domain, Storage } = require('./bootstrap');
 
-const SHEETS = ['Receipts', 'Items', 'Products', 'Categories', 'FxRates'];
+const SHEETS = ['Receipts', 'Items', 'Products', 'Categories'];
 const HEADERS = {
   Receipts: ['id', 'date', 'store', 'currency', 'total_orig', 'fx_rate_eur', 'total_eur', 'paid_by', 'photo_url', 'source', 'raw_ocr_json', 'note', 'created_at', 'updated_at'],
   Items: ['id', 'receipt_id', 'product_id', 'product_name', 'category', 'qty', 'unit_price_orig', 'total_orig', 'total_eur', 'consumed_by', 'note', 'wasted_qty', 'created_at', 'updated_at'],
   Products: ['id', 'name', 'category', 'unit', 'unit_size', 'notes', 'created_at', 'updated_at'],
   Categories: ['name', 'group'],
-  FxRates: ['date', 'currency', 'rate_to_eur'],
 };
 
 function setupSheet() {

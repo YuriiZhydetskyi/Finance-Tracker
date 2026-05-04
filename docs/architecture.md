@@ -23,11 +23,10 @@
 ┌──────────▼─────────────┐  ┌─────────▼──────────────────┐
 │ AI Layer               │  │ Storage Layer (Storage.js) │
 │   AiClient.js (switch) │  │   Receipts / Items /       │
-│     ├ Gemini.js  ✅    │  │   Products / Categories /  │
-│     ├ OpenAi.js (stub) │  │   FxRates                  │
-│     └ Anthropic.js     │  └────────────┬───────────────┘
-└────────────────────────┘               │
-                                         ▼
+│     ├ Gemini.js  ✅    │  │   Products / Categories    │
+│     ├ OpenAi.js (stub) │  └────────────┬───────────────┘
+│     └ Anthropic.js     │               │
+└────────────────────────┘               ▼
                           ┌──────────────────────────────┐
                           │ Google Sheet (storage)       │
                           └──────────────────────────────┘
@@ -36,7 +35,7 @@
 │ Cross-cutting modules                                  │
 │   Domain.js  ← JSDoc типи + валідація + ULID generator │
 │   Config.js  ← константи, AI_PROVIDER, EMAIL_ALIASES   │
-│   Fx.js      ← ECB lookup + getRate(currency, date)    │
+│   Fx.js      ← live NBU lookup для UAH (без зберігання)│
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -47,10 +46,10 @@
 | Файл | Що робить |
 |---|---|
 | `src/appsscript.json` | Apps Script manifest: `timeZone: Europe/Berlin`, scopes, web app config. |
-| `src/Web.js` | `doGet` (роутинг сторінок), функції що викликаються через `google.script.run` (parseReceipt, saveReceipt, updateReceipt, deleteReceipt, getReceipt, listRecent, refreshFx). |
+| `src/Web.js` | `doGet` (роутинг сторінок), функції що викликаються через `google.script.run` (parseReceipt, saveReceipt, updateReceipt, deleteReceipt, getReceipt, listRecent). |
 | `src/Domain.js` | JSDoc типи (`Receipt`, `Item`, `Product`, `ParsedReceipt`, `ParsedItem`); валідація; ULID-generator; парсер `consumed_by` синтаксису. |
-| `src/Storage.js` | CRUD для всіх 5 листів. Усі multi-row writes обгорнуті `LockService.getScriptLock()`. Rounding-on-write для money. |
-| `src/Fx.js` | Daily ECB fetch у `FxRates`; `getRate(currency, date)` з fallback rule (останній курс ≤ дата). |
+| `src/Storage.js` | CRUD для всіх 4 листів. Усі multi-row writes обгорнуті `LockService.getScriptLock()`. Rounding-on-write для money. |
+| `src/Fx.js` | `getRateLive(currency, date)` — live запит до NBU при збереженні UAH-чеку; для EUR одразу повертає 1.0. Нічого не персистить. |
 | `src/Config.js` | Константи: SHEET_ID, AI_PROVIDER, EMAIL_ALIASES, DRIVE_FOLDER_ID, категорії-список (seed). |
 | `src/AiClient.js` | Switch між провайдерами на основі `Config.AI_PROVIDER`. |
 | `src/Gemini.js` | Виклик Gemini 2.5 Flash; промпт-будівник; парс структурованого JSON-output. |
@@ -147,7 +146,7 @@ photo.html ──[10. redirect]──────>  recent.html (показ но
 
 Три ключові тези:
 
-1. **Real switchability — це переносимість даних, не коду.** Якщо колись перейдемо з Sheets на Postgres — Apps Script код буде викинутий і переписаний. Що залишиться — це чисті дані з ULID-ID, осмисленими колонками, ECB-курсами в `FxRates`. Експорт у CSV → імпорт у нову систему за годину. Тому ми **не** будуємо repository-pattern, DI, service-locator. Ми будуємо чисту схему даних і документуємо її як authoritative. Див. [ADR-0001](decisions/0001-google-sheets-as-storage.md).
+1. **Real switchability — це переносимість даних, не коду.** Якщо колись перейдемо з Sheets на Postgres — Apps Script код буде викинутий і переписаний. Що залишиться — це чисті дані з ULID-ID, осмисленими колонками, з зафіксованими `fx_rate_eur` на кожному чеку як audit trail конвертації. Експорт у CSV → імпорт у нову систему за годину. Тому ми **не** будуємо repository-pattern, DI, service-locator. Ми будуємо чисту схему даних і документуємо її як authoritative. Див. [ADR-0001](decisions/0001-google-sheets-as-storage.md).
 
 2. **API-шар стабільний; UI-шар змінюється.** UI еволюціонує сильно — рідкісно, що логіка save-receipt змінюється. Тому `Web.js` ендпоїнти — стабільний контракт. Якщо UI колись переноситься на SPA — він стукає в ті ж ендпоїнти.
 
@@ -164,5 +163,5 @@ photo.html ──[10. redirect]──────>  recent.html (показ но
 - **Конкурентні writes** — обов'язковий `LockService` для multi-row writes. Див. [data-model.md lock rule](data-model.md#lock-rule-concurrent-writes).
 - **Sheet cell limit 50 000 chars** — `raw_ocr_json` тримаємо ≤ 45 000.
 - **Float money** — rounding-on-write до 2dp у `Storage.js`. Див. [ADR-0004](decisions/0004-multi-currency-eur-base.md).
-- **ECB не публікує курси у вихідні** — fallback на останній курс ≤ дата. Див. [data-model.md FX rule](data-model.md#fx-fallback-rule).
+- **NBU не публікує курси у вихідні/свята** — `Fx._fetchNbuUahRate` walks back до 7 днів. Якщо NBU API недоступний у момент збереження — save UAH-чеку впаде з помилкою; повтори. Див. [data-model.md FX lookup rule](data-model.md#fx-lookup-rule).
 - **Hard-delete + 30-day version history** — daily CSV backup у Drive (Phase 5).

@@ -1,218 +1,83 @@
 /**
- * Fx: fetch ECB Reference Rates and resolve currency → EUR conversion.
+ * Fx: live currency-to-EUR conversion for UAH (the only non-base currency).
  *
- * ECB feeds:
- *   - daily.xml      — most recent business-day rates (~1KB)
- *   - hist-90d.xml   — last 90 business days (~80KB) — used for backfill
+ * Design: rates are fetched on demand from NBU at receipt-save time and
+ * stored on the receipt itself (fx_rate_eur, total_eur). No FxRates sheet,
+ * no daily trigger, no backfill. The on-receipt audit trail is what we
+ * persist; rates are not retained as their own table.
  *
- * Note on rate direction: ECB publishes EUR-to-CCY rates (1 EUR = X CCY).
- * Our schema (FxRates.rate_to_eur) stores CCY-to-EUR (1 CCY = X EUR), i.e.
- * the reciprocal. For EUR itself, rate_to_eur is always 1.0 and is not
- * stored in the FxRates sheet — Fx.getRate short-circuits.
+ * Supported currencies: EUR (base, no fetch) and UAH (NBU live).
+ * Other currencies throw — extend Fx.getRateLive when a new one is needed.
  *
- * FX fallback rule: if no rate exists for the requested date, return the
- * latest available rate ≤ requested date. This handles weekends and ECB
- * holidays (no publishing on Sat/Sun/EU holidays).
+ * Weekend/holiday fallback: NBU returns an empty array for non-publishing
+ * days. We walk back day-by-day up to MAX_LOOKBACK_DAYS until we find a rate.
  *
- * Schema reference: docs/data-model.md (FX fallback rule section)
+ * Schema reference: docs/data-model.md
  */
 
 /* exported Fx */
 const Fx = {
 
-  // ============================================================
-  // Public API
-  // ============================================================
-
   /**
-   * Fetch the most recent rates and append to FxRates sheet (skipping
-   * duplicates). Intended to run as a daily time trigger. Combines:
-   *   - ECB Reference Rates (~30 major currencies)
-   *   - NBU (UAH only, since ECB does not publish UAH)
-   * @returns {number} count of new rate rows appended
-   */
-  refreshDaily() {
-    const ecbAdded = Fx._fetchEcbAndAppend(Config.ECB_DAILY_URL);
-    const nbuAdded = Fx._fetchNbuUahDaysAndAppend(0);  // 0 = today only
-    return ecbAdded + nbuAdded;
-  },
-
-  /**
-   * Backfill last 90 business days from ECB and NBU. Use once at setup;
-   * then daily refresh keeps the sheet up to date.
-   * @returns {number} count of new rate rows appended
-   */
-  backfill90Days() {
-    const ecbAdded = Fx._fetchEcbAndAppend(Config.ECB_HIST_90D_URL);
-    const nbuAdded = Fx._fetchNbuUahDaysAndAppend(90);
-    return ecbAdded + nbuAdded;
-  },
-
-  /**
-   * Resolve rate_to_eur for a (currency, date) pair, applying the fallback rule.
+   * Resolve rate_to_eur for (currency, date) by hitting the appropriate live
+   * source. Stored on the receipt by the caller — never persisted by Fx.
+   *
    * @param {string} currency - ISO 4217
    * @param {string} date     - 'YYYY-MM-DD'
-   * @returns {number} rate_to_eur (1.0 for the base currency)
+   * @returns {number} rate_to_eur (1.0 for EUR; for UAH, 1/NBU EUR-to-UAH rate)
    */
-  getRate(currency, date) {
+  getRateLive(currency, date) {
     if (currency === Config.BASE_CURRENCY) return 1.0;
-    const all = Storage.listFxRates();
-    let bestRate = null;
-    let bestDate = null;
-    for (const r of all) {
-      if (r.currency !== currency) continue;
-      if (r.date > date) continue;
-      if (!bestDate || r.date > bestDate) {
-        bestDate = r.date;
-        bestRate = r.rate_to_eur;
-      }
-    }
-    if (bestRate === null) {
+    if (currency !== 'UAH') {
       throw new Error(
-        `No FX rate found for ${currency} ≤ ${date}. ` +
-        'Run Fx.backfill90Days() first or check that ECB publishes this currency.'
+        `FX lookup not supported for "${currency}". ` +
+        'Only EUR (base) and UAH are supported. To add another currency, ' +
+        'extend Fx.getRateLive with the appropriate source.'
       );
     }
-    return bestRate;
+    return Fx._fetchNbuUahRate(date);
   },
 
   /**
-   * Install a daily time trigger for refreshDaily(). Idempotent — replaces
-   * any existing trigger with the same handler.
-   */
-  installDailyTrigger() {
-    // Remove any prior trigger pointing at this handler
-    ScriptApp.getProjectTriggers().forEach(t => {
-      if (t.getHandlerFunction() === 'fxDailyTriggerHandler') {
-        ScriptApp.deleteTrigger(t);
-      }
-    });
-    ScriptApp.newTrigger('fxDailyTriggerHandler')
-      .timeBased()
-      .everyDays(1)
-      .atHour(8)  // 08:00 Berlin local; ECB publishes around 16:00 CET, so previous-day data is settled
-      .create();
-  },
-
-  // ============================================================
-  // Internal: ECB
-  // ============================================================
-
-  /**
-   * Fetch ECB XML feed at the given URL, parse it, append to FxRates.
-   * @param {string} url
-   * @returns {number} count of new rate rows appended
-   */
-  _fetchEcbAndAppend(url) {
-    const xml = UrlFetchApp.fetch(url, { muteHttpExceptions: false }).getContentText();
-    const rates = Fx._parseEcbXml(xml);
-    return Storage.appendFxRates(rates);
-  },
-
-  // ============================================================
-  // Internal: NBU (Ukrainian Hryvnia source)
-  // ============================================================
-
-  /**
-   * Fetch UAH rate from NBU for a window of days back from today.
-   * NBU API takes one date per request, so we batch via UrlFetchApp.fetchAll
-   * for parallelism. Skip dates where NBU returns empty (weekends/holidays);
-   * the FX fallback rule in getRate() handles missing dates.
+   * Fetch UAH/EUR rate from NBU for the given date, walking back up to
+   * MAX_LOOKBACK_DAYS over weekends/holidays. NBU returns:
+   *   [{ rate: 44.6531, exchangedate: "DD.MM.YYYY", cc: "EUR", ... }]
+   * `rate` is EUR-to-UAH (1 EUR = N UAH). We invert to get UAH-to-EUR.
    *
-   * NBU response shape (per request, single-element array):
-   *   [{ "rate": 44.6531, "exchangedate": "04.05.2026", "cc": "EUR", ... }]
-   * `rate` = how many UAH per 1 EUR. We invert to get rate_to_eur.
-   *
-   * @param {number} daysBack 0 = today only; 90 = last ~90 days
-   * @returns {number} count of new rate rows appended
+   * @param {string} date 'YYYY-MM-DD'
+   * @returns {number} rate_to_eur for UAH on that date (or earliest publishing day before it)
    */
-  _fetchNbuUahDaysAndAppend(daysBack) {
-    const today = new Date();
-    const requests = [];
-    for (let i = 0; i <= daysBack; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      requests.push({
-        url: `${Config.NBU_RATE_URL}?valcode=EUR&date=${Fx._formatNbuDate(d)}&json`,
-        muteHttpExceptions: true,
-      });
-    }
-    const responses = UrlFetchApp.fetchAll(requests);
-    const rates = [];
-    for (const r of responses) {
-      if (r.getResponseCode() !== 200) continue;
+  _fetchNbuUahRate(date) {
+    const MAX_LOOKBACK_DAYS = 7;
+    const target = new Date(`${date}T00:00:00`);
+    for (let i = 0; i < MAX_LOOKBACK_DAYS; i++) {
+      const d = new Date(target);
+      d.setDate(target.getDate() - i);
+      const url = `${Config.NBU_RATE_URL}?valcode=EUR&date=${Fx._formatNbuDate(d)}&json`;
+      const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+      if (response.getResponseCode() !== 200) continue;
       let data;
-      try { data = JSON.parse(r.getContentText()); }
+      try { data = JSON.parse(response.getContentText()); }
       catch (_e) { continue; }
       if (!Array.isArray(data) || data.length === 0) continue;
       const item = data[0];
-      if (!item.rate || !item.exchangedate) continue;
-      rates.push({
-        date: Fx._parseNbuDate(item.exchangedate),
-        currency: 'UAH',
-        rate_to_eur: Domain.roundFxRate(1 / item.rate),
-      });
+      if (!item.rate || typeof item.rate !== 'number') continue;
+      return Domain.roundFxRate(1 / item.rate);
     }
-    return Storage.appendFxRates(rates);
+    throw new Error(
+      `No NBU UAH rate found for ${date} (or any of the ${MAX_LOOKBACK_DAYS} prior days). ` +
+      'NBU may be down or your date is too far in the past.'
+    );
   },
 
-  /** 'DD.MM.YYYY' (NBU format) → 'YYYY-MM-DD' (our schema). */
-  _parseNbuDate(ddmmyyyy) {
-    const [d, m, y] = ddmmyyyy.split('.');
-    return `${y}-${m}-${d}`;
-  },
-
-  /** Date object → 'YYYYMMDD' (NBU URL format). */
+  /** Date object → 'YYYYMMDD' (NBU URL parameter format). */
   _formatNbuDate(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}${m}${d}`;
   },
-
-  // ============================================================
-  // Internal: ECB XML parsing
-  // ============================================================
-
-  /**
-   * Parse an ECB euroFxref XML feed (either daily or hist-90d).
-   * @returns {Array<{date:string, currency:string, rate_to_eur:number}>}
-   */
-  _parseEcbXml(xml) {
-    const document = XmlService.parse(xml);
-    const root = document.getRootElement();
-    const refNs = XmlService.getNamespace('http://www.ecb.int/vocabulary/2002-08-01/eurofxref');
-    const outerCube = root.getChild('Cube', refNs);
-    if (!outerCube) {
-      throw new Error('ECB XML: outer Cube element not found. Feed format may have changed.');
-    }
-    const dateCubes = outerCube.getChildren('Cube', refNs);
-    const result = [];
-    for (const dc of dateCubes) {
-      const timeAttr = dc.getAttribute('time');
-      if (!timeAttr) continue;
-      const date = timeAttr.getValue();
-      const currencyCubes = dc.getChildren('Cube', refNs);
-      for (const cc of currencyCubes) {
-        const currency = cc.getAttribute('currency').getValue();
-        const rateEurToCcy = parseFloat(cc.getAttribute('rate').getValue());
-        if (!isFinite(rateEurToCcy) || rateEurToCcy === 0) continue;
-        const rate_to_eur = Domain.roundFxRate(1 / rateEurToCcy);
-        result.push({ date, currency, rate_to_eur });
-      }
-    }
-    return result;
-  },
 };
-
-/**
- * Top-level handler used by the daily time trigger. Apps Script triggers
- * dispatch by function name, so we expose this thin wrapper at the global level.
- */
-/* exported fxDailyTriggerHandler */
-function fxDailyTriggerHandler() {
-  Fx.refreshDaily();
-}
 
 // CommonJS export for local Node test runner. Apps Script: no-op.
 // eslint-disable-next-line no-undef

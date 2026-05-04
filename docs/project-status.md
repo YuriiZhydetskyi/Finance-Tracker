@@ -19,7 +19,7 @@
 - Аналіз: хто скільки витратив, на які категорії, скільки зекономили на знижках, скільки втратили на зіпсованому.
 
 **Жорстко фіксований стек:**
-- **Storage:** Google Sheets (5 листів: Receipts, Items, Products, Categories, FxRates).
+- **Storage:** Google Sheets (4 листи: Receipts, Items, Products, Categories). Курси валют не зберігаються в окремому листі — конвертація live з NBU при збереженні UAH-чеку.
 - **Runtime:** Google Apps Script web app (`clasp` + Git).
 - **AI/OCR:** Gemini 2.5 Flash через AI Studio API (з тонкою AiClient-абстракцією для майбутньої заміни на OpenAI/Anthropic).
 - **UI** (Phase 3): Alpine.js + Chart.js, без build-pipeline.
@@ -64,8 +64,8 @@ finance-tracker/
 │   ├── Config.js                        ← Script Properties getters + public constants
 │   ├── Domain.js                        ← types, ULID, validators, factories
 │   ├── Storage.js                       ← CRUD з LockService.getScriptLock
-│   ├── Fx.js                            ← ECB + NBU UAH інтеграція
-│   ├── Smoke.js                         ← 7 manual smoke tests
+│   ├── Fx.js                            ← live NBU lookup для UAH (без зберігання курсів)
+│   ├── Smoke.js                         ← 6 manual smoke tests
 │   └── (Phase 2+: Gemini.js, AiClient.js, OpenAi.js, Anthropic.js)
 │   └── (Phase 3+: Web.js, ui/*.html)
 ├── tests/
@@ -73,8 +73,8 @@ finance-tracker/
 │   ├── setup.js                         ← мінімальні стаби (Utilities.formatDate)
 │   ├── domain.test.js                   ← 33 case
 │   ├── storage.test.js                  ← 19 case
-│   ├── fx.test.js                       ← 13 case
-│   ├── fixtures.test.js                 ← 7 case (drift detection)
+│   ├── fx.test.js                       ← 7 case (getRateLive + walk-back)
+│   ├── fixtures.test.js                 ← 2 case (NBU shape drift detection)
 │   ├── fakes/                           ← in-memory Apps Script services
 │   │   ├── SpreadsheetApp.js
 │   │   ├── UrlFetchApp.js
@@ -84,8 +84,7 @@ finance-tracker/
 │   │   ├── DriveApp.js
 │   │   └── index.js                     ← installAllFakes / resetAllFakes
 │   └── fixtures/
-│       ├── ecb-daily-sample.xml         ← реальний ECB snapshot
-│       └── nbu-uah-sample.json
+│       └── nbu-uah-sample.json          ← NBU response shape snapshot
 ├── .clasp.json                          ← scriptId, rootDir: ./src
 ├── .gitignore
 ├── .editorconfig
@@ -144,62 +143,51 @@ finance-tracker/
 - 4 test файли: domain (unit), storage (integration з fakes), fx (integration з fakes), fixtures (drift).
 - Apps Script fakes — самописні, ~300 рядків.
 
-**Незакоммічені фікси (мають бути включені в наступний коміт):**
-- LockService.**getScriptLock**() (не getDocumentLock — той повертає null для standalone).
-- UAH через **NBU API** (ECB не публікує UAH; верифіковано WebFetch — 28 валют без UAH).
-- TypeScript checkJs setup (tsconfig.json, src/globals.d.ts, ambient `any` для namespaces).
-- Apps Script integration fakes (tests/fakes/).
-- Storage + Fx integration tests.
-- Drift detection fixtures.
-- Updated docs: setup.md (3-рівнева тестова секція), extending.md (нові рецепти).
+**Незакоммічені зміни:**
+- Звуження FX-скоупу до **EUR + UAH only**, видалення листа `FxRates` і ECB-інтеграції. Курси отримуються live з NBU при збереженні UAH-чеку (`Fx.getRateLive`); зберігаються тільки на самому чеку як audit (`fx_rate_eur`). Див. ADR-0004 changelog.
+- Smoke `smokeFxBackfill` + `smokeFxLookup` замінено на `smokeFxLive`.
+- Тести/fakes оновлено: `UrlFetchApp` fake тепер коректно поводиться при `muteHttpExceptions:true`.
 
-### Phase 1 — User-side acceptance (НЕ ЗАВЕРШЕНО — потребує дій після push)
+### Phase 1 — User-side acceptance
 
 - ✅ Script Properties встановлено (SHEET_ID, DRIVE_FOLDER_ID; GEMINI_API_KEY — для Phase 2).
-- ✅ `clasp push` пройшов (з попередньою версією коду).
-- ⚠️ Smoke-тести запущено частково — **до фіксу lock + UAH**. Результати:
-  - `smokeIdentity` — РЕЗУЛЬТАТ НЕВІДОМИЙ (користувач НЕ повідомив, чи email повернувся, чи `""`). Це впливає на дизайн UI у Phase 3.
-  - `smokeUlid` — ймовірно OK (не падало).
-  - `smokeCategoriesRead` — ймовірно OK.
-  - `smokeFxBackfill` — **впав** із "TypeError: Cannot read properties of null (reading 'tryLock')" — це і був корінь lock issue.
-  - `smokeFxLookup` — впав із "No FX rate found for UAH ≤ 2026-05-04" (бо backfill не завершився).
-  - `smokeReceiptRoundtrip` — впав із тією ж lock-помилкою.
-  - `smokeLockService` — впав із тією ж lock-помилкою.
-
-**Очікується після наступного push:** усі 7 smoke-тестів зелені.
+- ✅ Smoke-тести зелені у Apps Script editor (lock fix + UAH через NBU підтверджено).
+- ✅ `smokeIdentity` дав очікуваний результат (повідомлено користувачем; email повернувся).
+- ⚠️ Після поточного рефакторингу (видалення FxRates) треба:
+  - `npm run push` для деплою.
+  - Запустити `smokeFxLive` у Apps Script editor — переконатись, що NBU live-fetch працює.
+  - Видалити лист `FxRates` зі Sheet (вручну) — він більше не використовується.
 
 ---
 
 ## 5. Що треба зробити НЕГАЙНО (після початку нової сесії)
 
-### 5.1. Дізнатись результат `smokeIdentity` (КРИТИЧНО)
+### 5.1. Деплоїти поточні зміни
 
-Запитати користувача: "що повернув `smokeIdentity` у Apps Script editor — твій email чи порожній рядок `""`?"
+```bash
+npm run push     # lint + typecheck + test + clasp push
+```
 
-- Якщо email → можна автопроставляти `paid_by` через `Session.getActiveUser()`.
-- Якщо `""` → потрібен **fallback UI** у Phase 3: при першому відкритті user-toggle "Хто ти?" з обома іменами, зберігається в `localStorage`. `paid_by` береться з `localStorage`, не з `Session`.
+Після push: F5 у вкладці Apps Script editor.
 
-Цей нюанс уже задокументовано в setup.md (крок 10) і в ADR-0002 (Apps Script runtime).
+### 5.2. Перевірити нову FX-логіку
 
-### 5.2. Запустити повний smoke flow після push
+У Apps Script editor → dropdown → запустити:
+- `smokeFxLive` → очікую `EUR → EUR: 1` і `UAH → EUR: ≈0.022` (або близько; залежить від поточного курсу).
+- `smokeReceiptRoundtrip` → "Roundtrip OK".
+- `smokeLockService` → "Lock acquired … Lock released".
 
-Користувач має:
-1. `npm run push` — задеплоїть фікси (lock + UAH + інше).
-2. Apps Script editor → F5 (refresh кешу).
-3. Запустити функції з dropdown (тільки top-level — `smoke*` і `fxDailyTriggerHandler`):
-   - `smokeFxBackfill` → очікую "Appended N rows" (~1500 ECB rows + ~60 UAH rows від NBU).
-   - `smokeFxLookup` → EUR=1.0, USD≈0.85, UAH≈0.022.
-   - `smokeReceiptRoundtrip` → "Roundtrip OK".
-   - `smokeLockService` → "Lock acquired … Lock released".
-4. Перевірити, що в Sheet `FxRates` є рядки (включно з UAH).
+### 5.3. Прибрати лист `FxRates` зі Sheet (вручну)
 
-### 5.3. Phase 1 acceptance criteria
+Лист більше не використовується. Можна видалити його у Google Sheet (правий клік на вкладці → Delete). Не критично — ніщо в коді на нього не посилається.
+
+### 5.4. Phase 1 acceptance criteria
 
 Phase 1 вважається завершеною коли:
-- [ ] Усі 7 smoke-тестів зелені у Apps Script editor.
-- [ ] `FxRates` має ≥1 UAH-рядок.
+- [x] `smokeIdentity` дав визначений результат.
+- [ ] Після поточного push — усі 6 smoke-тестів зелені.
+- [ ] `smokeFxLive` повертає реалістичні курси (EUR=1, UAH≈0.022).
 - [ ] `smokeReceiptRoundtrip` створює і прибирає тестовий receipt без сирітних рядків у `Receipts`/`Items`.
-- [ ] User знає результат `smokeIdentity` (для Phase 3 design).
 
 ---
 
@@ -314,7 +302,7 @@ src/ui/
 
 1. **`LockService.getDocumentLock()` повертає `null` для standalone web apps**. Працює тільки для container-bound скриптів. Завжди `getScriptLock()` для нашого setup.
 2. **`globals.googleappsscript` preset НЕ існує** в npm `globals` пакеті. Apps Script API treba listати вручну в ESLint config.
-3. **ECB Reference Rates НЕ публікує UAH** (28 валют, верифіковано). Для UAH треба окреме джерело — використовуємо NBU.
+3. **ECB Reference Rates НЕ публікує UAH** (28 валют, верифіковано). Тому використовуємо NBU. У 2026-05-04 повністю перейшли на live-NBU без зберігання курсів — див. ADR-0004 changelog.
 4. **JSDoc `*/` всередині `/** ... */`** закриває коментар передчасно і ламає parser. Уникати "Domain.make*/applyPatch" у коментарях.
 5. **clasp create може покласти `.clasp.json` всередину `src/`** — переносити у корінь репо.
 6. **Apps Script editor НЕ автооновлюється** після `clasp push`. F5 обов'язковий.

@@ -124,12 +124,26 @@
 
 **Сценарій:** Поїхали в Польщу, треба підтримка PLN.
 
-1. **Перевір ECB.** PLN є в [ECB Reference Rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). Якщо немає — потрібне альтернативне джерело (новий ADR).
-2. **Перевір `Fx.js`.** Daily fetch має бути конфігурований підтягувати курси для всіх валют, які можуть з'явитись. Зазвичай ECB CSV/XML feed містить ~32 валюти автоматично — нічого додавати не треба.
-3. **Тестовий чек.** Створи manual receipt з `currency: 'PLN'`. Переконайся, що:
-   - `fx_rate_eur` коректно підставляється з `FxRates`.
-   - `total_eur = round(total_orig * fx_rate_eur, 2)` відображається коректно.
-4. Готово. Жодних змін у схемі чи коді.
+> Поточно підтримуються тільки **EUR (база) + UAH (через NBU)**. Інші валюти треба додавати точково в `Fx.getRateLive`. Це усвідомлене рішення — див. [ADR-0004](decisions/0004-multi-currency-eur-base.md).
+
+1. **Знайди джерело курсу для нової валюти.** Варіанти:
+   - ECB Reference Rates — `https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml` (PLN, USD, GBP, JPY, CHF, CZK, HUF, ... ~30 валют). Не містить UAH, RUB.
+   - NBU — тільки UAH.
+   - Інші API — новий ADR з обґрунтуванням.
+2. **Розшир `Fx.getRateLive`** у [src/Fx.js](../src/Fx.js):
+   ```javascript
+   getRateLive(currency, date) {
+     if (currency === Config.BASE_CURRENCY) return 1.0;
+     if (currency === 'UAH') return Fx._fetchNbuUahRate(date);
+     if (currency === 'PLN') return Fx._fetchEcbRate('PLN', date);  // нова гілка
+     throw new Error(`FX lookup not supported for "${currency}". ...`);
+   }
+   ```
+3. **Реалізуй fetcher.** Додай приватну функцію `_fetchEcbRate(currency, date)` яка робить `UrlFetchApp.fetch` на ECB feed, парсить XML (через `XmlService`), повертає `Domain.roundFxRate(1 / ecb_rate)`. Не забудь fallback на попередні дні (як `_fetchNbuUahRate`).
+4. **Тести.** У [tests/fx.test.js](../tests/fx.test.js) додай case для нової валюти зі stubbed XML.
+5. **Тестовий чек.** Створи manual receipt з `currency: 'PLN'`. Переконайся, що `fx_rate_eur` і `total_eur` коректні.
+
+**Альтернатива:** якщо потрібна підтримка ~5+ валют одночасно — є сенс повернутись до архітектури з листом `FxRates` + daily fetch (це було реалізовано до 2026-05-04, дивись історію в Git і ADR-0004 changelog).
 
 ---
 

@@ -9,10 +9,9 @@
  *   1. smokeIdentity        — verifies Session.getActiveUser email behavior
  *   2. smokeUlid            — generates a few ULIDs to confirm the algorithm
  *   3. smokeCategoriesRead  — confirms Sheet headers + 20-row seed loaded
- *   4. smokeFxBackfill      — populates last 90 days of rates
- *   5. smokeFxLookup        — resolves a USD/UAH rate for today
- *   6. smokeReceiptRoundtrip — INSERT a fake receipt + items, fetch, delete
- *   7. smokeLockService     — confirms LockService is available on this account
+ *   4. smokeFxLive          — fetches a live UAH rate from NBU
+ *   5. smokeReceiptRoundtrip — INSERT a fake receipt + items, fetch, delete
+ *   6. smokeLockService     — confirms LockService is available on this account
  */
 
 /* exported Smoke */
@@ -58,23 +57,14 @@ const Smoke = {
     return cats.length;
   },
 
-  smokeFxBackfill() {
-    Logger.log('Fetching ECB hist-90d.xml ...');
-    const added = Fx.backfill90Days();
-    Logger.log(`Appended ${added} new rate rows to FxRates.`);
-    return added;
-  },
-
-  smokeFxLookup() {
+  smokeFxLive() {
     const today = Domain.todayIso();
-    const usd = Fx.getRate('USD', today);
-    const uah = Fx.getRate('UAH', today);
-    const eur = Fx.getRate('EUR', today);
-    Logger.log(`Rates as of ${today} (or latest ≤ today via fallback rule):`);
+    Logger.log(`Fetching live UAH rate from NBU for ${today} ...`);
+    const uah = Fx.getRateLive('UAH', today);
+    const eur = Fx.getRateLive('EUR', today);
     Logger.log(`  EUR → EUR: ${eur} (must be 1.0)`);
-    Logger.log(`  USD → EUR: ${usd}`);
-    Logger.log(`  UAH → EUR: ${uah}`);
-    return { eur, usd, uah };
+    Logger.log(`  UAH → EUR: ${uah}  (1 EUR ≈ ${(1 / uah).toFixed(2)} UAH)`);
+    return { eur, uah };
   },
 
   smokeReceiptRoundtrip() {
@@ -159,13 +149,12 @@ const Smoke = {
 // Top-level wrappers (for the editor's Run dropdown)
 // ============================================================
 
-/* exported smokeIdentity, smokeUlid, smokeCategoriesRead, smokeFxBackfill,
-            smokeFxLookup, smokeReceiptRoundtrip, smokeLockService */
+/* exported smokeIdentity, smokeUlid, smokeCategoriesRead, smokeFxLive,
+            smokeReceiptRoundtrip, smokeLockService */
 function smokeIdentity()           { return Smoke.smokeIdentity(); }
 function smokeUlid()               { return Smoke.smokeUlid(); }
 function smokeCategoriesRead()     { return Smoke.smokeCategoriesRead(); }
-function smokeFxBackfill()         { return Smoke.smokeFxBackfill(); }
-function smokeFxLookup()           { return Smoke.smokeFxLookup(); }
+function smokeFxLive()             { return Smoke.smokeFxLive(); }
 function smokeReceiptRoundtrip()   { return Smoke.smokeReceiptRoundtrip(); }
 function smokeLockService()        { return Smoke.smokeLockService(); }
 

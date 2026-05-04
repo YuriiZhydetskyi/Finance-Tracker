@@ -353,44 +353,6 @@ const Storage = {
       .map(row => Storage._rowToObject(row, headerIndex));
   },
 
-  // ============================================================
-  // FxRates  (used internally by Fx.js; exposed for completeness)
-  // ============================================================
-
-  /** Append rate rows in a single locked operation, skipping (date,currency) duplicates. */
-  appendFxRates(rates) {
-    if (!rates || rates.length === 0) return 0;
-    return Storage._withLock(() => {
-      const sheet = Storage._getSheet(Config.SHEETS.FX_RATES);
-      const headerIndex = Storage._getHeaderIndex(Config.SHEETS.FX_RATES);
-      const lastRow = sheet.getLastRow();
-      const existing = new Set();
-      if (lastRow >= 2) {
-        const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
-        for (const row of data) {
-          existing.add(`${row[headerIndex.date]}|${row[headerIndex.currency]}`);
-        }
-      }
-      const fresh = rates.filter(r => !existing.has(`${r.date}|${r.currency}`));
-      if (fresh.length === 0) return 0;
-      const rows = fresh.map(r => Storage._objectToRow(r, headerIndex));
-      const startRow = sheet.getLastRow() + 1;
-      sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
-      return fresh.length;
-    });
-  },
-
-  /** Read all rate rows. Used by Fx.getRate. */
-  listFxRates() {
-    const sheet = Storage._getSheet(Config.SHEETS.FX_RATES);
-    const headerIndex = Storage._getHeaderIndex(Config.SHEETS.FX_RATES);
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return [];
-    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
-    return data
-      .filter(row => row[headerIndex.date] && row[headerIndex.currency])
-      .map(row => Storage._rowToObject(row, headerIndex));
-  },
 };
 
 // CommonJS export for local Node test runner. Apps Script: no-op.

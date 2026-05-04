@@ -43,7 +43,6 @@ const Config = {
     ITEMS: 'Items',
     PRODUCTS: 'Products',
     CATEGORIES: 'Categories',
-    FX_RATES: 'FxRates',
   },
 
   /** Display alias map: email → human label (used by UI; not stored in Sheet). */
@@ -52,11 +51,7 @@ const Config = {
     // 'fiancee@example.com': 'Вона',
   },
 
-  /** ECB feed URLs (see Fx.js). ECB publishes ~30 currencies; UAH is NOT among them. */
-  ECB_DAILY_URL: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',
-  ECB_HIST_90D_URL: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml',
-
-  /** NBU (National Bank of Ukraine) API — used as UAH source since ECB does not publish UAH. */
+  /** NBU (National Bank of Ukraine) API — live source for UAH→EUR conversion. */
   NBU_RATE_URL: 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange',
 };
 

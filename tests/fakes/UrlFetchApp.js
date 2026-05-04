@@ -18,9 +18,16 @@ const stubs = new Map();
 
 function makeFakeUrlFetchApp() {
   return {
-    fetch(url, _options) {
+    fetch(url, options = {}) {
       const stub = stubs.get(url);
-      if (!stub) throw new Error(`FakeUrlFetchApp: no stub registered for URL: ${url}`);
+      if (!stub) {
+        // With muteHttpExceptions:true, real Apps Script returns the response
+        // object (with the HTTP error code) rather than throwing. Mirror that.
+        if (options && options.muteHttpExceptions) {
+          return new FakeHTTPResponse({ code: 404, content: 'no stub' });
+        }
+        throw new Error(`FakeUrlFetchApp: no stub registered for URL: ${url}`);
+      }
       return new FakeHTTPResponse(stub);
     },
 
