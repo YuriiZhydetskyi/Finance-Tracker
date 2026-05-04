@@ -44,7 +44,10 @@ const Storage = {
     return Storage._sheetCache[name];
   },
 
-  /** Read header row → map { headerName: columnIndex0Based }. Cached per execution. */
+  /**
+   * Read header row → map { headerName: columnIndex0Based }. Cached per execution.
+   * @returns {Record<string, number>}
+   */
   _getHeaderIndex(sheetName) {
     if (!Storage._headerIndexCache) Storage._headerIndexCache = {};
     if (Storage._headerIndexCache[sheetName]) return Storage._headerIndexCache[sheetName];
@@ -55,6 +58,7 @@ const Storage = {
       throw new Error(`Sheet "${sheetName}" is empty (no header row). Did you paste the headers from setup.md?`);
     }
     const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    /** @type {Record<string, number>} */
     const map = {};
     headers.forEach((h, i) => {
       const key = String(h).trim();
@@ -64,7 +68,10 @@ const Storage = {
     return map;
   },
 
-  /** Convert an entity object to an array, ordered by sheet column position. */
+  /**
+   * Convert an entity object to an array, ordered by sheet column position.
+   * @returns {any[]}
+   */
   _objectToRow(obj, headerIndex) {
     const cols = Object.keys(headerIndex).length;
     const row = new Array(cols).fill('');
@@ -75,8 +82,12 @@ const Storage = {
     return row;
   },
 
-  /** Convert a row array to an entity object using the header index. */
+  /**
+   * Convert a row array to an entity object using the header index.
+   * @returns {any}
+   */
   _rowToObject(row, headerIndex) {
+    /** @type {Record<string, any>} */
     const obj = {};
     for (const [key, idx] of Object.entries(headerIndex)) {
       const v = row[idx];
@@ -381,3 +392,7 @@ const Storage = {
       .map(row => Storage._rowToObject(row, headerIndex));
   },
 };
+
+// CommonJS export for local Node test runner. Apps Script: no-op.
+// eslint-disable-next-line no-undef
+if (typeof module !== 'undefined') module.exports = { Storage };

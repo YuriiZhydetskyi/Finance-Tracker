@@ -133,6 +133,56 @@
 
 ---
 
+---
+
+## Рецепт 7: Додати fake для нового Apps Script API
+
+**Сценарій:** Додаєш код, який викликає `CalendarApp` чи `MailApp`. Тести падають із "X is not defined".
+
+1. Створи новий fake у `tests/fakes/X.js` за шаблоном:
+   ```js
+   function makeFakeX() {
+     return {
+       someMethod(args) { /* in-memory implementation */ },
+       _reset() { /* reset state */ },
+     };
+   }
+   module.exports = { makeFakeX };
+   ```
+2. Додай в `tests/fakes/index.js`:
+   - `const { makeFakeX } = require('./X');`
+   - У `installAllFakes`: `_fakes.X = makeFakeX(); global.X = _fakes.X;`
+   - У `resetAllFakes`: `_fakes.X._reset();`
+3. Додай global у `eslint.config.mjs` (APPS_SCRIPT_GLOBALS): `X: 'readonly'`.
+4. Додай global у `src/globals.d.ts` для tsc (опційно, якщо tsc починає скаржитись).
+5. Тести можуть тепер використовувати `fakes.X.someMethod(...)`.
+
+---
+
+## Рецепт 8: Замінити `any` на справжні типи в `globals.d.ts`
+
+**Сценарій:** Хочеш cross-module type safety поверх API surface checking. Розширений варіант Рівня 1 тестування.
+
+1. У `src/globals.d.ts` заміни:
+   ```ts
+   declare var Domain: any;
+   ```
+   на:
+   ```ts
+   declare interface DomainModule {
+     ulid(): string;
+     roundMoney(value: number): number;
+     // ... (мати сигнатури з src/Domain.js)
+   }
+   declare var Domain: DomainModule;
+   ```
+2. Запусти `npm run typecheck`. Виправ помилки в коді, що випливуть з вузьких типів.
+3. Те саме для решти модулів.
+
+Це YAGNI до моменту, коли cross-module баги стають частими. Поки ESLint + smoke tests + integration tests ловлять достатньо.
+
+---
+
 ## Out of MVP — потенційні майбутні фічі
 
 Перелічуємо, щоб майбутній-ти не починав з нуля. **НЕ** реалізовуй це поки не з'явиться явна потреба.

@@ -70,3 +70,7 @@ function _Config_requireProp(key) {
   }
   return value;
 }
+
+// CommonJS export for local Node test runner. Apps Script: no-op.
+// eslint-disable-next-line no-undef
+if (typeof module !== 'undefined') module.exports = { Config };

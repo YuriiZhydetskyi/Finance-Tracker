@@ -181,9 +181,10 @@ localStorage.setItem('financeTracker.userEmail', 'yurii@example.com');
 
 ```bash
 # редагуєш src/* локально
-npm run lint            # ad-hoc перевірка (опційно — push робить це автоматично)
-npm run test            # юніт-тести Domain (опційно — push робить це автоматично)
-npm run push            # lint + tests + clasp push
+npm run lint            # ESLint
+npm run typecheck       # TypeScript checkJs (Apps Script API surface)
+npm run test            # node:test (Domain + Storage + Fx + fixtures)
+npm run push            # lint + typecheck + tests + clasp push
 # тестуєш у браузері через deployment URL
 git add . && git commit -m "..."
 ```
@@ -202,40 +203,76 @@ ESLint flat config у `eslint.config.mjs` ловить:
 
 | Команда | Що робить |
 |---|---|
-| `npm run lint` | eslint для `src/` і `tests/` |
-| `npm run test` | `node --test tests/` — юніт-тести Domain.js |
-| `npm run push` | lint + tests + clasp push — **рекомендований** шлях |
+| `npm run lint` | ESLint для `src/` і `tests/` |
+| `npm run typecheck` | `tsc --noEmit` — TypeScript checkJs з `@types/google-apps-script` |
+| `npm run test` | `node --test` — усі тести (Domain unit + Storage/Fx integration + fixtures) |
+| `npm run push` | lint + typecheck + tests + clasp push — **рекомендований** шлях |
 | `npm run push:force` | clasp push без перевірок — escape hatch |
 
 Якщо ESLint помилково заблокує валідний код — або `push:force`, або додай вузький disable-коментар (`/* eslint-disable-next-line no-undef */`) і подумай, чи rule справді корисний (можливо, бракує global у конфігу).
 
-### Юніт-тести
+### Тестування — три рівні
 
-Тести живуть у `tests/`. Запускаються Node-нативним `node:test` runner-ом — без зовнішніх залежностей.
+#### Рівень 1: TypeScript checkJs
 
-**Що покривається:**
-- `tests/domain.test.js` — Domain.js: ULID, rounding, `consumed_by` parser, валідатори, factories, patch helpers.
+`tsconfig.json` із `allowJs: true`, `checkJs: true`, `strict: true` + `@types/google-apps-script`. Запускається `npm run typecheck`.
 
-**Що НЕ покривається** (свідомо):
-- `Storage.js` — потребує мокати `SpreadsheetApp`. Smoke-тести у `src/Smoke.js` покривають це у реальному Apps Script runtime.
-- `Fx.js` — `UrlFetchApp` + `XmlService` важко стабити. Те саме.
-- `Web.js` (Phase 3+) — HTTP handlers, exercise через UI.
+**Ловить:**
+- Виклики неіснуючих Apps Script API (typo: `SpreadsheetApp.openId` замість `openById`).
+- Wrong-type аргументи.
+- Property access на nullable (з певними обмеженнями @types).
 
-**Як це працює:**
+**Не ловить:**
+- Runtime quirks, які @types не моделюють (приклад: `LockService.getDocumentLock()` повертає null для standalone — типи цього не показують).
 
-Apps Script-файли — це `.gs` (script context, не CommonJS). Щоб Node-runner міг імпортувати `Domain.js`, в кінці файлу є shim:
+`src/globals.d.ts` декларує project namespaces (Config, Domain, Storage, Fx, Smoke + Phase 2 заглушки) як `any`. Cross-module type safety — out of scope; мета — Apps Script API surface.
 
-```js
-if (typeof module !== 'undefined') module.exports = { Domain };
+#### Рівень 2: Юніт- + integration-тести
+
+`node --test` (Node-native, нуль зовнішніх раннерів). Структура:
+
+| Файл | Що покриває |
+|---|---|
+| `tests/domain.test.js` | Domain pure logic (ULID, rounding, parsers, validators, factories) |
+| `tests/storage.test.js` | Storage CRUD з in-memory FakeSpreadsheetApp, cascade delete, lock invocation |
+| `tests/fx.test.js` | Fx ECB parser, NBU date helpers, getRate fallback |
+
+**Apps Script fakes** — `tests/fakes/`. Самописні (250 рядків), не community libs:
+- `SpreadsheetApp.js` — in-memory Sheet, getRange/setValues/appendRow/deleteRow.
+- `UrlFetchApp.js` — stub-based, `_setStub(url, response)`.
+- `LockService.js` — завжди success, з лічильником для асертів.
+- `Session.js` — fixed email через `_setUserEmail`.
+- `XmlService.js` — обгортка над `@xmldom/xmldom`.
+- `DriveApp.js` — заглушка (не використовується в Phase 1).
+
+`tests/bootstrap.js` ставить fakes + project модулі на `global` (Apps Script semantic), повертає accessors. Integration-тести роблять `require('./bootstrap')` замість `'./setup'`.
+
+#### Рівень 3: Fixtures + drift detection
+
+`tests/fixtures/` містить **реальні snapshots** ECB XML і NBU JSON. `tests/fixtures.test.js` асертить:
+
+- ECB feed містить мажорні валюти (USD, JPY, GBP, CHF, PLN, CZK, HUF, CAD, AUD).
+- ECB feed **НЕ** містить UAH (документована відсутність — мотивація NBU integration).
+- USD rate у плавзих межах (sanity check).
+- NBU response має правильну форму (`exchangedate` як DD.MM.YYYY).
+
+Якщо ECB колись прибере GBP — тест почервоніє. Refresh fixtures:
+```
+curl https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml > tests/fixtures/ecb-daily-sample.xml
 ```
 
-В Apps Script `module` undefined — рядок ігнорується. У Node — exports namespace.
+#### CommonJS shims
 
-`tests/setup.js` стабує Apps Script API (`Utilities.formatDate`, `Config.*`), які `Domain` викликає всередині факторій. Стаби — мінімальні, відображають реальну поведінку для тестових сценаріїв.
+Кожен `src/*.js` закінчується:
+```js
+if (typeof module !== 'undefined') module.exports = { Module };
+```
 
-**Що тести **НЕ** ловлять** (важливо розуміти межі):
-- API misuse (типу `getDocumentLock` vs `getScriptLock`) — тести працюють з мокованим Apps Script, не реальним.
-- Schema drift у Sheet — runtime issue.
-- Конфіг ESLint baddirectives — окрема історія.
+В Apps Script `module` undefined → no-op. У Node — exports для тестів. Без цього shim Node test runner не зміг би `require('../src/Storage')`.
 
-Тести ловлять **regressions у чистій логіці**: округлення, парсери, валідатори, інваріанти факторій.
+#### Що тести **НЕ** ловлять (чесні межі)
+
+- Real Apps Script behavior quirks, які наш fake не моделює (треба `tests/fakes/*.js` оновлювати при виявленні).
+- API недоречно змінений @types (тип в `@types/google-apps-script` не збігається з реальним runtime).
+- Schema drift у Sheet (відбувається лише runtime).
+- Зовнішні API drift, окрім тих, що покриті fixture-тестами (ECB/NBU).

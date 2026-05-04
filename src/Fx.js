@@ -213,3 +213,7 @@ const Fx = {
 function fxDailyTriggerHandler() {
   Fx.refreshDaily();
 }
+
+// CommonJS export for local Node test runner. Apps Script: no-op.
+// eslint-disable-next-line no-undef
+if (typeof module !== 'undefined') module.exports = { Fx };

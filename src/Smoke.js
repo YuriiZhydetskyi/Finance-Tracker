@@ -168,3 +168,7 @@ function smokeFxBackfill()         { return Smoke.smokeFxBackfill(); }
 function smokeFxLookup()           { return Smoke.smokeFxLookup(); }
 function smokeReceiptRoundtrip()   { return Smoke.smokeReceiptRoundtrip(); }
 function smokeLockService()        { return Smoke.smokeLockService(); }
+
+// CommonJS export for local Node test runner. Apps Script: no-op.
+// eslint-disable-next-line no-undef
+if (typeof module !== 'undefined') module.exports = { Smoke };
