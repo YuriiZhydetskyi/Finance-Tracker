@@ -17,6 +17,7 @@
  * Schema reference: docs/data-model.md (FX fallback rule section)
  */
 
+/* exported Fx */
 const Fx = {
 
   // ============================================================
@@ -130,6 +131,7 @@ const Fx = {
  * Top-level handler used by the daily time trigger. Apps Script triggers
  * dispatch by function name, so we expose this thin wrapper at the global level.
  */
+/* exported fxDailyTriggerHandler */
 function fxDailyTriggerHandler() {
   Fx.refreshDaily();
 }

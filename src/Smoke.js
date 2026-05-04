@@ -15,6 +15,7 @@
  *   7. smokeLockService     — confirms LockService is available on this account
  */
 
+/* exported Smoke */
 const Smoke = {
 
   smokeIdentity() {
@@ -158,6 +159,8 @@ const Smoke = {
 // Top-level wrappers (for the editor's Run dropdown)
 // ============================================================
 
+/* exported smokeIdentity, smokeUlid, smokeCategoriesRead, smokeFxBackfill,
+            smokeFxLookup, smokeReceiptRoundtrip, smokeLockService */
 function smokeIdentity()           { return Smoke.smokeIdentity(); }
 function smokeUlid()               { return Smoke.smokeUlid(); }
 function smokeCategoriesRead()     { return Smoke.smokeCategoriesRead(); }

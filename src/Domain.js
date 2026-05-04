@@ -64,6 +64,7 @@
 // Domain module
 // ============================================================
 
+/* exported Domain */
 const Domain = {
   // ---------- ULID generator ----------
 

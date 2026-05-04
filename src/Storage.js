@@ -12,6 +12,7 @@
  * Schema reference: docs/data-model.md
  */
 
+/* exported Storage */
 const Storage = {
 
   // ============================================================

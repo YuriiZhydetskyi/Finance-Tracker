@@ -13,6 +13,7 @@
  *   - GEMINI_API_KEY   (only required from Phase 2 onward)
  */
 
+/* exported Config */
 const Config = {
   // ===== Script-Properties-backed (lazy getters) =====
 
