@@ -25,25 +25,27 @@ const Fx = {
   // ============================================================
 
   /**
-   * Fetch the most recent ECB rates and append to FxRates sheet
-   * (skipping duplicates). Intended to run as a daily time trigger.
+   * Fetch the most recent rates and append to FxRates sheet (skipping
+   * duplicates). Intended to run as a daily time trigger. Combines:
+   *   - ECB Reference Rates (~30 major currencies)
+   *   - NBU (UAH only, since ECB does not publish UAH)
    * @returns {number} count of new rate rows appended
    */
   refreshDaily() {
-    const xml = UrlFetchApp.fetch(Config.ECB_DAILY_URL, { muteHttpExceptions: false }).getContentText();
-    const rates = Fx._parseEcbXml(xml);
-    return Storage.appendFxRates(rates);
+    const ecbAdded = Fx._fetchEcbAndAppend(Config.ECB_DAILY_URL);
+    const nbuAdded = Fx._fetchNbuUahDaysAndAppend(0);  // 0 = today only
+    return ecbAdded + nbuAdded;
   },
 
   /**
-   * Backfill last 90 business days. Use once at setup, then daily refresh
-   * keeps the sheet up to date.
+   * Backfill last 90 business days from ECB and NBU. Use once at setup;
+   * then daily refresh keeps the sheet up to date.
    * @returns {number} count of new rate rows appended
    */
   backfill90Days() {
-    const xml = UrlFetchApp.fetch(Config.ECB_HIST_90D_URL, { muteHttpExceptions: false }).getContentText();
-    const rates = Fx._parseEcbXml(xml);
-    return Storage.appendFxRates(rates);
+    const ecbAdded = Fx._fetchEcbAndAppend(Config.ECB_HIST_90D_URL);
+    const nbuAdded = Fx._fetchNbuUahDaysAndAppend(90);
+    return ecbAdded + nbuAdded;
   },
 
   /**
@@ -90,6 +92,82 @@ const Fx = {
       .everyDays(1)
       .atHour(8)  // 08:00 Berlin local; ECB publishes around 16:00 CET, so previous-day data is settled
       .create();
+  },
+
+  // ============================================================
+  // Internal: ECB
+  // ============================================================
+
+  /**
+   * Fetch ECB XML feed at the given URL, parse it, append to FxRates.
+   * @param {string} url
+   * @returns {number} count of new rate rows appended
+   */
+  _fetchEcbAndAppend(url) {
+    const xml = UrlFetchApp.fetch(url, { muteHttpExceptions: false }).getContentText();
+    const rates = Fx._parseEcbXml(xml);
+    return Storage.appendFxRates(rates);
+  },
+
+  // ============================================================
+  // Internal: NBU (Ukrainian Hryvnia source)
+  // ============================================================
+
+  /**
+   * Fetch UAH rate from NBU for a window of days back from today.
+   * NBU API takes one date per request, so we batch via UrlFetchApp.fetchAll
+   * for parallelism. Skip dates where NBU returns empty (weekends/holidays);
+   * the FX fallback rule in getRate() handles missing dates.
+   *
+   * NBU response shape (per request, single-element array):
+   *   [{ "rate": 44.6531, "exchangedate": "04.05.2026", "cc": "EUR", ... }]
+   * `rate` = how many UAH per 1 EUR. We invert to get rate_to_eur.
+   *
+   * @param {number} daysBack 0 = today only; 90 = last ~90 days
+   * @returns {number} count of new rate rows appended
+   */
+  _fetchNbuUahDaysAndAppend(daysBack) {
+    const today = new Date();
+    const requests = [];
+    for (let i = 0; i <= daysBack; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      requests.push({
+        url: `${Config.NBU_RATE_URL}?valcode=EUR&date=${Fx._formatNbuDate(d)}&json`,
+        muteHttpExceptions: true,
+      });
+    }
+    const responses = UrlFetchApp.fetchAll(requests);
+    const rates = [];
+    for (const r of responses) {
+      if (r.getResponseCode() !== 200) continue;
+      let data;
+      try { data = JSON.parse(r.getContentText()); }
+      catch (_e) { continue; }
+      if (!Array.isArray(data) || data.length === 0) continue;
+      const item = data[0];
+      if (!item.rate || !item.exchangedate) continue;
+      rates.push({
+        date: Fx._parseNbuDate(item.exchangedate),
+        currency: 'UAH',
+        rate_to_eur: Domain.roundFxRate(1 / item.rate),
+      });
+    }
+    return Storage.appendFxRates(rates);
+  },
+
+  /** 'DD.MM.YYYY' (NBU format) → 'YYYY-MM-DD' (our schema). */
+  _parseNbuDate(ddmmyyyy) {
+    const [d, m, y] = ddmmyyyy.split('.');
+    return `${y}-${m}-${d}`;
+  },
+
+  /** Date object → 'YYYYMMDD' (NBU URL format). */
+  _formatNbuDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}${m}${d}`;
   },
 
   // ============================================================

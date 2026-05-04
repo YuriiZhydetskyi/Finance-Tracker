@@ -18,7 +18,7 @@
 
 Обрано **Google Sheets**.
 
-Sheet виступає як authoritative store. Apps Script виконує читання/запис через `SpreadsheetApp` API, плюс додатково забезпечує конкурентність через `LockService.getDocumentLock()` для multi-row writes (правило [data-model.md](../data-model.md#lock-rule-concurrent-writes)).
+Sheet виступає як authoritative store. Apps Script виконує читання/запис через `SpreadsheetApp` API, плюс додатково забезпечує конкурентність через `LockService.getScriptLock()` для multi-row writes (правило [data-model.md](../data-model.md#lock-rule-concurrent-writes)). DocumentLock тут не підходить — він повертає null для standalone скриптів.
 
 ## Consequences
 

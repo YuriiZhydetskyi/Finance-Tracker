@@ -45,7 +45,7 @@
    function listSubscriptions() { /* ... */ }
    function updateSubscription(id, patch) { /* ... */ }
    ```
-   Не забудь обгорнути multi-row writes у `LockService.getDocumentLock()`.
+   Не забудь обгорнути multi-row writes у `LockService.getScriptLock()` (`getDocumentLock()` повертає null для standalone скриптів).
 6. **Web.js.** Додай функції-handlers, що викликаються через `google.script.run`:
    ```javascript
    function saveSubscription(data) {

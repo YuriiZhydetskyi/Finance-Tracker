@@ -346,3 +346,8 @@ const Domain = {
     return merged;
   },
 };
+
+// CommonJS export for local Node test runner. Apps Script: `module` is
+// undefined, the typeof guard short-circuits, this line is a no-op.
+// eslint-disable-next-line no-undef
+if (typeof module !== 'undefined') module.exports = { Domain };

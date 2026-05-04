@@ -49,7 +49,7 @@
 | `src/appsscript.json` | Apps Script manifest: `timeZone: Europe/Berlin`, scopes, web app config. |
 | `src/Web.js` | `doGet` (роутинг сторінок), функції що викликаються через `google.script.run` (parseReceipt, saveReceipt, updateReceipt, deleteReceipt, getReceipt, listRecent, refreshFx). |
 | `src/Domain.js` | JSDoc типи (`Receipt`, `Item`, `Product`, `ParsedReceipt`, `ParsedItem`); валідація; ULID-generator; парсер `consumed_by` синтаксису. |
-| `src/Storage.js` | CRUD для всіх 5 листів. Усі multi-row writes обгорнуті `LockService.getDocumentLock()`. Rounding-on-write для money. |
+| `src/Storage.js` | CRUD для всіх 5 листів. Усі multi-row writes обгорнуті `LockService.getScriptLock()`. Rounding-on-write для money. |
 | `src/Fx.js` | Daily ECB fetch у `FxRates`; `getRate(currency, date)` з fallback rule (останній курс ≤ дата). |
 | `src/Config.js` | Константи: SHEET_ID, AI_PROVIDER, EMAIL_ALIASES, DRIVE_FOLDER_ID, категорії-список (seed). |
 | `src/AiClient.js` | Switch між провайдерами на основі `Config.AI_PROVIDER`. |

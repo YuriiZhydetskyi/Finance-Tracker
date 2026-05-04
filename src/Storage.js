@@ -2,8 +2,10 @@
  * Storage: CRUD over the Google Sheet.
  *
  * Conventions:
- *   - All multi-row writes are wrapped in LockService.getDocumentLock() to
+ *   - All multi-row writes are wrapped in LockService.getScriptLock() to
  *     guard against concurrent appends from two users simultaneously.
+ *     (Document-scoped LockService.getDocumentLock() returns null for
+ *     standalone web app scripts; only ScriptLock works here.)
  *   - Column lookup is by header name, not by position. Adding a new column
  *     at the end of a sheet does not break existing code.
  *   - Domain.validate*() runs before every write. Money is already rounded
@@ -85,7 +87,7 @@ const Storage = {
 
   /** Run fn while holding the document lock. Used for any multi-row write. */
   _withLock(fn) {
-    const lock = LockService.getDocumentLock();
+    const lock = LockService.getScriptLock();
     if (!lock.tryLock(Config.LOCK_TIMEOUT_MS)) {
       throw new Error(
         `Could not acquire document lock within ${Config.LOCK_TIMEOUT_MS}ms. ` +

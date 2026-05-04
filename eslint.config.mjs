@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import globals from 'globals';
 
 /**
  * Apps Script V8 runtime globals.
@@ -87,6 +88,24 @@ export default [
       // 'writable' status. Real redeclares (`var x; var x;`) are caught by
       // ES6 strict-mode SyntaxError and our no-`var` discipline.
       'no-redeclare': 'off',
+    },
+  },
+
+  // Test files: Node CommonJS, no Apps Script globals.
+  {
+    files: ['tests/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      'no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
 ];

@@ -144,7 +144,7 @@ const Smoke = {
 
   smokeLockService() {
     Logger.log('Acquiring document lock ...');
-    const lock = LockService.getDocumentLock();
+    const lock = LockService.getScriptLock();
     if (lock.tryLock(2000)) {
       Logger.log('Lock acquired.');
       lock.releaseLock();

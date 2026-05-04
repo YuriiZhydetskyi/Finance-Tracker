@@ -182,7 +182,8 @@ localStorage.setItem('financeTracker.userEmail', 'yurii@example.com');
 ```bash
 # редагуєш src/* локально
 npm run lint            # ad-hoc перевірка (опційно — push робить це автоматично)
-npm run push            # запускає lint, потім clasp push
+npm run test            # юніт-тести Domain (опційно — push робить це автоматично)
+npm run push            # lint + tests + clasp push
 # тестуєш у браузері через deployment URL
 git add . && git commit -m "..."
 ```
@@ -201,8 +202,40 @@ ESLint flat config у `eslint.config.mjs` ловить:
 
 | Команда | Що робить |
 |---|---|
-| `npm run lint` | eslint src/ — ad-hoc перевірка |
-| `npm run push` | lint + clasp push — **рекомендований** шлях |
-| `npm run push:force` | clasp push без lint — escape hatch для аварійних ситуацій |
+| `npm run lint` | eslint для `src/` і `tests/` |
+| `npm run test` | `node --test tests/` — юніт-тести Domain.js |
+| `npm run push` | lint + tests + clasp push — **рекомендований** шлях |
+| `npm run push:force` | clasp push без перевірок — escape hatch |
 
 Якщо ESLint помилково заблокує валідний код — або `push:force`, або додай вузький disable-коментар (`/* eslint-disable-next-line no-undef */`) і подумай, чи rule справді корисний (можливо, бракує global у конфігу).
+
+### Юніт-тести
+
+Тести живуть у `tests/`. Запускаються Node-нативним `node:test` runner-ом — без зовнішніх залежностей.
+
+**Що покривається:**
+- `tests/domain.test.js` — Domain.js: ULID, rounding, `consumed_by` parser, валідатори, factories, patch helpers.
+
+**Що НЕ покривається** (свідомо):
+- `Storage.js` — потребує мокати `SpreadsheetApp`. Smoke-тести у `src/Smoke.js` покривають це у реальному Apps Script runtime.
+- `Fx.js` — `UrlFetchApp` + `XmlService` важко стабити. Те саме.
+- `Web.js` (Phase 3+) — HTTP handlers, exercise через UI.
+
+**Як це працює:**
+
+Apps Script-файли — це `.gs` (script context, не CommonJS). Щоб Node-runner міг імпортувати `Domain.js`, в кінці файлу є shim:
+
+```js
+if (typeof module !== 'undefined') module.exports = { Domain };
+```
+
+В Apps Script `module` undefined — рядок ігнорується. У Node — exports namespace.
+
+`tests/setup.js` стабує Apps Script API (`Utilities.formatDate`, `Config.*`), які `Domain` викликає всередині факторій. Стаби — мінімальні, відображають реальну поведінку для тестових сценаріїв.
+
+**Що тести **НЕ** ловлять** (важливо розуміти межі):
+- API misuse (типу `getDocumentLock` vs `getScriptLock`) — тести працюють з мокованим Apps Script, не реальним.
+- Schema drift у Sheet — runtime issue.
+- Конфіг ESLint baddirectives — окрема історія.
+
+Тести ловлять **regressions у чистій логіці**: округлення, парсери, валідатори, інваріанти факторій.
