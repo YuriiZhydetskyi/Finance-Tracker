@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <?!= include('shared/head') ?>
+</head>
+<body x-data="photoPage()" x-init="init()" x-cloak>
+  <div class="topbar">
+    <a href="?page=index">← Назад</a>
+    <span class="who" x-text="paid_by"></span>
+  </div>
+
+  <main>
+    <h1>Фото чеку</h1>
+
+    <template x-if="error">
+      <div class="err" x-text="error"></div>
+    </template>
+
+    <!-- STEP 1: Upload --------------------------------------------------- -->
+    <div class="card" x-show="step === 'pick'">
+      <p style="color:var(--muted)">Сфотографуй чек або вибери з галереї. Зображення стиснеться в браузері до 1600px перед відправкою.</p>
+      <input type="file" accept="image/*" capture="environment" @change="onFilePicked($event)">
+    </div>
+
+    <!-- STEP 2: Parsing -------------------------------------------------- -->
+    <div class="card" x-show="step === 'parsing'">
+      <div class="loader">Розпізнаю чек через Gemini... це може зайняти 5–15 секунд.</div>
+      <template x-if="previewUrl">
+        <img :src="previewUrl" style="max-width:100%;border-radius:var(--radius);margin-top:8px">
+      </template>
+    </div>
+
+    <!-- STEP 3: Review --------------------------------------------------- -->
+    <div x-show="step === 'review'">
+      <template x-if="previewUrl">
+        <div class="card" style="padding:6px">
+          <img :src="previewUrl" style="max-width:100%;border-radius:var(--radius)">
+        </div>
+      </template>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <label>Дата</label>
+            <input x-model="receipt.date" type="date">
+          </div>
+          <div>
+            <label>Магазин</label>
+            <input x-model="receipt.store" placeholder="—">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Валюта</label>
+            <select x-model="receipt.currency">
+              <option value="EUR">EUR €</option>
+              <option value="UAH">UAH ₴</option>
+            </select>
+          </div>
+          <div>
+            <label>Хто оплатив</label>
+            <input x-model="receipt.paid_by" type="email">
+          </div>
+        </div>
+        <div>
+          <label>Нотатка</label>
+          <input x-model="receipt.note" placeholder="—">
+        </div>
+      </div>
+
+      <h2>Розпізнані товари</h2>
+      <?!= include('shared/ItemsTable') ?>
+
+      <?!= include('shared/Summary') ?>
+
+      <div class="row" style="margin-top:16px">
+        <button type="button" class="secondary" @click="reset" :disabled="saving">Інше фото</button>
+        <button type="button" @click="save" :disabled="saving || !canSave">
+          <span x-text="saving ? 'Зберігаю...' : 'Зберегти чек'"></span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Resize a File to max 1600px (longer side), JPEG quality 0.8, return base64.
+    async function compressImage(file, maxDim, quality) {
+      maxDim = maxDim || 1600;
+      quality = quality || 0.8;
+      var dataUrl = await new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      var img = await new Promise(function(resolve, reject) {
+        var i = new Image();
+        i.onload = function() { resolve(i); };
+        i.onerror = reject;
+        i.src = dataUrl;
+      });
+      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      var w = Math.round(img.width * scale);
+      var h = Math.round(img.height * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var jpeg = canvas.toDataURL('image/jpeg', quality);
+      return {
+        base64: jpeg.split(',')[1],
+        mimeType: 'image/jpeg',
+        previewUrl: jpeg,
+      };
+    }
+
+    function photoPage() {
+      return {
+        step: 'pick', // pick | parsing | review
+        error: '',
+        saving: false,
+        paid_by: '',
+        previewUrl: '',
+        photoBase64: '',
+        photoMimeType: 'image/jpeg',
+        rawOcrJson: null,
+        receipt: {
+          date: todayIso(),
+          store: '',
+          currency: 'EUR',
+          paid_by: '',
+          note: '',
+        },
+        items: [],
+        categories: [],
+        products: [],
+
+        async init() {
+          this.paid_by = await resolveUserEmail();
+          this.receipt.paid_by = this.paid_by;
+          if (!this.paid_by) {
+            this.error = 'Не визначено хто оплачує — повернись на головну і вибери в "Хто ти?".';
+          }
+          try {
+            this.categories = await runServer('getCategories');
+            this.products = await runServer('listProducts');
+          } catch (e) { this.categories = []; this.products = []; }
+        },
+
+        get currency() { return this.receipt.currency; },
+
+        async onFilePicked(event) {
+          this.error = '';
+          var file = event.target.files && event.target.files[0];
+          if (!file) return;
+          try {
+            var compressed = await compressImage(file);
+            this.photoBase64 = compressed.base64;
+            this.photoMimeType = compressed.mimeType;
+            this.previewUrl = compressed.previewUrl;
+          } catch (e) {
+            this.error = 'Не вдалося прочитати фото: ' + e.message;
+            return;
+          }
+          this.step = 'parsing';
+          // Soft 35s timeout — Gemini usually finishes in 3-15s.
+          var timeoutId = setTimeout(function() {
+            // Note: doesn't cancel the server call; just shows the user something is wrong.
+          }, 35000);
+          try {
+            var parsed = await runServer('parseReceipt', [this.photoBase64, this.photoMimeType]);
+            clearTimeout(timeoutId);
+            this.applyParsed(parsed);
+            this.step = 'review';
+          } catch (e) {
+            clearTimeout(timeoutId);
+            this.error = 'Помилка розпізнавання: ' + e.message + '. Можна вписати товари вручну.';
+            this.applyParsed({ store: null, date: null, currency: 'EUR', total_orig: null, items: [] });
+            this.step = 'review';
+          }
+        },
+
+        applyParsed(parsed) {
+          if (parsed.store) this.receipt.store = parsed.store;
+          if (parsed.date) this.receipt.date = parsed.date;
+          if (parsed.currency) this.receipt.currency = parsed.currency;
+          var rows = (parsed.items || []).map(function(it) {
+            return newItemRow({
+              product_name: it.product_name || '',
+              category: it.category_suggestion || '',
+              qty: Number(it.qty) || 1,
+              unit_price_orig: Number(it.unit_price_orig) || 0,
+              consumed_by: 'shared',
+            });
+          });
+          if (rows.length === 0) rows.push(newItemRow());
+          this.items = rows;
+          this.rawOcrJson = JSON.stringify({ items: parsed.items || [] });
+          if (this.rawOcrJson.length > 45000) this.rawOcrJson = null;
+        },
+
+        get canSave() {
+          if (!this.receipt.date || !this.receipt.store || !this.receipt.paid_by) return false;
+          if (this.items.length === 0) return false;
+          return this.items.every(function(it) {
+            return it.product_name && it.category && Number(it.qty) > 0 && Number(it.unit_price_orig) >= 0;
+          });
+        },
+
+        reset() {
+          this.step = 'pick';
+          this.previewUrl = '';
+          this.photoBase64 = '';
+          this.items = [];
+          this.error = '';
+        },
+
+        async save() {
+          this.error = '';
+          this.saving = true;
+          try {
+            var input = {
+              date: this.receipt.date,
+              store: this.receipt.store,
+              currency: this.receipt.currency,
+              total_orig: totalOrig(this.items),
+              paid_by: this.receipt.paid_by,
+              source: 'photo',
+              note: this.receipt.note || null,
+              raw_ocr_json: this.rawOcrJson,
+            };
+            var result = await runServer('saveReceipt', [
+              input, this.items, this.photoBase64, this.photoMimeType,
+            ]);
+            navigateTo('recent', { saved: result.receipt_id });
+          } catch (e) {
+            this.error = 'Помилка збереження: ' + e.message;
+          } finally {
+            this.saving = false;
+          }
+        },
+      };
+    }
+  </script>
+</body>
+</html>

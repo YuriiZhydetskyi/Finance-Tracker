@@ -61,6 +61,8 @@ npx clasp create --type webapp --title "Finance Tracker" --rootDir ./src
 
 ### Ручне налаштування `appsscript.json`
 
+Поточна конфігурація у репо (`src/appsscript.json`) — використовує `ANYONE_WITH_GOOGLE_ACCOUNT` для двох-користувацького доступу з personal Gmail (per [ADR-0010](decisions/0010-web-app-access-mode.md)):
+
 ```json
 {
   "timeZone": "Europe/Berlin",
@@ -69,11 +71,11 @@ npx clasp create --type webapp --title "Finance Tracker" --rootDir ./src
   "runtimeVersion": "V8",
   "webapp": {
     "executeAs": "USER_ACCESSING",
-    "access": "DOMAIN"
+    "access": "ANYONE"
   },
   "oauthScopes": [
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/script.external_request",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/script.scriptapp"
@@ -81,7 +83,7 @@ npx clasp create --type webapp --title "Finance Tracker" --rootDir ./src
 }
 ```
 
-Якщо твій акаунт — Personal Gmail (не Workspace), ймовірно `access: "ANYONE"` з обмеженням share-листа на дві email-адреси буде потрібен — див. крок 8.
+Це означає що **будь-хто залогінений у Google і знає URL** може відкрити web app. URL — приватне посилання, не публікуй ніде. (Apps Script manifest `access: "ANYONE"` = Deploy UI label "Anyone with a Google account"; справжній публічний без авторизації — це `ANYONE_ANONYMOUS`.)
 
 ## Крок 5. Налаштування Config.js
 
@@ -126,16 +128,20 @@ Apps Script автоматично створюватиме підпапки `YY
 ## Крок 9. Перший push і deploy
 
 ```bash
-npx clasp push    # завантажує src/* у Apps Script проєкт
+npm run push      # lint + typecheck + test + clasp push
 ```
 
-Через `clasp open` → Deploy → New deployment:
-- Type: Web app
+Через `npm run open` → Deploy → New deployment:
+- Type: **Web app**
 - Description: "Finance Tracker MVP v0.1"
 - Execute as: **User accessing the web app**
-- Who has access: **Only myself** (поки тестуємо), потім переключити на **Anyone with Google account** з обмеженням через перевірку email на серверній стороні.
+- Who has access: **Anyone with a Google account** (per [ADR-0010](decisions/0010-web-app-access-mode.md))
 
-Скопіюй deployment URL — це буде вхідна точка для тебе і нареченої.
+Скопіюй deployment URL — це вхідна точка для тебе і нареченої. Додай у Drive shortcut + закладки телефонів. **НЕ** публікуй URL ніде; ділись тільки з нареченою.
+
+> **Важливо.** Перед deploy відкрий [src/ui/index.html](../src/ui/index.html) і у `identityOptions` array впиши **свій** email і email **нареченої**. Це quick-pick кнопки у "Хто ти?" modal — також доступно вільне введення email.
+
+> **Re-deploy після змін.** `npm run push` оновлює код у Apps Script. Щоб новий код став активним на тому ж URL — у editor: Deploy → Manage deployments → ✏️ існуючого deployment → Version: New version → Deploy. (Альтернатива: новий deployment дає новий URL — придатно для дев-ітерацій без впливу на основний URL.)
 
 ## Крок 10. Перевірка identity (Session.getActiveUser)
 
@@ -154,19 +160,19 @@ function testIdentity() {
 
 ### Якщо повертає `""`
 
-Fallback: при першому відкритті UI показуємо selector "Хто ти?" з обома іменами, зберігаємо в `localStorage`. `paid_by` береться з localStorage, не з `Session`.
+Phase 3 UI обробляє це автоматично: при першому відкритті `index.html` показує "Хто ти?" modal з quick-pick кнопками (`identityOptions` array у [src/ui/index.html](../src/ui/index.html)) + вільним введенням email. Вибір зберігається у `localStorage.financeTracker.userEmail`. `paid_by` береться звідти при save'ах.
 
-Це треба буде закласти у `webapp.js` шаблон. Документуємо тут, щоб не забути.
+## Крок 11. Перший вхід (для двох користувачів)
 
-## Крок 11. Додавання запису про себе у localStorage
+1. Відкрий deployment URL у браузері (на телефоні або десктопі) **зі свого Google акаунту**.
+2. На першому екрані з'явиться modal "Хто ти?" → вибери свій email або введи власноруч.
+3. Додай URL до закладок / Add to Home Screen на телефоні.
+4. Поділись URL з нареченою — нехай вона повторить ті самі кроки зі свого пристрою.
 
-Перший раз відкривши web app — у консолі браузера:
-
-```javascript
-localStorage.setItem('financeTracker.userEmail', 'yurii@example.com');
-```
-
-(Це лише на випадок проблеми з кроку 10. У стабільному UI ми зробимо це через UI-діалог.)
+Усе. Тепер обоє можете:
+- 📷 фотографувати чек → AI розпізнає → редагуєш → save.
+- ✍️ додавати онлайн-витрати вручну.
+- 📋 переглядати останні чеки і редагувати їх.
 
 ## Перевірка
 

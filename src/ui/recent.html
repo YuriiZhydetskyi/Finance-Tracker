@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <?!= include('shared/head') ?>
+</head>
+<body x-data="recentPage()" x-init="init()" x-cloak>
+  <div class="topbar">
+    <a href="?page=index">← На головну</a>
+    <span class="who" x-text="currentEmail"></span>
+  </div>
+
+  <main>
+    <h1>Останні чеки</h1>
+
+    <template x-if="loading">
+      <div class="loader">Завантажую...</div>
+    </template>
+
+    <template x-if="error">
+      <div class="err" x-text="error"></div>
+    </template>
+
+    <template x-if="!loading && !error && receipts.length === 0">
+      <div class="card" style="text-align:center;color:var(--muted)">
+        Поки що порожньо. Додайте перший чек з <a href="?page=photo">фото</a> або <a href="?page=manual">вручну</a>.
+      </div>
+    </template>
+
+    <ul class="receipt-list" x-show="!loading && receipts.length > 0">
+      <template x-for="r in receipts" :key="r.id">
+        <li @click="open(r.id)">
+          <div style="display:flex;justify-content:space-between;gap:8px">
+            <strong x-text="r.store"></strong>
+            <span x-text="fmtMoney(r.total_eur) + ' €'"></span>
+          </div>
+          <div class="meta">
+            <span x-text="r.date"></span>
+            · <span x-text="r.currency"></span>
+            <template x-if="r.currency !== 'EUR'">
+              <span> · <span x-text="fmtMoney(r.total_orig)"></span> <span x-text="r.currency"></span></span>
+            </template>
+            <template x-if="r.note">
+              <span> · <em x-text="r.note"></em></span>
+            </template>
+          </div>
+        </li>
+      </template>
+    </ul>
+  </main>
+
+  <script>
+    function recentPage() {
+      return {
+        loading: true,
+        error: '',
+        receipts: [],
+        currentEmail: '',
+
+        async init() {
+          this.currentEmail = await resolveUserEmail();
+          try {
+            this.receipts = await runServer('listRecent', [30]);
+          } catch (e) {
+            this.error = 'Не вдалося завантажити: ' + e.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        open(id) { navigateTo('edit', { id: id }); },
+        fmtMoney: fmtMoney,
+      };
+    }
+  </script>
+</body>
+</html>

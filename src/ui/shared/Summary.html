@@ -1,0 +1,26 @@
+<!--
+  Summary shared component.
+
+  Reads from the parent Alpine x-data:
+    items:    array of item rows
+    currency: ISO 4217 string ('EUR', 'UAH', ...)
+
+  Uses helpers from shared/webapp.html: totalOrig, categoryBreakdown.
+-->
+<div class="card">
+  <div class="totals">
+    <span>Загалом</span>
+    <span class="big">
+      <span x-text="fmtMoney(totalOrig(items))"></span>
+      <span x-text="currency"></span>
+    </span>
+  </div>
+  <div class="breakdown" x-show="items.length > 0">
+    <template x-for="row in categoryBreakdown(items)" :key="row.category">
+      <div class="breakdown-row">
+        <span x-text="row.category"></span>
+        <span x-text="fmtMoney(row.total) + ' ' + currency"></span>
+      </div>
+    </template>
+  </div>
+</div>

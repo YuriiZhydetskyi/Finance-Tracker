@@ -27,6 +27,35 @@ global.Utilities = {
     if (typeof bytes === 'string') return Buffer.from(bytes).toString('base64');
     return Buffer.from(bytes).toString('base64');
   },
+
+  /**
+   * base64-decode to a number[]-like byte array. Apps Script returns
+   * Byte[] (a Java byte array exposed as number[] in JS); we mirror that
+   * with a JS array so tests don't trip on Buffer-vs-array identity.
+   */
+  base64Decode(str) {
+    return Array.from(Buffer.from(str, 'base64'));
+  },
+
+  /**
+   * newBlob(data, mimeType?, name?) — Apps Script returns a Blob with
+   * getBytes/getName/getContentType/getDataAsString.
+   */
+  newBlob(data, mimeType, name) {
+    const bytes = (typeof data === 'string')
+      ? Array.from(Buffer.from(data))
+      : Array.from(data);
+    return {
+      _bytes: bytes,
+      _mimeType: mimeType || 'application/octet-stream',
+      _name: name || 'noname',
+      getBytes() { return this._bytes; },
+      getName() { return this._name; },
+      getContentType() { return this._mimeType; },
+      getDataAsString() { return Buffer.from(this._bytes).toString('utf-8'); },
+      setName(n) { this._name = n; return this; },
+    };
+  },
 };
 
 global.Config = {

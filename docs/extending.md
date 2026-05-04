@@ -201,6 +201,56 @@ Reference implementation: [src/Gemini.js](../src/Gemini.js) (Gemini 3 Flash че
 
 ---
 
+## Рецепт 9: Додати нову UI сторінку
+
+**Сценарій:** Хочеш окрему сторінку `prices.html` для пошуку товару у каталозі і порівняння цін у магазинах (Phase 5 polish).
+
+1. **HTML файл.** Створи `src/ui/prices.html` за шаблоном існуючих:
+   ```html
+   <!DOCTYPE html>
+   <html lang="uk">
+   <head>
+     <?!= include('shared/head') ?>
+   </head>
+   <body x-data="pricesPage()" x-init="init()" x-cloak>
+     <div class="topbar">
+       <a href="?page=index">← Назад</a>
+     </div>
+     <main>
+       <h1>Ціни</h1>
+       <!-- ... -->
+     </main>
+     <script>
+       function pricesPage() {
+         return {
+           async init() { /* ... */ },
+         };
+       }
+     </script>
+   </body>
+   </html>
+   ```
+   Завжди підключай `shared/head` — це налаштує Alpine + `runServer`. Reusable компоненти: `<?!= include('shared/ItemsTable') ?>`, `<?!= include('shared/Summary') ?>`.
+
+2. **Зареєструй сторінку.** У [src/Web.js](../src/Web.js) додай ім'я в `Web.PAGES` array. Без цього doGet відправить на `index` як unknown page.
+
+3. **Server endpoint (опц.).** Якщо сторінка кличе нову server-функцію — додай її як метод на `Web` об'єкті, додай top-level wrapper, додай у `/* exported ... */`. Тести (`tests/web.test.js`) — за паттерном існуючих.
+
+4. **Лінк.** Додай посилання у `src/ui/index.html` (pill-buttons block) або з якоїсь іншої сторінки.
+
+5. **Smoke + тест.** `smokeWebRoutes` автоматично підхопить нову сторінку (читає `Web.PAGES`). Локальний тест у `tests/web.test.js`:
+   ```js
+   test('Web.doGet: prices page renders', () => {
+     setupSheet();
+     const out = Web.doGet({ parameter: { page: 'prices' } });
+     assert.match(out.getContent(), /ui\/prices/);
+   });
+   ```
+
+**Не треба:** торкати Storage / Domain / Fx якщо логіка існуючих сутностей не змінюється. Сторінка — це тонкий клієнт над уже існуючими endpoints.
+
+---
+
 ## Out of MVP — потенційні майбутні фічі
 
 Перелічуємо, щоб майбутній-ти не починав з нуля. **НЕ** реалізовуй це поки не з'явиться явна потреба.

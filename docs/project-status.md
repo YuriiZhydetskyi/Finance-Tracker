@@ -2,7 +2,7 @@
 
 > **Призначення:** цей документ — точка входу для нової chat-сесії. Прочитавши його (і файли, на які він посилається), нова сесія матиме повний контекст і зможе продовжити роботу без перезапитування.
 
-**Дата останнього оновлення:** 2026-05-04
+**Дата останнього оновлення:** 2026-05-04 (Phase 3 done)
 
 ---
 
@@ -214,51 +214,41 @@ Phase 5 polish — додати `daily_gemini_calls` counter через `Propert
 
 ---
 
-## 7. Що далі — Phase 3: Web UI
+## 7. Phase 3: Web UI — ✅ implemented (потребує deploy + manual end-to-end)
 
-Найбільша фаза. Окремий plan перед стартом.
+### 7.1. Реалізовано
 
-### 7.1. Сторінки (всі окремі HTML, спільні Alpine-компоненти — рішення в ADR-0006)
+- [src/Web.js](../src/Web.js) — `doGet` + endpoints: `parseReceipt`, `saveReceipt`, `updateReceipt`, `getReceipt`, `deleteReceipt`, `listRecent`, `getCategories`, `listProducts`, `whoAmI`. Items-replace strategy (delete+append) для update — простіше за diff. FX перерахунок при зміні currency/date.
+- [src/ui/index.html](../src/ui/index.html) — landing з 3 pill кнопками + identity modal (localStorage fallback для personal Gmail). **Edit `identityOptions` array** — підстав свої email і email нареченої.
+- [src/ui/recent.html](../src/ui/recent.html) — листинг 30 останніх з лінками на edit.
+- [src/ui/manual.html](../src/ui/manual.html) — форма з ItemsTable + Summary, save через `Web.saveReceipt`.
+- [src/ui/photo.html](../src/ui/photo.html) — upload → клієнтський resize до 1600px (JPEG q=0.8) → `parseReceipt` → review → save (з photo upload у Drive).
+- [src/ui/edit.html](../src/ui/edit.html) — load by ?id → ItemsTable → save через `updateReceipt` АБО delete з confirm.
+- [src/ui/shared/](../src/ui/shared/) — head.html, webapp.html (`runServer` Promise wrapper), styles.html, ItemsTable.html, Summary.html.
+- [src/Smoke.js](../src/Smoke.js) — `smokeWebRoutes`: dry-run doGet для всіх сторінок.
+- [tests/web.test.js](../tests/web.test.js) — 23 нових тести (97 total). DriveApp fake тепер in-memory; HtmlService fake мінімальний.
+- [src/appsscript.json](../src/appsscript.json) — `webapp.access: ANYONE_WITH_GOOGLE_ACCOUNT` per ADR-0010.
 
-```
-src/ui/
-├── index.html              ← landing з 3 кнопками: Photo / Manual / Recent
-├── photo.html              ← upload → parse → review → save (INSERT)
-├── manual.html             ← порожня форма → save (INSERT)
-├── edit.html               ← завантажити по ID → редагувати → save (UPDATE) / delete
-├── recent.html             ← список останніх ~30 чеків з лінками на edit
-└── shared/
-    ├── ItemsTable.html     ← Alpine x-data: редагований список товарів
-    ├── Summary.html        ← total + Chart.js pie chart категорій
-    └── webapp.js           ← Promise wrapper над google.script.run
-```
+### 7.2. User-side acceptance (потрібно зробити)
 
-### 7.2. Web.js (`src/Web.js`)
+1. **Налаштуй identity options.** У [src/ui/index.html](../src/ui/index.html) знайди `identityOptions` array і впиши свій email + email нареченої. Це quick-pick кнопки в "Хто ти?" modal — також доступно вільне введення.
+2. **`npm run push`** — деплой змін.
+3. **Smoke check.** У Apps Script editor → запусти `smokeWebRoutes`. Очікую: 5 рядків з preview контенту + один з warning для unknown page.
+4. **Deploy as Web App.** У editor: Deploy → New deployment → Type: Web app → Execute as: User accessing → Who has access: **Anyone with a Google account** → Deploy. URL зберегти.
+5. **Manual end-to-end:**
+   - Відкрити URL → identity modal → вибрати свій email.
+   - Photo: завантажити чек → перевірити що Gemini розпізнав items → save → у Sheet новий Receipt + Items, у Drive нове фото.
+   - Manual: додати онлайн-витрату → save → recent показує.
+   - Recent → клік на чек → edit → змінити category → save → у Sheet оновлено.
+   - Recent → клік → edit → Delete → confirm → у Sheet receipt+items зникли.
+6. **Поділись URL з нареченою.** Перший вхід — авторизує scopes; identity modal → вибрати її email. Подальші save'и приходять з її email у `paid_by`.
 
-- `doGet(e)` — роутинг сторінок через `e.parameter.page`.
-- Функції викликаються через `google.script.run`:
-  - `parseReceipt(base64, ctx)` → JSON
-  - `saveReceipt(receiptData, items)` → receipt_id
-  - `updateReceipt(receiptData, items)` → success
-  - `getReceipt(id)` → Receipt + Items + Product info
-  - `listRecent(limit)` → Receipt[]
-  - `deleteReceipt(id)` → success
+### 7.3. Гострі кути
 
-### 7.3. Гострі кути для Phase 3
-
-- `google.script.run` callback API — обгорнути в `runServer(fnName, args) → Promise` у `webapp.js` (це задокументовано в ADR-0005).
-- Service Worker не працює в iframe — PWA дає "add to home screen" icon, але **не offline**.
-- HtmlService include для shared компонентів — нетривіальний `<?!= include('shared/ItemsTable') ?>` syntax. Тестується рано.
-- Якщо `Session.getActiveUser` повернув `""` (див. 5.1) — додати UI-toggle "Хто ти?" з localStorage.
-- Soft client-side timeout (~25с) на upload-photo, з friendly error UI.
-
-### 7.4. Phase 3 acceptance
-
-- Можна сфотографувати чек на телефоні, побачити пропоновані item-и, поправити їх, зберегти, побачити в Sheet.
-- Можна вручну додати онлайн-витрату.
-- Можна відкрити recent → клікнути → відредагувати → зберегти.
-- Працює з обох акаунтів (твій + наречена).
-- Web app deploy doable і дозволяє доступ обом email.
+- `Session.getActiveUser` повертає "" → fallback на localStorage в `index.html` modal (підтверджено для personal Gmail у Phase 1).
+- HtmlService include — `<?!= include('shared/X') ?>` (note: `<?!=` без HTML-escape; `<?=` — з escape). `Web.include(name)` додає `ui/` префікс.
+- Soft timeout у photo.html — 35с-ий setTimeout на UI-сторінці без cancel; повідомляє користувача якщо щось зависло. Cancel самого `google.script.run` Apps Script не дає.
+- AI matching до існуючих Products — UI-side через `<datalist>` autocomplete у ItemsTable. AI повертає тільки `category_suggestion`. Promote-item-to-product workflow — Phase 5.
 
 ---
 

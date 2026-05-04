@@ -13,6 +13,7 @@
  *   5. smokeReceiptRoundtrip — INSERT a fake receipt + items, fetch, delete
  *   6. smokeLockService     — confirms LockService is available on this account
  *   7. smokeGeminiParse     — parses a sample receipt via Gemini (requires JPG in Drive folder)
+ *   8. smokeWebRoutes       — dry-runs Web.doGet for each page (verifies HTML templates exist)
  */
 
 /* exported Smoke */
@@ -145,6 +146,19 @@ const Smoke = {
     }
   },
 
+  smokeWebRoutes() {
+    const pages = ['index', 'photo', 'manual', 'edit', 'recent', 'unknown-page'];
+    pages.forEach(p => {
+      try {
+        const out = Web.doGet({ parameter: { page: p } });
+        const preview = (out.getContent() || '').slice(0, 80).replace(/\s+/g, ' ');
+        Logger.log(`  ${p.padEnd(15)} → ${preview}`);
+      } catch (e) {
+        Logger.log(`  ${p.padEnd(15)} ✗ ${e.message}`);
+      }
+    });
+  },
+
   smokeGeminiParse() {
     // Reads the first JPG from Config.DRIVE_FOLDER_ID. Upload a sample receipt
     // photo into FinanceTracker/Receipts/ in Drive before running.
@@ -182,7 +196,8 @@ const Smoke = {
 // ============================================================
 
 /* exported smokeIdentity, smokeUlid, smokeCategoriesRead, smokeFxLive,
-            smokeReceiptRoundtrip, smokeLockService, smokeGeminiParse */
+            smokeReceiptRoundtrip, smokeLockService, smokeGeminiParse,
+            smokeWebRoutes */
 function smokeIdentity()           { return Smoke.smokeIdentity(); }
 function smokeUlid()               { return Smoke.smokeUlid(); }
 function smokeCategoriesRead()     { return Smoke.smokeCategoriesRead(); }
@@ -190,6 +205,7 @@ function smokeFxLive()             { return Smoke.smokeFxLive(); }
 function smokeReceiptRoundtrip()   { return Smoke.smokeReceiptRoundtrip(); }
 function smokeLockService()        { return Smoke.smokeLockService(); }
 function smokeGeminiParse()        { return Smoke.smokeGeminiParse(); }
+function smokeWebRoutes()          { return Smoke.smokeWebRoutes(); }
 
 // CommonJS export for local Node test runner. Apps Script: no-op.
 // eslint-disable-next-line no-undef

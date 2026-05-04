@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <?!= include('shared/head') ?>
+</head>
+<body x-data="editPage()" x-init="init()" x-cloak>
+  <div class="topbar">
+    <a href="?page=recent">← Список</a>
+    <span class="who" x-text="paid_by"></span>
+  </div>
+
+  <main>
+    <h1>Редагувати чек</h1>
+
+    <template x-if="error">
+      <div class="err" x-text="error"></div>
+    </template>
+
+    <template x-if="loading">
+      <div class="loader">Завантажую...</div>
+    </template>
+
+    <div x-show="!loading && receipt">
+      <div class="card">
+        <div class="row">
+          <div>
+            <label>Дата</label>
+            <input x-model="receipt.date" type="date">
+          </div>
+          <div>
+            <label>Магазин</label>
+            <input x-model="receipt.store">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Валюта</label>
+            <select x-model="receipt.currency">
+              <option value="EUR">EUR €</option>
+              <option value="UAH">UAH ₴</option>
+            </select>
+          </div>
+          <div>
+            <label>Хто оплатив</label>
+            <input x-model="receipt.paid_by" type="email">
+          </div>
+        </div>
+        <div>
+          <label>Нотатка</label>
+          <input x-model="receipt.note">
+        </div>
+        <template x-if="receipt.photo_url">
+          <div style="margin-top:8px">
+            <a :href="receipt.photo_url" target="_blank" rel="noopener">📷 Відкрити фото</a>
+          </div>
+        </template>
+      </div>
+
+      <h2>Товари</h2>
+      <?!= include('shared/ItemsTable') ?>
+
+      <?!= include('shared/Summary') ?>
+
+      <div class="row" style="margin-top:16px">
+        <button type="button" class="danger" @click="confirmDelete" :disabled="saving">Видалити</button>
+        <button type="button" @click="save" :disabled="saving || !canSave">
+          <span x-text="saving ? 'Зберігаю...' : 'Зберегти'"></span>
+        </button>
+      </div>
+    </div>
+
+    <template x-if="showDeleteConfirm">
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h2>Видалити чек?</h2>
+          <p>Це безповоротно. Чек і всі його товари будуть видалені з таблиці.</p>
+          <div class="row">
+            <button type="button" class="secondary" @click="showDeleteConfirm = false">Скасувати</button>
+            <button type="button" class="danger" @click="doDelete">Так, видалити</button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <script>
+    function editPage() {
+      return {
+        loading: true,
+        saving: false,
+        error: '',
+        paid_by: '',
+        receipt: null,
+        items: [],
+        categories: [],
+        products: [],
+        showDeleteConfirm: false,
+        receiptId: '',
+
+        async init() {
+          this.receiptId = getQueryParam('id');
+          if (!this.receiptId) {
+            this.error = 'Не вказано id чеку (?id=...)';
+            this.loading = false;
+            return;
+          }
+          this.paid_by = await resolveUserEmail();
+          try {
+            var bundle = await runServer('getReceipt', [this.receiptId]);
+            if (!bundle) {
+              this.error = 'Чек не знайдено: ' + this.receiptId;
+              this.loading = false;
+              return;
+            }
+            this.receipt = bundle.receipt;
+            this.items = (bundle.items || []).map(function(it) {
+              return newItemRow({
+                product_id: it.product_id,
+                product_name: it.product_name,
+                category: it.category,
+                qty: it.qty,
+                unit_price_orig: it.unit_price_orig,
+                consumed_by: it.consumed_by,
+                note: it.note || '',
+                wasted_qty: it.wasted_qty || 0,
+              });
+            });
+            try {
+              this.categories = await runServer('getCategories');
+              this.products = await runServer('listProducts');
+            } catch (e) { this.categories = []; this.products = []; }
+          } catch (e) {
+            this.error = 'Не вдалося завантажити: ' + e.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        get currency() { return this.receipt ? this.receipt.currency : 'EUR'; },
+
+        get canSave() {
+          if (!this.receipt) return false;
+          if (!this.receipt.date || !this.receipt.store || !this.receipt.paid_by) return false;
+          return this.items.every(function(it) {
+            return it.product_name && it.category && Number(it.qty) > 0 && Number(it.unit_price_orig) >= 0;
+          });
+        },
+
+        async save() {
+          this.error = '';
+          this.saving = true;
+          try {
+            var patch = {
+              date: this.receipt.date,
+              store: this.receipt.store,
+              currency: this.receipt.currency,
+              paid_by: this.receipt.paid_by,
+              note: this.receipt.note || null,
+              total_orig: totalOrig(this.items),
+            };
+            await runServer('updateReceipt', [this.receiptId, patch, this.items]);
+            navigateTo('recent', { saved: this.receiptId });
+          } catch (e) {
+            this.error = 'Помилка: ' + e.message;
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        confirmDelete() { this.showDeleteConfirm = true; },
+
+        async doDelete() {
+          this.saving = true;
+          try {
+            await runServer('deleteReceipt', [this.receiptId]);
+            navigateTo('recent');
+          } catch (e) {
+            this.error = 'Помилка видалення: ' + e.message;
+            this.saving = false;
+            this.showDeleteConfirm = false;
+          }
+        },
+      };
+    }
+  </script>
+</body>
+</html>

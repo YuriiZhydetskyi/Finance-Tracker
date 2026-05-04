@@ -28,6 +28,9 @@ declare var Gemini: any;
 declare var OpenAi: any;
 declare var Anthropic: any;
 
+// Phase 3
+declare var Web: any;
+
 // Domain entity types. Source of truth for shape lives in JSDoc inside
 // src/Domain.js; tsc cannot read @typedef from another file without an
 // explicit `import` reference, so we mirror the names here as ambient `any`.

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <?!= include('shared/head') ?>
+</head>
+<body x-data="indexPage()" x-init="init()" x-cloak>
+  <div class="topbar">
+    <a href="?page=index">💸 Finance Tracker</a>
+    <span class="who" x-show="currentEmail">
+      <span x-text="currentEmail"></span>
+      <button class="add-link" type="button" @click="askWho">змінити</button>
+    </span>
+  </div>
+
+  <main>
+    <h1>Що додати?</h1>
+    <div class="pill-buttons">
+      <a href="?page=photo">📷<br>Фото чек</a>
+      <a href="?page=manual">✍️<br>Вручну</a>
+      <a href="?page=recent" class="secondary">📋<br>Останні</a>
+    </div>
+
+    <template x-if="showWhoModal">
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h2>Хто ти?</h2>
+          <p style="color:var(--muted);font-size:14px;margin-top:0">
+            Обери хто ти — це збережеться локально на цьому пристрої та використовуватиметься як <code>paid_by</code> на нових чеках.
+          </p>
+          <div style="display:grid;gap:8px;margin:12px 0">
+            <template x-for="opt in identityOptions" :key="opt.value">
+              <button type="button" @click="pickIdentity(opt.value)" x-text="opt.label"></button>
+            </template>
+          </div>
+          <div>
+            <label>або вкажи свій email</label>
+            <div class="row" style="gap:6px">
+              <input x-model="customEmail" type="email" placeholder="me@gmail.com">
+              <button type="button" class="secondary" @click="pickIdentity(customEmail)" :disabled="!customEmail.includes('@')">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </main>
+
+  <script>
+    function indexPage() {
+      return {
+        currentEmail: '',
+        showWhoModal: false,
+        customEmail: '',
+        // Edit IDENTITY_OPTIONS to your two real emails. They are surfaced
+        // as quick-pick buttons in the "Хто ти?" modal.
+        identityOptions: [
+          { value: 'me@example.com', label: 'Я' },
+          { value: 'partner@example.com', label: 'Друга людина' },
+        ],
+
+        async init() {
+          this.currentEmail = await resolveUserEmail();
+          if (!this.currentEmail) this.showWhoModal = true;
+        },
+        askWho() { this.showWhoModal = true; },
+        pickIdentity(email) {
+          if (!email || !email.includes('@')) return;
+          setCurrentUser(email);
+          this.currentEmail = email;
+          this.showWhoModal = false;
+        },
+      };
+    }
+  </script>
+</body>
+</html>

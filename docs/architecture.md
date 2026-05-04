@@ -13,11 +13,11 @@
                           │ runServer(fnName, args) → Promise
                           │ (обгортка над google.script.run)
 ┌─────────────────────────▼──────────────────────────────┐
-│ API Layer (Web.js)                                     │  ← стабільний
+│ API Layer (Web.js) ✅                                  │  ← стабільний
 │   doGet  /index, /photo, /manual, /edit, /recent       │
-│   doPost (через google.script.run): parseReceipt,      │
-│           saveReceipt, updateReceipt, deleteReceipt,   │
-│           getReceipt, listRecent, refreshFx            │
+│   via google.script.run: parseReceipt, saveReceipt,    │
+│     updateReceipt, getReceipt, deleteReceipt,          │
+│     listRecent, getCategories, listProducts, whoAmI    │
 └──────────┬──────────────────────────┬──────────────────┘
            │                          │
 ┌──────────▼─────────────┐  ┌─────────▼──────────────────┐
@@ -46,7 +46,7 @@
 | Файл | Що робить |
 |---|---|
 | `src/appsscript.json` | Apps Script manifest: `timeZone: Europe/Berlin`, scopes, web app config. |
-| `src/Web.js` | `doGet` (роутинг сторінок), функції що викликаються через `google.script.run` (parseReceipt, saveReceipt, updateReceipt, deleteReceipt, getReceipt, listRecent). |
+| `src/Web.js` | `doGet` (роутинг сторінок), функції що викликаються через `google.script.run`: `parseReceipt`, `saveReceipt`, `updateReceipt`, `getReceipt`, `deleteReceipt`, `listRecent`, `getCategories`, `listProducts`, `whoAmI`. Internal `_savePhotoToDrive` для фото upload. |
 | `src/Domain.js` | JSDoc типи (`Receipt`, `Item`, `Product`, `ParsedReceipt`, `ParsedItem`); валідація; ULID-generator; парсер `consumed_by` синтаксису. |
 | `src/Storage.js` | CRUD для всіх 4 листів. Усі multi-row writes обгорнуті `LockService.getScriptLock()`. Rounding-on-write для money. |
 | `src/Fx.js` | `getRateLive(currency, date)` — live запит до NBU при збереженні UAH-чеку; для EUR одразу повертає 1.0. Нічого не персистить. |
@@ -61,8 +61,10 @@
 | `src/ui/edit.html` | Завантаження по ID → редагування → save (UPDATE) або delete. |
 | `src/ui/recent.html` | Список останніх ~30 чеків з лінками на edit. |
 | `src/ui/shared/ItemsTable.html` | Alpine `x-data` компонент: редагування рядків (категорія, qty, price, consumed_by, note, product-pill). |
-| `src/ui/shared/Summary.html` | Alpine компонент: total + Chart.js pie за категоріями. |
-| `src/ui/shared/webapp.js` | `runServer(fnName, args) → Promise`-обгортка над `google.script.run`. |
+| `src/ui/shared/Summary.html` | Alpine компонент: total + per-category breakdown текстом (Chart.js pie — відкладено до явної потреби). |
+| `src/ui/shared/webapp.html` | `runServer(fnName, args) → Promise`-обгортка над `google.script.run`; identity helpers (`resolveUserEmail`, localStorage); navigation (`navigateTo`); item-row helpers (`newItemRow`, `rowTotal`, `totalOrig`, `categoryBreakdown`). |
+| `src/ui/shared/head.html` | Spільний `<head>`: viewport, title, Alpine CDN, includes styles + webapp. |
+| `src/ui/shared/styles.html` | Спільний CSS, mobile-first, single-screen. |
 
 ## Потік даних: photo → save
 

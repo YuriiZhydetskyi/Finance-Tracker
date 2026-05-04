@@ -8,7 +8,7 @@ Before making non-trivial changes, read in order:
 1. **[docs/project-status.md](docs/project-status.md)** — current state, what's done, what's next, lessons learned. The handoff doc.
 2. **[docs/architecture.md](docs/architecture.md)** — three layers, request flow, extension points.
 3. **[docs/data-model.md](docs/data-model.md)** — authoritative Sheet schema and rules. Source of truth for all entity shapes.
-4. **[docs/decisions/](docs/decisions/)** — 9 MADR-format ADRs. The "why" for every load-bearing choice.
+4. **[docs/decisions/](docs/decisions/)** — 10 MADR-format ADRs. The "why" for every load-bearing choice.
 
 For history of design decisions: [conversation.md](conversation.md) (long but complete chat log).
 
@@ -29,18 +29,20 @@ node --test --test-name-pattern='ulid'    # run tests matching a pattern
 
 After `npm run push`: **F5 the Apps Script editor tab** — it does not auto-refresh after clasp push.
 
-Smoke tests live in `src/Smoke.js` and run only inside Apps Script (real LockService, real Sheet). Pick `smokeIdentity`, `smokeUlid`, `smokeFxLive`, `smokeReceiptRoundtrip`, `smokeLockService`, `smokeCategoriesRead`, `smokeGeminiParse` from the function picker.
+Smoke tests live in `src/Smoke.js` and run only inside Apps Script (real LockService, real Sheet). Pick `smokeIdentity`, `smokeUlid`, `smokeFxLive`, `smokeReceiptRoundtrip`, `smokeLockService`, `smokeCategoriesRead`, `smokeGeminiParse`, `smokeWebRoutes` from the function picker.
+
+Web UI deploy is a separate step from `clasp push`: in the Apps Script editor → **Deploy → New deployment → Type: Web app → Execute as: User accessing → Who has access: Anyone with a Google account**. The deployed URL is the entry point for both users; share it privately. See [ADR-0010](docs/decisions/0010-web-app-access-mode.md).
 
 ## Architecture in one paragraph
 
-Standalone Google Apps Script web app, deployed via `clasp` from `./src`. Four sheets in one Google Sheet (Receipts / Items / Products / Categories) are the storage. Apps Script V8 executes all `src/*.js` files in **one shared global scope** — each module is `const Module = {...}` and is referenced as a global from every other file. `Web.js` (Phase 3+) routes UI sub-pages and exposes JSON endpoints; `Storage.js` is the only Sheet-touching layer; `AiClient.js` switches between provider files — `Gemini.js` ✅ implements `gemini-3-flash-preview` via `responseJsonSchema`, OpenAi/Anthropic are stubs with the same signature. `Domain.js` owns types, ULID generation, money rounding, validators, factories, and `ParsedReceipt`/`ParsedItem` (in-memory transit shape between AI and UI). `Fx.js` provides `getRateLive(currency, date)` — live NBU lookup for UAH (only non-base currency supported); rates are stored on the receipt itself, no separate FxRates table. `Config.js` reads secrets and resource IDs from Apps Script Properties at runtime; nothing sensitive lives in code.
+Standalone Google Apps Script web app, deployed via `clasp` from `./src`. Four sheets in one Google Sheet (Receipts / Items / Products / Categories) are the storage. Apps Script V8 executes all `src/*.js` files in **one shared global scope** — each module is `const Module = {...}` and is referenced as a global from every other file. `Web.js` ✅ routes UI sub-pages (`doGet` switches on `?page=...` to one of `index/photo/manual/edit/recent` HTML templates under `src/ui/`) and exposes JSON endpoints called via `google.script.run`: `parseReceipt`, `saveReceipt`, `updateReceipt`, `getReceipt`, `deleteReceipt`, `listRecent`, `getCategories`, `listProducts`, `whoAmI`. `Storage.js` is the only Sheet-touching layer; `AiClient.js` switches between provider files — `Gemini.js` ✅ implements `gemini-3-flash-preview` via `responseJsonSchema`, OpenAi/Anthropic are stubs with the same signature. `Domain.js` owns types, ULID generation, money rounding, validators, factories, and `ParsedReceipt`/`ParsedItem` (in-memory transit shape between AI and UI). `Fx.js` provides `getRateLive(currency, date)` — live NBU lookup for UAH (only non-base currency supported); rates are stored on the receipt itself, no separate FxRates table. `Config.js` reads secrets and resource IDs from Apps Script Properties at runtime; nothing sensitive lives in code. UI is Alpine.js from CDN with a small `runServer(fn, args) → Promise` wrapper over `google.script.run` (see `src/ui/shared/webapp.html`).
 
 ## Cross-file globals — non-obvious
 
 Apps Script's single-global-scope is mimicked in three places that all stay in sync:
 
 - **Source files** end with `if (typeof module !== 'undefined') module.exports = { ModuleName };` so Node tests can `require()` them. The `typeof` guard makes the line a no-op under Apps Script.
-- **`src/globals.d.ts`** declares `Config`, `Domain`, `Storage`, `Fx`, `Smoke`, `AiClient`, `Gemini`, `OpenAi`, `Anthropic` as ambient `any` so `tsc` does not flag cross-file references. Same for entity types (`Receipt`, `Item`, `Product`, `ParsedReceipt`, `ParsedItem`).
+- **`src/globals.d.ts`** declares `Config`, `Domain`, `Storage`, `Fx`, `Smoke`, `AiClient`, `Gemini`, `OpenAi`, `Anthropic`, `Web` as ambient `any` so `tsc` does not flag cross-file references. Same for entity types (`Receipt`, `Item`, `Product`, `ParsedReceipt`, `ParsedItem`).
 - **`eslint.config.mjs`** lists those names as `writable` globals (writable, not readonly — otherwise `const Module = {...}` trips no-redeclare). `no-redeclare` is disabled with a rationale comment.
 - **`tests/bootstrap.js`** explicitly assigns each module onto `global` after requiring, so integration tests run with the same cross-file resolution as Apps Script.
 
@@ -72,7 +74,7 @@ The most expensive lessons:
 - `globals.googleappsscript` is **not** a real preset in the npm `globals` package despite many tutorials saying otherwise. Apps Script API globals are listed manually in `eslint.config.mjs`.
 - ECB Reference Rates does **not** include UAH (28 currencies, no UAH). For our scope (EUR + UAH only) we removed ECB integration entirely and use NBU live; see ADR-0004 changelog.
 - `*/` inside a JSDoc block (e.g. `Domain.make*/applyPatch`) closes the comment early and breaks the parser. ESLint catches this.
-- `Session.getActiveUser().getEmail()` returns `""` for personal Gmail without a Google Workspace domain. Phase 3 will need a `localStorage` fallback toggle if smokeIdentity confirms this.
+- `Session.getActiveUser().getEmail()` returns `""` for personal Gmail without a Google Workspace domain. Phase 3 UI handles this with a `localStorage` toggle modal in `src/ui/index.html` (`identityOptions` array — edit the two emails to your real ones).
 - Apps Script editor function picker shows only top-level `function` declarations. Methods inside `const Module = {}` are invisible — that is why Smoke.js and Fx.js have top-level wrappers.
 
 ## When extending

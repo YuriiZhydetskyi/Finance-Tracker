@@ -61,6 +61,9 @@ const PROJECT_GLOBALS = {
   Gemini: 'writable',
   OpenAi: 'writable',
   Anthropic: 'writable',
+
+  // Phase 3
+  Web: 'writable',
 };
 
 export default [

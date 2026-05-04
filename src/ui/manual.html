@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <?!= include('shared/head') ?>
+</head>
+<body x-data="manualPage()" x-init="init()" x-cloak>
+  <div class="topbar">
+    <a href="?page=index">← Назад</a>
+    <span class="who" x-text="paid_by"></span>
+  </div>
+
+  <main>
+    <h1>Витрата вручну</h1>
+
+    <template x-if="error">
+      <div class="err" x-text="error"></div>
+    </template>
+
+    <template x-if="loading">
+      <div class="loader">Завантажую довідники...</div>
+    </template>
+
+    <div x-show="!loading">
+      <div class="card">
+        <div class="row">
+          <div>
+            <label>Дата</label>
+            <input x-model="receipt.date" type="date">
+          </div>
+          <div>
+            <label>Магазин / опис</label>
+            <input x-model="receipt.store" placeholder="напр. Lidl, Amazon, оренда">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Валюта</label>
+            <select x-model="receipt.currency">
+              <option value="EUR">EUR €</option>
+              <option value="UAH">UAH ₴</option>
+            </select>
+          </div>
+          <div>
+            <label>Хто оплатив</label>
+            <input x-model="receipt.paid_by" type="email">
+          </div>
+        </div>
+        <div>
+          <label>Нотатка (опц.)</label>
+          <input x-model="receipt.note" placeholder="—">
+        </div>
+      </div>
+
+      <h2>Товари / позиції</h2>
+      <?!= include('shared/ItemsTable') ?>
+
+      <?!= include('shared/Summary') ?>
+
+      <div class="row" style="margin-top:16px">
+        <button type="button" class="secondary" @click="cancel" :disabled="saving">Скасувати</button>
+        <button type="button" @click="save" :disabled="saving || !canSave">
+          <span x-text="saving ? 'Зберігаю...' : 'Зберегти'"></span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function manualPage() {
+      return {
+        loading: true,
+        saving: false,
+        error: '',
+        paid_by: '',
+        receipt: {
+          date: todayIso(),
+          store: '',
+          currency: 'EUR',
+          paid_by: '',
+          note: '',
+        },
+        items: [],
+        categories: [],
+        products: [],
+
+        async init() {
+          this.paid_by = await resolveUserEmail();
+          this.receipt.paid_by = this.paid_by;
+          if (!this.paid_by) {
+            this.error = 'Не визначено хто оплачує — повернись на головну і вибери в "Хто ти?".';
+          }
+          try {
+            this.categories = await runServer('getCategories');
+            this.products = await runServer('listProducts');
+          } catch (e) {
+            // Soft-fail: dropdowns are empty but free-text inputs still work.
+            this.categories = [];
+            this.products = [];
+          }
+          this.items = [newItemRow()];
+          this.loading = false;
+        },
+
+        get currency() { return this.receipt.currency; },
+
+        get canSave() {
+          return this.receipt.date
+            && this.receipt.store
+            && this.receipt.paid_by
+            && this.items.length > 0
+            && this.items.every(function(it) {
+                 return it.product_name && it.category && Number(it.qty) > 0 && Number(it.unit_price_orig) >= 0;
+               });
+        },
+
+        async save() {
+          this.error = '';
+          this.saving = true;
+          try {
+            var input = {
+              date: this.receipt.date,
+              store: this.receipt.store,
+              currency: this.receipt.currency,
+              total_orig: totalOrig(this.items),
+              paid_by: this.receipt.paid_by,
+              source: 'manual',
+              note: this.receipt.note || null,
+            };
+            var result = await runServer('saveReceipt', [input, this.items]);
+            navigateTo('recent', { saved: result.receipt_id });
+          } catch (e) {
+            this.error = 'Помилка збереження: ' + e.message;
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        cancel() { navigateTo('index'); },
+      };
+    }
+  </script>
+</body>
+</html>

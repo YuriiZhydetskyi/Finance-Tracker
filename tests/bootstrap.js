@@ -56,4 +56,7 @@ global.Anthropic = Anthropic;
 const { AiClient } = require('../src/AiClient');
 global.AiClient = AiClient;
 
-module.exports = { fakes, resetAllFakes, Config, Domain, Storage, Fx, Gemini, OpenAi, Anthropic, AiClient };
+const { Web } = require('../src/Web');
+global.Web = Web;
+
+module.exports = { fakes, resetAllFakes, Config, Domain, Storage, Fx, Gemini, OpenAi, Anthropic, AiClient, Web };

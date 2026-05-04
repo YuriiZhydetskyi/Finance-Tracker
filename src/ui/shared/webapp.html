@@ -1,0 +1,131 @@
+<script>
+  // Injected from Web.doGet template scope.
+  var SCRIPT_URL = '<?= scriptUrl ?>';
+  var QUERY_PARAMS = <?!= JSON.stringify(queryParams || {}) ?>;
+
+  // ============================================================
+  // Server bridge
+  // ============================================================
+  // google.script.run is callback-based. runServer() turns it into a Promise
+  // so UI code can `await` server calls. See ADR-0005.
+  function runServer(fn, args) {
+    args = args || [];
+    return new Promise(function(resolve, reject) {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function(err) {
+          var msg = (err && err.message) ? err.message : String(err);
+          reject(new Error(msg));
+        })[fn].apply(google.script.run, args);
+    });
+  }
+
+  // ============================================================
+  // Identity (localStorage fallback for personal-Gmail empty-string quirk)
+  // ============================================================
+  var STORAGE_KEY = 'financeTracker.userEmail';
+
+  function getCurrentUser() {
+    try { return localStorage.getItem(STORAGE_KEY) || ''; } catch (e) { return ''; }
+  }
+  function setCurrentUser(email) {
+    try { localStorage.setItem(STORAGE_KEY, email); } catch (e) { /* ignore */ }
+  }
+  function clearCurrentUser() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+  }
+
+  // Resolve once at page load: server first, localStorage fallback.
+  async function resolveUserEmail() {
+    var server = '';
+    try { server = await runServer('whoAmI'); } catch (e) { server = ''; }
+    if (server) { setCurrentUser(server); return server; }
+    return getCurrentUser();
+  }
+
+  // ============================================================
+  // Navigation helpers
+  // ============================================================
+  // Apps Script HTML lives in a googleusercontent.com iframe; the deployed
+  // /exec URL is on script.google.com. We can't read window.top.location
+  // (cross-origin); instead we use SCRIPT_URL injected by the server.
+  //
+  // For plain anchors the <base href="<scriptUrl>" target="_top"> in
+  // shared/head.html does the heavy lifting — <a href="?page=foo"> resolves
+  // against the base and navigates the top window. navigateTo() is for
+  // programmatic redirects after save/delete.
+  function navigateTo(page, params) {
+    var qs = 'page=' + encodeURIComponent(page);
+    if (params) {
+      for (var k in params) {
+        if (Object.prototype.hasOwnProperty.call(params, k)) {
+          qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+        }
+      }
+    }
+    (window.top || window).location.href = SCRIPT_URL + '?' + qs;
+  }
+
+  function getQueryParam(name) {
+    // QUERY_PARAMS is server-injected from doGet(e).parameter, which
+    // already reflects the parent /exec query string.
+    return QUERY_PARAMS[name] || '';
+  }
+
+  // ============================================================
+  // Money / date helpers (client-side, display only)
+  // ============================================================
+  function fmtMoney(value) {
+    if (value === null || value === undefined || isNaN(value)) return '—';
+    return Number(value).toFixed(2);
+  }
+  function todayIso() {
+    var d = new Date();
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+
+  // ============================================================
+  // Item-row helpers (used by ItemsTable shared component)
+  // ============================================================
+  function newItemRow(overrides) {
+    var base = {
+      product_id: null,
+      product_name: '',
+      category: '',
+      qty: 1,
+      unit_price_orig: 0,
+      consumed_by: 'shared',
+      note: '',
+      wasted_qty: 0,
+    };
+    if (overrides) {
+      for (var k in overrides) {
+        if (Object.prototype.hasOwnProperty.call(overrides, k)) base[k] = overrides[k];
+      }
+    }
+    return base;
+  }
+
+  function rowTotal(it) {
+    var qty = Number(it.qty) || 0;
+    var price = Number(it.unit_price_orig) || 0;
+    return qty * price;
+  }
+
+  function totalOrig(items) {
+    return (items || []).reduce(function(sum, it) { return sum + rowTotal(it); }, 0);
+  }
+
+  function categoryBreakdown(items) {
+    var map = {};
+    (items || []).forEach(function(it) {
+      var key = it.category || '(без категорії)';
+      map[key] = (map[key] || 0) + rowTotal(it);
+    });
+    return Object.keys(map)
+      .map(function(k) { return { category: k, total: map[k] }; })
+      .sort(function(a, b) { return b.total - a.total; });
+  }
+</script>
