@@ -62,27 +62,31 @@
 
 **Сценарій:** Anthropic випустив model 5.0 і ти хочеш спробувати її замість Gemini для парсингу чеків.
 
+Reference implementation: [src/Gemini.js](../src/Gemini.js) (Gemini 3 Flash через `responseJsonSchema`).
+
 1. **Реалізуй провайдер у заглушці.** Файл `src/Anthropic.js` уже існує як заглушка з ідентичною сигнатурою:
    ```javascript
    /**
-    * @param {Uint8Array} imageBytes
-    * @param {ParseContext} ctx
-    * @returns {Promise<ParsedReceipt>}
+    * @param {number[] | string} imageBytes - bytes from Blob.getBytes() or pre-encoded base64
+    * @param {{categories: string[], products: Product[]}} ctx
+    * @returns {ParsedReceipt}
     */
-   function parseReceipt(imageBytes, ctx) {
+   parseReceipt(imageBytes, ctx) {
      // Замінити Error('Not implemented') на реальний виклик Anthropic API
    }
    ```
-   Реалізуй виклик `https://api.anthropic.com/v1/messages` через `UrlFetchApp`. Дотримуйся повернення `ParsedReceipt` точно як його повертає `Gemini.js` — це контракт з `AiClient`.
-2. **API key.** У Apps Script editor → Project Settings → Script Properties → додай `ANTHROPIC_API_KEY`.
-3. **Переключи провайдера.** У `src/Config.js` зміни:
+   Реалізуй виклик `https://api.anthropic.com/v1/messages` через `UrlFetchApp.fetch`. Серверна сторона **синхронна** (UrlFetchApp блокує) — повертай `ParsedReceipt` напряму, не Promise. Перед `return` обов'язково виклич `Domain.validateParsedReceipt(parsed)` — як це робить `Gemini.parseReceipt`.
+2. **Будуй промпт і schema через ті самі ctx-параметри.** Дивись `Gemini._buildPrompt(ctx)` і `Gemini._buildSchema(ctx)` — приклади pure helpers, які тестуються окремо.
+3. **API key.** У Apps Script editor → Project Settings → Script Properties → додай `ANTHROPIC_API_KEY`. У `Config.js` додай геттер за аналогією з `GEMINI_API_KEY`.
+4. **Переключи провайдера.** У `src/Config.js` зміни:
    ```javascript
    AI_PROVIDER: 'anthropic'  // було 'gemini'
    ```
-4. **Push:** `npx clasp push`.
-5. **Тест:** Відкрий photo.html → завантаж тестовий чек → переконайся, що `ParsedReceipt` повертається у тому ж форматі і UI рендерить його коректно.
+5. **Тести.** Скопіюй `tests/gemini.test.js` як `tests/anthropic.test.js`, адаптуй endpoint/response shape до Anthropic API.
+6. **Push:** `npm run push`.
+7. **Тест у Apps Script:** запусти `smokeGeminiParse` (можна перейменувати, але не обов'язково — він викликає `AiClient.parseReceipt`, не Gemini напряму).
 
-**Не треба:** чіпати UI, Storage, Domain, Web. Тільки провайдерський файл і Config.
+**Не треба:** чіпати UI, Storage, Domain (окрім додавання нового геттера в Config), Web. Тільки провайдерський файл, Config-getter і опційно тести.
 
 ---
 

@@ -22,8 +22,8 @@
 |---|---|---|---|
 | [0001](0001-google-sheets-as-storage.md) | Google Sheets як основне сховище | accepted | Storage |
 | [0002](0002-apps-script-runtime-and-clasp.md) | Google Apps Script як runtime, clasp + Git як toolchain | accepted | Runtime |
-| [0003](0003-gemini-with-provider-abstraction.md) | Gemini 2.5 Flash для парсингу чеків + тонка AiClient-абстракція | accepted | AI |
-| [0004](0004-multi-currency-eur-base.md) | Multi-currency з EUR як базою; зберігаємо оригінал + EUR + курс | accepted | Schema |
+| [0003](0003-gemini-with-provider-abstraction.md) | Gemini Flash для парсингу чеків + тонка AiClient-абстракція | accepted (revised) | AI |
+| [0004](0004-multi-currency-eur-base.md) | Multi-currency з EUR як базою; зберігаємо оригінал + EUR + курс | accepted (revised) | Schema |
 | [0005](0005-alpine-for-ui-no-build.md) | Alpine.js для реактивності UI; без build-pipeline | accepted | UI |
 | [0006](0006-separate-pages-per-mode.md) | Окремі HTML-сторінки на кожен режим (photo / manual / edit) | accepted | UI |
 | [0007](0007-products-as-optional-dimension.md) | Products як необов'язковий покажчик; селективний каталог | accepted | Schema |

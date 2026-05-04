@@ -19,6 +19,14 @@ global.Utilities = {
     if (fmt === 'yyyy-MM-dd') return iso.slice(0, 10);
     return iso.replace(/\.\d{3}Z$/, '+00:00');
   },
+  /**
+   * base64-encode raw bytes. Apps Script accepts Uint8Array or number[]; in
+   * Node we accept either and route through Buffer.
+   */
+  base64Encode(bytes) {
+    if (typeof bytes === 'string') return Buffer.from(bytes).toString('base64');
+    return Buffer.from(bytes).toString('base64');
+  },
 };
 
 global.Config = {

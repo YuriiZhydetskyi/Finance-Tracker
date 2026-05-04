@@ -12,6 +12,7 @@
  *   4. smokeFxLive          — fetches a live UAH rate from NBU
  *   5. smokeReceiptRoundtrip — INSERT a fake receipt + items, fetch, delete
  *   6. smokeLockService     — confirms LockService is available on this account
+ *   7. smokeGeminiParse     — parses a sample receipt via Gemini (requires JPG in Drive folder)
  */
 
 /* exported Smoke */
@@ -143,6 +144,37 @@ const Smoke = {
       Logger.log('Failed to acquire lock within 2s.');
     }
   },
+
+  smokeGeminiParse() {
+    // Reads the first JPG from Config.DRIVE_FOLDER_ID. Upload a sample receipt
+    // photo into FinanceTracker/Receipts/ in Drive before running.
+    const folder = DriveApp.getFolderById(Config.DRIVE_FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.JPEG);
+    if (!files.hasNext()) {
+      Logger.log(`No JPGs found in Drive folder ${Config.DRIVE_FOLDER_ID}. Upload a sample receipt and retry.`);
+      return null;
+    }
+    const file = files.next();
+    Logger.log(`Parsing ${file.getName()} (${file.getSize()} bytes) via ${Config.GEMINI_MODEL} ...`);
+
+    const bytes = file.getBlob().getBytes();
+    const ctx = {
+      categories: Storage.getCategories().map(c => c.name),
+      products:   Storage.listProducts(),
+    };
+
+    const t0 = Date.now();
+    const parsed = AiClient.parseReceipt(bytes, ctx);
+    const elapsed = Date.now() - t0;
+
+    Logger.log(`Gemini returned in ${elapsed}ms.`);
+    Logger.log(`Store: ${parsed.store}; date: ${parsed.date}; currency: ${parsed.currency}; total: ${parsed.total_orig}`);
+    Logger.log(`Items (${parsed.items.length}):`);
+    parsed.items.forEach(it => {
+      Logger.log(`  ${it.product_name} — ${it.qty} × ${it.unit_price_orig} ${parsed.currency} (${it.category_suggestion || '?'})`);
+    });
+    return parsed;
+  },
 };
 
 // ============================================================
@@ -150,13 +182,14 @@ const Smoke = {
 // ============================================================
 
 /* exported smokeIdentity, smokeUlid, smokeCategoriesRead, smokeFxLive,
-            smokeReceiptRoundtrip, smokeLockService */
+            smokeReceiptRoundtrip, smokeLockService, smokeGeminiParse */
 function smokeIdentity()           { return Smoke.smokeIdentity(); }
 function smokeUlid()               { return Smoke.smokeUlid(); }
 function smokeCategoriesRead()     { return Smoke.smokeCategoriesRead(); }
 function smokeFxLive()             { return Smoke.smokeFxLive(); }
 function smokeReceiptRoundtrip()   { return Smoke.smokeReceiptRoundtrip(); }
 function smokeLockService()        { return Smoke.smokeLockService(); }
+function smokeGeminiParse()        { return Smoke.smokeGeminiParse(); }
 
 // CommonJS export for local Node test runner. Apps Script: no-op.
 // eslint-disable-next-line no-undef

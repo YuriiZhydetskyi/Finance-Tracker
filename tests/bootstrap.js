@@ -44,4 +44,16 @@ global.Storage = Storage;
 const { Fx } = require('../src/Fx');
 global.Fx = Fx;
 
-module.exports = { fakes, resetAllFakes, Config, Domain, Storage, Fx };
+const { Gemini } = require('../src/Gemini');
+global.Gemini = Gemini;
+
+const { OpenAi } = require('../src/OpenAi');
+global.OpenAi = OpenAi;
+
+const { Anthropic } = require('../src/Anthropic');
+global.Anthropic = Anthropic;
+
+const { AiClient } = require('../src/AiClient');
+global.AiClient = AiClient;
+
+module.exports = { fakes, resetAllFakes, Config, Domain, Storage, Fx, Gemini, OpenAi, Anthropic, AiClient };

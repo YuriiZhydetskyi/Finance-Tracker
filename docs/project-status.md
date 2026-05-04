@@ -13,7 +13,7 @@
 **Ключові вимоги:**
 - Обоє користуються з телефона і ноутбука без власних додатків.
 - Sheet — single source of truth, доступний обом.
-- AI-розпізнавання чеків (Gemini 2.5 Flash) із розбиттям на line items.
+- AI-розпізнавання чеків (Gemini Flash, `gemini-3-flash-preview`) із розбиттям на line items.
 - Підтримка EUR (база) і UAH (рідко, онлайн).
 - Категоризація + опційний каталог продуктів для регулярних покупок.
 - Аналіз: хто скільки витратив, на які категорії, скільки зекономили на знижках, скільки втратили на зіпсованому.
@@ -21,7 +21,7 @@
 **Жорстко фіксований стек:**
 - **Storage:** Google Sheets (4 листи: Receipts, Items, Products, Categories). Курси валют не зберігаються в окремому листі — конвертація live з NBU при збереженні UAH-чеку.
 - **Runtime:** Google Apps Script web app (`clasp` + Git).
-- **AI/OCR:** Gemini 2.5 Flash через AI Studio API (з тонкою AiClient-абстракцією для майбутньої заміни на OpenAI/Anthropic).
+- **AI/OCR:** Gemini Flash (`gemini-3-flash-preview`) через AI Studio API (з тонкою AiClient-абстракцією для майбутньої заміни на OpenAI/Anthropic).
 - **UI** (Phase 3): Alpine.js + Chart.js, без build-pipeline.
 - **Мова:** документація українською; код / коментарі / JSDoc — англійською.
 
@@ -183,49 +183,34 @@ npm run push     # lint + typecheck + test + clasp push
 
 ### 5.4. Phase 1 acceptance criteria
 
-Phase 1 вважається завершеною коли:
-- [x] `smokeIdentity` дав визначений результат.
-- [ ] Після поточного push — усі 6 smoke-тестів зелені.
-- [ ] `smokeFxLive` повертає реалістичні курси (EUR=1, UAH≈0.022).
-- [ ] `smokeReceiptRoundtrip` створює і прибирає тестовий receipt без сирітних рядків у `Receipts`/`Items`.
+Phase 1 — ✅ завершена. Усі 6 smoke-тестів зелені; UAH через NBU live працює; Receipts/Items round-trip працює; lock працює.
 
 ---
 
-## 6. Що далі — Phase 2: Gemini integration
+## 6. Phase 2: Gemini integration — ✅ implemented (потребує real-API verification)
 
-Деталізований план готується в окремій plan-сесії перед стартом. Скоуп:
+### 6.1. Реалізовано
 
-### 6.1. AiClient + provider stubs
+- [src/AiClient.js](../src/AiClient.js) — switch на 3 рядки за `Config.AI_PROVIDER`.
+- [src/Gemini.js](../src/Gemini.js) — `parseReceipt(imageBytes, ctx)` (синхронний return). Дзвонить `gemini-3-flash-preview:generateContent` з inline-base64 image і `responseJsonSchema`. Pure helpers `_buildPrompt`, `_buildSchema`.
+- [src/OpenAi.js](../src/OpenAi.js), [src/Anthropic.js](../src/Anthropic.js) — заглушки з ідентичною сигнатурою.
+- [src/Domain.js](../src/Domain.js) — `ParsedReceipt`/`ParsedItem` typedefs + `validateParsedReceipt` (soft validator).
+- [src/Smoke.js](../src/Smoke.js) — `smokeGeminiParse`: читає першу JPG з Drive folder, викликає Gemini, логує items.
+- [tests/aiclient.test.js](../tests/aiclient.test.js), [tests/gemini.test.js](../tests/gemini.test.js) — 16 нових тестів (switch + prompt/schema/parseReceipt).
 
-- `src/AiClient.js` — switch на 3 рядки за `Config.AI_PROVIDER`.
-- `src/Gemini.js` — реалізація:
-  - `parseReceipt(imageBytes, ctx) → ParsedReceipt`.
-  - Виклик `generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent` через `UrlFetchApp.fetch`.
-  - API key з `Config.GEMINI_API_KEY` (Script Property).
-  - Promp із JSON schema, structured output.
-  - Контекст промпту: список категорій + список ~100 існуючих Products + обидва imena (his/hers) + store-aliases.
-  - Temperature: 0.1 (детермінізм).
-- `src/OpenAi.js`, `src/Anthropic.js` — заглушки з тією самою сигнатурою (`Error('Not implemented')`).
+### 6.2. AI matching — НЕ в цій фазі
 
-### 6.2. AI matching: 3 outcomes per item
+Gemini у Phase 2 повертає тільки `category_suggestion` (одна з категорій або null). Match до існуючих Products → UI-side у Phase 3. Простіше і дешевше per-request.
 
-Для кожного item у відповіді AI повертає:
-- `existing_product_id` (якщо confidence ≥ 0.8) — лінк до існуючого Product.
-- `proposed_canonical_name` — створити новий Product (товар явно канонічний).
-- `null` — не каталогувати (commodity, one-off, ambiguous).
+### 6.3. Acceptance Phase 2
 
-Евристика для null задокументована в ADR-0007.
+- [x] `npm run lint`, `npm run typecheck`, `npm run test` — все зелене (74+ tests).
+- [ ] `npm run push` → F5 в editor → запустити `smokeGeminiParse` з реальною JPG в Drive folder. Очікую: structured items з category_suggestion.
+- [ ] (опційно) Перевірити, що неправильний API key дає чіткий error message з кодом і початком тіла відповіді.
 
-### 6.3. Тести Phase 2
+### 6.4. Risk: Gemini cost / rate limits
 
-- `tests/gemini.test.js` — з мокованим UrlFetchApp і JSON-schema-сумісним response. Перевіряє shape ParsedReceipt.
-- `tests/aiclient.test.js` — switch правильно делегує.
-- Fixture: `tests/fixtures/gemini-receipt-response.json`.
-
-### 6.4. Acceptance Phase 2
-
-- Запустити `Gemini.parseReceipt` з тестовим фото в Apps Script editor.
-- Bachelor: бачимо JSON із item-ами + match suggestions.
+Phase 5 polish — додати `daily_gemini_calls` counter через `PropertiesService` з cap (наприклад 100/день) для захисту від випадкового drain бюджету.
 
 ---
 

@@ -52,7 +52,7 @@
 | `src/Fx.js` | `getRateLive(currency, date)` — live запит до NBU при збереженні UAH-чеку; для EUR одразу повертає 1.0. Нічого не персистить. |
 | `src/Config.js` | Константи: SHEET_ID, AI_PROVIDER, EMAIL_ALIASES, DRIVE_FOLDER_ID, категорії-список (seed). |
 | `src/AiClient.js` | Switch між провайдерами на основі `Config.AI_PROVIDER`. |
-| `src/Gemini.js` | Виклик Gemini 2.5 Flash; промпт-будівник; парс структурованого JSON-output. |
+| `src/Gemini.js` | Виклик Gemini 3 Flash (`gemini-3-flash-preview`); промпт-будівник; парс структурованого JSON-output через `responseJsonSchema`. |
 | `src/OpenAi.js` | Заглушка з ідентичною сигнатурою (`Error('Not implemented')`). |
 | `src/Anthropic.js` | Те саме. |
 | `src/ui/index.html` | Landing з 3 кнопками: Photo / Manual / Recent. |

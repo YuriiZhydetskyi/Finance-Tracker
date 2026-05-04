@@ -60,6 +60,23 @@
  * @property {string}  updated_at
  */
 
+/**
+ * @typedef {Object} ParsedItem
+ * @property {string} product_name           - raw text as on the receipt
+ * @property {number} qty
+ * @property {number} unit_price_orig
+ * @property {?string} category_suggestion   - one of Categories.name; null if uncertain
+ */
+
+/**
+ * @typedef {Object} ParsedReceipt
+ * @property {?string} store          - best-effort store name; null if illegible
+ * @property {?string} date           - 'YYYY-MM-DD'; null if illegible
+ * @property {string}  currency       - ISO 4217; default 'EUR'
+ * @property {?number} total_orig     - sanity-check total; nullable
+ * @property {ParsedItem[]} items
+ */
+
 // ============================================================
 // Domain module
 // ============================================================
@@ -206,6 +223,41 @@ const Domain = {
       errs.push(`unit must be one of pcs/g/kg/ml/l, got "${p.unit}"`);
     }
     if (errs.length) throw new Error(`Invalid Product: ${errs.join('; ')}`);
+  },
+
+  /**
+   * Soft validator for AI output. Allows nullable store/date/total since AI
+   * may legitimately fail to read those off a noisy receipt — UI lets the
+   * user fill them in. Hard requirements: ISO-4217 currency, items array,
+   * each item has product_name + numeric qty/unit_price_orig.
+   * @param {ParsedReceipt} parsed
+   */
+  validateParsedReceipt(parsed) {
+    const errs = [];
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Invalid ParsedReceipt: expected object');
+    }
+    if (!/^[A-Z]{3}$/.test(parsed.currency)) {
+      errs.push(`currency must be ISO 4217, got "${parsed.currency}"`);
+    }
+    if (parsed.date !== null && parsed.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(parsed.date)) {
+      errs.push(`date must be YYYY-MM-DD or null, got "${parsed.date}"`);
+    }
+    if (parsed.total_orig !== null && parsed.total_orig !== undefined
+        && (typeof parsed.total_orig !== 'number' || isNaN(parsed.total_orig))) {
+      errs.push('total_orig must be number or null');
+    }
+    if (!Array.isArray(parsed.items)) {
+      errs.push('items must be array');
+    } else {
+      parsed.items.forEach((it, i) => {
+        if (!it || typeof it !== 'object') { errs.push(`items[${i}] not object`); return; }
+        if (!it.product_name || typeof it.product_name !== 'string') errs.push(`items[${i}].product_name required string`);
+        if (typeof it.qty !== 'number' || isNaN(it.qty) || it.qty <= 0) errs.push(`items[${i}].qty must be positive number`);
+        if (typeof it.unit_price_orig !== 'number' || isNaN(it.unit_price_orig)) errs.push(`items[${i}].unit_price_orig must be number`);
+      });
+    }
+    if (errs.length) throw new Error(`Invalid ParsedReceipt: ${errs.join('; ')}`);
   },
 
   // ---------- Factories ----------

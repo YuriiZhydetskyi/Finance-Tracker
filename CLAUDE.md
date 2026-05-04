@@ -29,11 +29,11 @@ node --test --test-name-pattern='ulid'    # run tests matching a pattern
 
 After `npm run push`: **F5 the Apps Script editor tab** — it does not auto-refresh after clasp push.
 
-Smoke tests live in `src/Smoke.js` and run only inside Apps Script (real LockService, real Sheet). Pick `smokeIdentity`, `smokeUlid`, `smokeFxLive`, `smokeReceiptRoundtrip`, `smokeLockService`, `smokeCategoriesRead` from the function picker.
+Smoke tests live in `src/Smoke.js` and run only inside Apps Script (real LockService, real Sheet). Pick `smokeIdentity`, `smokeUlid`, `smokeFxLive`, `smokeReceiptRoundtrip`, `smokeLockService`, `smokeCategoriesRead`, `smokeGeminiParse` from the function picker.
 
 ## Architecture in one paragraph
 
-Standalone Google Apps Script web app, deployed via `clasp` from `./src`. Four sheets in one Google Sheet (Receipts / Items / Products / Categories) are the storage. Apps Script V8 executes all `src/*.js` files in **one shared global scope** — each module is `const Module = {...}` and is referenced as a global from every other file. `Web.js` (Phase 3+) routes UI sub-pages and exposes JSON endpoints; `Storage.js` is the only Sheet-touching layer; `AiClient.js` switches between provider files (`Gemini.js`, stubs for OpenAI/Anthropic); `Domain.js` owns types, ULID generation, money rounding, validators, and factories; `Fx.js` provides `getRateLive(currency, date)` — live NBU lookup for UAH (only non-base currency supported); rates are stored on the receipt itself, no separate FxRates table. `Config.js` reads secrets and resource IDs from Apps Script Properties at runtime; nothing sensitive lives in code.
+Standalone Google Apps Script web app, deployed via `clasp` from `./src`. Four sheets in one Google Sheet (Receipts / Items / Products / Categories) are the storage. Apps Script V8 executes all `src/*.js` files in **one shared global scope** — each module is `const Module = {...}` and is referenced as a global from every other file. `Web.js` (Phase 3+) routes UI sub-pages and exposes JSON endpoints; `Storage.js` is the only Sheet-touching layer; `AiClient.js` switches between provider files — `Gemini.js` ✅ implements `gemini-3-flash-preview` via `responseJsonSchema`, OpenAi/Anthropic are stubs with the same signature. `Domain.js` owns types, ULID generation, money rounding, validators, factories, and `ParsedReceipt`/`ParsedItem` (in-memory transit shape between AI and UI). `Fx.js` provides `getRateLive(currency, date)` — live NBU lookup for UAH (only non-base currency supported); rates are stored on the receipt itself, no separate FxRates table. `Config.js` reads secrets and resource IDs from Apps Script Properties at runtime; nothing sensitive lives in code.
 
 ## Cross-file globals — non-obvious
 

@@ -176,6 +176,35 @@ Storage-код спирається на імена колонок, не на п
 
 ---
 
+## In-memory типи (НЕ зберігаються в Sheet)
+
+### `ParsedReceipt` / `ParsedItem`
+
+Це **transit shape** між AI-парсером і UI — повертається з `AiClient.parseReceipt(imageBytes, ctx)`. Жодне з цих полів не зберігається в Sheet напряму; UI відображає, користувач редагує, потім будуються справжні `Receipt`/`Item` через `Domain.makeReceipt` / `Domain.makeItem`.
+
+**`ParsedReceipt`:**
+| Поле | Тип | Nullable | Примітка |
+|---|---|---|---|
+| `store` | string | так | best-effort merchant name |
+| `date` | string `YYYY-MM-DD` | так | `null` якщо AI не зчитав |
+| `currency` | string ISO 4217 | ні | default `'EUR'` |
+| `total_orig` | number | так | sanity check проти sum(items) |
+| `items` | `ParsedItem[]` | ні | може бути `[]` |
+
+**`ParsedItem`:**
+| Поле | Тип | Nullable | Примітка |
+|---|---|---|---|
+| `product_name` | string | ні | verbatim з чека (мова як у чеку) |
+| `qty` | number | ні | > 0 |
+| `unit_price_orig` | number | ні | у валюті чеку |
+| `category_suggestion` | string | так | one of `Categories.name` або `null` |
+
+Валідація: `Domain.validateParsedReceipt` — soft validator (дозволяє null store/date/total). Гарантує тільки ISO-4217 currency і числові обов'язкові поля для items.
+
+Product matching до існуючих `Products.id` — **не** робить AI; це UI-side логіка у Phase 3.
+
+---
+
 ## Зведена діаграма зв'язків
 
 ```

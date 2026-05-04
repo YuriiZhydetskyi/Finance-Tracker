@@ -26,6 +26,11 @@ const Config = {
   /** @type {'gemini' | 'openai' | 'anthropic'} */
   AI_PROVIDER: 'gemini',
 
+  /** Gemini parameters. Per ADR-0003. */
+  GEMINI_MODEL: 'gemini-3-flash-preview',
+  GEMINI_API_URL_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
+  AI_TEMPERATURE: 0.1,
+
   TIMEZONE: 'Europe/Berlin',
   BASE_CURRENCY: 'EUR',
 
