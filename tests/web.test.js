@@ -315,6 +315,33 @@ test('Web.saveReceipt: items=[] is allowed (header-only Receipt)', () => {
   assert.strictEqual(result.items_count, 0);
 });
 
+test('Web.saveReceipt: stores negative-price items (Pfand refund / cancellation)', () => {
+  setupSheet();
+  // Mirrors the EDEKA-receipt regression: a positive product line plus a
+  // matching negative-price line (cancellation), plus a Pfand deposit refund.
+  const items = [
+    basicItem({ product_name: 'Mayb.Rose AF 0,75l', unit_price_orig: 2.99 }),
+    basicItem({ product_name: 'Mayb.Rose AF 0,75l', unit_price_orig: -2.99 }),
+    basicItem({ product_name: 'Leergut Einw.allg.', unit_price_orig: -8.25 }),
+  ];
+  const input = basicReceiptInput({ total_orig: 2.99 + (-2.99) + (-8.25) });
+  const result = Web.saveReceipt(input, items);
+  assert.strictEqual(result.items_count, 3);
+
+  const got = Web.getReceipt(result.receipt_id);
+  // The receipt's stored total_orig was rounded by Domain.makeReceipt — verify
+  // it's the arithmetic the user would expect.
+  assert.strictEqual(got.receipt.total_orig, -8.25);
+  assert.strictEqual(got.receipt.total_eur, -8.25);
+  // Per-item negatives propagated to total_orig / total_eur.
+  const cancellation = got.items.find(it => it.product_name === 'Mayb.Rose AF 0,75l' && it.unit_price_orig < 0);
+  assert.ok(cancellation, 'cancellation item missing');
+  assert.strictEqual(cancellation.total_orig, -2.99);
+  assert.strictEqual(cancellation.total_eur, -2.99);
+  const refund = got.items.find(it => it.product_name === 'Leergut Einw.allg.');
+  assert.strictEqual(refund.total_orig, -8.25);
+});
+
 // ============================================================
 // updateReceipt
 // ============================================================

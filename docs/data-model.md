@@ -106,9 +106,9 @@ Storage-код спирається на імена колонок, не на п
 | 4 | `product_name` | string | snapshot назви на момент покупки | ні | `Pesto Barilla Genovese 190g` |
 | 5 | `category` | string | FK → `Categories.name` | ні | `Бакалія` |
 | 6 | `qty` | number | float, 3dp, кількість одиниць | ні | `2.000` (2 шт.) / `0.350` (350 г) |
-| 7 | `unit_price_orig` | number | float, 2dp, у валюті чеку | ні | `3.49` |
-| 8 | `total_orig` | number | `round(qty * unit_price_orig, 2)` у валюті чеку | ні | `6.98` |
-| 9 | `total_eur` | number | `round(total_orig * receipt.fx_rate_eur, 2)` | ні | `6.98` |
+| 7 | `unit_price_orig` | number | float, 2dp, у валюті чеку. **Може бути від'ємним** (знижка, Pfand-refund, скасування) | ні | `3.49` / `-2.99` |
+| 8 | `total_orig` | number | `round(qty * unit_price_orig, 2)` у валюті чеку. Знак успадковується від `unit_price_orig` | ні | `6.98` / `-2.99` |
+| 9 | `total_eur` | number | `round(total_orig * receipt.fx_rate_eur, 2)` | ні | `6.98` / `-2.99` |
 | 10 | `consumed_by` | enum | `his` \| `hers` \| `shared` \| `custom:HIS%/HERS%` | ні | `shared` / `custom:30/70` |
 | 11 | `note` | string | вільна нотатка | так | `Купили на знижці -50%` |
 | 12 | `wasted_qty` | number | float, 3dp; default `0`; ≤ `qty`; одиниці зіпсувалось | ні | `0.000` |
@@ -118,6 +118,7 @@ Storage-код спирається на імена колонок, не на п
 **Правила:**
 - `total_orig = round(qty * unit_price_orig, 2)` — інваріант, перевіряється у `Domain.js`.
 - `total_eur` денормалізовано (зберігається копія) — для аналітики без джойнів. Див. [ADR-0008](decisions/0008-prices-computed-from-items.md).
+- **Negative line items.** `unit_price_orig` (і відповідно `total_orig` / `total_eur`) може бути від'ємним. Три типові причини на німецьких чеках: касир пробив товар двічі і відмінив (cancellation pair), знижка / акція / markdown через термін придатності (Rabatt), повернення тари (Leergut/Pfand refund). `qty` лишається додатнім (≥ 1) — змінюється тільки знак ціни. Receipt's `total_orig` = сума всіх item totals: позитивні і негативні нетятся природно. Gemini промпт ([src/Gemini.js](../src/Gemini.js)) інструктує модель видавати такі рядки окремими items, а не зливати з positive-counterpart-ом.
 - `consumed_by`:
   - `his` / `hers` — повністю одного.
   - `shared` — 50/50.

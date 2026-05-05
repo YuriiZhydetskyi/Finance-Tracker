@@ -271,6 +271,20 @@ test('makeItem: rejects wasted_qty > qty at construction', () => {
   }), /wasted_qty/);
 });
 
+test('makeItem: accepts negative unit_price_orig (discount, Pfand refund, cancellation)', () => {
+  // Negative-price line items are valid by design. qty stays positive;
+  // only the price flips sign. total_orig and total_eur propagate the sign.
+  const it = Domain.makeItem({
+    receipt_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
+    product_name: 'Leergut Einw.allg.', category: 'Pfand',
+    qty: 1, unit_price_orig: -8.25,
+    fx_rate_eur: 1.0, consumed_by: 'shared',
+  });
+  assert.strictEqual(it.unit_price_orig, -8.25);
+  assert.strictEqual(it.total_orig, -8.25);
+  assert.strictEqual(it.total_eur, -8.25);
+});
+
 // ============================================================
 // applyReceiptPatch
 // ============================================================

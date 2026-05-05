@@ -55,6 +55,21 @@ test('Gemini._buildPrompt: omits product hints section when none provided', () =
   assert.ok(!prompt.includes('Known product names'), 'no hints line if products empty');
 });
 
+test('Gemini._buildPrompt: instructs model on negative line items (cancellation, discount, Pfand)', () => {
+  const prompt = Gemini._buildPrompt({ categories: ['Pfand', 'Молочка'], products: [] });
+  assert.match(prompt, /NEGATIVE LINE ITEMS/i, 'prompt missing negative-items section');
+  assert.match(prompt, /Cancellation/i);
+  assert.match(prompt, /Discount|Rabatt/i);
+  assert.match(prompt, /Pfand/);
+  assert.match(prompt, /Leergut/);
+  assert.match(prompt, /qty stays POSITIVE/i);
+  // Make sure the old skip-rule is gone — it's the source of the regression.
+  assert.ok(
+    !/skip it/i.test(prompt) || !/list only purchasable/i.test(prompt),
+    'prompt still tells the model to skip discount/fee rows'
+  );
+});
+
 // ============================================================
 // _buildSchema (pure)
 // ============================================================
@@ -151,4 +166,35 @@ test('Gemini.parseReceipt: rejects responses that fail validateParsedReceipt', (
     () => Gemini.parseReceipt('x', { categories: [], products: [] }),
     /Invalid ParsedReceipt/,
   );
+});
+
+test('Gemini.parseReceipt: accepts negative unit_price_orig (Pfand refund, discount, cancellation)', () => {
+  resetAllFakes();
+  // Mirror the EDEKA receipt patterns: cancellation pair, Pfand charge,
+  // Leergut refunds. Validator must NOT reject negative prices.
+  const sample = {
+    store: 'EDEKA',
+    date: '2026-05-02',
+    currency: 'EUR',
+    total_orig: 33.44,
+    items: [
+      { product_name: 'Mayb.Rose AF 0,75l', qty: 1, unit_price_orig: 2.99, category_suggestion: null },
+      { product_name: 'Mayb.Rose AF 0,75l', qty: 1, unit_price_orig: 2.99, category_suggestion: null },
+      { product_name: 'Mayb.Rose AF 0,75l', qty: 1, unit_price_orig: -2.99, category_suggestion: null }, // cancellation
+      { product_name: 'Pfand', qty: 1, unit_price_orig: 0.25, category_suggestion: 'Pfand' },
+      { product_name: 'Leergut Entl.allg.', qty: 1, unit_price_orig: -1.19, category_suggestion: 'Pfand' },
+      { product_name: 'Leergut Einw.allg.', qty: 1, unit_price_orig: -8.25, category_suggestion: 'Pfand' },
+    ],
+  };
+  fakes.UrlFetchApp._setStub(ENDPOINT, geminiResponse(sample));
+
+  const result = Gemini.parseReceipt('x', { categories: ['Pfand'], products: [] });
+  assert.strictEqual(result.items.length, 6);
+  // Cancellation row.
+  assert.strictEqual(result.items[2].unit_price_orig, -2.99);
+  // Leergut refunds.
+  assert.strictEqual(result.items[4].unit_price_orig, -1.19);
+  assert.strictEqual(result.items[5].unit_price_orig, -8.25);
+  // qty must stay positive on every row, even the negative-price ones.
+  assert.ok(result.items.every(it => it.qty > 0), 'qty went non-positive');
 });
