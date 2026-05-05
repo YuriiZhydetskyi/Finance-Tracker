@@ -1,17 +1,42 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap">
 <style>
+  /* ============================================================
+     Design tokens — "Modern Ledger" palette
+     ------------------------------------------------------------
+     Warm cream paper, deep brown-ink text, evergreen accent.
+     Hairline borders carry the entire chrome — no shadows except
+     for the modal backdrop. Mono numerals align via tabular-nums.
+     ============================================================ */
   :root {
-    --bg: #fafafa;
-    --surface: #ffffff;
-    --border: #d8dce0;
-    --text: #1a1a1a;
-    --muted: #6c7480;
-    --accent: #2d6cdf;
-    --accent-text: #ffffff;
-    --danger: #c0392b;
-    --success: #1f8b4c;
-    --warn-bg: #fff5d6;
-    --warn-text: #8a5a00;
-    --radius: 8px;
+    --bg:           #f6f1e7;
+    --surface:      #ffffff;
+    --surface-alt:  #fbf7ee;
+    --border:       #e7dfd0;
+    --border-strong:#cfc6b3;
+    --text:         #1c1a17;
+    --muted:        #6f675b;
+    --accent:       #1f4d3d;
+    --accent-soft:  #e7efe7;
+    --accent-text:  #ffffff;
+    --danger:       #a8341f;
+    --danger-soft:  #f7e3df;
+    --success:      #1f4d3d;
+    --warn-bg:      #fff5d6;
+    --warn-text:    #8a5a00;
+
+    --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --font-body:    "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --radius:       10px;
+    --radius-sm:    6px;
+
+    /* Breakpoints (referenced as comments — CSS custom props can't
+       be used inside @media queries):
+         --bp-tablet:  640px
+         --bp-narrow:  480px */
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -21,143 +46,695 @@
     padding: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-body);
     font-size: 16px;
-    line-height: 1.4;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
+  /* ============================================================
+     Typography
+     ============================================================ */
+  h1, h2, h3 {
+    margin: 0 0 12px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 34px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-top: 8px;
+    margin-bottom: 18px;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.2;
+    margin-top: 22px;
+  }
+  h3 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  p { margin: 0 0 10px; }
+  code, .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { text-decoration-thickness: 2px; }
+
+  /* ============================================================
+     Layout primitives
+     ============================================================ */
   main {
     max-width: 720px;
     margin: 0 auto;
     padding: 16px;
   }
-
-  h1, h2, h3 { margin: 0 0 12px; font-weight: 600; }
-  h1 { font-size: 20px; }
-  h2 { font-size: 17px; }
-  h3 { font-size: 15px; color: var(--muted); }
+  main.has-bottom-bar {
+    padding-bottom: 96px;
+  }
 
   .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
+    gap: 12px;
+    padding: 14px 16px;
+    min-height: 56px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 10;
   }
-
-  .topbar a { color: var(--text); text-decoration: none; font-weight: 600; }
-  .topbar .who { color: var(--muted); font-size: 14px; }
+  .topbar a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar a.brand {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+  .topbar a.brand .brand-mark { font-family: var(--font-body); font-size: 18px; }
+  .topbar .who {
+    color: var(--muted);
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60vw;
+  }
+  .topbar .who button { font-size: 12px; }
 
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 14px;
-    margin-bottom: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    animation: fadeUp 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   }
+  .card:nth-child(1) { animation-delay: 0ms; }
+  .card:nth-child(2) { animation-delay: 40ms; }
+  .card:nth-child(3) { animation-delay: 80ms; }
+  .card:nth-child(4) { animation-delay: 120ms; }
+  .card:nth-child(5) { animation-delay: 160ms; }
 
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
   .row > * { flex: 1; min-width: 0; }
 
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  /* ============================================================
+     Form controls
+     ============================================================ */
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 5px;
+  }
 
   input, select, textarea {
     width: 100%;
-    padding: 8px 10px;
+    padding: 11px 12px;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-sm);
     font: inherit;
     background: var(--surface);
     color: var(--text);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input[type="number"],
+  input[inputmode="decimal"] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  input:hover, select:hover, textarea:hover { border-color: var(--border-strong); }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
 
+  /* ============================================================
+     Buttons
+     ============================================================ */
   button {
-    padding: 10px 16px;
-    border: 0;
-    border-radius: var(--radius);
+    padding: 12px 18px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
     background: var(--accent);
     color: var(--accent-text);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
     min-height: 44px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
   }
-  button:disabled { opacity: 0.55; cursor: progress; }
-  button.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-  button.danger { background: var(--danger); }
+  button:hover { background: #18382c; border-color: #18382c; }
+  button:active { transform: translateY(1px); }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
-  .pill-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+  button.secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  button.secondary:hover { background: var(--surface-alt); border-color: var(--text); }
+
+  button.danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+  }
+  button.danger:hover { background: #8b2918; border-color: #8b2918; }
+
+  /* "+ Додати товар" type ghost link-button */
+  .add-link {
+    background: transparent;
+    color: var(--accent);
+    border: 1px dashed var(--border-strong);
+    padding: 10px 14px;
+    min-height: 44px;
+    font-weight: 600;
+    width: 100%;
+  }
+  .add-link:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  /* ============================================================
+     Pill buttons (index page)
+     ============================================================ */
+  .pill-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
   .pill-buttons a {
-    display: block;
-    padding: 22px 12px;
-    background: var(--accent);
-    color: var(--accent-text);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 22px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    text-align: center;
     text-decoration: none;
     font-size: 17px;
     font-weight: 600;
+    transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
+    animation: fadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   }
-  .pill-buttons a.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .pill-buttons a:nth-child(1) { animation-delay: 60ms; }
+  .pill-buttons a:nth-child(2) { animation-delay: 120ms; }
+  .pill-buttons a:nth-child(3) { animation-delay: 180ms; }
+  .pill-buttons a:hover {
+    border-color: var(--accent);
+    background: var(--surface-alt);
+    transform: translateY(-1px);
+  }
+  .pill-buttons a .pill-emoji {
+    font-size: 30px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .pill-buttons a .pill-label {
+    flex: 1;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+  .pill-buttons a.primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+  .pill-buttons a.primary:hover { background: #18382c; border-color: #18382c; }
 
-  .item-row {
+  /* ============================================================
+     Items table — always-card layout
+     Mobile: vertical stack with always-visible labels.
+     Desktop (≥640px): single horizontal row via grid-template-areas.
+     ============================================================ */
+  .items-table { display: flex; flex-direction: column; gap: 12px; }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    animation: fadeUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .item-card__main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .item-card__main .field {
+    min-width: 0;
+  }
+  .item-card__main .item-delete {
+    align-self: flex-end;
+  }
+
+  .item-card__extras {
     display: grid;
-    grid-template-columns: 2fr 1.4fr 0.8fr 0.9fr 36px;
-    gap: 6px;
-    align-items: end;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
   }
-  .item-row:last-child { border-bottom: 0; }
-  .item-extras { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding-top: 4px; }
-  .item-extras label { font-size: 11px; }
-  .icon-btn { width: 36px; height: 36px; padding: 0; background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .icon-btn:hover { color: var(--danger); border-color: var(--danger); }
 
-  .totals { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--border); }
-  .totals .big { font-size: 22px; font-weight: 700; }
+  .item-card__total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .item-card__total .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .item-card__total .amount { font-weight: 600; }
 
-  .breakdown { font-size: 14px; color: var(--muted); margin-top: 8px; }
-  .breakdown-row { display: flex; justify-content: space-between; }
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border-strong);
+    font-size: 22px;
+    line-height: 1;
+  }
+  .icon-btn:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: var(--danger-soft);
+  }
 
-  .receipt-list { list-style: none; padding: 0; margin: 0; }
-  .receipt-list li { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .receipt-list li:hover { background: var(--bg); }
-  .receipt-list li:last-child { border-bottom: 0; }
-  .receipt-list .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  /* ============================================================
+     Summary card (totals)
+     ============================================================ */
+  .totals {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .totals .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .totals .big {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+  }
+  .totals .big .amount {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    font-size: 26px;
+  }
+  .totals .big .currency {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--muted);
+    margin-left: 4px;
+  }
 
-  .err { background: #ffe1de; color: var(--danger); padding: 10px 12px; border-radius: var(--radius); margin: 10px 0; font-size: 14px; }
+  .breakdown {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 0;
+  }
+  .breakdown-row .amount {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
 
-  /* Negative-price line items (Pfand refunds, discounts, cancellations). */
-  .is-negative { color: var(--danger); font-weight: 600; }
-  .ok  { background: #e1f5ea; color: var(--success); padding: 10px 12px; border-radius: var(--radius); margin: 10px 0; font-size: 14px; }
-  .warn { background: var(--warn-bg); color: var(--warn-text); padding: 10px 12px; border-radius: var(--radius); margin: 10px 0; font-size: 14px; }
+  /* ============================================================
+     Receipt list
+     ============================================================ */
+  .receipt-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .receipt-list li {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+    animation: fadeUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .receipt-list li:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .receipt-list li:nth-child(1) { animation-delay: 0ms; }
+  .receipt-list li:nth-child(2) { animation-delay: 30ms; }
+  .receipt-list li:nth-child(3) { animation-delay: 60ms; }
+  .receipt-list li:nth-child(4) { animation-delay: 90ms; }
+  .receipt-list li:nth-child(5) { animation-delay: 120ms; }
+  .receipt-list .receipt-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .receipt-list .receipt-store {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .receipt-list .receipt-amount {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .receipt-list .receipt-amount .currency {
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+  .receipt-list .meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .receipt-list .meta em {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text);
+  }
 
+  .empty-card {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--muted);
+  }
+  .empty-card .empty-line {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  /* ============================================================
+     Photo page — file CTA + preview
+     ============================================================ */
+  .file-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 36px 20px;
+    background: var(--surface-alt);
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .file-cta:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .file-cta .file-cta__icon { font-size: 38px; line-height: 1; }
+  .file-cta .file-cta__text {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+  .file-cta .file-cta__hint { color: var(--muted); font-size: 13px; }
+  .file-cta input[type="file"] {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0);
+    white-space: nowrap; border: 0;
+  }
+
+  .photo-preview {
+    display: block;
+    max-width: 100%;
+    max-height: 50vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    margin: 0 auto;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ============================================================
+     Bottom action bar (sticky CTAs on form pages)
+     ============================================================ */
+  .bottom-bar {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    margin: 16px -16px 0;
+    z-index: 5;
+  }
+  .bottom-bar > button { flex: 1; }
+
+  /* ============================================================
+     Modal
+     ============================================================ */
   .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-    display: flex; align-items: center; justify-content: center; z-index: 100;
+    position: fixed;
+    inset: 0;
+    background: rgba(28, 26, 23, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+    animation: fadeIn 0.2s ease-out;
   }
   .modal {
-    background: var(--surface); padding: 20px; border-radius: var(--radius);
-    width: min(420px, 90vw); box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    background: var(--surface);
+    padding: 24px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    width: min(440px, 100%);
+    box-shadow: 0 24px 60px rgba(28, 26, 23, 0.25);
+    animation: fadeUp 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+  .modal h2 { margin-top: 0; }
 
-  .loader { display: flex; align-items: center; gap: 10px; padding: 12px; color: var(--muted); }
+  /* ============================================================
+     Status / state
+     ============================================================ */
+  .err {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid #e9bbb1;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  .ok {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid #c9d8cb;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  .warn {
+    background: var(--warn-bg);
+    color: var(--warn-text);
+    border: 1px solid #f0d98a;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  .is-negative { color: var(--danger); font-weight: 600; }
+
+  .loader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    color: var(--muted);
+    font-style: italic;
+    font-family: var(--font-display);
+    font-size: 18px;
+  }
   .loader::before {
     content: "";
     width: 18px; height: 18px;
-    border: 2px solid var(--border);
+    border: 2px solid var(--border-strong);
     border-top-color: var(--accent);
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* ============================================================
+     Utilities
+     ============================================================ */
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .cluster { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0);
+    white-space: nowrap; border: 0;
+  }
+  .muted { color: var(--muted); }
+
+  /* ============================================================
+     Animations
+     ============================================================ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
 
-  .add-link { background: transparent; color: var(--accent); padding: 6px 0; min-height: 0; font-weight: 500; }
   [x-cloak] { display: none !important; }
+
+  /* ============================================================
+     Responsive — tablet and up (≥480px)
+     ============================================================ */
+  @media (min-width: 480px) {
+    main { padding: 20px; }
+    main.has-bottom-bar { padding-bottom: 100px; }
+
+    .row { flex-direction: row; flex-wrap: wrap; }
+
+    .pill-buttons { grid-template-columns: 1fr 1fr; }
+
+    .bottom-bar { margin: 16px -20px 0; padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px)); }
+  }
+
+  /* ============================================================
+     Responsive — desktop (≥640px)
+     ============================================================ */
+  @media (min-width: 640px) {
+    main { padding: 28px 24px; }
+    main.has-bottom-bar { padding-bottom: 28px; }
+
+    h1 { font-size: 42px; }
+    h2 { font-size: 26px; }
+
+    .pill-buttons { grid-template-columns: 1fr 1fr 1fr; }
+    .pill-buttons a { flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px 22px; min-height: 140px; }
+    .pill-buttons a .pill-emoji { font-size: 36px; }
+
+    .item-card__main {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.3fr) minmax(0, 0.8fr) minmax(0, 1fr) auto;
+      grid-template-areas: "product category qty price del";
+      align-items: end;
+      gap: 12px;
+    }
+    .item-card__main .field-product  { grid-area: product; }
+    .item-card__main .field-category { grid-area: category; }
+    .item-card__main .field-qty      { grid-area: qty; }
+    .item-card__main .field-price    { grid-area: price; }
+    .item-card__main .item-delete    { grid-area: del; align-self: end; }
+
+    .item-card__extras { grid-template-columns: 1fr 1fr 1fr; }
+
+    .file-cta { padding: 56px 24px; }
+
+    .bottom-bar {
+      position: static;
+      margin: 20px 0 0;
+      padding: 0;
+      background: transparent;
+      border-top: 0;
+      justify-content: flex-end;
+    }
+    .bottom-bar > button { flex: 0 1 auto; min-width: 180px; }
+  }
 </style>

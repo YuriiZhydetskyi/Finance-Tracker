@@ -13,7 +13,8 @@
  *   5. smokeReceiptRoundtrip — INSERT a fake receipt + items, fetch, delete
  *   6. smokeLockService     — confirms LockService is available on this account
  *   7. smokeGeminiParse     — parses a sample receipt via Gemini (requires JPG in Drive folder)
- *   8. smokeWebRoutes       — dry-runs Web.doGet for each page (verifies HTML templates exist)
+ *   8. smokeAnthropicParse  — parses a sample receipt via Claude (requires JPG in Drive folder + ANTHROPIC_API_KEY)
+ *   9. smokeWebRoutes       — dry-runs Web.doGet for each page (verifies HTML templates exist)
  */
 
 /* exported Smoke */
@@ -189,6 +190,38 @@ const Smoke = {
     });
     return parsed;
   },
+
+  smokeAnthropicParse() {
+    // Mirrors smokeGeminiParse but bypasses AiClient's fallback — calls
+    // Anthropic.parseReceipt directly so a green run proves Claude works in
+    // isolation. Requires ANTHROPIC_API_KEY in Script Properties.
+    const folder = DriveApp.getFolderById(Config.DRIVE_FOLDER_ID);
+    const files = folder.getFilesByType(MimeType.JPEG);
+    if (!files.hasNext()) {
+      Logger.log(`No JPGs found in Drive folder ${Config.DRIVE_FOLDER_ID}. Upload a sample receipt and retry.`);
+      return null;
+    }
+    const file = files.next();
+    Logger.log(`Parsing ${file.getName()} (${file.getSize()} bytes) via ${Config.ANTHROPIC_MODEL} ...`);
+
+    const bytes = file.getBlob().getBytes();
+    const ctx = {
+      categories: Storage.getCategories().map(c => c.name),
+      products:   Storage.listProducts(),
+    };
+
+    const t0 = Date.now();
+    const parsed = Anthropic.parseReceipt(bytes, ctx);
+    const elapsed = Date.now() - t0;
+
+    Logger.log(`Claude returned in ${elapsed}ms.`);
+    Logger.log(`Store: ${parsed.store}; date: ${parsed.date}; currency: ${parsed.currency}; total: ${parsed.total_orig}`);
+    Logger.log(`Items (${parsed.items.length}):`);
+    parsed.items.forEach(it => {
+      Logger.log(`  ${it.product_name} — ${it.qty} × ${it.unit_price_orig} ${parsed.currency} (${it.category_suggestion || '?'})`);
+    });
+    return parsed;
+  },
 };
 
 // ============================================================
@@ -197,7 +230,7 @@ const Smoke = {
 
 /* exported smokeIdentity, smokeUlid, smokeCategoriesRead, smokeFxLive,
             smokeReceiptRoundtrip, smokeLockService, smokeGeminiParse,
-            smokeWebRoutes */
+            smokeAnthropicParse, smokeWebRoutes */
 function smokeIdentity()           { return Smoke.smokeIdentity(); }
 function smokeUlid()               { return Smoke.smokeUlid(); }
 function smokeCategoriesRead()     { return Smoke.smokeCategoriesRead(); }
@@ -205,6 +238,7 @@ function smokeFxLive()             { return Smoke.smokeFxLive(); }
 function smokeReceiptRoundtrip()   { return Smoke.smokeReceiptRoundtrip(); }
 function smokeLockService()        { return Smoke.smokeLockService(); }
 function smokeGeminiParse()        { return Smoke.smokeGeminiParse(); }
+function smokeAnthropicParse()     { return Smoke.smokeAnthropicParse(); }
 function smokeWebRoutes()          { return Smoke.smokeWebRoutes(); }
 
 // CommonJS export for local Node test runner. Apps Script: no-op.

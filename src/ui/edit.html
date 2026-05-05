@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Finance Tracker</title>
   <base href="<?= scriptUrl ?>" target="_top">
   <meta name="finance-query-params" content="<?= JSON.stringify(queryParams || {}) ?>">
@@ -16,7 +16,7 @@
     <span class="who" x-text="paid_by"></span>
   </div>
 
-  <main>
+  <main class="has-bottom-bar">
     <h1>Редагувати чек</h1>
 
     <template x-if="error">
@@ -39,7 +39,7 @@
             <input x-model="receipt.store">
           </div>
         </div>
-        <div class="row">
+        <div class="row" style="margin-top:12px">
           <div>
             <label>Валюта</label>
             <select x-model="receipt.currency">
@@ -52,12 +52,17 @@
             <input x-model="receipt.paid_by" type="email">
           </div>
         </div>
-        <div>
+        <div style="margin-top:12px">
           <label>Нотатка</label>
           <input x-model="receipt.note">
         </div>
-        <template x-if="receipt.photo_url">
-          <div style="margin-top:8px">
+        <template x-if="receipt && receipt.fx_rate_eur && receipt.currency !== 'EUR'">
+          <div class="muted tabular" style="margin-top:12px;font-size:13px">
+            FX: 1 <span x-text="receipt.currency"></span> = <span x-text="receipt.fx_rate_eur"></span> EUR
+          </div>
+        </template>
+        <template x-if="receipt && receipt.photo_url">
+          <div style="margin-top:12px">
             <a :href="receipt.photo_url" target="_blank" rel="noopener">📷 Відкрити фото</a>
           </div>
         </template>
@@ -68,7 +73,7 @@
 
       <?!= include('shared/Summary') ?>
 
-      <div class="row" style="margin-top:16px">
+      <div class="bottom-bar">
         <button type="button" class="danger" @click="confirmDelete" :disabled="saving">Видалити</button>
         <button type="button" @click="save" :disabled="saving || !canSave">
           <span x-text="saving ? 'Зберігаю...' : 'Зберегти'"></span>
@@ -80,8 +85,8 @@
       <div class="modal-backdrop">
         <div class="modal">
           <h2>Видалити чек?</h2>
-          <p>Це безповоротно. Чек і всі його товари будуть видалені з таблиці.</p>
-          <div class="row">
+          <p class="muted">Це безповоротно. Чек і всі його товари будуть видалені з таблиці.</p>
+          <div class="cluster" style="margin-top:16px;justify-content:flex-end;flex-wrap:nowrap">
             <button type="button" class="secondary" @click="showDeleteConfirm = false">Скасувати</button>
             <button type="button" class="danger" @click="doDelete">Так, видалити</button>
           </div>

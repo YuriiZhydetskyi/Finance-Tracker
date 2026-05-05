@@ -30,3 +30,4 @@
 | [0008](0008-prices-computed-from-items.md) | Reference prices обчислюються з історії Items; без окремої таблиці | accepted | Analytics |
 | [0009](0009-notes-columns-and-wasted-qty.md) | Notes як прості колонки; spoilage як wasted_qty колонка | accepted | Schema |
 | [0010](0010-web-app-access-mode.md) | Web app access: `ANYONE` (signed-in) + server-side allowlist | accepted (revised) | Deploy |
+| [0011](0011-claude-fallback.md) | Claude Sonnet 4.6 як автоматичний fallback для Gemini | accepted | AI |

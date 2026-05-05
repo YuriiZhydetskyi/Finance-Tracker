@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Finance Tracker</title>
   <base href="<?= scriptUrl ?>" target="_top">
   <meta name="finance-query-params" content="<?= JSON.stringify(queryParams || {}) ?>">
@@ -16,7 +16,7 @@
     <span class="who" x-text="paid_by"></span>
   </div>
 
-  <main>
+  <main class="has-bottom-bar">
     <h1>Витрата вручну</h1>
 
     <template x-if="error">
@@ -39,7 +39,7 @@
             <input x-model="receipt.store" placeholder="напр. Lidl, Amazon, оренда">
           </div>
         </div>
-        <div class="row">
+        <div class="row" style="margin-top:12px">
           <div>
             <label>Валюта</label>
             <select x-model="receipt.currency">
@@ -52,7 +52,7 @@
             <input x-model="receipt.paid_by" type="email">
           </div>
         </div>
-        <div>
+        <div style="margin-top:12px">
           <label>Нотатка (опц.)</label>
           <input x-model="receipt.note" placeholder="—">
         </div>
@@ -63,7 +63,7 @@
 
       <?!= include('shared/Summary') ?>
 
-      <div class="row" style="margin-top:16px">
+      <div class="bottom-bar">
         <button type="button" class="secondary" @click="cancel" :disabled="saving">Скасувати</button>
         <button type="button" @click="save" :disabled="saving || !canSave">
           <span x-text="saving ? 'Зберігаю...' : 'Зберегти'"></span>

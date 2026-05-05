@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Finance Tracker</title>
   <base href="<?= scriptUrl ?>" target="_top">
   <meta name="finance-query-params" content="<?= JSON.stringify(queryParams || {}) ?>">
@@ -16,32 +16,37 @@
     <span class="who" x-text="paid_by"></span>
   </div>
 
-  <main>
-    <h1>Фото чеку</h1>
+  <main :class="step === 'review' ? 'has-bottom-bar' : ''">
+    <h1>Фото чека</h1>
 
     <template x-if="error">
       <div class="err" x-text="error"></div>
     </template>
 
     <!-- STEP 1: Upload --------------------------------------------------- -->
-    <div class="card" x-show="step === 'pick'">
-      <p style="color:var(--muted)">Сфотографуй чек або вибери з галереї. Зображення стиснеться в браузері до 1600px перед відправкою.</p>
-      <input type="file" accept="image/*" capture="environment" @change="onFilePicked($event)">
+    <div x-show="step === 'pick'">
+      <p class="muted">Сфотографуй чек або вибери з галереї. Зображення стиснеться в браузері до 1600px перед відправкою.</p>
+      <label class="file-cta">
+        <span class="file-cta__icon" aria-hidden="true">📷</span>
+        <span class="file-cta__text">Сфотографувати чек</span>
+        <span class="file-cta__hint">або обрати з галереї</span>
+        <input type="file" accept="image/*" capture="environment" @change="onFilePicked($event)">
+      </label>
     </div>
 
     <!-- STEP 2: Parsing -------------------------------------------------- -->
     <div class="card" x-show="step === 'parsing'">
       <div class="loader">Розпізнаю чек через Gemini... це може зайняти 5–15 секунд.</div>
       <template x-if="previewUrl">
-        <img :src="previewUrl" style="max-width:100%;border-radius:var(--radius);margin-top:8px">
+        <img :src="previewUrl" class="photo-preview" style="margin-top:12px">
       </template>
     </div>
 
     <!-- STEP 3: Review --------------------------------------------------- -->
     <div x-show="step === 'review'">
       <template x-if="previewUrl">
-        <div class="card" style="padding:6px">
-          <img :src="previewUrl" style="max-width:100%;border-radius:var(--radius)">
+        <div class="card" style="padding:8px">
+          <img :src="previewUrl" class="photo-preview">
         </div>
       </template>
 
@@ -56,7 +61,7 @@
             <input x-model="receipt.store" placeholder="—">
           </div>
         </div>
-        <div class="row">
+        <div class="row" style="margin-top:12px">
           <div>
             <label>Валюта</label>
             <select x-model="receipt.currency">
@@ -69,7 +74,7 @@
             <input x-model="receipt.paid_by" type="email">
           </div>
         </div>
-        <div>
+        <div style="margin-top:12px">
           <label>Нотатка</label>
           <input x-model="receipt.note" placeholder="—">
         </div>
@@ -80,10 +85,10 @@
 
       <?!= include('shared/Summary') ?>
 
-      <div class="row" style="margin-top:16px">
+      <div class="bottom-bar">
         <button type="button" class="secondary" @click="reset" :disabled="saving">Інше фото</button>
         <button type="button" @click="save" :disabled="saving || !canSave">
-          <span x-text="saving ? 'Зберігаю...' : 'Зберегти чек'"></span>
+          <span x-text="saving ? 'Зберігаю...' : 'Зберегти'"></span>
         </button>
       </div>
     </div>

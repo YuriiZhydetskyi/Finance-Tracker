@@ -3,7 +3,10 @@
  * file (Gemini.js, OpenAi.js, Anthropic.js) implements an identical
  * parseReceipt(imageBytes, ctx) → ParsedReceipt contract.
  *
- * See ADR-0003 for the rationale and changelog (3-flash-preview, sync return).
+ * When AI_PROVIDER is 'gemini', Anthropic Claude Sonnet 4.6 is wired as an
+ * automatic fallback: any error from Gemini triggers a single retry against
+ * Claude. The user-visible error is raised only if both providers fail. See
+ * ADR-0003 (provider abstraction) and ADR-0011 (Claude fallback).
  */
 
 /* exported AiClient */
@@ -16,10 +19,35 @@ const AiClient = {
    */
   parseReceipt(imageBytes, ctx) {
     switch (Config.AI_PROVIDER) {
-      case 'gemini':    return Gemini.parseReceipt(imageBytes, ctx);
+      case 'gemini':    return AiClient._geminiWithClaudeFallback(imageBytes, ctx);
       case 'openai':    return OpenAi.parseReceipt(imageBytes, ctx);
       case 'anthropic': return Anthropic.parseReceipt(imageBytes, ctx);
       default: throw new Error(`Unknown AI_PROVIDER: "${Config.AI_PROVIDER}". Expected one of: gemini, openai, anthropic.`);
+    }
+  },
+
+  /**
+   * Try Gemini first; on any error fall back to Claude. If Claude also fails,
+   * surface a combined error so the UI can show both messages. Logs which
+   * provider succeeded so fallback rate is visible in Apps Script Executions.
+   * @param {number[] | string} imageBytes
+   * @param {{categories: string[], products: Product[]}} ctx
+   * @returns {ParsedReceipt}
+   */
+  _geminiWithClaudeFallback(imageBytes, ctx) {
+    try {
+      return Gemini.parseReceipt(imageBytes, ctx);
+    } catch (geminiErr) {
+      Logger.log(`AiClient: Gemini failed, falling back to Claude. Gemini error: ${geminiErr.message}`);
+      try {
+        const result = Anthropic.parseReceipt(imageBytes, ctx);
+        Logger.log('AiClient: Claude fallback succeeded.');
+        return result;
+      } catch (claudeErr) {
+        throw new Error(
+          `AI parsing failed (both providers). Gemini: ${geminiErr.message} | Claude: ${claudeErr.message}`
+        );
+      }
     }
   },
 };

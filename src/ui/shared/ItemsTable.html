@@ -11,14 +11,14 @@
 -->
 <div class="items-table">
   <template x-for="(it, idx) in items" :key="idx">
-    <div class="card" style="padding:10px">
-      <div class="item-row">
-        <div>
-          <label x-show="idx === 0">Товар</label>
+    <div class="item-card">
+      <div class="item-card__main">
+        <div class="field field-product">
+          <label>Товар</label>
           <input x-model="it.product_name" placeholder="Назва" list="products-datalist">
         </div>
-        <div>
-          <label x-show="idx === 0">Категорія</label>
+        <div class="field field-category">
+          <label>Категорія</label>
           <select x-model="it.category">
             <option value="">—</option>
             <template x-for="c in categories" :key="c">
@@ -26,19 +26,21 @@
             </template>
           </select>
         </div>
-        <div>
-          <label x-show="idx === 0">К-сть</label>
+        <div class="field field-qty">
+          <label>К-сть</label>
           <input x-model.number="it.qty" type="number" step="0.001" min="0" inputmode="decimal">
         </div>
-        <div>
-          <label x-show="idx === 0">Ціна</label>
+        <div class="field field-price">
+          <label>Ціна</label>
           <!-- No min="0": negative prices are valid for discounts, Pfand refunds, cancellations. -->
           <input x-model.number="it.unit_price_orig" type="number" step="0.01" inputmode="decimal">
         </div>
-        <button type="button" class="icon-btn" title="Видалити рядок" @click="items.splice(idx, 1)">×</button>
+        <button type="button" class="icon-btn item-delete"
+                aria-label="Видалити рядок" title="Видалити рядок"
+                @click="items.splice(idx, 1)">×</button>
       </div>
-      <div class="item-extras">
-        <div>
+      <div class="item-card__extras">
+        <div class="field">
           <label>Хто</label>
           <select x-model="it.consumed_by">
             <option value="shared">Спільно</option>
@@ -49,18 +51,18 @@
             <option value="custom:50/50">50 / 50</option>
           </select>
         </div>
-        <div>
+        <div class="field">
           <label>Нотатка</label>
           <input x-model="it.note" placeholder="—">
         </div>
-        <div>
+        <div class="field">
           <label>Зіпсовано</label>
           <input x-model.number="it.wasted_qty" type="number" step="0.001" min="0" inputmode="decimal" placeholder="0">
         </div>
       </div>
-      <div class="totals" style="margin-top:8px;padding-top:6px">
-        <span style="color:var(--muted);font-size:13px">Рядок</span>
-        <span :class="{ 'is-negative': rowTotal(it) < 0 }" x-text="fmtMoney(rowTotal(it))"></span>
+      <div class="item-card__total">
+        <span class="label">Рядок</span>
+        <span class="amount tabular" :class="{ 'is-negative': rowTotal(it) < 0 }" x-text="fmtMoney(rowTotal(it))"></span>
       </div>
     </div>
   </template>

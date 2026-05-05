@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Finance Tracker</title>
   <base href="<?= scriptUrl ?>" target="_top">
   <meta name="finance-query-params" content="<?= JSON.stringify(queryParams || {}) ?>">
@@ -28,21 +28,26 @@
     </template>
 
     <template x-if="!loading && !error && receipts.length === 0">
-      <div class="card" style="text-align:center;color:var(--muted)">
-        Поки що порожньо. Додайте перший чек з <a href="?page=photo">фото</a> або <a href="?page=manual">вручну</a>.
+      <div class="card empty-card">
+        <div class="empty-line">Поки що порожньо.</div>
+        <div>
+          Додай перший чек з <a href="?page=photo">фото</a>
+          або <a href="?page=manual">вручну</a>.
+        </div>
       </div>
     </template>
 
     <ul class="receipt-list" x-show="!loading && receipts.length > 0">
       <template x-for="r in receipts" :key="r.id">
         <li @click="open(r.id)">
-          <div style="display:flex;justify-content:space-between;gap:8px">
-            <strong x-text="r.store"></strong>
-            <span x-text="fmtMoney(r.total_eur) + ' €'"></span>
+          <div class="receipt-head">
+            <span class="receipt-store" x-text="r.store"></span>
+            <span class="receipt-amount tabular">
+              <span x-text="fmtMoney(r.total_eur)"></span><span class="currency">€</span>
+            </span>
           </div>
           <div class="meta">
             <span x-text="r.date"></span>
-            · <span x-text="r.currency"></span>
             <template x-if="r.currency !== 'EUR'">
               <span> · <span x-text="fmtMoney(r.total_orig)"></span> <span x-text="r.currency"></span></span>
             </template>

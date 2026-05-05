@@ -73,6 +73,42 @@ test('UI: every page declares <base target="_top"> with non-empty href', async (
 });
 
 // ============================================================
+// Responsive design regression guards
+//   Mobile-first redesign assumes specific head structure
+//   (viewport meta, Google Fonts) on every page. These two
+//   tests catch accidental removal in any future page change.
+// ============================================================
+
+test('UI: every page declares a mobile viewport meta', async () => {
+  for (const page of Web.PAGES) {
+    const { document } = await renderPage({
+      page,
+      queryParams: page === 'edit' ? { id: 'ABC' } : {},
+      runServerStubs: defaultStubs(),
+    });
+    const vp = document.querySelector('meta[name="viewport"]');
+    assert.ok(vp, `page "${page}" missing viewport meta`);
+    assert.match(
+      vp.getAttribute('content') || '',
+      /width=device-width/,
+      `page "${page}" viewport content lacks width=device-width`
+    );
+  }
+});
+
+test('UI: every page links the Google Fonts stylesheet', async () => {
+  for (const page of Web.PAGES) {
+    const { document } = await renderPage({
+      page,
+      queryParams: page === 'edit' ? { id: 'ABC' } : {},
+      runServerStubs: defaultStubs(),
+    });
+    const link = document.querySelector('link[href*="fonts.googleapis.com"]');
+    assert.ok(link, `page "${page}" missing Google Fonts <link>`);
+  }
+});
+
+// ============================================================
 // index.html identity flow
 // ============================================================
 
@@ -178,6 +214,28 @@ test('UI photo: initial step is "pick", exposes a file input', async () => {
   assert.strictEqual(fileInput.getAttribute('accept'), 'image/*');
 });
 
+test('UI photo: file input is wrapped by a styled .file-cta label and keeps capture=environment', async () => {
+  const { document } = await renderPage({
+    page: 'photo',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      getCategories: () => [],
+      listProducts: () => [],
+    },
+  });
+  // The big tap-target label is what the user actually presses on mobile —
+  // a bare <input type="file"> has no styling on iOS. Guard against accidental
+  // unwrapping in future redesigns.
+  const cta = document.querySelector('label.file-cta');
+  assert.ok(cta, 'photo page missing the .file-cta label wrapper');
+  const fileInput = cta.querySelector('input[type="file"]');
+  assert.ok(fileInput, '.file-cta should contain the file input');
+  assert.strictEqual(
+    fileInput.getAttribute('capture'), 'environment',
+    'capture="environment" needed so the back camera opens directly on mobile'
+  );
+});
+
 // ============================================================
 // manual.html
 // ============================================================
@@ -196,4 +254,114 @@ test('UI manual: renders empty form with one item row', async () => {
   // ItemsTable seeds with newItemRow() — exactly one row visible.
   const productInputs = document.querySelectorAll('input[x-model="it.product_name"]');
   assert.strictEqual(productInputs.length, 1, 'expected exactly one initial item row');
+});
+
+test('UI manual: every item-card renders all four field labels (no x-show=idx===0 hack)', async () => {
+  // Pre-redesign, only the first row showed labels (mobile-hostile because
+  // each row scrolled away from its header). The new card layout repeats
+  // labels per row. This test pins that behavior so a future "compaction"
+  // doesn't silently revert it.
+  const { document } = await renderPage({
+    page: 'manual',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      getCategories: () => [],
+      listProducts: () => [],
+    },
+  });
+  const card = document.querySelector('.item-card');
+  assert.ok(card, '.item-card not in DOM');
+  const labels = card.querySelectorAll('label');
+  assert.ok(
+    labels.length >= 4,
+    `expected at least 4 labels per item-card (Товар/Категорія/К-сть/Ціна), got ${labels.length}`
+  );
+});
+
+test('UI manual: products datalist still wired to the product input', async () => {
+  const { document } = await renderPage({
+    page: 'manual',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      getCategories: () => [],
+      listProducts: () => [{ id: 'p1', name: 'Молоко', category: 'Молочка' }],
+    },
+  });
+  const list = document.getElementById('products-datalist');
+  assert.ok(list, 'products-datalist missing');
+  const productInput = document.querySelector('input[x-model="it.product_name"]');
+  assert.ok(productInput, 'product input missing');
+  assert.strictEqual(
+    productInput.getAttribute('list'), 'products-datalist',
+    'product input must reference the datalist by id'
+  );
+});
+
+test('UI manual: item delete button is focusable and not disabled', async () => {
+  const { document } = await renderPage({
+    page: 'manual',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      getCategories: () => [],
+      listProducts: () => [],
+    },
+  });
+  const btn = document.querySelector('.item-delete');
+  assert.ok(btn, '.item-delete button missing');
+  assert.ok(!btn.disabled, '.item-delete must not be disabled');
+  // tabIndex defaults to 0 for buttons; explicit -1 would remove from focus order.
+  assert.ok(btn.tabIndex >= 0, '.item-delete must remain in focus order');
+});
+
+// ============================================================
+// Bottom action bar (sticky CTAs on form pages)
+// ============================================================
+
+test('UI: photo/manual/edit each render a .bottom-bar with a "Зберегти" primary action', async () => {
+  const formPages = [
+    { page: 'manual', queryParams: {} },
+    { page: 'edit', queryParams: { id: 'ABC' } },
+  ];
+  for (const { page, queryParams } of formPages) {
+    const { document } = await renderPage({
+      page, queryParams,
+      runServerStubs: defaultStubs(),
+    });
+    const bar = document.querySelector('.bottom-bar');
+    assert.ok(bar, `page "${page}" missing .bottom-bar`);
+    assert.match(bar.textContent, /Зберегти/, `page "${page}" bottom bar missing "Зберегти" button`);
+  }
+  // Photo page renders the bottom bar inside the review step (x-show on a
+  // wrapper). Markup is present in the DOM regardless of x-show state.
+  const { document: photoDoc } = await renderPage({
+    page: 'photo',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      getCategories: () => [],
+      listProducts: () => [],
+    },
+  });
+  const photoBar = photoDoc.querySelector('.bottom-bar');
+  assert.ok(photoBar, 'photo page missing .bottom-bar');
+  assert.match(photoBar.textContent, /Зберегти/, 'photo bottom bar missing "Зберегти" button');
+});
+
+// ============================================================
+// Recent page: monospace tabular amounts
+// ============================================================
+
+test('UI recent: rendered receipts use the .tabular class for monospace amount alignment', async () => {
+  const r = {
+    id: 'R1', date: '2026-05-04', store: 'Lidl', currency: 'EUR',
+    total_orig: 12.5, fx_rate_eur: 1, total_eur: 12.5, note: null,
+  };
+  const { document } = await renderPage({
+    page: 'recent',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      listRecent: () => [r],
+    },
+  });
+  const tabular = document.querySelector('.receipt-list .tabular');
+  assert.ok(tabular, 'rendered receipt should have a .tabular amount span (mono numerals)');
 });

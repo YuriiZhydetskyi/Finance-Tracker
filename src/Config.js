@@ -9,8 +9,9 @@
  *
  * Required Script Properties (must be set before running anything):
  *   - SHEET_ID
- *   - DRIVE_FOLDER_ID  (only required from Phase 3 onward)
- *   - GEMINI_API_KEY   (only required from Phase 2 onward)
+ *   - DRIVE_FOLDER_ID    (only required from Phase 3 onward)
+ *   - GEMINI_API_KEY     (only required from Phase 2 onward)
+ *   - ANTHROPIC_API_KEY  (only required from Phase 3.6 onward — Claude fallback, ADR-0011)
  */
 
 /* exported Config */
@@ -20,6 +21,7 @@ const Config = {
   get SHEET_ID() { return _Config_requireProp('SHEET_ID'); },
   get DRIVE_FOLDER_ID() { return _Config_requireProp('DRIVE_FOLDER_ID'); },
   get GEMINI_API_KEY() { return _Config_requireProp('GEMINI_API_KEY'); },
+  get ANTHROPIC_API_KEY() { return _Config_requireProp('ANTHROPIC_API_KEY'); },
 
   // ===== Public constants =====
 
@@ -30,6 +32,12 @@ const Config = {
   GEMINI_MODEL: 'gemini-3-flash-preview',
   GEMINI_API_URL_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
   AI_TEMPERATURE: 0.1,
+
+  /** Anthropic parameters (Claude fallback when Gemini fails). Per ADR-0011. */
+  ANTHROPIC_MODEL: 'claude-sonnet-4-6',
+  ANTHROPIC_API_URL: 'https://api.anthropic.com/v1/messages',
+  ANTHROPIC_VERSION: '2023-06-01',
+  ANTHROPIC_MAX_TOKENS: 4096,
 
   TIMEZONE: 'Europe/Berlin',
   BASE_CURRENCY: 'EUR',

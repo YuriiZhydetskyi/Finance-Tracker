@@ -15,6 +15,11 @@ require('./setup');
 const { installAllFakes, resetAllFakes } = require('./fakes');
 const fakes = installAllFakes();
 
+// Logger stub — Apps Script's `Logger.log()` writes to the Executions panel.
+// Tests don't need to assert on log output, but cross-module code (AiClient
+// fallback path, etc.) calls Logger.log unconditionally, so install a no-op.
+global.Logger = { log() {} };
+
 // PropertiesService stub for Config getters.
 global.PropertiesService = {
   getScriptProperties() {
@@ -24,6 +29,7 @@ global.PropertiesService = {
           SHEET_ID: 'fake-sheet-id',
           DRIVE_FOLDER_ID: 'fake-drive-folder',
           GEMINI_API_KEY: 'fake-gemini-key',
+          ANTHROPIC_API_KEY: 'fake-anthropic-key',
         };
         return Object.prototype.hasOwnProperty.call(stubs, key) ? stubs[key] : null;
       },
