@@ -2,7 +2,7 @@
 
 > **Призначення:** цей документ — точка входу для нової chat-сесії. Прочитавши його (і файли, на які він посилається), нова сесія матиме повний контекст і зможе продовжити роботу без перезапитування.
 
-**Дата останнього оновлення:** 2026-05-04 (Phase 3 done)
+**Дата останнього оновлення:** 2026-05-05 (Phase 3.5 done)
 
 ---
 
@@ -246,9 +246,43 @@ Phase 5 polish — додати `daily_gemini_calls` counter через `Propert
 ### 7.3. Гострі кути
 
 - `Session.getActiveUser` повертає "" → fallback на localStorage в `index.html` modal (підтверджено для personal Gmail у Phase 1).
-- HtmlService include — `<?!= include('shared/X') ?>` (note: `<?!=` без HTML-escape; `<?=` — з escape). `Web.include(name)` додає `ui/` префікс.
+- HtmlService include — `<?!= include('shared/X') ?>` (note: `<?!=` без HTML-escape; `<?=` — з escape). `Web.include(name)` додає `ui/` префікс і використовує `createHtmlOutputFromFile` (raw, без re-evaluation) — це уникає nested-template eval, який ламає Apps Script Java-proxy. Shared files мають бути scriptlet-free; per-page scriptlets живуть у `<head>` кожної сторінки.
 - Soft timeout у photo.html — 35с-ий setTimeout на UI-сторінці без cancel; повідомляє користувача якщо щось зависло. Cancel самого `google.script.run` Apps Script не дає.
 - AI matching до існуючих Products — UI-side через `<datalist>` autocomplete у ItemsTable. AI повертає тільки `category_suggestion`. Promote-item-to-product workflow — Phase 5.
+
+---
+
+## 7.5. Phase 3.5 — Testing pyramid completion ✅ done (2026-05-05)
+
+### Реалізовано
+
+- **HtmlService fake тепер реальний evaluator.** [tests/fakes/HtmlService.js](../tests/fakes/HtmlService.js) обробляє `<? ?>`, `<?= ?>`, `<?!= ?>` проти template props через `with(__props__)`. Тести можуть assert-ити справжній render.
+- **Render-truth assertions у `tests/web.test.js`** — 7 нових тестів:
+  - `<base href>` populated from scriptUrl.
+  - "no `<?` residue" регресія для всіх `Web.PAGES`.
+  - Transitive include of shared/styles content.
+  - shared/webapp script body present (transitive).
+  - edit page queryParams meta carries id.
+  - every page declares `<base target="_top">`.
+- **JSDOM + Alpine UI tests.** [tests/uiHarness.js](../tests/uiHarness.js) рендерить кожну сторінку, ставить stub-и над `google.script.run`, evaluates Alpine source. [tests/ui.test.js](../tests/ui.test.js) — 11 тестів (per-page Alpine boot smoke + identity flow + recent listing + edit form populate + photo file input + manual form).
+- **`tests/fakes/ScriptApp.js`** — мінімальний fake для `ScriptApp.getService().getUrl()`.
+- **Bootstrap exposes top-level `include`** функцію на global, щоб scriptlets ходили через справжній `Web.include`.
+- **Навігаційний фікс довершено.** Inline `<head>` у всіх 5 сторінках; `shared/head.html` видалено; `shared/webapp.html` читає SCRIPT_URL з `<base href>` і QUERY_PARAMS з `<meta>`. Scriptlets ТІЛЬКИ в HTML-атрибутах (IDE не флагує errors).
+
+### Test counts
+
+```
+✅ npm run lint        → 0 errors, 0 warnings
+✅ npm run typecheck   → 0 errors
+✅ npm run test        → 113 pass / 0 fail
+                        (33 Domain + 19 Storage + 13 Fx + 7 fixtures
+                         + 4 AiClient + 12 Gemini + 25 Web + 11 UI)
+```
+
+### Accepted ceiling
+
+- Apps Script `HtmlTemplate` Java-proxy quirks (e.g. methods becoming unreachable after custom property assignment) **не відтворюються** plain-JS evaluator-ом. Mitigation — sub-block C (опційний `npm run smoke` через Apps Script Execution API). Не зроблено у цій ітерації; додамо коли часті релізи стануть нормою.
+- JSDOM ≠ браузер: file pickers, layout, real iframe postMessage, real google.script.run cross-frame — не симулюються. Stub-имо `runServer`. Catch logic, не visual.
 
 ---
 
@@ -288,6 +322,10 @@ Phase 5 polish — додати `daily_gemini_calls` counter через `Propert
 11. **Service Worker НЕ працює** в Apps Script iframe — true offline неможливий. Тільки "Add to Home Screen".
 12. **Function picker в Apps Script editor показує тільки top-level functions** — методи всередині `const Module = {}` не видно. Тому в Smoke.js і Fx.js є top-level wrappers.
 13. **TypeScript flag `useUnknownInCatchVariables`** з strict mode ламає `catch(e) { e.message }` — disabled у tsconfig для legacy code.
+14. **Fake stub trap.** Phase 3 пройшла 97 локальних тестів зеленими, але двічі впала на live deploy. Корінь: `tests/fakes/HtmlService.js` була no-op заглушкою, що ніколи не обчислювала scriptlets. Після Phase 3.5 — fake реально парсить `<?= ?>` / `<?!= ?>` / `<? ?>`. Урок: stub-only fakes ловлять контракт, не семантику; для UI рендера потрібен працюючий evaluator.
+15. **Apps Script HtmlTemplate — Java-проксі.** Встановлення custom properties (`tpl.scriptUrl = '...'`) на ньому всередині nested template eval ламає prototype lookup — `tpl.evaluate is not a function`. Тому Web.include використовує `createHtmlOutputFromFile` (raw), а scriptlets живуть тільки на верхньому рівні page template. JS evaluator у тестах цей quirk не повторює — це accepted ceiling, mitigated by smokeWebRoutes у real Apps Script.
+16. **`<a href="?page=...">` всередині Apps Script iframe** навігує googleusercontent.com (хост iframe), а не parent script.google.com (хост web app). Фікс: `<base href="<?= scriptUrl ?>" target="_top">` у `<head>` кожної сторінки.
+17. **Apps Script web app access modes naming** — manifest `ANYONE` = Deploy UI label "Anyone with a Google account" (sign-in required). `ANYONE_ANONYMOUS` = справжній публічний без auth. ADR-0010 фіксує цей quirk. Manifest enum НЕ приймає `ANYONE_WITH_GOOGLE_ACCOUNT`.
 
 ---
 

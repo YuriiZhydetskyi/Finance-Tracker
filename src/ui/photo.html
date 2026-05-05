@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <?!= include('shared/head') ?>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Finance Tracker</title>
+  <base href="<?= scriptUrl ?>" target="_top">
+  <meta name="finance-query-params" content="<?= JSON.stringify(queryParams || {}) ?>">
+  <?!= include('shared/styles') ?>
+  <?!= include('shared/webapp') ?>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
 <body x-data="photoPage()" x-init="init()" x-cloak>
   <div class="topbar">

@@ -251,6 +251,39 @@ Reference implementation: [src/Gemini.js](../src/Gemini.js) (Gemini 3 Flash че
 
 ---
 
+## Рецепт 10: Додати UI-тест для нової сторінки
+
+**Сценарій:** Створив `prices.html` (Recipe 9). Хочеш ловити Alpine init regressions і broken click handlers локально, без push до Apps Script.
+
+1. **Базовий smoke вже є.** [tests/ui.test.js](../tests/ui.test.js) має `UI: every page boots Alpine without throwing` — він автоматично ітерує `Web.PAGES`. Якщо новий `prices` додано в `Web.PAGES`, він уже вкритий цим тестом.
+2. **Додай специфічний тест:**
+   ```js
+   const { renderPage } = require('./uiHarness');
+
+   test('UI prices: search returns matching products', async () => {
+     const { document } = await renderPage({
+       page: 'prices',
+       runServerStubs: {
+         whoAmI: () => 'me@x',
+         searchPrices: (q) => [
+           { product_name: 'Молоко 1L', store: 'Lidl', avg_price: 0.99 },
+         ],
+       },
+     });
+     // Trigger Alpine model update via input event:
+     const input = document.querySelector('input[x-model="query"]');
+     input.value = 'мол';
+     input.dispatchEvent(new document.defaultView.Event('input'));
+     await new Promise(r => setTimeout(r, 20));
+     // Now assert results render.
+     assert.match(document.body.textContent, /Молоко 1L/);
+   });
+   ```
+3. **Що stub-ити:** будь-який endpoint, який сторінка викликає через `runServer(...)` у `init()` чи в обробниках. Не stub-нутий → harness кидає `runServer stub missing for "X"`.
+4. **JSDOM не браузер.** Тест ловить логіку, не layout/visual. Real-Apps-Script проблеми (Java-proxy, iframe sandbox) ловить лише `smokeWebRoutes`.
+
+---
+
 ## Out of MVP — потенційні майбутні фічі
 
 Перелічуємо, щоб майбутній-ти не починав з нуля. **НЕ** реалізовуй це поки не з'явиться явна потреба.

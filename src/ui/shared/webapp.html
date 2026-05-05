@@ -1,7 +1,18 @@
 <script>
-  // Injected from Web.doGet template scope.
-  var SCRIPT_URL = '<?= scriptUrl ?>';
-  var QUERY_PARAMS = <?!= JSON.stringify(queryParams || {}) ?>;
+  // SCRIPT_URL and QUERY_PARAMS are derived from DOM elements that the
+  // server-rendered <head> populates via scriptlets (<base href> and
+  // <meta name="finance-query-params">). Reading from the DOM keeps this
+  // file scriptlet-free, so an IDE that JS-parses the <script> body
+  // doesn't choke on Apps Script template syntax.
+  var SCRIPT_URL = (function() {
+    var b = document.querySelector('base[href]');
+    return b ? b.href : '';
+  })();
+  var QUERY_PARAMS = (function() {
+    var m = document.querySelector('meta[name="finance-query-params"]');
+    if (!m) return {};
+    try { return JSON.parse(m.getAttribute('content') || '{}'); } catch (e) { return {}; }
+  })();
 
   // ============================================================
   // Server bridge

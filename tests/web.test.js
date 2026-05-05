@@ -66,29 +66,94 @@ function basicItem(overrides = {}) {
 // doGet routing
 // ============================================================
 
-test('Web.doGet: known page returns HtmlOutput-like for that file', () => {
+test('Web.doGet: known page renders that page (recent.html signature)', () => {
   setupSheet();
   const out = Web.doGet({ parameter: { page: 'recent' } });
-  assert.match(out.getContent(), /ui\/recent/);
+  // recent.html has a distinctive H1 in Ukrainian.
+  assert.match(out.getContent(), /Останні чеки/);
   assert.strictEqual(out._title, 'Finance Tracker');
 });
 
 test('Web.doGet: unknown page falls back to index', () => {
   setupSheet();
   const out = Web.doGet({ parameter: { page: 'no-such-page' } });
-  assert.match(out.getContent(), /ui\/index/);
+  // index.html has a distinctive landing heading.
+  assert.match(out.getContent(), /Що додати/);
 });
 
 test('Web.doGet: missing parameter falls back to index', () => {
   setupSheet();
   const out = Web.doGet({});
-  assert.match(out.getContent(), /ui\/index/);
+  assert.match(out.getContent(), /Що додати/);
 });
 
-test('Web.include: returns content from named file', () => {
+test('Web.include: returns shared file content (no scriptlet evaluation)', () => {
   setupSheet();
+  // shared/webapp.html contains the runServer Promise wrapper definition.
   const html = Web.include('shared/webapp');
-  assert.match(html, /shared\/webapp/);
+  assert.match(html, /function runServer/);
+});
+
+// ============================================================
+// Render-truth assertions (Sub-block A)
+//
+// These tests run the real scriptlet evaluator (tests/fakes/HtmlService.js).
+// They prove that <?= ?>, <?!= ?>, <? ?> are processed; that include() is
+// followed transitively; that template variables propagate; and that no
+// unevaluated <? ... ?> residue ends up in the rendered output. A regression
+// would have surfaced the "blank page" Phase 3 bug locally.
+// ============================================================
+
+test('Render: index has <base href> populated from scriptUrl', () => {
+  setupSheet();
+  const out = Web.doGet({ parameter: { page: 'index' } });
+  // ScriptApp fake returns a deployment-shaped URL by default.
+  assert.match(out.getContent(), /<base href="https:\/\/script\.google\.com\/macros\/[^"]*" target="_top">/);
+});
+
+test('Render: no unevaluated scriptlet residue in any page', () => {
+  setupSheet();
+  for (const page of Web.PAGES) {
+    const html = Web.doGet({ parameter: { page } }).getContent();
+    const idx = html.indexOf('<?');
+    if (idx !== -1) {
+      const start = Math.max(0, idx - 80);
+      const end = Math.min(html.length, idx + 160);
+      assert.fail(`page "${page}" still contains a literal <? at offset ${idx}:\n…${html.slice(start, end)}…`);
+    }
+    assert.ok(html.length > 200, `page "${page}" rendered empty/short — body suspicious`);
+  }
+});
+
+test('Render: index transitively includes shared/styles content', () => {
+  setupSheet();
+  const html = Web.doGet({ parameter: { page: 'index' } }).getContent();
+  // styles.html starts with `<style>` and defines :root CSS vars. Pick a token
+  // that uniquely identifies the shared stylesheet.
+  assert.match(html, /--accent:/);
+});
+
+test('Render: shared/webapp script body present (transitive include)', () => {
+  setupSheet();
+  const html = Web.doGet({ parameter: { page: 'index' } }).getContent();
+  assert.match(html, /function runServer/);
+});
+
+test('Render: edit page queryParams meta carries the id', () => {
+  setupSheet();
+  const html = Web.doGet({ parameter: { page: 'edit', id: 'ABC123' } }).getContent();
+  // <meta name="finance-query-params" content='{"page":"edit","id":"ABC123"}'>
+  // <?= ?> HTML-escapes JSON quotes → &quot;.
+  assert.match(html, /name="finance-query-params"/);
+  assert.match(html, /&quot;id&quot;:&quot;ABC123&quot;/);
+});
+
+test('Render: every page declares <base target="_top"> (iframe nav guard)', () => {
+  setupSheet();
+  for (const page of Web.PAGES) {
+    const html = Web.doGet({ parameter: { page } }).getContent();
+    assert.match(html, /<base [^>]*target="_top"/, `page "${page}" missing <base target="_top"> — iframe nav will break`);
+  }
 });
 
 // ============================================================

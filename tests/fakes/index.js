@@ -16,6 +16,7 @@ const { makeFakeSession } = require('./Session');
 const { makeFakeXmlService } = require('./XmlService');
 const { makeFakeDriveApp } = require('./DriveApp');
 const { makeFakeHtmlService } = require('./HtmlService');
+const { makeFakeScriptApp } = require('./ScriptApp');
 
 let _fakes = null;
 
@@ -30,6 +31,7 @@ function installAllFakes() {
     XmlService: makeFakeXmlService(),
     DriveApp: makeFakeDriveApp(),
     HtmlService: makeFakeHtmlService(),
+    ScriptApp: makeFakeScriptApp(),
   };
 
   global.SpreadsheetApp = _fakes.SpreadsheetApp;
@@ -39,6 +41,7 @@ function installAllFakes() {
   global.XmlService = _fakes.XmlService;
   global.DriveApp = _fakes.DriveApp;
   global.HtmlService = _fakes.HtmlService;
+  global.ScriptApp = _fakes.ScriptApp;
 
   return _fakes;
 }
@@ -50,6 +53,7 @@ function resetAllFakes() {
   _fakes.LockService._reset();
   _fakes.Session._reset();
   _fakes.DriveApp._reset();
+  _fakes.ScriptApp._reset();
   // XmlService / HtmlService have no per-test state.
 }
 

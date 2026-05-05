@@ -48,11 +48,12 @@ Apps Script's single-global-scope is mimicked in three places that all stay in s
 
 Top-level entry-point functions (Apps Script triggers, editor Run dropdown items) are marked with `/* exported foo */` so ESLint doesn't flag them as unused. Example: `smokeIdentity`, etc.
 
-## Three-tier testing
+## Four-tier testing
 
 - **Level 1 — TypeScript checkJs** (`npm run typecheck`): catches API misuse against `@types/google-apps-script`. Limited where the types do not model runtime quirks.
-- **Level 2 — Integration tests with fakes** (`tests/storage.test.js`, `tests/fx.test.js`): exercise Storage CRUD and Fx live-fetch logic against in-memory fakes in `tests/fakes/`. Use `tests/bootstrap.js`, not `tests/setup.js` (the latter is minimal and only for pure Domain tests).
+- **Level 2 — Integration tests with fakes** (`tests/storage.test.js`, `tests/fx.test.js`, `tests/web.test.js`): exercise Storage CRUD, Fx live-fetch, and Web endpoints against in-memory fakes in `tests/fakes/`. The HtmlService fake processes Apps Script scriptlets (`<? ?>`, `<?= ?>`, `<?!= ?>`) for real, so `Web.doGet` tests can assert on rendered HTML — including the "no `<?` residue" regression check that catches scriptlet-evaluation bugs before deploy. Use `tests/bootstrap.js`, not `tests/setup.js` (the latter is minimal and only for pure Domain tests).
 - **Level 3 — Drift detection** (`tests/fixtures.test.js`): pins NBU JSON response shape (field names, DD.MM.YYYY date format, plausible rate range). If NBU changes its response format, this test breaks first. Refresh fixture: `curl 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&date=YYYYMMDD&json' > tests/fixtures/nbu-uah-sample.json`.
+- **Level 4 — JSDOM UI tests** (`tests/ui.test.js`): boots each page through `tests/uiHarness.js` — renders HTML via `Web.doGet`, drops it into JSDOM, evals the local Alpine.js source, and stubs `google.script.run`. Catches: x-data factory throwing, missing helper from `webapp.html`, broken click handlers, missing `<base target="_top">` (the iframe-navigation bug). JSDOM is not a real browser — file inputs, layout, and `URL.createObjectURL` are not simulated; we stub `runServer`. For real-Apps-Script behavior (Java-proxy quirks of HtmlTemplate, real iframe sandbox), run `smokeWebRoutes` from the editor.
 
 ## Schema evolution rule
 
@@ -76,6 +77,8 @@ The most expensive lessons:
 - `*/` inside a JSDoc block (e.g. `Domain.make*/applyPatch`) closes the comment early and breaks the parser. ESLint catches this.
 - `Session.getActiveUser().getEmail()` returns `""` for personal Gmail without a Google Workspace domain. Phase 3 UI handles this with a `localStorage` toggle modal in `src/ui/index.html` (`identityOptions` array — edit the two emails to your real ones).
 - Apps Script editor function picker shows only top-level `function` declarations. Methods inside `const Module = {}` are invisible — that is why Smoke.js and Fx.js have top-level wrappers.
+- `HtmlService.createHtmlOutputFromFile(name)` returns RAW file content (no scriptlet evaluation), while `createTemplateFromFile(name).evaluate()` does evaluate. Apps Script's HtmlTemplate is a Java-backed proxy whose methods can become unreachable when custom properties are set on it inside another template's evaluation context — so `Web.include` uses `createHtmlOutputFromFile` and shared files (`shared/styles.html`, `shared/webapp.html`, etc.) have NO scriptlets. Per-page scriptlets (`<base href>`, `finance-query-params` meta) live in each page's own `<head>` block where they evaluate as part of the top-level template.
+- IDE-friendly rule: keep Apps Script scriptlets in **HTML attribute values**, not inside `<script>` blocks. Pages read SCRIPT_URL from `<base href>` and QUERY_PARAMS from `<meta name="finance-query-params">` via DOM at runtime.
 
 ## When extending
 

@@ -59,4 +59,10 @@ global.AiClient = AiClient;
 const { Web } = require('../src/Web');
 global.Web = Web;
 
+// Apps Script puts top-level `function include(name) { ... }` (defined in
+// src/Web.js) on the global scope. Node's CommonJS module loader does not.
+// Mirror it here so HtmlService scriptlets `<?!= include('shared/...') ?>`
+// resolve through Web.include the same way they do in production.
+global.include = name => Web.include(name);
+
 module.exports = { fakes, resetAllFakes, Config, Domain, Storage, Fx, Gemini, OpenAi, Anthropic, AiClient, Web };

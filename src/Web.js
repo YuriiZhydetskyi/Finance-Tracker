@@ -47,16 +47,17 @@ const Web = {
   /**
    * Used inside HTML templates: <?!= include('shared/webapp') ?>
    *
-   * Evaluates the included file as a Template (so nested scriptlets like
-   * <?!= include('shared/styles') ?> recurse correctly) and forwards
-   * scriptUrl + queryParams from the active doGet so any included file
-   * can use them.
+   * Returns the included file's RAW content (no scriptlet evaluation).
+   * Shared files (shared/styles, shared/webapp, shared/ItemsTable, shared/Summary)
+   * are scriptlet-free by contract. Per-page scriptlets like <?= scriptUrl ?>
+   * live directly in the page templates' <head>, evaluated natively when
+   * Web.doGet calls tpl.evaluate(). We avoid recursive template evaluation
+   * because Apps Script's HtmlTemplate is a Java-backed proxy whose
+   * evaluate() method becomes unreachable when custom properties are set
+   * on it from inside another template's evaluation context.
    */
   include(name) {
-    const tpl = HtmlService.createTemplateFromFile(`ui/${name}`);
-    tpl.scriptUrl = Web._scriptUrl || '';
-    tpl.queryParams = Web._queryParams || {};
-    return tpl.evaluate().getContent();
+    return HtmlService.createHtmlOutputFromFile(`ui/${name}`).getContent();
   },
 
   // ============================================================

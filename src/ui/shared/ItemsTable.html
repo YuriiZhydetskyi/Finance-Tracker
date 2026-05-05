@@ -7,7 +7,7 @@
     products:      array of {id, name, category} (used for the "linked" pill)
 
   Uses helpers from shared/webapp.html: newItemRow, rowTotal.
-  Pages embed via <?!= include('shared/ItemsTable') ?>.
+  Pages embed via the shared/ItemsTable include scriptlet (see other pages).
 -->
 <div class="items-table">
   <template x-for="(it, idx) in items" :key="idx">
