@@ -50,10 +50,28 @@ const Config = {
     CATEGORIES: 'Categories',
   },
 
+  /**
+   * Server-side allowlist. Web.doGet and every google.script.run endpoint
+   * compare Session.getEffectiveUser().getEmail() against this list. Anyone
+   * else gets a denied page (or a thrown error for runServer calls).
+   *
+   * Apps Script's webapp.access manifest enum has no "list of specific
+   * emails" mode — it's MYSELF / DOMAIN / ANYONE / ANYONE_ANONYMOUS only.
+   * Hence this server-side check. Keep `webapp.access: ANYONE` so the URL
+   * is reachable for both partners (any signed-in Google user can hit it),
+   * then this list narrows actual access.
+   *
+   * Lowercase. Comparison is case-insensitive (we normalize at check time).
+   */
+  ALLOWED_EMAILS: [
+    'user1@example.com',
+    'user2@example.com',
+  ],
+
   /** Display alias map: email → human label (used by UI; not stored in Sheet). */
   EMAIL_ALIASES: {
-    // 'yurii@example.com': 'Я',
-    // 'fiancee@example.com': 'Вона',
+    'user2@example.com': 'Юрій',
+    'user1@example.com': 'Марічка',
   },
 
   /** NBU (National Bank of Ukraine) API — live source for UAH→EUR conversion. */

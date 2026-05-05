@@ -160,16 +160,54 @@ test('Render: every page declares <base target="_top"> (iframe nav guard)', () =
 // whoAmI
 // ============================================================
 
-test('Web.whoAmI: returns Session email when set', () => {
+test('Web.whoAmI: returns the authorized accessing user email (lowercased)', () => {
   setupSheet();
-  fakes.Session._setUserEmail('user@example.com');
-  assert.strictEqual(Web.whoAmI(), 'user@example.com');
+  fakes.Session._setUserEmail('Zhidetskij@gmail.com'); // mixed case
+  assert.strictEqual(Web.whoAmI(), 'user2@example.com');
 });
 
-test('Web.whoAmI: returns empty string when Session yields ""', () => {
+// ============================================================
+// Authorization (allowlist gate)
+// ============================================================
+
+test('Authz: doGet renders denied page for non-allowlisted email', () => {
+  setupSheet();
+  fakes.Session._setUserEmail('intruder@example.com');
+  const out = Web.doGet({ parameter: { page: 'index' } });
+  assert.match(out.getContent(), /Доступ обмежено/);
+  assert.match(out.getContent(), /intruder@example\.com/);
+});
+
+test('Authz: doGet denies anonymous (empty email)', () => {
   setupSheet();
   fakes.Session._setUserEmail('');
-  assert.strictEqual(Web.whoAmI(), '');
+  const out = Web.doGet({ parameter: { page: 'index' } });
+  assert.match(out.getContent(), /Доступ обмежено/);
+});
+
+test('Authz: doGet allows allowlisted user (renders the requested page)', () => {
+  setupSheet();
+  fakes.Session._setUserEmail('user1@example.com');
+  const out = Web.doGet({ parameter: { page: 'index' } });
+  assert.match(out.getContent(), /Що додати/);
+  assert.ok(!out.getContent().includes('Доступ обмежено'));
+});
+
+test('Authz: runServer endpoints throw "Access denied" for outsiders', () => {
+  setupSheet();
+  fakes.Session._setUserEmail('intruder@example.com');
+  assert.throws(() => Web.listRecent(), /Access denied/);
+  assert.throws(() => Web.getCategories(), /Access denied/);
+  assert.throws(() => Web.listProducts(), /Access denied/);
+  assert.throws(() => Web.saveReceipt(basicReceiptInput(), [basicItem()]), /Access denied/);
+  assert.throws(() => Web.deleteReceipt('any-id'), /Access denied/);
+  assert.throws(() => Web.parseReceipt('YQ==', 'image/jpeg'), /Access denied/);
+});
+
+test('Authz: case-insensitive email match', () => {
+  setupSheet();
+  fakes.Session._setUserEmail('ZHIDETSKIJ@GMAIL.COM');
+  assert.doesNotThrow(() => Web.listRecent());
 });
 
 // ============================================================

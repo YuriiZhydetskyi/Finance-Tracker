@@ -29,4 +29,4 @@
 | [0007](0007-products-as-optional-dimension.md) | Products як необов'язковий покажчик; селективний каталог | accepted | Schema |
 | [0008](0008-prices-computed-from-items.md) | Reference prices обчислюються з історії Items; без окремої таблиці | accepted | Analytics |
 | [0009](0009-notes-columns-and-wasted-qty.md) | Notes як прості колонки; spoilage як wasted_qty колонка | accepted | Schema |
-| [0010](0010-web-app-access-mode.md) | Web app access: `ANYONE` (signed-in) + `executeAs: USER_ACCESSING` | accepted | Deploy |
+| [0010](0010-web-app-access-mode.md) | Web app access: `ANYONE` (signed-in) + server-side allowlist | accepted (revised) | Deploy |

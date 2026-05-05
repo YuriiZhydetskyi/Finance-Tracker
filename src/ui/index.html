@@ -57,11 +57,13 @@
         currentEmail: '',
         showWhoModal: false,
         customEmail: '',
-        // Edit IDENTITY_OPTIONS to your two real emails. They are surfaced
-        // as quick-pick buttons in the "Хто ти?" modal.
+        // Quick-pick buttons surfaced in the "Хто ти?" modal — used as
+        // a fallback when whoAmI() returns "" (personal Gmail quirk).
+        // Server-side allowlist (Config.ALLOWED_EMAILS) is the actual
+        // authorization gate; this is just a UX shortcut.
         identityOptions: [
-          { value: 'me@example.com', label: 'Я' },
-          { value: 'partner@example.com', label: 'Друга людина' },
+          { value: 'user2@example.com', label: 'Юрій' },
+          { value: 'user1@example.com', label: 'Марічка' },
         ],
 
         async init() {

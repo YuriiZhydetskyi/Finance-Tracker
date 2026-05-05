@@ -1,7 +1,8 @@
 # ADR-0010: Web app access mode — `ANYONE` (signed-in Google account required)
 
-- Status: accepted
+- Status: accepted (revised)
 - Date: 2026-05-04
+- Revised: 2026-05-05 — додано server-side allowlist через `Config.ALLOWED_EMAILS` як real authorization gate (manifest `ANYONE` лишається). Див. Changelog.
 
 ## Context and Problem Statement
 
@@ -64,3 +65,23 @@ Obrano **`ANYONE`** з `executeAs: USER_ACCESSING`.
 URL зберегти: Drive shortcut + закладки на телефонах. **НЕ** скидати у Git, чат, посилання.
 
 Якщо потрібно змінити mode — оновити `src/appsscript.json` `webapp.access`, `npm run push`, **створити новий deployment** (старий URL продовжує працювати з попередньою конфігурацією до видалення).
+
+---
+
+## Changelog
+
+### 2026-05-05 — Server-side allowlist
+
+**Що змінилось:**
+- `webapp.access` лишається `ANYONE` (sign-in required), але це більше не наша primary defense. Реальний gate — server-side allowlist у `Config.ALLOWED_EMAILS`. Кожен `Web.doGet` і кожен `google.script.run` endpoint порівнює `Session.getEffectiveUser().getEmail()` (case-insensitive) з цим списком.
+- Не-allowlisted user отримує: на `doGet` — friendly "Доступ обмежено" HTML page (з email який намагався зайти); на runServer endpoints — кинутий `Error("Access denied for X")`, що клієнт показує через failure handler.
+- `Web.whoAmI` тепер використовує `Session.getEffectiveUser()` замість `getActiveUser()`. getEffectiveUser працює надійно для personal Gmail коли `userinfo.email` scope авторизовано (у нас він є у `appsscript.json` з Phase 1).
+
+**Чому:**
+- Apps Script manifest enum НЕ має режиму "specific list of emails" — тільки MYSELF / DOMAIN / ANYONE / ANYONE_ANONYMOUS. Для двох personal Gmail акаунтів server-side check — єдиний робочий варіант.
+- Раніше URL був де-факто секрет (anyone with link could write). Тепер навіть якщо посилання витече — write impossible without authorized email.
+
+**Як змінити список:**
+Edit `Config.ALLOWED_EMAILS` array у `src/Config.js`, потім `npm run push` + new version у Manage deployments.
+
+**Тести:** `tests/web.test.js` має ~6 нових `Authz: ...` cases що покривають happy path, denied path, case-insensitive, anonymous, runServer endpoint guards.

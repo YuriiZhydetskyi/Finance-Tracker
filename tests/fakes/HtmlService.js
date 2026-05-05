@@ -169,6 +169,11 @@ function makeFakeHtmlService() {
       return makeOutput(loadFile(name));
     },
 
+    /** Build an HtmlOutput directly from a string (used for the denied page). */
+    createHtmlOutput(content) {
+      return makeOutput(content || '');
+    },
+
     _reset() { /* stateless */ },
   };
 }

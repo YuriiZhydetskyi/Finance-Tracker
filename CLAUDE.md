@@ -31,7 +31,7 @@ After `npm run push`: **F5 the Apps Script editor tab** — it does not auto-ref
 
 Smoke tests live in `src/Smoke.js` and run only inside Apps Script (real LockService, real Sheet). Pick `smokeIdentity`, `smokeUlid`, `smokeFxLive`, `smokeReceiptRoundtrip`, `smokeLockService`, `smokeCategoriesRead`, `smokeGeminiParse`, `smokeWebRoutes` from the function picker.
 
-Web UI deploy is a separate step from `clasp push`: in the Apps Script editor → **Deploy → New deployment → Type: Web app → Execute as: User accessing → Who has access: Anyone with a Google account**. The deployed URL is the entry point for both users; share it privately. See [ADR-0010](docs/decisions/0010-web-app-access-mode.md).
+Web UI deploy is a separate step from `clasp push`: in the Apps Script editor → **Deploy → New deployment → Type: Web app → Execute as: User accessing → Who has access: Anyone with a Google account**. The deployed URL is the entry point for both users; share it privately. Real authorization is server-side: `Web.doGet` and every `google.script.run` endpoint compare `Session.getEffectiveUser().getEmail()` against `Config.ALLOWED_EMAILS`. Anyone else gets a denied page. See [ADR-0010](docs/decisions/0010-web-app-access-mode.md).
 
 ## Architecture in one paragraph
 

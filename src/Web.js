@@ -22,6 +22,11 @@ const Web = {
 
   /** Apps Script web-app entry point. */
   doGet(e) {
+    const email = Web._currentUserEmail();
+    if (!Web._isAuthorized(email)) {
+      return Web._deniedPage(email);
+    }
+
     const params = (e && e.parameter) || {};
     const requested = params.page || 'index';
     const page = Web.PAGES.includes(requested) ? requested : 'index';
@@ -73,6 +78,7 @@ const Web = {
    */
   // eslint-disable-next-line no-unused-vars
   parseReceipt(base64, mimeType) {
+    Web._assertAuthorized();
     const ctx = {
       categories: Storage.getCategories().map(c => c.name),
       products:   Storage.listProducts(),
@@ -91,6 +97,7 @@ const Web = {
    * @returns {{receipt_id: string, items_count: number}}
    */
   saveReceipt(input, items, photoBase64, photoMimeType) {
+    Web._assertAuthorized();
     if (!input) throw new Error('saveReceipt: input is required');
     if (!Array.isArray(items)) throw new Error('saveReceipt: items must be an array');
 
@@ -127,6 +134,7 @@ const Web = {
    * @returns {{receipt_id: string}}
    */
   updateReceipt(id, patch, items) {
+    Web._assertAuthorized();
     if (!id) throw new Error('updateReceipt: id is required');
     const existing = Storage.getReceipt(id);
     if (!existing) throw new Error(`Receipt not found: ${id}`);
@@ -168,6 +176,7 @@ const Web = {
    * @returns {?{receipt: Receipt, items: Item[]}}
    */
   getReceipt(id) {
+    Web._assertAuthorized();
     const receipt = Storage.getReceipt(id);
     if (!receipt) return null;
     const items = Storage.getItemsByReceipt(id);
@@ -176,6 +185,7 @@ const Web = {
 
   /** Hard-delete Receipt; Storage cascades to Items. */
   deleteReceipt(id) {
+    Web._assertAuthorized();
     if (!id) throw new Error('deleteReceipt: id is required');
     Storage.deleteReceipt(id);
     return { ok: true };
@@ -183,30 +193,83 @@ const Web = {
 
   /** Last N receipts ordered by date desc. */
   listRecent(limit) {
+    Web._assertAuthorized();
     return Storage.listRecent(limit || 30);
   },
 
   /** Category names for UI dropdowns. */
   getCategories() {
+    Web._assertAuthorized();
     return Storage.getCategories().map(c => c.name);
   },
 
   /** Products for the autocomplete datalist (Phase 3 UI-side matching). */
   listProducts() {
+    Web._assertAuthorized();
     return Storage.listProducts();
   },
 
   /**
-   * Server-side identity. Returns "" for personal Gmail without a Workspace
-   * domain; the UI then falls back to a localStorage toggle.
+   * Server-side identity for the UI. Reads getEffectiveUser (which works for
+   * personal Gmail when userinfo.email scope is granted, unlike the older
+   * getActiveUser() which can return ""). The UI keeps a localStorage
+   * fallback as belt-and-braces.
    */
   whoAmI() {
-    return Session.getActiveUser().getEmail() || '';
+    Web._assertAuthorized();
+    return Web._currentUserEmail();
   },
 
   // ============================================================
   // Internal helpers
   // ============================================================
+
+  /** Read the accessing user's email. getEffectiveUser is reliable for
+   *  personal Gmail when userinfo.email scope is granted; getActiveUser
+   *  can return "" in cross-domain scenarios. */
+  _currentUserEmail() {
+    try {
+      return (Session.getEffectiveUser().getEmail() || '').toLowerCase();
+    } catch (_e) {
+      return '';
+    }
+  },
+
+  /** True if `email` is in Config.ALLOWED_EMAILS (case-insensitive). */
+  _isAuthorized(email) {
+    if (!email) return false;
+    const normalized = String(email).toLowerCase();
+    return Config.ALLOWED_EMAILS.some(allowed => allowed.toLowerCase() === normalized);
+  },
+
+  /** Throws if the accessing user is not in the allowlist. Use from every
+   *  google.script.run target — doGet has its own friendly denied page. */
+  _assertAuthorized() {
+    const email = Web._currentUserEmail();
+    if (!Web._isAuthorized(email)) {
+      throw new Error(`Access denied for "${email || '(no email)'}"`);
+    }
+    return email;
+  },
+
+  /** Render a friendly access-denied page (HTML, no scriptlets). */
+  _deniedPage(email) {
+    const safeEmail = (email || '(no email available)').replace(/[<>&]/g, ch =>
+      ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[ch])
+    );
+    return HtmlService.createHtmlOutput(
+      `<!DOCTYPE html><html lang="uk"><head>` +
+      `<meta charset="utf-8">` +
+      `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+      `<title>Finance Tracker — доступ обмежено</title>` +
+      `<style>body{font:16px -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#1a1a1a;background:#fafafa;padding:24px;max-width:520px;margin:0 auto}h1{font-size:20px}code{background:#eee;padding:2px 6px;border-radius:4px}</style>` +
+      `</head><body>` +
+      `<h1>🔒 Доступ обмежено</h1>` +
+      `<p>Ви увійшли як <code>${safeEmail}</code>, але цей акаунт не у списку дозволених.</p>` +
+      `<p>Перевір що ти залогінений у потрібний Google акаунт. Якщо ти власник — додай свій email у <code>Config.ALLOWED_EMAILS</code> і передеплой.</p>` +
+      `</body></html>`
+    ).setTitle('Finance Tracker — доступ обмежено');
+  },
 
   _savePhotoToDrive(base64, mimeType, dateIso) {
     const folder = DriveApp.getFolderById(Config.DRIVE_FOLDER_ID);
