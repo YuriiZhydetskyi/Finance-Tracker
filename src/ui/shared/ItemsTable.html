@@ -32,7 +32,8 @@
         </div>
         <div>
           <label x-show="idx === 0">Ціна</label>
-          <input x-model.number="it.unit_price_orig" type="number" step="0.01" min="0" inputmode="decimal">
+          <!-- No min="0": negative prices are valid for discounts, Pfand refunds, cancellations. -->
+          <input x-model.number="it.unit_price_orig" type="number" step="0.01" inputmode="decimal">
         </div>
         <button type="button" class="icon-btn" title="Видалити рядок" @click="items.splice(idx, 1)">×</button>
       </div>
@@ -59,7 +60,7 @@
       </div>
       <div class="totals" style="margin-top:8px;padding-top:6px">
         <span style="color:var(--muted);font-size:13px">Рядок</span>
-        <span x-text="fmtMoney(rowTotal(it))"></span>
+        <span :class="{ 'is-negative': rowTotal(it) < 0 }" x-text="fmtMoney(rowTotal(it))"></span>
       </div>
     </div>
   </template>

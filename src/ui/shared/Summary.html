@@ -10,14 +10,14 @@
 <div class="card">
   <div class="totals">
     <span>Загалом</span>
-    <span class="big">
+    <span class="big" :class="{ 'is-negative': totalOrig(items) < 0 }">
       <span x-text="fmtMoney(totalOrig(items))"></span>
       <span x-text="currency"></span>
     </span>
   </div>
   <div class="breakdown" x-show="items.length > 0">
     <template x-for="row in categoryBreakdown(items)" :key="row.category">
-      <div class="breakdown-row">
+      <div class="breakdown-row" :class="{ 'is-negative': row.total < 0 }">
         <span x-text="row.category"></span>
         <span x-text="fmtMoney(row.total) + ' ' + currency"></span>
       </div>
