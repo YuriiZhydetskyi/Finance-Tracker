@@ -44,6 +44,7 @@
  * @property {string}  consumed_by    - 'his' | 'hers' | 'shared' | 'custom:N/M'
  * @property {?string} note
  * @property {number}  wasted_qty     - default 0; ≤ qty
+ * @property {number}  discount_orig  - default 0; ≥ 0; ≤ unit_price_orig (when positive). See ADR-0012.
  * @property {string}  created_at
  * @property {string}  updated_at
  */
@@ -66,6 +67,8 @@
  * @property {number} qty
  * @property {number} unit_price_orig
  * @property {?string} category_suggestion   - one of Categories.name; null if uncertain
+ * @property {number} [discount_orig]        - 0 from AI; UI-side pair detector ([ADR-0012]) sets it
+ *                                             when collapsing a Rabatt pair into a single ParsedItem.
  */
 
 /**
@@ -211,6 +214,13 @@ const Domain = {
     if (typeof it.qty === 'number' && typeof it.wasted_qty === 'number' && it.wasted_qty > it.qty) {
       errs.push(`wasted_qty (${it.wasted_qty}) cannot exceed qty (${it.qty})`);
     }
+    if (typeof it.discount_orig !== 'number' || it.discount_orig < 0) {
+      errs.push('discount_orig must be non-negative number');
+    }
+    if (typeof it.unit_price_orig === 'number' && typeof it.discount_orig === 'number'
+        && it.unit_price_orig > 0 && it.discount_orig > it.unit_price_orig) {
+      errs.push(`discount_orig (${it.discount_orig}) cannot exceed unit_price_orig (${it.unit_price_orig})`);
+    }
     if (errs.length) throw new Error(`Invalid Item: ${errs.join('; ')}`);
   },
 
@@ -316,12 +326,14 @@ const Domain = {
    * @param {string} input.consumed_by
    * @param {?string} [input.note]
    * @param {number} [input.wasted_qty]
+   * @param {number} [input.discount_orig] - default 0; per-unit discount, see ADR-0012
    * @returns {Item}
    */
   makeItem(input) {
     const qty = Domain.roundQty(input.qty);
     const unit_price_orig = Domain.roundMoney(input.unit_price_orig);
-    const total_orig = Domain.roundMoney(qty * unit_price_orig);
+    const discount_orig = Domain.roundMoney(input.discount_orig || 0);
+    const total_orig = Domain.roundMoney(qty * (unit_price_orig - discount_orig));
     const total_eur = Domain.roundMoney(total_orig * input.fx_rate_eur);
     const wasted_qty = Domain.roundQty(input.wasted_qty || 0);
     const now = Domain.nowIso();
@@ -338,6 +350,7 @@ const Domain = {
       consumed_by: input.consumed_by,
       note: input.note || null,
       wasted_qty,
+      discount_orig,
       created_at: now,
       updated_at: now,
     };
@@ -391,7 +404,8 @@ const Domain = {
     if (patch.qty !== undefined) merged.qty = Domain.roundQty(patch.qty);
     if (patch.unit_price_orig !== undefined) merged.unit_price_orig = Domain.roundMoney(patch.unit_price_orig);
     if (patch.wasted_qty !== undefined) merged.wasted_qty = Domain.roundQty(patch.wasted_qty);
-    merged.total_orig = Domain.roundMoney(merged.qty * merged.unit_price_orig);
+    if (patch.discount_orig !== undefined) merged.discount_orig = Domain.roundMoney(patch.discount_orig);
+    merged.total_orig = Domain.roundMoney(merged.qty * (merged.unit_price_orig - (merged.discount_orig || 0)));
     merged.total_eur = Domain.roundMoney(merged.total_orig * parentFxRate);
     merged.updated_at = Domain.nowIso();
     Domain.validateItem(merged);

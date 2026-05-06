@@ -2,7 +2,7 @@
 
 > **Призначення:** цей документ — точка входу для нової chat-сесії. Прочитавши його (і файли, на які він посилається), нова сесія матиме повний контекст і зможе продовжити роботу без перезапитування.
 
-**Дата останнього оновлення:** 2026-05-05 (Phase 3.5 done)
+**Дата останнього оновлення:** 2026-05-06 (Phase 3.6 + ADR-0012: pair grouping)
 
 ---
 
@@ -283,6 +283,28 @@ Phase 5 polish — додати `daily_gemini_calls` counter через `Propert
 
 - Apps Script `HtmlTemplate` Java-proxy quirks (e.g. methods becoming unreachable after custom property assignment) **не відтворюються** plain-JS evaluator-ом. Mitigation — sub-block C (опційний `npm run smoke` через Apps Script Execution API). Не зроблено у цій ітерації; додамо коли часті релізи стануть нормою.
 - JSDOM ≠ браузер: file pickers, layout, real iframe postMessage, real google.script.run cross-frame — не симулюються. Stub-имо `runServer`. Catch logic, не visual.
+
+---
+
+## 7.6. Phase 3.6 — Cancellation/discount pair grouping ✅ done (2026-05-06)
+
+### Реалізовано
+
+- **`Items.discount_orig` колонка** додана у Sheet (default 0; інваріант `total_orig = round(qty × (unit_price_orig − discount_orig), 2)`). Структуровано, queryable у Looker. Прецедент — `wasted_qty` з ADR-0009.
+- **`src/ui/shared/pairDetector.html`** — клієнтська функція `detectPairs(parsedItems)` що збігає Rabatt-стиль пари після AI парсу і повертає `{ items, cancellations }`. Чиста JS, без Apps Script API. Алгоритм консервативний: матчить тільки групи рівно з 2 items із збігом qty.
+- **`photo.html` review UI** — над таблицею товарів з'являється картка "Можливі скасування" із чекбоксом "Все ж додати до чеку" (default OFF). На discount pair UI показує один merged рядок із заповненим полем "Знижка".
+- **ItemsTable** — нове поле `Знижка` в extras (4-ий стовпець на desktop), редаговане користувачем у photo / manual / edit.
+- **`Domain.makeItem` / `applyItemPatch` / `validateItem`** оновлено: приймають `discount_orig` (default 0), валідують `≥ 0` і `≤ unit_price_orig` (коли ціна додатна), перераховують `total_orig`.
+- **Tests:** `tests/pairDetector.test.js` (16 case), Domain тести розширено (5 case), Storage round-trip з discount_orig, JSDOM UI assertions на discount field + detectPairs global.
+- **ADR-0012** документує рішення (групувати на клієнті, default-OFF для cancellations, нова колонка замість note).
+
+### Acceptance check
+
+Користувач має:
+- Додати колонку `discount_orig` у кінці Items sheet (заголовок точно як в [data-model.md](data-model.md)).
+- `npm run push` → F5 в Apps Script editor.
+- Запустити `smokeReceiptRoundtrip` (тепер пише item з `discount_orig=0.50` і чекає `total_orig=2.50`).
+- Завантажити фото EDEKA-чека з парою Mayb.Rose +2.99 / −2.99 — переконатись що картка cancellation з'являється і за замовчуванням товар не зберігається.
 
 ---
 

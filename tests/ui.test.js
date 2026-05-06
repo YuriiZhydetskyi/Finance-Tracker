@@ -214,6 +214,22 @@ test('UI photo: initial step is "pick", exposes a file input', async () => {
   assert.strictEqual(fileInput.getAttribute('accept'), 'image/*');
 });
 
+test('UI photo: pairDetector helper is loaded as a global (ADR-0012)', async () => {
+  const { window } = await renderPage({
+    page: 'photo',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      getCategories: () => [],
+      listProducts: () => [],
+    },
+  });
+  // detectPairs is shipped via shared/pairDetector.html and wired into photo.html.
+  // Asserting it loaded as a global guards against accidental removal of the
+  // <?!= include('shared/pairDetector') ?> line.
+  assert.strictEqual(typeof window.detectPairs, 'function',
+    'detectPairs should be available as a global on photo page');
+});
+
 test('UI photo: file input is wrapped by a styled .file-cta label and keeps capture=environment', async () => {
   const { document } = await renderPage({
     page: 'photo',
@@ -276,6 +292,21 @@ test('UI manual: every item-card renders all four field labels (no x-show=idx===
     labels.length >= 4,
     `expected at least 4 labels per item-card (Товар/Категорія/К-сть/Ціна), got ${labels.length}`
   );
+});
+
+test('UI ItemsTable: extras row exposes a "Знижка" field (ADR-0012)', async () => {
+  const { document } = await renderPage({
+    page: 'manual',
+    runServerStubs: {
+      whoAmI: () => 'me@x',
+      getCategories: () => [],
+      listProducts: () => [],
+    },
+  });
+  const extras = document.querySelector('.item-card__extras');
+  assert.ok(extras, '.item-card__extras missing');
+  const labels = Array.from(extras.querySelectorAll('label')).map(l => l.textContent.trim());
+  assert.ok(labels.includes('Знижка'), `expected "Знижка" label, got ${JSON.stringify(labels)}`);
 });
 
 test('UI manual: products datalist still wired to the product input', async () => {

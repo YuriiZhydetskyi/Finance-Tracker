@@ -627,6 +627,48 @@
   }
   .is-negative { color: var(--danger); font-weight: 600; }
 
+  /* ============================================================
+     Cancellation card (review screen on photo.html)
+     ============================================================ */
+  .cancellation-card {
+    background: var(--warn-bg);
+    border-color: #f0d98a;
+  }
+  .cancellation-card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .cancellation-card__name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--text);
+  }
+  .cancellation-card__price {
+    color: var(--warn-text);
+    font-weight: 600;
+    text-decoration: line-through;
+  }
+  .cancellation-card__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+  .cancellation-card__toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
   .loader {
     display: flex;
     align-items: center;
@@ -723,7 +765,7 @@
     .item-card__main .field-price    { grid-area: price; }
     .item-card__main .item-delete    { grid-area: del; align-self: end; }
 
-    .item-card__extras { grid-template-columns: 1fr 1fr 1fr; }
+    .item-card__extras { grid-template-columns: 1fr 1fr 1fr 1fr; }
 
     .file-cta { padding: 56px 24px; }
 

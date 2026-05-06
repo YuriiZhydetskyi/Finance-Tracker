@@ -167,6 +167,7 @@ function validItemObj(overrides = {}) {
     consumed_by: 'shared',
     note: null,
     wasted_qty: 0,
+    discount_orig: 0,
     created_at: '2026-05-04T14:30:00+00:00',
     updated_at: '2026-05-04T14:30:00+00:00',
   }, overrides);
@@ -283,6 +284,74 @@ test('makeItem: accepts negative unit_price_orig (discount, Pfand refund, cancel
   assert.strictEqual(it.unit_price_orig, -8.25);
   assert.strictEqual(it.total_orig, -8.25);
   assert.strictEqual(it.total_eur, -8.25);
+});
+
+// ============================================================
+// discount_orig (ADR-0012)
+// ============================================================
+
+test('makeItem: discount_orig defaults to 0 and total_orig matches qty * unit_price_orig', () => {
+  const it = Domain.makeItem({
+    receipt_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
+    product_name: 'Plain', category: 'Інше',
+    qty: 2, unit_price_orig: 1.50,
+    fx_rate_eur: 1.0, consumed_by: 'shared',
+  });
+  assert.strictEqual(it.discount_orig, 0);
+  assert.strictEqual(it.total_orig, 3.00);
+});
+
+test('makeItem: discount_orig subtracts from per-unit price for total_orig', () => {
+  // Mayb.Rose AF 0,75l: 2.99 listed, 1.00 Rabatt → 1.99 effective.
+  const it = Domain.makeItem({
+    receipt_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
+    product_name: 'Mayb.Rose AF 0,75l', category: 'Алкоголь',
+    qty: 1, unit_price_orig: 2.99, discount_orig: 1.00,
+    fx_rate_eur: 1.0, consumed_by: 'shared',
+  });
+  assert.strictEqual(it.unit_price_orig, 2.99);
+  assert.strictEqual(it.discount_orig, 1.00);
+  assert.strictEqual(it.total_orig, 1.99);
+  assert.strictEqual(it.total_eur, 1.99);
+});
+
+test('makeItem: discount_orig multiplies with qty in total_orig', () => {
+  const it = Domain.makeItem({
+    receipt_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
+    product_name: 'X', category: 'Інше',
+    qty: 3, unit_price_orig: 5.00, discount_orig: 0.50,
+    fx_rate_eur: 1.0, consumed_by: 'shared',
+  });
+  // 3 * (5.00 - 0.50) = 13.50
+  assert.strictEqual(it.total_orig, 13.50);
+});
+
+test('validateItem: rejects negative discount_orig', () => {
+  assert.throws(
+    () => Domain.validateItem(validItemObj({ discount_orig: -0.50 })),
+    /discount_orig/
+  );
+});
+
+test('validateItem: rejects discount_orig that exceeds unit_price_orig', () => {
+  assert.throws(
+    () => Domain.validateItem(validItemObj({ unit_price_orig: 2.00, discount_orig: 2.50, total_orig: -1.00, total_eur: -1.00 })),
+    /discount_orig/
+  );
+});
+
+test('applyItemPatch: recomputes total_orig when discount_orig changes', () => {
+  const it = Domain.makeItem({
+    receipt_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
+    product_name: 'X', category: 'Інше',
+    qty: 1, unit_price_orig: 5.00,
+    fx_rate_eur: 1.0, consumed_by: 'shared',
+  });
+  assert.strictEqual(it.total_orig, 5.00);
+  const updated = Domain.applyItemPatch(it, { discount_orig: 1.50 }, 1.0);
+  assert.strictEqual(updated.discount_orig, 1.50);
+  assert.strictEqual(updated.total_orig, 3.50);
+  assert.strictEqual(updated.total_eur, 3.50);
 });
 
 // ============================================================

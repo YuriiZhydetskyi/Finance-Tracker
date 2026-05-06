@@ -31,3 +31,4 @@
 | [0009](0009-notes-columns-and-wasted-qty.md) | Notes як прості колонки; spoilage як wasted_qty колонка | accepted | Schema |
 | [0010](0010-web-app-access-mode.md) | Web app access: `ANYONE` (signed-in) + server-side allowlist | accepted (revised) | Deploy |
 | [0011](0011-claude-fallback.md) | Claude Sonnet 4.6 як автоматичний fallback для Gemini | accepted | AI |
+| [0012](0012-cancellation-discount-grouping.md) | Cancellation/discount pair grouping в UI; `Items.discount_orig` колонка | accepted | UI / Schema |

@@ -8,6 +8,7 @@
   <meta name="finance-query-params" content="<?= JSON.stringify(queryParams || {}) ?>">
   <?!= include('shared/styles') ?>
   <?!= include('shared/webapp') ?>
+  <?!= include('shared/pairDetector') ?>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
 <body x-data="photoPage()" x-init="init()" x-cloak>
@@ -80,6 +81,28 @@
         </div>
       </div>
 
+      <template x-if="cancellations.length > 0">
+        <div>
+          <h2>Можливі скасування</h2>
+          <p class="muted" style="margin-top:-6px;font-size:13px">
+            Знайдено пари товарів із протилежними цінами. За замовчуванням не додаються до чеку — постав галочку, якщо товар треба все ж зберегти.
+          </p>
+          <template x-for="(c, cIdx) in cancellations" :key="cIdx">
+            <div class="card cancellation-card">
+              <div class="cancellation-card__head">
+                <span class="cancellation-card__name" x-text="c.product_name"></span>
+                <span class="cancellation-card__price tabular"
+                      x-text="fmtMoney(c.qty * c.unit_price_orig) + ' ' + receipt.currency"></span>
+              </div>
+              <label class="cancellation-card__toggle">
+                <input type="checkbox" :checked="c.included" @change="toggleCancellation(cIdx)">
+                <span>Все ж додати до чеку</span>
+              </label>
+            </div>
+          </template>
+        </div>
+      </template>
+
       <h2>Розпізнані товари</h2>
       <?!= include('shared/ItemsTable') ?>
 
@@ -145,6 +168,7 @@
           note: '',
         },
         items: [],
+        cancellations: [],
         categories: [],
         products: [],
 
@@ -197,19 +221,58 @@
           if (parsed.store) this.receipt.store = parsed.store;
           if (parsed.date) this.receipt.date = parsed.date;
           if (parsed.currency) this.receipt.currency = parsed.currency;
-          var rows = (parsed.items || []).map(function(it) {
+          // Collapse Rabatt-style pairs (cancellation / discount) before rendering.
+          // See ADR-0012 + src/ui/shared/pairDetector.html.
+          var detected = (typeof detectPairs === 'function')
+            ? detectPairs(parsed.items || [])
+            : { items: parsed.items || [], cancellations: [] };
+          var rows = detected.items.map(function(it) {
             return newItemRow({
               product_name: it.product_name || '',
               category: it.category_suggestion || '',
               qty: Number(it.qty) || 1,
               unit_price_orig: Number(it.unit_price_orig) || 0,
+              discount_orig: Number(it.discount_orig) || 0,
               consumed_by: 'shared',
             });
           });
           if (rows.length === 0) rows.push(newItemRow());
           this.items = rows;
+          this.cancellations = detected.cancellations.map(function(c) {
+            return {
+              product_name: c.product_name,
+              category_suggestion: c.category_suggestion || '',
+              qty: c.qty,
+              unit_price_orig: c.unit_price_orig,
+              included: false,
+              _addedItemRef: null,
+            };
+          });
           this.rawOcrJson = JSON.stringify({ items: parsed.items || [] });
           if (this.rawOcrJson.length > 45000) this.rawOcrJson = null;
+        },
+
+        toggleCancellation(idx) {
+          var c = this.cancellations[idx];
+          if (!c) return;
+          if (c.included) {
+            // Currently included → remove the row from items.
+            var i = this.items.indexOf(c._addedItemRef);
+            if (i >= 0) this.items.splice(i, 1);
+            c._addedItemRef = null;
+            c.included = false;
+          } else {
+            var row = newItemRow({
+              product_name: c.product_name,
+              category: c.category_suggestion || '',
+              qty: c.qty,
+              unit_price_orig: c.unit_price_orig,
+              consumed_by: 'shared',
+            });
+            this.items.push(row);
+            c._addedItemRef = row;
+            c.included = true;
+          }
         },
 
         get canSave() {
@@ -225,6 +288,7 @@
           this.previewUrl = '';
           this.photoBase64 = '';
           this.items = [];
+          this.cancellations = [];
           this.error = '';
         },
 

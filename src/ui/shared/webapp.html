@@ -107,6 +107,7 @@
       category: '',
       qty: 1,
       unit_price_orig: 0,
+      discount_orig: 0,
       consumed_by: 'shared',
       note: '',
       wasted_qty: 0,
@@ -122,7 +123,8 @@
   function rowTotal(it) {
     var qty = Number(it.qty) || 0;
     var price = Number(it.unit_price_orig) || 0;
-    return qty * price;
+    var discount = Number(it.discount_orig) || 0;
+    return qty * (price - discount);
   }
 
   function totalOrig(items) {

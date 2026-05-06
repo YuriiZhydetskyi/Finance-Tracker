@@ -112,13 +112,15 @@ Storage-код спирається на імена колонок, не на п
 | 10 | `consumed_by` | enum | `his` \| `hers` \| `shared` \| `custom:HIS%/HERS%` | ні | `shared` / `custom:30/70` |
 | 11 | `note` | string | вільна нотатка | так | `Купили на знижці -50%` |
 | 12 | `wasted_qty` | number | float, 3dp; default `0`; ≤ `qty`; одиниці зіпсувалось | ні | `0.000` |
-| 13 | `created_at` | string | ISO 8601 | ні | `2026-05-04T14:30:00+02:00` |
-| 14 | `updated_at` | string | ISO 8601 | ні | `2026-05-04T14:35:12+02:00` |
+| 13 | `discount_orig` | number | float, 2dp; default `0`; ≥ 0; ≤ `unit_price_orig`. Знижка на одиницю товару у валюті чеку (Rabatt-pair-merge або ручне введення) | ні | `0.00` / `1.00` |
+| 14 | `created_at` | string | ISO 8601 | ні | `2026-05-04T14:30:00+02:00` |
+| 15 | `updated_at` | string | ISO 8601 | ні | `2026-05-04T14:35:12+02:00` |
 
 **Правила:**
-- `total_orig = round(qty * unit_price_orig, 2)` — інваріант, перевіряється у `Domain.js`.
+- `total_orig = round(qty * (unit_price_orig - discount_orig), 2)` — інваріант, перевіряється у `Domain.js`. Коли `discount_orig = 0`, формула рівноцінна `qty * unit_price_orig` (старий інваріант).
 - `total_eur` денормалізовано (зберігається копія) — для аналітики без джойнів. Див. [ADR-0008](decisions/0008-prices-computed-from-items.md).
 - **Negative line items.** `unit_price_orig` (і відповідно `total_orig` / `total_eur`) може бути від'ємним. Три типові причини на німецьких чеках: касир пробив товар двічі і відмінив (cancellation pair), знижка / акція / markdown через термін придатності (Rabatt), повернення тари (Leergut/Pfand refund). `qty` лишається додатнім (≥ 1) — змінюється тільки знак ціни. Receipt's `total_orig` = сума всіх item totals: позитивні і негативні нетятся природно. Gemini промпт ([src/Gemini.js](../src/Gemini.js)) інструктує модель видавати такі рядки окремими items, а не зливати з positive-counterpart-ом.
+- **Pair grouping**: коли AI повертає Rabatt-пару (`+X` повний товар + `−Y` знижка з тим самим product_name), photo.html UI зливає їх у один Item з `unit_price_orig=X` і `discount_orig=Y` перед збереженням ([ADR-0012](decisions/0012-cancellation-discount-grouping.md)). При full cancellation (`+X` і `−X`) — за замовчуванням обидва не зберігаються (користувач може override). Items, що потрапляють у Sheet після цього, мають додатній або нульовий `unit_price_orig` (за винятком окремих Pfand/Leergut рядків, що не мають позитивного counterpart-у).
 - `consumed_by`:
   - `his` / `hers` — повністю одного.
   - `shared` — 50/50.
@@ -199,6 +201,7 @@ Storage-код спирається на імена колонок, не на п
 | `qty` | number | ні | > 0 |
 | `unit_price_orig` | number | ні | у валюті чеку |
 | `category_suggestion` | string | так | one of `Categories.name` або `null` |
+| `discount_orig` | number | так | заповнюється UI-шаром після pair-grouping ([ADR-0012](decisions/0012-cancellation-discount-grouping.md)); AI завжди повертає `0`/`undefined` |
 
 Валідація: `Domain.validateParsedReceipt` — soft validator (дозволяє null store/date/total). Гарантує тільки ISO-4217 currency і числові обов'язкові поля для items.
 

@@ -3,6 +3,9 @@
 - Status: accepted
 - Date: 2026-05-04
 
+> **Changelog 2026-05-06**: той самий «вузька-колонка-замість-таблиці» патерн застосовано для знижок — додано колонку `Items.discount_orig`. Деталі і evolution rule — у [ADR-0012](0012-cancellation-discount-grouping.md).
+
+
 ## Context and Problem Statement
 
 Користувач хоче:

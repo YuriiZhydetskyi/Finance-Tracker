@@ -103,6 +103,7 @@ const Smoke = {
       category: 'Молочка',
       qty: 1,
       unit_price_orig: 3.00,
+      discount_orig: 0.50,
       fx_rate_eur: 1.0,
       consumed_by: 'shared',
       note: null,
@@ -110,7 +111,7 @@ const Smoke = {
 
     Logger.log(`INSERT Receipt ${receipt.id}`);
     Storage.appendReceipt(receipt);
-    Logger.log(`INSERT 2 Items`);
+    Logger.log(`INSERT 2 Items (item2 has discount_orig=0.50, expecting total_orig=2.50)`);
     Storage.appendItems([item1, item2]);
 
     Logger.log('SELECT Receipt by id ...');

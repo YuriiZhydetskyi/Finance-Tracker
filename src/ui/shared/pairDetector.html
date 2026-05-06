@@ -1,0 +1,96 @@
+<script>
+  // detectPairs(parsedItems) — collapse Rabatt-style cancellation/discount pairs
+  // emitted by the AI parser into a UI-ready shape. See ADR-0012.
+  //
+  // Input:  ParsedItem[] from AiClient.parseReceipt — same product can appear
+  //         twice, once with positive total and once with negative.
+  // Output: {
+  //   items:         ParsedItem[]  // ordered like the input but with cancellation
+  //                                 // pairs dropped and discount pairs merged
+  //                                 // into a single item carrying `discount_orig`.
+  //   cancellations: Array<{        // cards surfaced for the review UI; user toggles
+  //                                 // "include this product anyway".
+  //     product_name, category_suggestion, qty, unit_price_orig
+  //   }>
+  // }
+  //
+  // Conservative on purpose: only matches groups of EXACTLY 2 items with the same
+  // normalized product_name. Three-or-more occurrences (two purchases + one partial
+  // refund, etc.) are left alone for the user to handle manually.
+  function detectPairs(parsedItems) {
+    if (!Array.isArray(parsedItems)) return { items: [], cancellations: [] };
+
+    var groups = new Map();
+    parsedItems.forEach(function(it, idx) {
+      var key = String((it && it.product_name) || '').trim().toLowerCase();
+      if (!key) return;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(idx);
+    });
+
+    var disposition = parsedItems.map(function() { return { kind: 'keep' }; });
+    var cancellations = [];
+
+    groups.forEach(function(indices) {
+      if (indices.length !== 2) return;
+      var first = parsedItems[indices[0]];
+      var second = parsedItems[indices[1]];
+      var firstTotal = Number(first.qty) * Number(first.unit_price_orig);
+      var secondTotal = Number(second.qty) * Number(second.unit_price_orig);
+      var hasOpposite =
+        (firstTotal > 0 && secondTotal < 0) ||
+        (firstTotal < 0 && secondTotal > 0);
+      if (!hasOpposite) return;
+
+      var pos, posIdx, neg, negIdx;
+      if (firstTotal > 0) {
+        pos = first; posIdx = indices[0];
+        neg = second; negIdx = indices[1];
+      } else {
+        pos = second; posIdx = indices[1];
+        neg = first; negIdx = indices[0];
+      }
+
+      // qty mismatch → ambiguous (e.g. +2 × X and -1 × X = partial refund);
+      // leave both for manual handling.
+      if (Math.abs(Number(pos.qty) - Number(neg.qty)) > 0.001) return;
+
+      // Round to 2dp before comparing so float drift (2.99 − 2.98 ≠ 0.01 in IEEE 754)
+      // doesn't push a true cancellation off the equality branch.
+      var posTotalR = Math.round(Number(pos.qty) * Number(pos.unit_price_orig) * 100) / 100;
+      var negTotalAbsR = Math.round(Math.abs(Number(neg.qty) * Number(neg.unit_price_orig)) * 100) / 100;
+
+      if (posTotalR === negTotalAbsR) {
+        disposition[posIdx] = { kind: 'skip-cancellation' };
+        disposition[negIdx] = { kind: 'skip-cancellation' };
+        cancellations.push({
+          product_name: pos.product_name,
+          category_suggestion: pos.category_suggestion || null,
+          qty: Number(pos.qty),
+          unit_price_orig: Number(pos.unit_price_orig),
+        });
+      } else if (negTotalAbsR < posTotalR) {
+        disposition[posIdx] = {
+          kind: 'merged-discount',
+          discount_orig: Math.abs(Number(neg.unit_price_orig)),
+        };
+        disposition[negIdx] = { kind: 'skip-merged' };
+      }
+      // negTotalAbsR > posTotalR → refund larger than purchase; leave both.
+    });
+
+    var items = [];
+    parsedItems.forEach(function(it, idx) {
+      var d = disposition[idx];
+      if (d.kind === 'keep') {
+        items.push(it);
+      } else if (d.kind === 'merged-discount') {
+        var merged = Object.assign({}, it);
+        merged.discount_orig = d.discount_orig;
+        items.push(merged);
+      }
+    });
+
+    return { items: items, cancellations: cancellations };
+  }
+</script>

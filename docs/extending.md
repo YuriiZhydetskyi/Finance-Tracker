@@ -111,6 +111,8 @@ Reference implementation: [src/Gemini.js](../src/Gemini.js) (Gemini 3 Flash че
    }
    ```
 
+> **Приклади з історії:** `Items.wasted_qty` ([ADR-0009](decisions/0009-notes-columns-and-wasted-qty.md)) і `Items.discount_orig` ([ADR-0012](decisions/0012-cancellation-discount-grouping.md)) — обидва додані саме за цим рецептом: вузька колонка `number` з default `0` в кінці листа Items, оновлено `Domain.makeItem` + `validateItem` + `applyItemPatch`. Storage не торкався завдяки name-based mapping.
+
 ---
 
 ## Рецепт 5: Promote item → product (майбутнє, поки не реалізовано)

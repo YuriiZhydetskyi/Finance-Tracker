@@ -18,7 +18,7 @@ const { fakes, resetAllFakes, Domain, Storage } = require('./bootstrap');
 const SHEETS = ['Receipts', 'Items', 'Products', 'Categories'];
 const HEADERS = {
   Receipts: ['id', 'date', 'store', 'currency', 'total_orig', 'fx_rate_eur', 'total_eur', 'paid_by', 'photo_url', 'source', 'raw_ocr_json', 'note', 'created_at', 'updated_at'],
-  Items: ['id', 'receipt_id', 'product_id', 'product_name', 'category', 'qty', 'unit_price_orig', 'total_orig', 'total_eur', 'consumed_by', 'note', 'wasted_qty', 'created_at', 'updated_at'],
+  Items: ['id', 'receipt_id', 'product_id', 'product_name', 'category', 'qty', 'unit_price_orig', 'total_orig', 'total_eur', 'consumed_by', 'note', 'wasted_qty', 'discount_orig', 'created_at', 'updated_at'],
   Products: ['id', 'name', 'category', 'unit', 'unit_size', 'notes', 'created_at', 'updated_at'],
   Categories: ['name', 'group'],
 };
@@ -167,6 +167,23 @@ test('Storage.deleteItem: removes single item', () => {
   const remaining = Storage.getItemsByReceipt(r.id);
   assert.strictEqual(remaining.length, 1);
   assert.strictEqual(remaining[0].product_name, 'B');
+});
+
+test('Storage.appendItems + getItemsByReceipt: discount_orig round-trips', () => {
+  setupSheet();
+  const r = makeTestReceipt();
+  Storage.appendReceipt(r);
+  const it = makeTestItem(r.id, {
+    product_name: 'Mayb.Rose AF 0,75l',
+    unit_price_orig: 2.99,
+    discount_orig: 1.00,
+  });
+  Storage.appendItems([it]);
+  const got = Storage.getItemsByReceipt(r.id)[0];
+  assert.strictEqual(got.unit_price_orig, 2.99);
+  assert.strictEqual(got.discount_orig, 1.00);
+  assert.strictEqual(got.total_orig, 1.99);
+  assert.strictEqual(got.total_eur, 1.99);
 });
 
 // ============================================================
