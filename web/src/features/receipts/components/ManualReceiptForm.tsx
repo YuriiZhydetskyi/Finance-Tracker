@@ -2,19 +2,11 @@ import type { FormEvent } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/shared/ui/Button';
-import { Input } from '@/shared/ui/Input';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import { useReceiptForm } from '../hooks/use-receipt-form';
 import { useSaveReceiptMutation } from '../api/use-save-receipt-mutation';
-import { ItemsList } from './ItemsList';
-import { SummaryFooter } from './SummaryFooter';
-import { SUPPORTED_CURRENCIES } from '../schemas/manual-form';
-
-const SELECT_CLASS =
-  'flex h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900';
-
-const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
+import { ReceiptFormFields } from './ReceiptFormFields';
 
 export function ManualReceiptForm() {
   const { methods, itemsArray } = useReceiptForm();
@@ -50,77 +42,38 @@ export function ManualReceiptForm() {
         discount_orig: it.discount_orig ?? 0,
       })),
     });
-    void navigate({ to: '/', search: { saved: result.receipt_id } });
+    void navigate({ to: '/recent', search: { saved: result.receipt_id } });
   });
 
   const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
     void onSubmit(e);
   };
 
-  const errors = methods.formState.errors;
-
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleFormSubmit} className="space-y-4">
-        <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-12 gap-3">
-            <div className="col-span-6 sm:col-span-3">
-              <label className={FIELD_LABEL_CLASS}>Дата</label>
-              <Input type="date" {...methods.register('date')} />
-              {errors.date && <span className="text-xs text-red-600">{errors.date.message}</span>}
-            </div>
-            <div className="col-span-12 sm:col-span-5">
-              <label className={FIELD_LABEL_CLASS}>Магазин / опис</label>
-              <Input placeholder="Lidl, Amazon, оренда..." {...methods.register('store')} />
-              {errors.store && <span className="text-xs text-red-600">{errors.store.message}</span>}
-            </div>
-            <div className="col-span-6 sm:col-span-2">
-              <label className={FIELD_LABEL_CLASS}>Валюта</label>
-              <select className={SELECT_CLASS} {...methods.register('currency')}>
-                {SUPPORTED_CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-span-12 sm:col-span-2">
-              <label className={FIELD_LABEL_CLASS}>Оплатив</label>
-              <Input type="email" autoComplete="email" {...methods.register('paid_by')} />
-            </div>
-            <div className="col-span-12">
-              <label className={FIELD_LABEL_CLASS}>Нотатка (опц.)</label>
-              <Input placeholder="—" {...methods.register('note')} />
-            </div>
-          </div>
-        </div>
-
-        <ItemsList itemsArray={itemsArray} categories={categoryNames} productNames={productNames} />
-
-        {errors.items?.root && <p className="text-sm text-red-600">{errors.items.root.message}</p>}
-
-        <SummaryFooter />
-
-        {save.isError && (
-          <p role="alert" className="text-sm text-red-600">
-            Помилка збереження: {save.error.message}
-          </p>
-        )}
-
-        <div className="flex items-center gap-3">
-          <Button type="submit" disabled={save.isPending}>
-            {save.isPending ? 'Зберігаю...' : 'Зберегти'}
-          </Button>
-          <Button
-            variant="ghost"
-            type="button"
-            onClick={() => {
-              void navigate({ to: '/' });
-            }}
-          >
-            Скасувати
-          </Button>
-        </div>
+      <form onSubmit={handleFormSubmit}>
+        <ReceiptFormFields
+          itemsArray={itemsArray}
+          categories={categoryNames}
+          productNames={productNames}
+          saveError={save.isError ? save.error : null}
+          actions={
+            <>
+              <Button type="submit" disabled={save.isPending}>
+                {save.isPending ? 'Зберігаю...' : 'Зберегти'}
+              </Button>
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => {
+                  void navigate({ to: '/' });
+                }}
+              >
+                Скасувати
+              </Button>
+            </>
+          }
+        />
       </form>
     </FormProvider>
   );

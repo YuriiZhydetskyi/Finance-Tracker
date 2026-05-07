@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { makeItem, makeReceipt, type ItemInput, type ReceiptInput } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { fxRateProvider } from '@/shared/lib/dependencies';
+import { computeGrandTotal } from '../utils/totals';
 import { receiptsQueryKey } from './receipts-query-keys';
 
 // What the caller provides — derived fields (fx_rate_eur, total_orig, total_eur,
@@ -45,10 +46,7 @@ export function useSaveReceiptMutation() {
         receiptInput.date,
       );
 
-      const total_orig = itemInputs.reduce(
-        (acc, it) => acc + it.qty * (it.unit_price_orig - (it.discount_orig ?? 0)),
-        0,
-      );
+      const total_orig = computeGrandTotal(itemInputs);
 
       const receipt = makeReceipt({ ...receiptInput, fx_rate_eur, total_orig });
       const items = itemInputs.map((it) =>

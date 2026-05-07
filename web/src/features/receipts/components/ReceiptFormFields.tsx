@@ -1,0 +1,92 @@
+import type { ReactNode } from 'react';
+import type { UseFieldArrayReturn } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
+import { Input } from '@/shared/ui/Input';
+import { ItemsList } from './ItemsList';
+import { SummaryFooter } from './SummaryFooter';
+import { SUPPORTED_CURRENCIES, type ManualFormValues } from '../schemas/manual-form';
+
+const SELECT_CLASS =
+  'flex h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900';
+
+const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
+
+type Props = {
+  itemsArray: UseFieldArrayReturn<ManualFormValues, 'items', 'id'>;
+  categories: string[];
+  productNames: string[];
+  saveError?: Error | null;
+  /** Action buttons rendered at the bottom of the form (Save/Cancel/Delete). */
+  actions: ReactNode;
+};
+
+/**
+ * Inner shell of every receipt form (manual create + edit). The parent owns
+ * the FormProvider and the submit handler; this component just renders the
+ * fields and lays out the actions slot.
+ */
+export function ReceiptFormFields({
+  itemsArray,
+  categories,
+  productNames,
+  saveError,
+  actions,
+}: Props) {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<ManualFormValues>();
+
+  const itemErrors = errors.items as { root?: { message?: string } } | undefined;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-12 gap-3">
+          <div className="col-span-6 sm:col-span-3">
+            <label className={FIELD_LABEL_CLASS}>Дата</label>
+            <Input type="date" {...register('date')} />
+            {errors.date && <span className="text-xs text-red-600">{errors.date.message}</span>}
+          </div>
+          <div className="col-span-12 sm:col-span-5">
+            <label className={FIELD_LABEL_CLASS}>Магазин / опис</label>
+            <Input placeholder="Lidl, Amazon, оренда..." {...register('store')} />
+            {errors.store && <span className="text-xs text-red-600">{errors.store.message}</span>}
+          </div>
+          <div className="col-span-6 sm:col-span-2">
+            <label className={FIELD_LABEL_CLASS}>Валюта</label>
+            <select className={SELECT_CLASS} {...register('currency')}>
+              {SUPPORTED_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-span-12 sm:col-span-2">
+            <label className={FIELD_LABEL_CLASS}>Оплатив</label>
+            <Input type="email" autoComplete="email" {...register('paid_by')} />
+          </div>
+          <div className="col-span-12">
+            <label className={FIELD_LABEL_CLASS}>Нотатка (опц.)</label>
+            <Input placeholder="—" {...register('note')} />
+          </div>
+        </div>
+      </div>
+
+      <ItemsList itemsArray={itemsArray} categories={categories} productNames={productNames} />
+
+      {itemErrors?.root && <p className="text-sm text-red-600">{itemErrors.root.message}</p>}
+
+      <SummaryFooter />
+
+      {saveError && (
+        <p role="alert" className="text-sm text-red-600">
+          Помилка збереження: {saveError.message}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">{actions}</div>
+    </div>
+  );
+}

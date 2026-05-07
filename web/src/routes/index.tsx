@@ -33,12 +33,15 @@ function HomePage() {
         <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
           <h1 className="mb-2 text-2xl font-bold tracking-tight">Finance Tracker</h1>
           <p className="mb-6 text-sm text-slate-600">
-            Phase 5: ручне додавання чека. Сторінки <code>/photo</code>, <code>/recent</code>,{' '}
-            <code>/stats</code> з&apos;являться у наступних фазах.
+            Phase 6: ручне додавання + перегляд останніх + редагування. Сторінки <code>/photo</code>{' '}
+            та <code>/stats</code> з&apos;являться у наступних фазах.
           </p>
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
             <Link to="/manual">
               <Button>Додати чек вручну</Button>
+            </Link>
+            <Link to="/recent">
+              <Button variant="secondary">Останні чеки</Button>
             </Link>
           </div>
         </div>
