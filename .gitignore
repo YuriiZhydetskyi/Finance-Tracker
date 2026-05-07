@@ -35,3 +35,18 @@ dist/
 build/
 .cache/
 coverage/
+.vite/
+.turbo/
+
+# Vitest
+.vitest-cache/
+
+# TanStack Router generated tree
+**/routeTree.gen.ts
+
+# Supabase local dev
+**/supabase/.branches
+**/supabase/.temp
+
+# Husky local
+.husky/_

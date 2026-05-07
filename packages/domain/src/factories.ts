@@ -1,0 +1,147 @@
+// Factories — the only sanctioned way to construct Receipts, Items, Products.
+// Each factory generates a ULID id, sets created_at/updated_at, rounds money
+// per the precision contract (money.ts), computes derived fields (total_eur,
+// total_orig from qty * (unit_price_orig - discount_orig)), and validates
+// against the corresponding schema.
+//
+// Storage / API layers must NOT round, parse consumed_by, or generate IDs
+// themselves — they go through these factories.
+
+import { roundFxRate, roundMoney, roundQty } from './money';
+import { nowIso } from './time';
+import { ulid } from './ulid';
+import {
+  ItemSchema,
+  ProductSchema,
+  ReceiptSchema,
+  type Item,
+  type ItemInput,
+  type Product,
+  type ProductInput,
+  type Receipt,
+  type ReceiptInput,
+} from './schemas';
+
+export function makeReceipt(input: ReceiptInput): Receipt {
+  const total_orig = roundMoney(input.total_orig);
+  const fx_rate_eur = roundFxRate(input.fx_rate_eur);
+  const total_eur = roundMoney(total_orig * fx_rate_eur);
+  const now = nowIso();
+  const candidate: Receipt = {
+    id: ulid(),
+    date: input.date,
+    store: input.store,
+    currency: input.currency,
+    total_orig,
+    fx_rate_eur,
+    total_eur,
+    paid_by: input.paid_by,
+    photo_url: input.photo_url ?? null,
+    source: input.source,
+    raw_ocr_json: input.raw_ocr_json ?? null,
+    note: input.note ?? null,
+    created_at: now,
+    updated_at: now,
+  };
+  return ReceiptSchema.parse(candidate);
+}
+
+export function makeItem(input: ItemInput): Item {
+  const qty = roundQty(input.qty);
+  const unit_price_orig = roundMoney(input.unit_price_orig);
+  const discount_orig = roundMoney(input.discount_orig ?? 0);
+  const total_orig = roundMoney(qty * (unit_price_orig - discount_orig));
+  const total_eur = roundMoney(total_orig * input.fx_rate_eur);
+  const wasted_qty = roundQty(input.wasted_qty ?? 0);
+  const now = nowIso();
+  const candidate: Item = {
+    id: ulid(),
+    receipt_id: input.receipt_id,
+    product_id: input.product_id ?? null,
+    product_name: input.product_name,
+    category: input.category,
+    qty,
+    unit_price_orig,
+    total_orig,
+    total_eur,
+    consumed_by: input.consumed_by,
+    note: input.note ?? null,
+    wasted_qty,
+    discount_orig,
+    created_at: now,
+    updated_at: now,
+  };
+  return ItemSchema.parse(candidate);
+}
+
+export function makeProduct(input: ProductInput): Product {
+  const now = nowIso();
+  const candidate: Product = {
+    id: ulid(),
+    name: input.name,
+    category: input.category,
+    unit: input.unit ?? null,
+    unit_size: typeof input.unit_size === 'number' ? input.unit_size : null,
+    notes: input.notes ?? null,
+    created_at: now,
+    updated_at: now,
+  };
+  return ProductSchema.parse(candidate);
+}
+
+// ── Patch helpers (UPDATE) ──────────────────────────────────────────────────
+// Each merges the patch onto the existing entity, rounds and recomputes
+// derived numbers, bumps updated_at, validates the result.
+
+export type ReceiptPatch = Partial<
+  Pick<
+    Receipt,
+    | 'date'
+    | 'store'
+    | 'currency'
+    | 'total_orig'
+    | 'fx_rate_eur'
+    | 'paid_by'
+    | 'photo_url'
+    | 'source'
+    | 'raw_ocr_json'
+    | 'note'
+  >
+>;
+
+export function applyReceiptPatch(existing: Receipt, patch: ReceiptPatch): Receipt {
+  const merged: Receipt = { ...existing, ...patch };
+  if (patch.total_orig !== undefined) merged.total_orig = roundMoney(patch.total_orig);
+  if (patch.fx_rate_eur !== undefined) merged.fx_rate_eur = roundFxRate(patch.fx_rate_eur);
+  merged.total_eur = roundMoney(merged.total_orig * merged.fx_rate_eur);
+  merged.updated_at = nowIso();
+  return ReceiptSchema.parse(merged);
+}
+
+export type ItemPatch = Partial<
+  Pick<
+    Item,
+    | 'product_id'
+    | 'product_name'
+    | 'category'
+    | 'qty'
+    | 'unit_price_orig'
+    | 'consumed_by'
+    | 'note'
+    | 'wasted_qty'
+    | 'discount_orig'
+  >
+>;
+
+export function applyItemPatch(existing: Item, patch: ItemPatch, parentFxRate: number): Item {
+  const merged: Item = { ...existing, ...patch };
+  if (patch.qty !== undefined) merged.qty = roundQty(patch.qty);
+  if (patch.unit_price_orig !== undefined)
+    merged.unit_price_orig = roundMoney(patch.unit_price_orig);
+  if (patch.wasted_qty !== undefined) merged.wasted_qty = roundQty(patch.wasted_qty);
+  if (patch.discount_orig !== undefined) merged.discount_orig = roundMoney(patch.discount_orig);
+  merged.total_orig = roundMoney(merged.qty * (merged.unit_price_orig - merged.discount_orig));
+  merged.total_eur = roundMoney(merged.total_orig * parentFxRate);
+  merged.updated_at = nowIso();
+  return ItemSchema.parse(merged);
+}
