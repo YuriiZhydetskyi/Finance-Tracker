@@ -2,7 +2,7 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Останнє оновлення:** 2026-05-07 (Phase 7 — `parse-receipt` Edge Function написана; production deploy + інтеграція з реальним фото deferred до Phase 8)
+**Останнє оновлення:** 2026-05-07 (Phase 8 — `/photo` сторінка готова; production deploy всього бандла deferred до Phase 10)
 
 ---
 
@@ -11,8 +11,8 @@
 - **Старий стек (Apps Script + Sheets + Alpine.js)** заархівовано в [`legacy/apps-script/`](../legacy/apps-script/) — досі білдиться (164 тести), залишається для emergency rollback.
 - **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages (deploy у Phase 10). $0/місяць.
 - **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/<fn>/providers/`. Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
-- **Прогрес:** 7 з 11 фаз готові. Auth + `/manual` + `/recent` + `/edit/$id` працюють end-to-end (тести зелені, окремі manual-smoke кроки deferred). `parse-receipt` Edge Function написана + перевірена через `deno check` / `deno lint` локально, але ще не задеплоєна і ще немає UI що її викликає.
-- **Наступне:** Phase 8 — `/photo` сторінка (uploader + клієнт resize + виклик Edge Function + `<CancellationCard>` per ADR-0012 + Supabase Storage адаптер).
+- **Прогрес:** 8 з 11 фаз готові. Auth + `/manual` + `/recent` + `/edit/$id` + `/photo` (resize → AI parse → review з cancellation cards → save з фото у Supabase Storage) працюють end-to-end (тести зелені, manual smoke deferred до live deploy у Phase 10). `parse-receipt` Edge Function ще не задеплоєна — клієнтський wiring готовий, але виклик впаде проти live проекту, поки Phase 10 не запушить функцію + не сетне `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` secrets.
+- **Наступне:** Phase 9 — `/stats` сторінка (4 чарти через Postgres groupings + Chart.js).
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 
@@ -61,14 +61,15 @@ finance-tracker/
 ├── docs/                       ← ADR-и + цей файл
 ├── web/                        ← React + Vite + Tailwind app
 │   ├── src/
-│   │   ├── routes/             ← TanStack Router file-based (__root, index, manual, recent, edit.$id, auth.callback)
-│   │   ├── features/           ← vertical slices (auth, receipts, categories, products)
+│   │   ├── routes/             ← TanStack Router file-based (__root, index, manual, recent, edit.$id, photo, auth.callback)
+│   │   ├── features/           ← vertical slices (auth, receipts, categories, products, photo)
 │   │   │   ├── auth/{api,components,guards,index.ts}
 │   │   │   ├── receipts/{api,components,hooks,schemas,utils,index.ts}
 │   │   │   ├── categories/{api,index.ts}
-│   │   │   └── products/{api,index.ts}
+│   │   │   ├── products/{api,index.ts}
+│   │   │   └── photo/{api,components,utils,index.ts}
 │   │   ├── shared/
-│   │   │   ├── lib/            ← порти + адаптери (auth/, fx-rate/, parse-receipt/, supabase-client, dependencies, query-client, env)
+│   │   │   ├── lib/            ← порти + адаптери (auth/, fx-rate/, parse-receipt/, photo-storage/, supabase-client, dependencies, query-client, env)
 │   │   │   ├── ui/             ← design system (Button, Input, cn)
 │   │   │   ├── utils/          ← format-money, format-date
 │   │   │   └── types/          ← згенеровані Supabase types
@@ -86,7 +87,9 @@ finance-tracker/
 │   └── tsconfig.json
 ├── supabase/
 │   ├── config.toml             ← supabase init defaults; edge_runtime deno_version=2
-│   ├── migrations/20260507000001_initial_schema.sql
+│   ├── migrations/
+│   │   ├── 20260507000001_initial_schema.sql
+│   │   └── 20260507000002_storage_bucket.sql ← Phase 8: бакет `receipts` + RLS
 │   ├── seed.sql                ← 20 категорій
 │   ├── functions/parse-receipt/ ← Phase 7: AI OCR Edge Function (Deno)
 │   │   ├── index.ts            ← Deno entry (3 рядки)
@@ -105,7 +108,7 @@ finance-tracker/
 
 ---
 
-## Що зроблено (Phases 0–7)
+## Що зроблено (Phases 0–8)
 
 ### ✅ Phase 0 — Archive (2026-05-07)
 
@@ -229,19 +232,38 @@ finance-tracker/
   3. **Allowlist через існуючий `is_allowed_user()` RPC** замість service-role keys у функції.
 - **Tests:** 42 web (+5: edge-fn-parse-receipt: invoke shape, valid response, error path, Zod-fail path, default products) + 69 domain = **111 тести зелені**.
 - **Server-side checks:** `deno check` (7 файлів) + `deno lint` (8 файлів) — обидва зелені. Handler unit тести у Deno deferred — логіка shallow, prompt+schema це byte-equal copies legacy коду.
-- **НЕ зроблено**: `supabase secrets set GEMINI_API_KEY=... ANTHROPIC_API_KEY=...` + `supabase functions deploy parse-receipt`. Інтеграційний smoke з реальним JPEG → реальною Gemini call deferred до Phase 8 (потрібен photo UI що годує функцію, або manual `curl`).
+- **НЕ зроблено**: `supabase secrets set GEMINI_API_KEY=... ANTHROPIC_API_KEY=...` + `supabase functions deploy parse-receipt`. Інтеграційний smoke з реальним JPEG → реальною Gemini call deferred до Phase 10 deploy.
+
+### ✅ Phase 8 — `/photo` page (2026-05-07)
+
+- **Storage migration** (`supabase/migrations/20260507000002_storage_bucket.sql`): private bucket `receipts` + 4 RLS-policies на `storage.objects` (SELECT/INSERT/UPDATE/DELETE) gated by `bucket_id = 'receipts' AND public.is_allowed_user()`. Той самий allowlist що і таблиці. **НЕ задеплоєно у live** — Phase 10 запушить разом з функцією.
+- **Photo storage port** (`web/src/shared/lib/photo-storage/`): `IPhotoStorage` interface — `upload(blob)` повертає `{ path, signedUrl }`, `getSignedUrl(path, ttl?)`, `remove(path)`. Адаптер `supabase-photo-storage.ts` будує path як `{user_email}/{yyyy}/{mm}/{ulid}.jpg`, MIME type drives extension (jpg/png/webp/heic). Якщо signing впав після успішного upload — best-effort cleanup orphan blob перед throw. Re-export через `dependencies.ts`.
+- **Image resize util** (`web/src/features/photo/utils/resize-image.ts`): браузер-only `resizeImage(file, opts?)` — `<img>` + `<canvas>` + `canvas.toBlob`, defaults 1600px max edge, JPEG q=0.8. `URL.createObjectURL` + revoke у `finally`. **Не покрито Vitest** — jsdom не реалізує canvas; manual smoke + майбутня Playwright. Допоміжна `blobToBase64(blob)` для Edge Function payload.
+- **`useParseReceiptMutation`** (`features/photo/api/`): тонкий wrapper — читає blob через `FileReader.readAsDataURL` → strip `data:...;base64,` prefix → викликає `parseReceiptService.parse({ imageBase64, mimeType, categories, products })`.
+- **`useSavePhotoReceiptMutation`** wrapper hook: composes `photoStorage.upload(blob)` → delegates до `useSaveReceiptMutation.mutateAsync({ receipt: { ...receipt, photo_url }, items })`. На failure після успішного upload — `photoStorage.remove(path).catch(noop)` cleanup (best-effort; network drop між upload-OK і remove все ще лишає orphan, periodic Storage sweep deferred до Phase 12). Photo-first ordering — receipt з broken `photo_url` був би гірший за orphan blob.
+- **`<CancellationCard>`** (`features/photo/components/`): readonly amber-themed карточка з checkbox "Включити до чеку". Default unchecked = pair не зберігається (per ADR-0012). Strikethrough на product_name + total коли `!included`. Локальний state cancellation-toggles живе у parent (`<PhotoReviewForm>`), тому RHF `useFieldArray` не лізе у append/remove churn.
+- **`<PhotoPicker>`**: `<input type="file" accept="image/*" capture="environment">` (mobile rear camera) + image preview через `URL.createObjectURL` (revoke на unmount + reset). "Вибрати інше" reset.
+- **`<PhotoReviewForm>`** (orchestrator): pre-populates `useReceiptForm({ source: 'photo', store/date/currency from parsed, items: pairResult.items.map(toFormRow), raw_ocr_json: stringified parsed if ≤45KB })`. Cancellations renderяться окремою секцією над `<ReceiptFormFields>`. Local `Set<number>` для increased cancellations. На submit — merge form items + included cancellations → `useSavePhotoReceiptMutation.mutateAsync` → `navigate({ to: '/recent', search: { saved: id } })`. Pair-detection (16-test legacy port) уже у `@finance-tracker/domain`.
+- **`/photo` route** (`routes/photo.tsx`): state machine `'pick' | 'parsing' | 'review' | 'parse-error'`. На pick → `resizeImage` → `useParseReceiptMutation.mutateAsync` → `detectPairs(parsed.items)` → state `'review'`. Error → "Спробувати ще" повертає до `'pick'`. `<RequireAuth>` guard.
+- **Home page**: додано `Link to="/photo"` як primary action; `/manual` і `/recent` як secondary.
+- **Архітектурні рішення**:
+  1. **Wrapper mutation** не extension. Existing `useSaveReceiptMutation` лишається vendor-photo-free; `useSavePhotoReceiptMutation` — окремий hook що делегує. SRP без дублювання FX/factory логіки.
+  2. **Submit-time merge** для cancellations замість bidirectional sync з RHF `useFieldArray`. RHF v7 `append` не повертає id; tracking за signature/index fragile під StrictMode + потенційний reorder. Cards живуть поза form, parent merge'ає on submit. Cost: cancellation row не редагується inline — за ~5% incidence acceptable.
+  3. **Signed URL stored as `photo_url`**, expires 1h. Display logic поки що не реалізовано (edit page не показує фото). Якщо у Phase 11+ доведеться — re-sign через `photoStorage.getSignedUrl(path)`; path extract з URL regex (вмикається on-demand). Уникає schema change.
+- **Tests:** 61 web (+19: photoStorage adapter 10, useSavePhotoReceiptMutation 4, CancellationCard 5) + 69 domain = **130 тестів зелені**. PhotoReviewForm + photo route smoke не покрито Vitest — багато mocking-поверхні (FormProvider + 4 hooks); manual smoke + типи покривають. Image resize має `.ts` без тестів — задокументовано у файлі.
+- **Verified автоматично:** lint + typecheck + test + build (505ms; `/photo` chunk 8.18kB / 3.36kB gzip) чисті. Deno checks на функцію зелені.
+- **НЕ верифіковано вручну**: реальний JPEG end-to-end. Потребує (а) задеплоєну `parse-receipt` функцію + secrets — Phase 10, **або** (б) `supabase functions serve parse-receipt --env-file ...` локально + `npm run dev`. Перший real-receipt risk: `category` в parsed items не входить у `useCategories` seed → user мусить вручну поправити; FX walk-back на свято; raw_ocr_json >45kB → null (graceful).
 
 ---
 
-## Що далі (Phases 8–10)
+## Що далі (Phases 9–10)
 
-| Фаза   | Скоуп                                                                                                                                                                 | Естімейт | Статус  |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
-| **8**  | `/photo`: file upload + клієнт resize до 1600px JPEG q=0.8, виклик Edge Function, `<CancellationCard>` per ADR-0012, photo-storage адаптер для Supabase Storage       | ~4h      | ⏳ next |
-| **9**  | `/stats` сторінка: 4 чарти (по місяцях, категоріях, користувачах, магазинах) через Postgres views або grouped queries                                                 | ~4h      | pending |
-| **10** | Polish + Cloudflare Pages deploy (production env vars, Supabase production redirect URLs, deploy `parse-receipt` + secrets) + manual end-to-end з обома користувачами | ~3h      | pending |
+| Фаза   | Скоуп                                                                                                                                                                                            | Естімейт | Статус  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------- |
+| **9**  | `/stats` сторінка: 4 чарти (по місяцях, категоріях, користувачах, магазинах) через Postgres views або grouped queries                                                                            | ~4h      | ⏳ next |
+| **10** | Polish + Cloudflare Pages deploy (production env vars, Supabase production redirect URLs, deploy `parse-receipt` + secrets, applied storage migration) + manual end-to-end з обома користувачами | ~3h      | pending |
 
-Загальний core MVP: **~11h залишилось** (з ~33h оригінального естімейту).
+Загальний core MVP: **~7h залишилось** (з ~33h оригінального естімейту).
 
 ---
 
@@ -279,7 +301,7 @@ finance-tracker/
 ```
 npm run lint           # ESLint flat config обох workspaces
 npm run typecheck      # tsr generate + tsc -b у обох workspaces
-npm run test           # vitest у обох workspaces (зараз 111 тестів — 42 web + 69 domain)
+npm run test           # vitest у обох workspaces (зараз 130 тестів — 61 web + 69 domain)
 npm run build          # tsr generate + tsc -b + vite build
 npm run dev            # vite dev server :5173
 

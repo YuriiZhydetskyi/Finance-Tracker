@@ -2,6 +2,7 @@
 
 export { ManualReceiptForm } from './components/ManualReceiptForm';
 export { EditReceiptForm } from './components/EditReceiptForm';
+export { ReceiptFormFields } from './components/ReceiptFormFields';
 export { ReceiptCard } from './components/ReceiptCard';
 export { EmptyReceiptsState } from './components/EmptyReceiptsState';
 export { ItemsList } from './components/ItemsList';
@@ -25,7 +26,7 @@ export type { DeleteReceiptVars } from './api/use-delete-receipt-mutation';
 export { receiptsQueryKey, receiptQueryKey } from './api/receipts-query-keys';
 
 export { useReceiptForm, emptyItemRow } from './hooks/use-receipt-form';
-export type { ManualFormValues, ItemFormValues } from './schemas/manual-form';
+export type { ManualFormValues, ItemFormValues, SupportedCurrency } from './schemas/manual-form';
 export { ManualFormSchema, SUPPORTED_CURRENCIES } from './schemas/manual-form';
 
 export { computeRowTotal, computeGrandTotal, computeCategoryBreakdown } from './utils/totals';

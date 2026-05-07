@@ -2,9 +2,6 @@
 // migration plan). Routes / components / hooks import from here, not from
 // the per-port folders directly. Adapter swaps happen inside each port's
 // own index.ts.
-//
-// More ports added in later phases:
-//   - photoStorage   (Phase 8)
 
 export { authService } from './auth';
 export type { AuthUser, IAuthService } from './auth';
@@ -14,3 +11,6 @@ export type { IFxRateProvider } from './fx-rate';
 
 export { parseReceiptService } from './parse-receipt';
 export type { IParseReceiptService, ParseReceiptInput } from './parse-receipt';
+
+export { photoStorage } from './photo-storage';
+export type { IPhotoStorage, UploadedPhoto } from './photo-storage';
