@@ -2,7 +2,7 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Останнє оновлення:** 2026-05-07 (Phases 0–4 завершено)
+**Останнє оновлення:** 2026-05-07 (Phase 5 завершено; manual smoke зі збереженням ще не пройдений у браузері)
 
 ---
 
@@ -11,8 +11,8 @@
 - **Старий стек (Apps Script + Sheets + Alpine.js)** заархівовано в [`legacy/apps-script/`](../legacy/apps-script/) — досі білдиться (164 тести), залишається для emergency rollback.
 - **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages (deploy у Phase 10). $0/місяць.
 - **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/<fn>/providers/`. Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
-- **Прогрес:** 4 з 11 фаз готові. Auth працює end-to-end (magic link → /auth/callback → RequireAuth з allowlist).
-- **Наступне:** Phase 5 — `/manual` сторінка (форма з ItemsTable + збереження чека через TanStack Query mutation).
+- **Прогрес:** 5 з 11 фаз готові. Auth працює end-to-end. `/manual` сторінка білдиться, рендериться, тести зелені; **повний save flow з реальними DB-вставками ще не перевірений вручну** (page-load smoke OK, EUR/UAH save flow deferred до першого реального чека).
+- **Наступне:** Phase 6 — `/recent` (last 30) + `/edit/$id` + delete confirm.
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 
@@ -92,7 +92,7 @@ finance-tracker/
 
 ---
 
-## Що зроблено (Phases 0–4)
+## Що зроблено (Phases 0–5)
 
 ### ✅ Phase 0 — Archive (2026-05-07)
 
@@ -153,20 +153,44 @@ finance-tracker/
 - **Tests:** 4 web (cn helper) + 69 domain = 73 зелені. Build 285ms (248KB main + 380KB auth chunk gzipped 78KB + 107KB).
 - **Verified end-to-end (manually):** sign-in → magic link → `/auth/callback` → redirect → "Готово до роботи" → "Вийти" → форма входу. RLS правильно блокує не-allowlisted users.
 
+### ✅ Phase 5 — `/manual` page (2026-05-07)
+
+- **FX port** (`web/src/shared/lib/fx-rate/`): `IFxRateProvider` interface + `nbu-fx-rate-provider.ts` (порт `legacy/Fx.js` — fetch до `bank.gov.ua`, інверсія EUR-to-UAH → UAH-to-EUR через `roundFxRate`, 7-day walk-back для weekends/свят). Викликається напряму з браузера (NBU CORS-open). Drift contract test проти pinned fixture у `__fixtures__/nbu-uah-sample.json`.
+- **Categories + Products read hooks** (`features/categories/`, `features/products/`): `useCategories()` / `useProducts()` через Supabase REST з `staleTime: 5 хв`. RLS-aware (повертають `[]` поки користувач не у `app_users`).
+- **`useSaveReceiptMutation`** (`features/receipts/api/use-save-receipt-mutation.ts`):
+  1. `fxRateProvider.getRateLive(currency, date)` → `fx_rate_eur`.
+  2. `total_orig` обчислюється з items на льоту (DRY: одна формула, не дрейфить між UI і mutation).
+  3. `makeReceipt({ ...input, fx_rate_eur, total_orig })` — domain factory генерує id, округляє, валідує.
+  4. `items.map(it => makeItem({ ...it, receipt_id, fx_rate_eur }))`.
+  5. `supabase.from('receipts').insert(receipt)` → throw on error.
+  6. `supabase.from('items').insert(items)` → on error: best-effort `delete from receipts where id = ?` (RLS дозволяє користувачу видаляти свій рядок) → throw з оригінальним повідомленням. Минімізує орфани без транзакції.
+  7. `qc.invalidateQueries({ queryKey: ['receipts'] })`.
+- **Form schema + hook** (`features/receipts/schemas/manual-form.ts`, `hooks/use-receipt-form.ts`): Zod схема дзеркалить mutation input (без `fx_rate_eur` і `total_orig` — derived). Currency narrowed до `['EUR', 'UAH']` enum на UI шарі. Defaults: `todayIso()`, EUR, paid_by = current user email, single empty row, `consumed_by: 'shared'`. RHF + `zodResolver` + `useFieldArray` для items.
+- **Pure utils** (`features/receipts/utils/totals.ts`): `computeRowTotal`, `computeGrandTotal`, `computeCategoryBreakdown` — спільні для UI display і майбутніх pre-save валідаторів. Використовують `roundMoney` з `@finance-tracker/domain` — той же формула як у factory.
+- **UI components** (`features/receipts/components/`):
+  - `<ItemRow>` — editable row через `useFormContext`. Колонки: товар (datalist autocomplete), категорія (select), к-сть (number step 0.001 min 0), ціна (number step 0.01 **без min** — негативи дозволені per ADR-0012, поле підсвічується червоним якщо < 0). Extras: consumed_by select (6 пресетів — shared/his/hers/custom:30/70/custom:70/30), знижка, зіпсовано, нотатка. Per-row total (червоний якщо negative).
+  - `<ItemsList>` — рендерить рядки через `useFieldArray`, datalist `<option>` для product autocomplete, кнопка "+ Додати товар".
+  - `<SummaryFooter>` — grand total + per-category breakdown через `useWatch` + `useMemo`. Сортування категорій per `localeCompare('uk')`.
+  - `<ManualReceiptForm>` — обгортає форму у `<FormProvider>`, рендерить header card (дата, магазин, валюта, paid_by, нотатка) + ItemsList + SummaryFooter + submit.
+- **Page** (`routes/manual.tsx`): `<RequireAuth>` + `<ManualReceiptForm>`. На save success — `navigate({ to: '/', search: { saved: receipt_id } })`.
+- **`routes/index.tsx`** оновлено: success-banner для `?saved=<id>` + кнопка "Додати чек вручну" → `/manual`.
+- **Tests:** 24 web (cn helper + FX provider + drift fixture + totals utils) + 69 domain = **93 тести зелені**. Build 358ms; manual chunk 11KB (3.6KB gzip) завдяки TanStack Router auto-code-splitting.
+- **Verified автоматично:** lint + typecheck + test + build чисті. `/manual` page-load smoke у браузері — рендериться.
+- **НЕ верифіковано вручну** (deferred до першого реального чека): EUR і UAH save flow з реальною вставкою у Supabase. Якщо при першому реальному використанні щось зламається — найімовірніше місце: form values → mutation input mapping (ManualReceiptForm.onSubmit), Supabase insert RLS, або NBU walk-back на свято.
+
 ---
 
-## Що далі (Phases 5–10)
+## Що далі (Phases 6–10)
 
 | Фаза   | Скоуп                                                                                                                                                                    | Естімейт | Статус  |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------- |
-| **5**  | `/manual` сторінка: форма з ItemsTable + Summary, FX-fetch з NBU напряму, `useSaveReceiptMutation`, success → toast + redirect                                           | ~4h      | ⏳ next |
-| **6**  | `/recent` (last 30) + `/edit/$id` + delete confirm                                                                                                                       | ~3h      | pending |
+| **6**  | `/recent` (last 30) + `/edit/$id` + delete confirm                                                                                                                       | ~3h      | ⏳ next |
 | **7**  | `parse-receipt` Edge Function (Deno): `IAiProvider` strategy, Gemini primary + Claude fallback (порт ADR-0011, ADR-0012 prompt verbatim), `verify_jwt + allowlist check` | ~4h      | pending |
 | **8**  | `/photo`: file upload + клієнт resize до 1600px JPEG q=0.8, виклик Edge Function, `<CancellationCard>` per ADR-0012, photo-storage адаптер для Supabase Storage          | ~4h      | pending |
 | **9**  | `/stats` сторінка: 4 чарти (по місяцях, категоріях, користувачах, магазинах) через Postgres views або grouped queries                                                    | ~4h      | pending |
 | **10** | Polish + Cloudflare Pages deploy (production env vars, Supabase production redirect URLs) + manual end-to-end з обома користувачами                                      | ~3h      | pending |
 
-Загальний core MVP: **~22h залишилось** (з ~33h оригінального естімейту).
+Загальний core MVP: **~18h залишилось** (з ~33h оригінального естімейту; Phase 5 ~5h фактично).
 
 ---
 

@@ -10,3 +10,6 @@
 
 export { authService } from './auth';
 export type { AuthUser, IAuthService } from './auth';
+
+export { fxRateProvider } from './fx-rate';
+export type { IFxRateProvider } from './fx-rate';

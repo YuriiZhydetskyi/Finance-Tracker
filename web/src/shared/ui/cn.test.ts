@@ -7,7 +7,8 @@ describe('cn', () => {
   });
 
   it('skips falsy values', () => {
-    expect(cn('a', false && 'b', null, undefined, 'c')).toBe('a c');
+    const showB = false as boolean;
+    expect(cn('a', showB && 'b', null, undefined, 'c')).toBe('a c');
   });
 
   it('merges Tailwind utilities (later wins)', () => {

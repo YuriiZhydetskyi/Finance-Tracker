@@ -1,28 +1,48 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { z } from 'zod';
 import { RequireAuth } from '@/features/auth';
+import { Button } from '@/shared/ui/Button';
+
+const HomeSearchSchema = z
+  .object({
+    saved: z.string().optional(),
+  })
+  .optional();
 
 export const Route = createFileRoute('/')({
   component: HomePage,
+  validateSearch: HomeSearchSchema,
 });
 
 function HomePage() {
+  const search = Route.useSearch();
+  const savedId = search?.saved;
+
   return (
     <RequireAuth>
-      <Welcome />
-    </RequireAuth>
-  );
-}
+      <div className="space-y-4">
+        {savedId && (
+          <div
+            role="status"
+            className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+          >
+            Чек збережено. ID: <code className="rounded bg-emerald-100 px-1">{savedId}</code>
+          </div>
+        )}
 
-function Welcome() {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-      <h1 className="mb-2 text-2xl font-bold tracking-tight">Готово до роботи</h1>
-      <p className="mb-6 text-sm text-slate-600">
-        Auth shell працює. Сторінки <code className="rounded bg-slate-100 px-1">/photo</code>,{' '}
-        <code className="rounded bg-slate-100 px-1">/manual</code>,{' '}
-        <code className="rounded bg-slate-100 px-1">/recent</code>,{' '}
-        <code className="rounded bg-slate-100 px-1">/stats</code> з&apos;являться у наступних фазах.
-      </p>
-    </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
+          <h1 className="mb-2 text-2xl font-bold tracking-tight">Finance Tracker</h1>
+          <p className="mb-6 text-sm text-slate-600">
+            Phase 5: ручне додавання чека. Сторінки <code>/photo</code>, <code>/recent</code>,{' '}
+            <code>/stats</code> з&apos;являться у наступних фазах.
+          </p>
+          <div className="flex justify-center gap-3">
+            <Link to="/manual">
+              <Button>Додати чек вручну</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </RequireAuth>
   );
 }
