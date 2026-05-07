@@ -2,7 +2,7 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Останнє оновлення:** 2026-05-07 (Phase 8 — `/photo` сторінка готова; production deploy всього бандла deferred до Phase 10)
+**Останнє оновлення:** 2026-05-07 (Phase 9 — `/stats` сторінка з 4 чартами готова; production deploy всього бандла deferred до Phase 10)
 
 ---
 
@@ -11,8 +11,8 @@
 - **Старий стек (Apps Script + Sheets + Alpine.js)** заархівовано в [`legacy/apps-script/`](../legacy/apps-script/) — досі білдиться (164 тести), залишається для emergency rollback.
 - **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages (deploy у Phase 10). $0/місяць.
 - **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/<fn>/providers/`. Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
-- **Прогрес:** 8 з 11 фаз готові. Auth + `/manual` + `/recent` + `/edit/$id` + `/photo` (resize → AI parse → review з cancellation cards → save з фото у Supabase Storage) працюють end-to-end (тести зелені, manual smoke deferred до live deploy у Phase 10). `parse-receipt` Edge Function ще не задеплоєна — клієнтський wiring готовий, але виклик впаде проти live проекту, поки Phase 10 не запушить функцію + не сетне `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` secrets.
-- **Наступне:** Phase 9 — `/stats` сторінка (4 чарти через Postgres groupings + Chart.js).
+- **Прогрес:** 9 з 11 фаз готові. Auth + `/manual` + `/recent` + `/edit/$id` + `/photo` + `/stats` (4 чарти: по місяцях / користувачах / категоріях / магазинах) працюють end-to-end (тести зелені, manual smoke deferred до live deploy у Phase 10). `parse-receipt` Edge Function і дві нові міграції (storage bucket + stats views) ще не задеплоєні — клієнтський wiring готовий, але виклики впадуть проти live проекту, поки Phase 10 не запушить все.
+- **Наступне:** Phase 10 — Polish + Cloudflare Pages deploy + Supabase production redirect URLs + `supabase db push` (storage + stats views) + `supabase functions deploy parse-receipt` + secrets + manual end-to-end з обома користувачами.
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 
@@ -61,13 +61,14 @@ finance-tracker/
 ├── docs/                       ← ADR-и + цей файл
 ├── web/                        ← React + Vite + Tailwind app
 │   ├── src/
-│   │   ├── routes/             ← TanStack Router file-based (__root, index, manual, recent, edit.$id, photo, auth.callback)
-│   │   ├── features/           ← vertical slices (auth, receipts, categories, products, photo)
+│   │   ├── routes/             ← TanStack Router file-based (__root, index, manual, recent, edit.$id, photo, stats, auth.callback)
+│   │   ├── features/           ← vertical slices (auth, receipts, categories, products, photo, stats)
 │   │   │   ├── auth/{api,components,guards,index.ts}
 │   │   │   ├── receipts/{api,components,hooks,schemas,utils,index.ts}
 │   │   │   ├── categories/{api,index.ts}
 │   │   │   ├── products/{api,index.ts}
-│   │   │   └── photo/{api,components,utils,index.ts}
+│   │   │   ├── photo/{api,components,utils,index.ts}
+│   │   │   └── stats/{api,components,index.ts}
 │   │   ├── shared/
 │   │   │   ├── lib/            ← порти + адаптери (auth/, fx-rate/, parse-receipt/, photo-storage/, supabase-client, dependencies, query-client, env)
 │   │   │   ├── ui/             ← design system (Button, Input, cn)
@@ -89,7 +90,8 @@ finance-tracker/
 │   ├── config.toml             ← supabase init defaults; edge_runtime deno_version=2
 │   ├── migrations/
 │   │   ├── 20260507000001_initial_schema.sql
-│   │   └── 20260507000002_storage_bucket.sql ← Phase 8: бакет `receipts` + RLS
+│   │   ├── 20260507000002_storage_bucket.sql ← Phase 8: бакет `receipts` + RLS
+│   │   └── 20260507000003_stats_views.sql    ← Phase 9: 4 v_stats_* views (security_invoker)
 │   ├── seed.sql                ← 20 категорій
 │   ├── functions/parse-receipt/ ← Phase 7: AI OCR Edge Function (Deno)
 │   │   ├── index.ts            ← Deno entry (3 рядки)
@@ -108,7 +110,7 @@ finance-tracker/
 
 ---
 
-## Що зроблено (Phases 0–8)
+## Що зроблено (Phases 0–9)
 
 ### ✅ Phase 0 — Archive (2026-05-07)
 
@@ -254,16 +256,30 @@ finance-tracker/
 - **Verified автоматично:** lint + typecheck + test + build (505ms; `/photo` chunk 8.18kB / 3.36kB gzip) чисті. Deno checks на функцію зелені.
 - **НЕ верифіковано вручну**: реальний JPEG end-to-end. Потребує (а) задеплоєну `parse-receipt` функцію + secrets — Phase 10, **або** (б) `supabase functions serve parse-receipt --env-file ...` локально + `npm run dev`. Перший real-receipt risk: `category` в parsed items не входить у `useCategories` seed → user мусить вручну поправити; FX walk-back на свято; raw_ocr_json >45kB → null (graceful).
 
+### ✅ Phase 9 — `/stats` page (2026-05-07)
+
+- **SQL migration** (`supabase/migrations/20260507000003_stats_views.sql`): чотири view'и `v_stats_by_month` / `_category` / `_user` / `_store`. Кожен з `with (security_invoker = on)` — RLS тягнеться з базових таблиць (Postgres 15+), тому allowlisted users бачать всі дані, інші — нічого. Без окремих policies на view'и. Усі суми у EUR (audit-канонік на receipt-row); original-currency агрегати — YAGNI для EUR/UAH-only app.
+- **Stats query hooks** (`features/stats/api/use-stats.ts`): `useStatsByMonth(limit=12)` / `useStatsByCategory()` / `useStatsByUser()` / `useStatsByStore(limit=10)`. `staleTime: 5 хв` — дашборд не second-by-second update. Numerics приходять як `string` через PostgREST JSON wire — coerce у hook (`asNumber` хелпер). Окремий `stats.types.ts` для row-shape типів. **Manually patched** `database.types.ts` додав 4 view'и під `Views` slot — Phase 10 deploy + `supabase gen types` повторно перепише з canonical джерела.
+- **Chart components** (`features/stats/components/`): `chart-setup.ts` реєструє Chart.js scales + elements (CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, Title) — імпортується top-of-file з кожного chart-компонента. `<ByMonthChart>` — vertical bars (slate), reverse'ить rows для left-to-right хронології. `<ByCategoryChart>` — horizontal bars (teal), top-down rank. `<ByUserChart>` — pie, palette з 4 кольорів rotating. `<ByStoreChart>` — horizontal bars (pink), top-10. Усі чарти `responsive: true, maintainAspectRatio: false` — вписуються у фіксовану висоту контейнера.
+- **`/stats` route** (`routes/stats.tsx`): `<RequireAuth>` + `<StatsDashboard>` з 2-колонковим CSS grid (`lg:grid-cols-2`). 4 секції: by-month + by-user (h-72), by-category + by-store (h-96 — більше місця для багатьох рядків). Загальний `<Section>` wrapper для consistent header card; `<ChartState>` обгортка показує loading / error / empty state.
+- **Home page**: додано четверту кнопку "Статистика" → `/stats`.
+- **Архітектурні рішення**:
+  1. **Postgres views, не RPC functions.** PostgREST `from('view_name')` працює нативно з Supabase JS client — простіше за `rpc('fn_name')`. Views виглядають як read-only tables у TypeScript types.
+  2. **`security_invoker = on`** замість окремих RLS policies на view'и. Інакше view'и за замовчуванням бігають з прав owner (postgres) і обходять RLS базових таблиць.
+  3. **Тести чартів пропущено.** Chart.js потребує canvas; jsdom не реалізує його повністю — тести б вимагали `jest-canvas-mock` polyfill і все одно перевіряли мало (компоненти тонкі: useMemo + props). Hooks (де живе логіка coercion і query shape) покриті через 5 Vitest тестів. Manual smoke в браузері покриває візуальну частину.
+- **Tests:** 66 web (+5: useStatsByMonth happy + error, useStatsByCategory, useStatsByUser, useStatsByStore) + 69 domain = **135 тестів зелені**. Build 464ms; `/stats` chunk 177kB (60.9kB gzip — chart.js + react-chartjs-2 lazy-loaded).
+- **Verified автоматично:** lint + typecheck + test + build чисті.
+- **НЕ верифіковано вручну**: дашборд проти live даних. Live deploy у Phase 10 застосує міграцію `20260507000003_stats_views.sql` + регенерує `database.types.ts`, після чого можна збирати реальні чеки і перевіряти візуалізацію.
+
 ---
 
-## Що далі (Phases 9–10)
+## Що далі (Phase 10)
 
-| Фаза   | Скоуп                                                                                                                                                                                            | Естімейт | Статус  |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------- |
-| **9**  | `/stats` сторінка: 4 чарти (по місяцях, категоріях, користувачах, магазинах) через Postgres views або grouped queries                                                                            | ~4h      | ⏳ next |
-| **10** | Polish + Cloudflare Pages deploy (production env vars, Supabase production redirect URLs, deploy `parse-receipt` + secrets, applied storage migration) + manual end-to-end з обома користувачами | ~3h      | pending |
+| Фаза   | Скоуп                                                                                                                                                                                                                                                                   | Естімейт | Статус  |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
+| **10** | Polish + Cloudflare Pages deploy (production env vars, Supabase production redirect URLs, `supabase db push` для storage + stats views, регенерація `database.types.ts`, `supabase functions deploy parse-receipt` + secrets) + manual end-to-end з обома користувачами | ~3h      | ⏳ next |
 
-Загальний core MVP: **~7h залишилось** (з ~33h оригінального естімейту).
+Загальний core MVP: **~3h залишилось** (з ~33h оригінального естімейту).
 
 ---
 
@@ -301,7 +317,7 @@ finance-tracker/
 ```
 npm run lint           # ESLint flat config обох workspaces
 npm run typecheck      # tsr generate + tsc -b у обох workspaces
-npm run test           # vitest у обох workspaces (зараз 130 тестів — 61 web + 69 domain)
+npm run test           # vitest у обох workspaces (зараз 135 тестів — 66 web + 69 domain)
 npm run build          # tsr generate + tsc -b + vite build
 npm run dev            # vite dev server :5173
 

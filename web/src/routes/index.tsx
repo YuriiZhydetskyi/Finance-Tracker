@@ -33,8 +33,7 @@ function HomePage() {
         <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
           <h1 className="mb-2 text-2xl font-bold tracking-tight">Finance Tracker</h1>
           <p className="mb-6 text-sm text-slate-600">
-            Сфотографуй чек, введи вручну або переглянь останні. Сторінка <code>/stats</code>{' '}
-            з&apos;явиться у наступній фазі.
+            Сфотографуй чек, введи вручну, переглянь останні або статистику.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link to="/photo">
@@ -45,6 +44,9 @@ function HomePage() {
             </Link>
             <Link to="/recent">
               <Button variant="secondary">Останні чеки</Button>
+            </Link>
+            <Link to="/stats">
+              <Button variant="secondary">Статистика</Button>
             </Link>
           </div>
         </div>

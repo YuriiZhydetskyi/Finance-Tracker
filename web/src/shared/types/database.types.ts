@@ -230,7 +230,38 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      v_stats_by_month: {
+        Row: {
+          month: string;
+          total_eur: number;
+          receipts_count: number;
+        };
+        Relationships: [];
+      };
+      v_stats_by_category: {
+        Row: {
+          category: string;
+          total_eur: number;
+          items_count: number;
+        };
+        Relationships: [];
+      };
+      v_stats_by_user: {
+        Row: {
+          paid_by: string;
+          total_eur: number;
+          receipts_count: number;
+        };
+        Relationships: [];
+      };
+      v_stats_by_store: {
+        Row: {
+          store: string;
+          total_eur: number;
+          receipts_count: number;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       is_allowed_user: { Args: never; Returns: boolean };
