@@ -5,7 +5,8 @@
   "description": "Personal finance tracker — React + Vite + Supabase. Photo-receipt OCR via Gemini/Claude, multi-currency, two-user.",
   "workspaces": [
     "web",
-    "packages/*"
+    "packages/*",
+    "supabase/functions/parse-receipt"
   ],
   "scripts": {
     "dev": "npm --workspace web run dev",

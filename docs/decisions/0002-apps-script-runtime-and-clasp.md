@@ -1,6 +1,6 @@
 # ADR-0002: Google Apps Script як runtime, clasp + Git як toolchain
 
-- Status: accepted
+- Status: superseded by [ADR-0013](0013-migrate-to-react-supabase.md) (2026-05-08)
 - Date: 2026-05-04
 
 ## Context and Problem Statement

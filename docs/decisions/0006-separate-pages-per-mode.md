@@ -1,6 +1,6 @@
 # ADR-0006: Окремі HTML-сторінки на кожен режим (photo / manual / edit) із спільними Alpine-компонентами
 
-- Status: accepted
+- Status: superseded by [ADR-0013](0013-migrate-to-react-supabase.md) (2026-05-08)
 - Date: 2026-05-04
 
 ## Context and Problem Statement

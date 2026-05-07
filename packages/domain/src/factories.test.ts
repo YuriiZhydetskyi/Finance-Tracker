@@ -184,3 +184,83 @@ describe('applyItemPatch', () => {
     expect(updated.total_eur).toBe(3.5);
   });
 });
+
+// ── Edge cases ──────────────────────────────────────────────────────────────
+
+describe('makeReceipt — fx_rate_eur boundary', () => {
+  it('rejects fx_rate_eur = 0 (Zod requires positive)', () => {
+    expect(() => makeReceipt({ ...RECEIPT_DEFAULTS, fx_rate_eur: 0, total_orig: 10 })).toThrow();
+  });
+
+  it('rejects negative fx_rate_eur (Zod requires positive)', () => {
+    expect(() =>
+      makeReceipt({ ...RECEIPT_DEFAULTS, fx_rate_eur: -0.025, total_orig: 10 }),
+    ).toThrow();
+  });
+});
+
+describe('makeItem — discount/unit_price interaction', () => {
+  it('rejects discount_orig > positive unit_price_orig (would flip sign)', () => {
+    expect(() =>
+      makeItem({
+        ...ITEM_DEFAULTS,
+        qty: 1,
+        unit_price_orig: 2.0,
+        discount_orig: 5.0,
+      }),
+    ).toThrow(/discount_orig/);
+  });
+
+  it('allows any discount when unit_price_orig is negative (Pfand-style edge)', () => {
+    // Schema only checks discount > price when price > 0; negative-price items skip the check.
+    const it = makeItem({
+      ...ITEM_DEFAULTS,
+      qty: 1,
+      unit_price_orig: -2.0,
+      discount_orig: 1.0,
+    });
+    expect(it.unit_price_orig).toBe(-2.0);
+    expect(it.discount_orig).toBe(1.0);
+    // total_orig = 1 * (-2.0 - 1.0) = -3.0
+    expect(it.total_orig).toBe(-3.0);
+  });
+
+  it('rejects negative discount_orig (Zod nonnegative)', () => {
+    expect(() =>
+      makeItem({
+        ...ITEM_DEFAULTS,
+        qty: 1,
+        unit_price_orig: 5.0,
+        discount_orig: -1.0,
+      }),
+    ).toThrow();
+  });
+});
+
+describe('applyReceiptPatch — idempotency & invariants', () => {
+  it('two patches with the same diff produce equivalent money fields', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-04T10:00:00Z'));
+    const r = makeReceipt({
+      ...RECEIPT_DEFAULTS,
+      currency: 'UAH',
+      total_orig: 100,
+      fx_rate_eur: 0.025,
+    });
+    vi.advanceTimersByTime(1000);
+    const once = applyReceiptPatch(r, { total_orig: 200 });
+    vi.advanceTimersByTime(1000);
+    const twice = applyReceiptPatch(once, { total_orig: 200 });
+    expect(twice.total_orig).toBe(once.total_orig);
+    expect(twice.total_eur).toBe(once.total_eur);
+    expect(twice.id).toBe(r.id);
+    // updated_at still bumps even when the value didn't change.
+    expect(twice.updated_at).not.toBe(once.updated_at);
+    vi.useRealTimers();
+  });
+
+  it('rejects fx_rate_eur = 0 in a patch', () => {
+    const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 10 });
+    expect(() => applyReceiptPatch(r, { fx_rate_eur: 0 })).toThrow();
+  });
+});

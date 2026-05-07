@@ -1,8 +1,9 @@
 # ADR-0010: Web app access mode — `ANYONE` (signed-in Google account required)
 
-- Status: accepted (revised)
+- Status: superseded by [ADR-0013](0013-migrate-to-react-supabase.md) (2026-05-08)
 - Date: 2026-05-04
 - Revised: 2026-05-05 — додано server-side allowlist через `Config.ALLOWED_EMAILS` як real authorization gate (manifest `ANYONE` лишається). Див. Changelog.
+- Superseded: 2026-05-08 — Apps Script web app deployment пішов; новий доступ через Supabase Auth + RLS allowlist (`app_users` table).
 
 ## Context and Problem Statement
 
