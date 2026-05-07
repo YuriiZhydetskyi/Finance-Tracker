@@ -5,11 +5,12 @@
 //
 // More ports added in later phases:
 //   - photoStorage   (Phase 8)
-//   - fxRateProvider (Phase 5)
-//   - parseReceiptService (Phase 7/8)
 
 export { authService } from './auth';
 export type { AuthUser, IAuthService } from './auth';
 
 export { fxRateProvider } from './fx-rate';
 export type { IFxRateProvider } from './fx-rate';
+
+export { parseReceiptService } from './parse-receipt';
+export type { IParseReceiptService, ParseReceiptInput } from './parse-receipt';
