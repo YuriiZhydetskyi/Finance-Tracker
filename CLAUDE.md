@@ -55,6 +55,22 @@ npx supabase db reset                                           # local-only res
 
 For the gen-types command on Windows use the UTF-8 helper, since PowerShell `>` produces UTF-16 LE with BOM that Vite/TS reject — see [docs/deploy.md](docs/deploy.md) "Common operations".
 
+## Before declaring code changes done
+
+After editing TS/TSX (or any file ESLint covers), run the same gates CI runs **before** committing — never assume "looks fine" is enough. The order is:
+
+1. `npm run lint` — must pass with zero errors. The pre-commit hook only runs Prettier; ESLint is NOT enforced locally, so CI is the first place push-only checks fire. Failures here block deploy.
+2. `npm run typecheck` — required after touching types, schemas, generated files, or any cross-workspace import.
+3. `npm run test` — required after touching `packages/domain/` or any file with neighboring `*.test.ts`. For a single touched area, prefer `npx vitest run --root <ws> <path>` (see "Single-test runs" above) to keep the loop fast.
+
+Scope shortcuts when only one workspace changed:
+
+- domain only: `npm run lint --workspace @finance-tracker/domain && npx vitest run --root packages/domain`
+- web only: `npm run lint --workspace @finance-tracker/web && npm run typecheck --workspace @finance-tracker/web`
+- Edge Function only: `deno check supabase/functions/parse-receipt/index.ts && deno lint supabase/functions/parse-receipt`
+
+Skip these only for doc-only changes (`*.md` outside `CLAUDE.md`/`docs/`-referenced sources).
+
 ## Architecture in one paragraph
 
 React 19 SPA built with Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router (file-based routes), deployed as static files to **Cloudflare Pages**. Backend is **Supabase end-to-end**: Postgres + Auth (magic link) + Storage + a single Edge Function. The browser talks **directly** to Supabase via supabase-js — Postgres RLS does authorization (allowlist via `app_users` table, helper `is_allowed_user()`). The one Edge Function is `parse-receipt` (Deno) — it exists only because Gemini and Anthropic don't issue scoped API keys, so the keys can't go in the browser bundle. Vendor-coupled code lives in **adapters** at `web/src/shared/lib/<area>/` (one folder per port: auth, fx-rate, parse-receipt, photo-storage); routes/components/hooks depend on the singleton from `dependencies.ts`, never on supabase-js directly. ESLint `no-restricted-imports` enforces this. Domain logic — Zod schemas, ULID, money/qty/fx rounding, factories, pair-detector — lives in **`packages/domain/`** as a vendor-free TypeScript workspace package, imported by both the web app and (vendored, not imported, due to Deno limitations) the Edge Function. Routes: `/`, `/photo`, `/manual`, `/recent`, `/edit/$id`, `/stats`, `/auth/callback`. CI/CD: GitHub Actions runs lint + typecheck + test + build then `wrangler pages deploy` — see [.github/workflows/deploy.yml](.github/workflows/deploy.yml). FX rates for UAH come live from NBU via direct browser fetch (CORS-open public API). Cost target: $0/month.
