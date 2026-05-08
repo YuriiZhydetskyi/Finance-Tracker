@@ -8,8 +8,8 @@
     "dev": "vite",
     "build": "tsr generate && tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "tsr generate && eslint .",
+    "lint:fix": "tsr generate && eslint . --fix",
     "typecheck": "tsr generate && tsc -b --noEmit",
     "test": "tsr generate && vitest run",
     "test:watch": "vitest"
