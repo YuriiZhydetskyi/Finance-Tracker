@@ -24,6 +24,7 @@ type Props = {
   pairResult: PairDetectionResult;
   photoBlob: Blob;
   onCancel: () => void;
+  onSaved?: (receipt_id: string) => void;
 };
 
 const RAW_OCR_MAX = 45_000;
@@ -58,7 +59,7 @@ function stringifyForOcr(parsed: ParsedReceipt): string | null {
   }
 }
 
-export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel }: Props) {
+export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSaved }: Props) {
   const navigate = useNavigate();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
@@ -118,7 +119,11 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel }: Pro
       photoBlob,
     });
 
-    void navigate({ to: '/recent', search: { saved: result.receipt_id } });
+    if (onSaved) {
+      onSaved(result.receipt_id);
+    } else {
+      void navigate({ to: '/recent', search: { saved: result.receipt_id } });
+    }
   });
 
   const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {

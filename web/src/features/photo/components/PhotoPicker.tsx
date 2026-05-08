@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 
 type Props = {
-  onPicked: (file: File) => void;
+  onPicked: (files: File[]) => void;
   disabled?: boolean;
 };
 
 export function PhotoPicker({ onPicked, disabled }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pickedCount, setPickedCount] = useState(0);
 
   useEffect(() => {
     return () => {
@@ -17,16 +18,22 @@ export function PhotoPicker({ onPicked, disabled }: Props) {
   }, [previewUrl]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(file));
-    onPicked(file);
+    setPickedCount(files.length);
+    if (files.length === 1) {
+      setPreviewUrl(URL.createObjectURL(files[0]!));
+    } else {
+      setPreviewUrl(null);
+    }
+    onPicked(files);
   }
 
   function reset() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    setPickedCount(0);
     if (inputRef.current) inputRef.current.value = '';
   }
 
@@ -36,7 +43,7 @@ export function PhotoPicker({ onPicked, disabled }: Props) {
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
+        multiple
         onChange={handleChange}
         disabled={disabled}
         className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800 disabled:opacity-50"
@@ -50,6 +57,13 @@ export function PhotoPicker({ onPicked, disabled }: Props) {
           />
           <Button variant="ghost" type="button" onClick={reset} disabled={disabled}>
             Вибрати інше
+          </Button>
+        </div>
+      ) : pickedCount > 1 ? (
+        <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          <span>Вибрано {pickedCount} фото</span>
+          <Button variant="ghost" type="button" onClick={reset} disabled={disabled}>
+            Скинути
           </Button>
         </div>
       ) : null}
