@@ -14,13 +14,13 @@ const mutateAsyncMock = vi.fn<
 const uploadMock = vi.fn<(blob: Blob) => Promise<{ path: string; signedUrl: string }>>();
 const removeMock = vi.fn<(path: string) => Promise<void>>();
 
-vi.mock('@/features/receipts', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@/features/receipts');
-  return {
-    ...actual,
-    useSaveReceiptMutation: () => ({ mutateAsync: mutateAsyncMock }),
-  };
-});
+// Stubbed flat — NO `vi.importActual`. The real `@/features/receipts` barrel
+// transitively imports `supabase-client`, which Zod-validates env vars at
+// module load and throws in CI where VITE_SUPABASE_* aren't set. The test
+// only needs `useSaveReceiptMutation` at runtime; types are erased.
+vi.mock('@/features/receipts', () => ({
+  useSaveReceiptMutation: () => ({ mutateAsync: mutateAsyncMock }),
+}));
 
 vi.mock('@/shared/lib/dependencies', () => ({
   photoStorage: {
