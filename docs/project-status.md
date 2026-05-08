@@ -20,7 +20,7 @@
 
 **Operational runbook:** [deploy.md](deploy.md) — як деплоїти, додавати env vars, ротувати ключі, troubleshooting. Цей файл (project-status.md) — про "що зроблено і де ми зараз"; deploy.md — про "як підтримувати працююче".
 
-> **Note:** Старі архітектурні docs ([architecture.md](architecture.md), [setup.md](setup.md)) досі описують legacy Apps Script стек. Повний rewrite під новий стек — backlog item; до того часу читай ADR-0013 + цей файл + deploy.md.
+**Інші актуальні docs під новий стек** (всі переписані у Phase 10): [architecture.md](architecture.md) — layers + 5 потоків даних + ports; [data-model.md](data-model.md) — Postgres DDL + RLS + views; [extending.md](extending.md) — 10 рецептів; [setup.md](setup.md) — bootstrap нової машини; [decisions/](decisions/) — 13 ADRs.
 
 ---
 
