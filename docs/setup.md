@@ -1,286 +1,258 @@
 # Setup — розгортання з нуля
 
-Цей документ описує, як підняти проєкт на свіжій машині. Слідуючи кроком, ти повинен отримати робочий web app, доступний обом партнерам, без додаткових питань.
+Цей документ описує, як підняти проєкт на свіжій машині. Слідуючи кроком, ти повинен отримати локально працюючий dev-сервер (`npm run dev` на `:5173`), що говорить з вже існуючим Supabase project'ом.
+
+Для деплою у production (Cloudflare Pages + Edge Function + secrets + Supabase Auth URL config + manual smoke) — окремий runbook у [deploy.md](deploy.md).
 
 ## Передумови
 
-- Google акаунт (твій буде owner Sheet і Apps Script проєкту).
-- Google акаунт нареченої — для розшарювання Sheet і деплою web app.
-- Node.js ≥ 18 локально.
-- Git локально.
-- API key для Gemini з [aistudio.google.com](https://aistudio.google.com/) (безкоштовний tier достатньо).
+- **Node.js ≥ 22 LTS** локально (`node --version`).
+- **npm** ≥ 10 (іде в комплекті з Node 22).
+- **Git** локально.
+- **Supabase project** — наразі один спільний `<your-project-ref>`. Якщо створюєш свій (наприклад для fork-а) — потрібен Supabase акаунт.
+- **API keys для Edge Function** (тільки для production deploy):
+  - **Gemini API key** з [aistudio.google.com](https://aistudio.google.com/) — безкоштовний tier 15 req/min достатньо.
+  - **Anthropic API key** з [console.anthropic.com](https://console.anthropic.com/) — pay-as-you-go (~$0.024 за fallback call). Якщо не сетиш — Claude fallback не спрацьовує, але Gemini-only flow працює.
+
+> Локальний dev НЕ потребує API ключів — `parse-receipt` функція не запускається локально, поки не сетнеш `supabase functions serve` з env-файлом. Без неї `/photo` flow не працюватиме у dev, але всі інші сторінки (`/manual`, `/recent`, `/edit`, `/stats`) — так.
 
 ## Крок 1. Локальний клон і залежності
 
-```bash
-git clone <repo-url> finance-tracker
+```powershell
+git clone https://github.com/<your-org>/Finance-Tracker.git finance-tracker
 cd finance-tracker
-npm install   # підтягує @google/clasp у devDependencies
+npm ci
 ```
 
-## Крок 2. clasp login
+`npm ci` інсталює root + усі workspaces (`web/`, `packages/domain/`, `supabase/functions/parse-receipt/`).
 
-```bash
-npx clasp login
+> Husky pre-commit hook налаштовується автоматично через `prepare` script у root `package.json`. Якщо клонуєш не у GitHub-Actions runner — переконайся що `git config core.hooksPath` дорівнює `.husky` (за замовчуванням так).
+
+## Крок 2. Supabase project (опція A: використати існуючий)
+
+Якщо ти приєднуєшся до проекту, що вже працює:
+
+1. Попроси owner-а додати твій email у `app_users`:
+   ```sql
+   insert into public.app_users (email) values ('your-email@example.com');
+   ```
+2. Перейди до Кроку 4 (env-файл).
+
+## Крок 2 (альтернатива). Supabase project (опція B: створити свій)
+
+Якщо це новий fork / нове розгортання:
+
+1. Створи проект на [supabase.com](https://supabase.com/dashboard) (free tier).
+2. Запам'ятай project ref (32-hex chars з URL Studio).
+3. Залогінься Supabase CLI:
+   ```powershell
+   npm install -g supabase    # або через npx, але глобально швидше
+   supabase login
+   ```
+4. Лінкуй repo до проекту:
+   ```powershell
+   supabase link --project-ref <your-project-ref>
+   ```
+5. Apply migrations:
+   ```powershell
+   supabase db push
+   ```
+   Це застосує усі 3 файли з `supabase/migrations/` (schema, storage bucket, stats views).
+6. Seed категорій:
+   ```powershell
+   supabase db reset --linked --no-seed=false
+   ```
+   або вручну через Studio SQL editor — copy-paste з `supabase/seed.sql`.
+7. Додай свій email у `app_users` через Studio SQL editor:
+   ```sql
+   insert into public.app_users (email) values ('your-email@example.com');
+   ```
+
+## Крок 3. Регенерувати TypeScript-типи
+
+Якщо схема змінювалась з останнього commit — обов'язково:
+
+```powershell
+$out = npx supabase gen types typescript --linked
+[System.IO.File]::WriteAllText("$PWD\web\src\shared\types\database.types.ts", ($out -join "`n"), [System.Text.UTF8Encoding]::new($false))
 ```
 
-Відкриється браузер для OAuth-флоу. Підтверди дозволи. clasp зберігає токен у `~/.clasprc.json`.
+Це UTF-8-без-BOM helper для Windows. На Linux/macOS — просто `npx supabase gen types typescript --linked > web/src/shared/types/database.types.ts`.
 
-### Recovery procedure (якщо втратив токен / змінив машину)
+## Крок 4. Локальний `.env.local`
 
-```bash
-npx clasp logout
-npx clasp login
+Скопіюй `web/.env.example` → `web/.env.local` і заповни:
+
+```ini
+# web/.env.local (gitignored)
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-Знову OAuth flow. Перш ніж знову робити `clasp push` — переконайся, що `.clasp.json` (НЕ `.clasprc.json`) у репо вказує на правильний `scriptId`.
+Анон-ключ візьми у Studio → Settings → API → anon key (public). **Не плутай з service_role key** — той ніколи не у frontend.
 
-## Крок 3. Створення Google Sheet
+> Anon key public by design — він буде у browser bundle, видний у DevTools. Справжню авторизацію робить RLS + JWT (магічне посилання). Див. [deploy.md](deploy.md) "Authorization model".
 
-1. Відкрий [sheets.new](https://sheets.new).
-2. Перейменуй на `Finance Tracker`.
-3. Створи 4 листи (вкладки): `Receipts`, `Items`, `Products`, `Categories`. Видали дефолтний `Sheet1`.
-4. У кожному листі заповни заголовки колонок строго за схемою з [data-model.md](data-model.md). Один заголовок = одна клітинка в першому рядку.
-5. У листі `Categories` заповни початковий seed (20 категорій з data-model.md).
-6. Скопіюй Sheet ID з URL. URL виглядає як `https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit` — потрібна частина між `/d/` і `/edit`.
+## Крок 5. Sanity check
 
-> Курси валют (UAH→EUR) зберігаються **на самих чеках** як audit trail. Окремого листа `FxRates` немає — конвертація live при збереженні UAH-чеку через NBU API. Див. [ADR-0004](decisions/0004-multi-currency-eur-base.md).
-
-## Крок 4. Створення Apps Script проєкту
-
-```bash
-npx clasp create --type webapp --title "Finance Tracker" --rootDir ./src
+```powershell
+npm run lint && npm run typecheck && npm run test && npm run build
 ```
 
-Це створить:
-- Новий Apps Script проєкт у твоєму Drive.
-- Файл `.clasp.json` локально з `scriptId`.
-- Стартовий `appsscript.json` у `./src`.
+Усі чотири мають бути зеленими. `npm run test` — ~155 тестів, <5с.
 
-Якщо `appsscript.json` уже існує — clasp не перезапише його.
+## Крок 6. Запустити dev-сервер
 
-### Ручне налаштування `appsscript.json`
-
-Поточна конфігурація у репо (`src/appsscript.json`) — використовує `ANYONE_WITH_GOOGLE_ACCOUNT` для двох-користувацького доступу з personal Gmail (per [ADR-0010](decisions/0010-web-app-access-mode.md)):
-
-```json
-{
-  "timeZone": "Europe/Berlin",
-  "dependencies": {},
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8",
-  "webapp": {
-    "executeAs": "USER_ACCESSING",
-    "access": "ANYONE"
-  },
-  "oauthScopes": [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-    "https://www.googleapis.com/auth/script.external_request",
-    "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/script.scriptapp"
-  ]
-}
+```powershell
+npm run dev
 ```
 
-Це означає що **будь-хто залогінений у Google і знає URL** може відкрити web app. URL — приватне посилання, не публікуй ніде. (Apps Script manifest `access: "ANYONE"` = Deploy UI label "Anyone with a Google account"; справжній публічний без авторизації — це `ANYONE_ANONYMOUS`.)
+Vite запустить на `http://localhost:5173`. HMR одразу — змінюй файли і дивись.
 
-## Крок 5. Налаштування Config.js
+При першому відкритті:
 
-У `src/Config.js` (створиться у Phase 1) — задаси:
+1. Тебе перенаправить на sign-in форму.
+2. Введи свій email → "Надіслати посилання".
+3. Перевір пошту → клікни magic link → потрапляєш на `/auth/callback` → після ~1с redirect на `/`.
+4. Якщо `app_users` має твій email — побачиш header з email + 4 кнопки на головній.
+5. Якщо НЕ має — побачиш "Доступ заборонено" сторінку (RLS працює).
 
-```javascript
-const Config = {
-  SHEET_ID: '<SHEET_ID з кроку 3>',
-  DRIVE_FOLDER_ID: '<ID Drive-папки для фото; крок 6>',
-  AI_PROVIDER: 'gemini',
-  EMAIL_ALIASES: {
-    'yurii@example.com': 'Я',
-    'fiancee@example.com': 'Вона'
-  }
-};
-```
+## Крок 7. Локальний Edge Function (опційно — для `/photo` flow)
 
-## Крок 6. Drive-папка для фото
+`/photo` сторінка викликає Supabase Edge Function `parse-receipt`. Локально функція не запускається сама по собі.
 
-1. У Google Drive створи папку `FinanceTracker` → всередині `Receipts`.
-2. Розшарь на email нареченої (Editor).
-3. Скопіюй folder ID з URL (`https://drive.google.com/drive/folders/{FOLDER_ID}`).
-4. Внеси у `Config.DRIVE_FOLDER_ID`.
+**Опція A: проти live Edge Function** (вже задеплоєний у production, але `verify_jwt` пускає тебе як signed-in user'а):
 
-Apps Script автоматично створюватиме підпапки `YYYY-MM/` всередині для організації по місяцях.
+Нічого додаткового не треба — `/photo` працюватиме напряму проти live функції. **Будь обережний** — кожен реальний виклик коштує Gemini tokens; для dev-iterations без реальних чеків це OK.
 
-## Крок 7. Gemini API key
+**Опція B: запустити функцію локально** (якщо хочеш дебажити):
 
-1. Зайди на [aistudio.google.com](https://aistudio.google.com/) тим самим Google-акаунтом.
-2. Створи API key.
-3. Через Apps Script editor (`clasp open`) → меню Project Settings → Script Properties → додай:
-   - Key: `GEMINI_API_KEY`
-   - Value: `<api key>`
+1. Створи `supabase/.env.local`:
+   ```ini
+   GEMINI_API_KEY=AIza...
+   ANTHROPIC_API_KEY=sk-ant-...    # опційно
+   ```
+2. Запусти:
 
-**Не** клади ключ у код. Не комміть у Git.
+   ```powershell
+   supabase functions serve parse-receipt --env-file supabase/.env.local --no-verify-jwt
+   ```
 
-## Крок 8. Розшарити Sheet
+   `--no-verify-jwt` дозволяє локальні виклики без auth — спрощує дебаг. У production `verify_jwt = true` лишається.
 
-1. У Sheet → Share → додай email нареченої з правами Editor.
-2. Підтверди.
+3. У `web/.env.local` додай:
+   ```ini
+   VITE_SUPABASE_URL=http://127.0.0.1:54321
+   ```
+   щоб supabase-js client дзвонив у локальний emulator (потребує `supabase start` для повного local stack — DB + Auth + Storage + Functions).
 
-## Крок 9. Перший push і deploy
+> Local stack-up — окрема історія. Поки що простіше: dev проти live Supabase project, Edge Function — або live, або не використовувати `/photo`.
 
-```bash
-npm run push      # lint + typecheck + test + clasp push
-```
+## Крок 8. Production deploy
 
-Через `npm run open` → Deploy → New deployment:
-- Type: **Web app**
-- Description: "Finance Tracker MVP v0.1"
-- Execute as: **User accessing the web app**
-- Who has access: **Anyone with a Google account** (per [ADR-0010](decisions/0010-web-app-access-mode.md))
+Окремий runbook — [deploy.md](deploy.md). Там покривається:
 
-Скопіюй deployment URL — це вхідна точка для тебе і нареченої. Додай у Drive shortcut + закладки телефонів. **НЕ** публікуй URL ніде; ділись тільки з нареченою.
+- 4 GitHub secrets для CI
+- Cloudflare Pages bootstrap через wrangler
+- Supabase Auth Site URL + Redirect URLs config
+- `supabase functions deploy parse-receipt` + secrets
+- Перший real-receipt smoke
 
-> **Важливо.** Перед deploy відкрий [src/ui/index.html](../src/ui/index.html) і у `identityOptions` array впиши **свій** email і email **нареченої**. Це quick-pick кнопки у "Хто ти?" modal — також доступно вільне введення email.
+## Крок 9. Onboarding другого користувача
 
-> **Re-deploy після змін.** `npm run push` оновлює код у Apps Script. Щоб новий код став активним на тому ж URL — у editor: Deploy → Manage deployments → ✏️ існуючого deployment → Version: New version → Deploy. (Альтернатива: новий deployment дає новий URL — придатно для дев-ітерацій без впливу на основний URL.)
+Коли хочеш дати доступ нареченій / партнеру:
 
-## Крок 10. Перевірка identity (Session.getActiveUser)
+1. У Studio SQL editor:
+   ```sql
+   insert into public.app_users (email) values ('partner@example.com');
+   ```
+2. Поділись live URL (за замовчуванням `https://finance-tracker.pages.dev` або custom domain).
+3. Партнер відкриває URL → вводить свій email → magic link у пошту → клікає → готовий.
 
-**Це треба зробити рано**, бо є відомий quirk: для personal Gmail без Workspace `Session.getActiveUser().getEmail()` повертає `""`.
-
-У Phase 1 — перший smoke test:
-
-```javascript
-function testIdentity() {
-  const email = Session.getActiveUser().getEmail();
-  Logger.log(`Active user: "${email}"`);
-}
-```
-
-Запусти з editor для свого акаунта — побачиш email або порожній рядок.
-
-### Якщо повертає `""`
-
-Phase 3 UI обробляє це автоматично: при першому відкритті `index.html` показує "Хто ти?" modal з quick-pick кнопками (`identityOptions` array у [src/ui/index.html](../src/ui/index.html)) + вільним введенням email. Вибір зберігається у `localStorage.financeTracker.userEmail`. `paid_by` береться звідти при save'ах.
-
-## Крок 11. Перший вхід (для двох користувачів)
-
-1. Відкрий deployment URL у браузері (на телефоні або десктопі) **зі свого Google акаунту**.
-2. На першому екрані з'явиться modal "Хто ти?" → вибери свій email або введи власноруч.
-3. Додай URL до закладок / Add to Home Screen на телефоні.
-4. Поділись URL з нареченою — нехай вона повторить ті самі кроки зі свого пристрою.
-
-Усе. Тепер обоє можете:
-- 📷 фотографувати чек → AI розпізнає → редагуєш → save.
-- ✍️ додавати онлайн-витрати вручну.
-- 📋 переглядати останні чеки і редагувати їх.
+Будь-який email що пройде magic-link отримає JWT, але дані з БД побачить тільки якщо є в `app_users`. RLS діє автоматично.
 
 ## Перевірка
 
-- [ ] Sheet відкривається у тебе і нареченої з правами Editor.
-- [ ] `clasp push` проходить без помилок.
-- [ ] Web app deployment URL відкривається у тебе і нареченої.
-- [ ] `testIdentity()` повертає твій email (або готовий fallback через localStorage).
-- [ ] Drive-папка `FinanceTracker/Receipts` доступна обом.
-- [ ] Gemini API ключ збережено у Script Properties.
+- [ ] `npm run lint && typecheck && test && build` — все зелене
+- [ ] `npm run dev` — Vite стартує на :5173
+- [ ] Magic link sign-in працює end-to-end (поштова скринька → клік → авторизований)
+- [ ] `/recent` показує "Поки що порожньо" (якщо нема даних) або список (якщо є)
+- [ ] `/manual` save flow проходить без помилок (можна перевірити з тестовим чеком EUR/UAH)
+- [ ] (Опційно) `/photo` flow проти live Edge Function — реальний чек, Gemini parse, save
+- [ ] (Опційно) `/stats` після збереження кількох чеків показує чарти
 
-## Подальша робота
+## Цикл розробки
 
-З цього моменту цикл розробки:
+```powershell
+# редагуй файли локально
+npm run dev                  # HMR відбиває зміни одразу
+npm run lint                 # ESLint
+npm run typecheck            # tsc + tsr generate
+npm run test                 # vitest (всі workspaces)
+npm run format               # Prettier
 
-```bash
-# редагуєш src/* локально
-npm run lint            # ESLint
-npm run typecheck       # TypeScript checkJs (Apps Script API surface)
-npm run test            # node:test (Domain + Storage + Fx + fixtures)
-npm run push            # lint + typecheck + tests + clasp push
-# тестуєш у браузері через deployment URL
-git add . && git commit -m "..."
+git add .
+git commit -m "..."          # husky pre-commit запустить prettier на staged files
+git push                     # GitHub Actions автоматично deploy через ~2 хв
 ```
 
-Якщо хтось правив код у браузері Apps Script — `npx clasp pull` синхронізує локально (рідкісний випадок; уникай).
+Pre-commit запускає Prettier через `lint-staged`. Lint+typecheck+test НЕ запускаються pre-commit (повний `npm run lint && typecheck && test` — щоразу занадто повільно). Натомість CI ставить gate перед deploy — якщо щось зламано, deploy не відбувається.
 
-### Linting
+## Лінтинг
 
-ESLint flat config у `eslint.config.mjs` ловить:
-- **SyntaxError-и** включно з класичною JSDoc-міною — `*/` всередині `/** ... */` блоку (приклад з реального досвіду цього проєкту).
-- **Виклики undefined globals.** Preset `globals.googleappsscript` знає Apps Script API: `SpreadsheetApp`, `UrlFetchApp`, `Utilities`, `LockService`, `XmlService`, тощо.
-- **Cross-file project globals.** Apps Script ділить один глобальний scope, тому `Config`, `Domain`, `Storage`, `Fx`, `Smoke` (та Phase 2 заглушки `AiClient`, `Gemini`, `OpenAi`, `Anthropic`) задекларовані у конфігу.
-- **Невикористані змінні** як warning. Префікс `_` ігнорується (`^_` rule) — для приватних helper-ів типу `_Config_requireProp`.
+ESLint 9 flat config:
 
-Команди:
+- `web/eslint.config.js` — React + TypeScript + React Hooks rules + `no-restricted-imports` для блокування прямого `supabase-client` за межами адаптерів і `**/api/**`.
+- `packages/domain/eslint.config.js` — TypeScript + блокує `react`, `supabase-js`, `vite` imports (vendor-free пакет).
+- Root `eslint.config.js` (опційно) для repo-wide rules.
 
-| Команда | Що робить |
-|---|---|
-| `npm run lint` | ESLint для `src/` і `tests/` |
-| `npm run typecheck` | `tsc --noEmit` — TypeScript checkJs з `@types/google-apps-script` |
-| `npm run test` | `node --test` — усі тести (Domain unit + Storage/Fx integration + fixtures) |
-| `npm run push` | lint + typecheck + tests + clasp push — **рекомендований** шлях |
-| `npm run push:force` | clasp push без перевірок — escape hatch |
+Запуск: `npm run lint`. Auto-fix: `npx eslint . --fix` або `npm run format`.
 
-Якщо ESLint помилково заблокує валідний код — або `push:force`, або додай вузький disable-коментар (`/* eslint-disable-next-line no-undef */`) і подумай, чи rule справді корисний (можливо, бракує global у конфігу).
+Якщо ESLint помилково блокує валідний код — додай вузький disable-коментар (`// eslint-disable-next-line <rule>`) і подумай чи rule справді корисний (можливо, потрібно додати exemption у config).
 
-### Тестування — три рівні
+## Тестування — три рівні
 
-#### Рівень 1: TypeScript checkJs
+### Рівень 1: Domain unit-тести
 
-`tsconfig.json` із `allowJs: true`, `checkJs: true`, `strict: true` + `@types/google-apps-script`. Запускається `npm run typecheck`.
+`packages/domain/src/*.test.ts` — pure TS:
 
-**Ловить:**
-- Виклики неіснуючих Apps Script API (typo: `SpreadsheetApp.openId` замість `openById`).
-- Wrong-type аргументи.
-- Property access на nullable (з певними обмеженнями @types).
+- `schemas.test.ts` — Zod валідація + cross-field invariants.
+- `factories.test.ts` — makeReceipt/makeItem поведінка, edge cases (fx_rate boundary, discount > unit_price).
+- `pair-detector.test.ts` — 16 тестів cancellation/discount grouping (ADR-0012).
+- `money.test.ts`, `ulid.test.ts`, `time.test.ts`, `consumed-by.test.ts`.
 
-**Не ловить:**
-- Runtime quirks, які @types не моделюють (приклад: `LockService.getDocumentLock()` повертає null для standalone — типи цього не показують).
+### Рівень 2: Web unit + integration
 
-`src/globals.d.ts` декларує project namespaces (Config, Domain, Storage, Fx, Smoke + Phase 2 заглушки) як `any`. Cross-module type safety — out of scope; мета — Apps Script API surface.
+`web/src/**/*.test.{ts,tsx}` — Vitest + jsdom + @testing-library/react:
 
-#### Рівень 2: Юніт- + integration-тести
+- Adapter тести з `vi.mock('../supabase-client')`.
+- Hook тести через `renderHook` + QueryClient wrapper.
+- Component тести (render, interaction, snapshot — як треба).
+- TanStack Router `<Link>` мокається через `vi.mock('@tanstack/react-router')`.
+- Native `<dialog>` потребує `HTMLDialogElement.prototype.showModal/close` стабів у `beforeAll`.
+- Chart.js НЕ покрито (jsdom не реалізує canvas) — manual smoke.
 
-`node --test` (Node-native, нуль зовнішніх раннерів). Структура:
+### Рівень 3: Edge Function (Vitest у Node)
 
-| Файл | Що покриває |
-|---|---|
-| `tests/domain.test.js` | Domain pure logic (ULID, rounding, parsers, validators, factories) |
-| `tests/storage.test.js` | Storage CRUD з in-memory FakeSpreadsheetApp, cascade delete, lock invocation |
-| `tests/fx.test.js` | Fx ECB parser, NBU date helpers, getRate fallback |
+`supabase/functions/parse-receipt/handler.test.ts` — handler.ts runtime-portable, тестується у Node.
 
-**Apps Script fakes** — `tests/fakes/`. Самописні (250 рядків), не community libs:
-- `SpreadsheetApp.js` — in-memory Sheet, getRange/setValues/appendRow/deleteRow.
-- `UrlFetchApp.js` — stub-based, `_setStub(url, response)`.
-- `LockService.js` — завжди success, з лічильником для асертів.
-- `Session.js` — fixed email через `_setUserEmail`.
-- `XmlService.js` — обгортка над `@xmldom/xmldom`.
-- `DriveApp.js` — заглушка (не використовується в Phase 1).
+Запуск всього: `npm run test` (root). Per-workspace: `npx vitest run --root web` або `npx vitest run --root packages/domain`. Single file: `npx vitest run path/to/file.test.ts`.
 
-`tests/bootstrap.js` ставить fakes + project модулі на `global` (Apps Script semantic), повертає accessors. Integration-тести роблять `require('./bootstrap')` замість `'./setup'`.
+## Що НЕ покрито тестами (чесні межі)
 
-#### Рівень 3: Fixtures + drift detection
+- Real Supabase calls (RLS behavior, real magic-link flow, real Storage upload) — через manual smoke.
+- Real Gemini / Claude calls — через manual `/photo` flow або `curl` проти live Edge Function.
+- Visual / layout / responsive — через manual browser check.
+- E2E (Playwright) — у backlog.
 
-`tests/fixtures/` містить **реальні snapshots** ECB XML і NBU JSON. `tests/fixtures.test.js` асертить:
+## Troubleshooting
 
-- ECB feed містить мажорні валюти (USD, JPY, GBP, CHF, PLN, CZK, HUF, CAD, AUD).
-- ECB feed **НЕ** містить UAH (документована відсутність — мотивація NBU integration).
-- USD rate у плавзих межах (sanity check).
-- NBU response має правильну форму (`exchangedate` як DD.MM.YYYY).
+Розширений список — [deploy.md "Troubleshooting"](deploy.md#troubleshooting). Часті при первинному setup:
 
-Якщо ECB колись прибере GBP — тест почервоніє. Refresh fixtures:
-```
-curl https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml > tests/fixtures/ecb-daily-sample.xml
-```
-
-#### CommonJS shims
-
-Кожен `src/*.js` закінчується:
-```js
-if (typeof module !== 'undefined') module.exports = { Module };
-```
-
-В Apps Script `module` undefined → no-op. У Node — exports для тестів. Без цього shim Node test runner не зміг би `require('../src/Storage')`.
-
-#### Що тести **НЕ** ловлять (чесні межі)
-
-- Real Apps Script behavior quirks, які наш fake не моделює (треба `tests/fakes/*.js` оновлювати при виявленні).
-- API недоречно змінений @types (тип в `@types/google-apps-script` не збігається з реальним runtime).
-- Schema drift у Sheet (відбувається лише runtime).
-- Зовнішні API drift, окрім тих, що покриті fixture-тестами (ECB/NBU).
+- **"Cannot find package @finance-tracker/domain"** при `npm run dev` → запусти `npm ci` від кореня (не з `web/`).
+- **Build падає з SyntaxError у `routeTree.gen.ts`** → не комітнутий generated файл. Запусти `npm run typecheck` (тригерить `tsr generate`).
+- **`supabase` команди not found** → встанови глобально (`npm install -g supabase`) або префікс `npx`.
+- **PowerShell `>` редірект ламає TS-файл** → використай UTF-8 helper (Крок 3).
+- **Magic link редіректить на `localhost:5173`** замість production → Supabase Auth URL Configuration не оновлено для production. У dev це OK.
+- **`/photo` повертає 401** → Edge Function `verify_jwt = true` блокує — переконайся що залогінений у dev. Або `supabase functions serve --no-verify-jwt` для local debug.
+- **`/photo` повертає 403** → JWT валідний але email не у `app_users`. Studio SQL editor → insert.
