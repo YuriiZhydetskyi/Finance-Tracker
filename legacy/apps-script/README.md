@@ -1,6 +1,6 @@
 # Finance Tracker — legacy Apps Script app (frozen)
 
-**Frozen on 2026-05-07. Cutover to new stack on 2026-05-08** (see [ADR-0013](../../docs/decisions/0013-migrate-to-react-supabase.md)). This is the original Google Apps Script + Google Sheets implementation. It was retired in favor of the new React + Supabase + Cloudflare Pages stack at [`/web`](../../web/) + [`/supabase`](../../supabase/).
+**Frozen on 2026-05-07. Cutover to new stack on 2026-05-08** (see [ADR-0013](../../docs/decisions/0013-migrate-to-react-supabase.md)). This is the original Google Apps Script + Google Sheets implementation. It was retired in favor of the new React + Supabase + Cloudflare Pages stack at [`/web`](../../web/) + [`/supabase`](../../supabase/), live at **https://<your-app>.pages.dev**.
 
 The code here is preserved verbatim so we can:
 - Reference business rules, prompts, and edge-case handling for any future work (`Domain.js`, `Gemini.js`, `Anthropic.js`, `pairDetector.html`).

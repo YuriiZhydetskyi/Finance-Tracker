@@ -2,7 +2,9 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Останнє оновлення:** 2026-05-07 (Phase 9 — `/stats` сторінка з 4 чартами готова; production deploy всього бандла deferred до Phase 10)
+**Останнє оновлення:** 2026-05-08 (Phase 10 — live на Cloudflare Pages; усі міграції застосовані до live Supabase; manual smoke триває)
+
+**Production URL:** https://<your-app>.pages.dev (stable production alias; `<hash>.<your-app>.pages.dev` — preview-deployment URLs з кожного pushed коміту)
 
 ---
 
@@ -11,8 +13,8 @@
 - **Старий стек (Apps Script + Sheets + Alpine.js)** заархівовано в [`legacy/apps-script/`](../legacy/apps-script/) — досі білдиться (164 тести), залишається для emergency rollback.
 - **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages (deploy у Phase 10). $0/місяць.
 - **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/<fn>/providers/`. Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
-- **Прогрес:** 9 з 11 фаз готові. Auth + `/manual` + `/recent` + `/edit/$id` + `/photo` + `/stats` (4 чарти: по місяцях / користувачах / категоріях / магазинах) працюють end-to-end (тести зелені, manual smoke deferred до live deploy у Phase 10). `parse-receipt` Edge Function і дві нові міграції (storage bucket + stats views) ще не задеплоєні — клієнтський wiring готовий, але виклики впадуть проти live проекту, поки Phase 10 не запушить все.
-- **Наступне:** Phase 10 — Polish + Cloudflare Pages deploy + Supabase production redirect URLs + `supabase db push` (storage + stats views) + `supabase functions deploy parse-receipt` + secrets + manual end-to-end з обома користувачами.
+- **Прогрес:** 10 з 11 фаз готові. Live на Cloudflare Pages (`<your-app>.pages.dev`); CI/CD через GitHub Actions (`.github/workflows/deploy.yml`). Усі 3 міграції застосовані до live Supabase (`supabase db push`); `database.types.ts` регенеровано з canonical джерела; `parse-receipt` Edge Function задеплоєна з secrets для Gemini + Anthropic. Auth (magic link) + `/manual` + `/recent` + `/edit/$id` + `/photo` + `/stats` працюють end-to-end проти live стека.
+- **Наступне:** manual end-to-end smoke з обома користувачами (Phase 10 фінал) → за потреби фіксити баги що випливуть → опціонально Phase 11 (Playwright E2E) + Phase 12 (daily backup).
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 
@@ -47,13 +49,13 @@ ESLint 9.x (не 10) — `eslint-plugin-react@7.37.5` ще не оновився
 
 ### Backend / платформа
 
-| Сервіс           | Налаштування                                                                                |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| Supabase project | `<your-project-ref>` (eu-west-2 за замовчуванням; перевірити у Settings → Infrastructure) |
-| Supabase CLI     | 2.98.x як devDep, для `db push` / `gen types` / `functions deploy`                          |
-| AI               | Gemini Flash primary + Claude Sonnet 4.6 fallback (порт ADR-0011) — реалізація Phase 7      |
-| FX               | NBU live rates для UAH — клієнт-сайд (CORS-open public API) — Phase 5                       |
-| Hosting (план)   | Cloudflare Pages для frontend, Supabase Edge Functions для AI proxy — Phase 10              |
+| Сервіс           | Налаштування                                                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase project | `<your-project-ref>` (eu-west-2 за замовчуванням; перевірити у Settings → Infrastructure)                                                   |
+| Supabase CLI     | 2.98.x як devDep, для `db push` / `gen types` / `functions deploy`                                                                            |
+| AI               | Gemini Flash primary + Claude Sonnet 4.6 fallback (порт ADR-0011) — реалізація Phase 7                                                        |
+| FX               | NBU live rates для UAH — клієнт-сайд (CORS-open public API) — Phase 5                                                                         |
+| Hosting          | Cloudflare Pages: `<your-app>.pages.dev`. Edge Function `parse-receipt` задеплоєно у Supabase. CI/CD: `.github/workflows/deploy.yml` |
 
 ---
 
@@ -275,15 +277,41 @@ finance-tracker/
 - **Verified автоматично:** lint + typecheck + test + build чисті.
 - **НЕ верифіковано вручну**: дашборд проти live даних. Live deploy у Phase 10 застосує міграцію `20260507000003_stats_views.sql` + регенерує `database.types.ts`, після чого можна збирати реальні чеки і перевіряти візуалізацію.
 
+### ✅ Phase 10 — Live (2026-05-08)
+
+**Production URL:** https://<your-app>.pages.dev
+
+- **Документація** (commits `971ec36`, `37b1c90`, `15515b1`):
+  - ADR-0013 для міграції; cross-link superseded ADRs (0001, 0002, 0005, 0006, 0010); ADR index оновлено з ADR-0013.
+  - `web/public/_redirects` (`/* /index.html 200`) — SPA fallback щоб direct-link на `/recent`/`/edit/...`/`/photo`/`/stats` не дав 404.
+  - Legacy `legacy/apps-script/README.md` — cutover дата + 90-day rollback window + step-by-step rollback procedure.
+  - Покриття тестами: handler.test.ts через Vitest у Node (handler runtime-portable; sub-workspace vitest.config.ts), domain time + factories edge cases, save-receipt mutation.
+  - Повний rewrite CLAUDE.md, architecture.md, data-model.md, extending.md, setup.md під новий стек.
+  - Новий `docs/deploy.md` як operational runbook (топологія, secrets, build-time vs runtime env vars, troubleshooting).
+- **CI/CD** (commit `8f340da`): `.github/workflows/deploy.yml` — push to main → npm ci → lint → typecheck → test → build (з Vite-inline-ом VITE\_\*) → `wrangler pages deploy`. Bypass'ить broken Cloudflare GitHub-app UI; CI gate з усіма checks перед deploy.
+- **Cloudflare Pages**: bootstrap через локальний `wrangler pages deploy dist --project-name=finance-tracker --branch=main`, потім CI/CD підхоплює. 4 GitHub secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) налаштовані. Project name отримав `-e89` суфікс через unique-naming у CF account.
+- **Supabase production setup**:
+  - `npx supabase db push` — застосовано міграції `20260507000002_storage_bucket.sql` (bucket `receipts` + 4 RLS policies на `storage.objects`) + `20260507000003_stats_views.sql` (4 v*stats*\* views з `security_invoker = on`).
+  - `npx supabase gen types typescript --linked` — regenerated `database.types.ts` з canonical джерела; manual-patch замінено на canonical.
+  - `npx supabase functions deploy parse-receipt` — Edge Function задеплоєно.
+  - `npx supabase secrets set GEMINI_API_KEY=... ANTHROPIC_API_KEY=...` — обидва secrets налаштовані.
+  - Authentication → URL Configuration: Site URL = `https://<your-app>.pages.dev`, Redirect URLs включає `/auth/callback`.
+  - `app_users` allowlist оновлено (developer + fiancée emails).
+- **Tests:** 72 web + 76 domain + 7 edge-fn = **155 тестів зелені**. Build 455ms; усі chunks lazy-loaded окрім main + auth (Supabase JS — найважчий).
+- **Verified автоматично:** lint + typecheck + test + build чисті у CI на кожному push.
+- **Manual smoke триває.** Все готове end-to-end. Якщо щось виявиться — фікси у наступній PR.
+
 ---
 
-## Що далі (Phase 10)
+## Що далі
 
-| Фаза   | Скоуп                                                                                                                                                                                                                                                                   | Естімейт | Статус  |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- |
-| **10** | Polish + Cloudflare Pages deploy (production env vars, Supabase production redirect URLs, `supabase db push` для storage + stats views, регенерація `database.types.ts`, `supabase functions deploy parse-receipt` + secrets) + manual end-to-end з обома користувачами | ~3h      | ⏳ next |
+Core MVP завершено. Опційне у backlog:
 
-Загальний core MVP: **~3h залишилось** (з ~33h оригінального естімейту).
+| Фаза          | Скоуп                                                                                                                             | Естімейт   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **11** (опц.) | Playwright E2E: 2 потоки (photo-save + manual-save) проти `supabase start` локально + у CI                                        | ~3h        |
+| **12** (опц.) | Periodic Storage sweep для orphan photos (через pg_cron + Edge Function); daily DB backup → Storage `backups/` bucket             | ~2h        |
+| **Тех борг**  | Loading skeletons для `/recent` і `/stats` (зараз text-only "Завантажую..."); product-management UI; settlements (хто кому винен) | open-ended |
 
 ---
 

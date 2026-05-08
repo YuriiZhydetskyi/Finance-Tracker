@@ -22,7 +22,7 @@ Operational runbook для нового стека. Архітектурні р�
                │ static files upload
                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Cloudflare Pages — finance-tracker.pages.dev (static hosting only)  │
+│ Cloudflare Pages — <your-app>.pages.dev (static, prod)     │
 └──────────────┬──────────────────────────────────────────────────────┘
                │ HTTPS
                ▼
@@ -149,7 +149,7 @@ wrangler pages deploy dist --project-name=finance-tracker --branch=main
 - Create new project? → **Yes**
 - Production branch? → **main**
 
-Видасть URL виду `https://finance-tracker.pages.dev` (або з суфіксом). Запиши його — потрібен для Supabase Auth.
+Видасть URL виду `https://finance-tracker.pages.dev` (або з суфіксом — у нас вийшло `<your-app>.pages.dev` бо CF auto-suffix'ить при collision). Запиши його — потрібен для Supabase Auth.
 
 ### Supabase Auth — production redirect URLs
 
@@ -182,7 +182,7 @@ npm run build
 wrangler pages deploy dist --project-name=finance-tracker --branch=main
 ```
 
-Це створить **preview deployment** з URL виду `https://abc1234.finance-tracker.pages.dev` — production не торкає. Щоб задеплоїти у production minus CI: `--branch=main`.
+Це створить **preview deployment** з URL виду `https://abc1234.<your-app>.pages.dev` — production не торкає. Щоб задеплоїти у production minus CI: `--branch=main`.
 
 ---
 
