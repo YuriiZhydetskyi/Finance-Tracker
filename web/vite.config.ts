@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(
+  readFileSync(path.resolve(import.meta.dirname, './package.json'), 'utf8'),
+) as { version: string };
 
 export default defineConfig({
   plugins: [
@@ -15,6 +20,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),

@@ -49,6 +49,7 @@ function HomePage() {
               <Button variant="secondary">Статистика</Button>
             </Link>
           </div>
+          <p className="mt-6 text-xs text-slate-400">v{__APP_VERSION__}</p>
         </div>
       </div>
     </RequireAuth>
