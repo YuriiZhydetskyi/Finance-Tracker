@@ -163,6 +163,38 @@ describe('detectPairs — normalization', () => {
     expect(r.items).toHaveLength(1);
     expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
   });
+
+  it('collapses internal whitespace runs (NBSP, double spaces)', () => {
+    // U+00A0 is non-breaking space — looks identical, but !==' '.
+    const r = detectPairs([pi('Mayb.Rose AF 0,75l', 1, 2.99), pi('Mayb.Rose AF  0,75l', 1, -2.99)]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
+  });
+
+  it('strips zero-width invisible chars the AI sometimes injects', () => {
+    // U+200B = zero-width space.
+    const r = detectPairs([pi('Wine​', 1, 5.0), pi('Wine', 1, -5.0)]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
+  });
+
+  it('NFKC normalization equates compatibility variants', () => {
+    // Full-width Latin letter (U+FF4C) vs ASCII; some POS exports use full-width.
+    const r = detectPairs([pi('Wine ｌ', 1, 2.99), pi('Wine l', 1, -2.99)]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
+  });
+
+  it('different visible names DO NOT group (no prefix-stripping cleverness)', () => {
+    // We only group when names are truly equal after invisible-char + whitespace
+    // normalization. Visible differences like "STORNO" prefix mean "leave alone".
+    const r = detectPairs([
+      pi('Mayb.Rose AF 0,75l', 1, 2.99),
+      pi('Storno Mayb.Rose AF 0,75l', 1, -2.99),
+    ]);
+    expect(r.items).toHaveLength(2);
+    expect(r.items.every((it) => it.pair_marker === undefined)).toBe(true);
+  });
 });
 
 // ── Empty / missing product names ────────────────────────────────────────────

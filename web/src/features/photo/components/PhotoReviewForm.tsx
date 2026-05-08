@@ -133,9 +133,21 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
     void onSubmit(e);
   };
 
+  const rawItemCount = parsed.items.length;
+  const detectedCount = pairResult.items.length;
+  const groupedPairs = rawItemCount - detectedCount;
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleFormSubmit} className="space-y-4">
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          AI розпізнав {rawItemCount}{' '}
+          {rawItemCount === 1 ? 'позицію' : rawItemCount < 5 ? 'позиції' : 'позицій'}
+          {groupedPairs > 0
+            ? `, автоматично згруповано ${groupedPairs} ${groupedPairs === 1 ? 'пару' : groupedPairs < 5 ? 'пари' : 'пар'} (cancellation/discount)`
+            : '. Пар не знайдено'}
+          .
+        </div>
         <ReceiptFormFields
           itemsArray={itemsArray}
           categories={categoryNames}

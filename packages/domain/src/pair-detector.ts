@@ -25,8 +25,16 @@ type Disposition =
   | { kind: 'merged-discount'; discount_orig: number }
   | { kind: 'skip-merged' };
 
+// Zero-width / BOM-style invisible characters the AI sometimes injects into
+// product names. They survive a naive trim() but defeat string equality, so
+// strip them before grouping.
+const INVISIBLE_CHARS = /[​‌‍﻿]/g;
+
 function normalize(name: string | undefined | null): string {
   return String(name ?? '')
+    .normalize('NFKC')
+    .replace(INVISIBLE_CHARS, '')
+    .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
 }
