@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
 import { Button } from '@/shared/ui/Button';
 import { cn } from '@/shared/ui/cn';
+import { CreateCategoryDialog } from '@/features/categories';
 import type { ManualFormValues } from '../schemas/manual-form';
 import { computeRowTotal } from '../utils/totals';
 import { formatMoney } from '@/shared/utils/format-money';
@@ -20,9 +22,12 @@ const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
 export function ItemRow({ index, categories, onRemove }: Props) {
   const {
     register,
+    setValue,
     watch,
     formState: { errors },
   } = useFormContext<ManualFormValues>();
+
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
 
   const item = watch(`items.${index}`);
   const currency = watch('currency');
@@ -92,14 +97,29 @@ export function ItemRow({ index, categories, onRemove }: Props) {
 
         <div className="col-span-6 sm:col-span-3">
           <label className={FIELD_LABEL_CLASS}>Категорія</label>
-          <select className={SELECT_CLASS} {...register(`items.${index}.category`)}>
-            <option value="">—</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-stretch gap-1">
+            <select className={SELECT_CLASS} {...register(`items.${index}.category`)}>
+              <option value="">—</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            {item?.category === 'Інше' && (
+              <button
+                type="button"
+                aria-label="Створити нову категорію"
+                title="Створити нову категорію"
+                onClick={() => {
+                  setCreateCategoryOpen(true);
+                }}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-lg font-semibold leading-none text-white transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+              >
+                +
+              </button>
+            )}
+          </div>
           {itemErrors?.category && (
             <span className="text-xs text-red-600">{itemErrors.category.message}</span>
           )}
@@ -212,6 +232,21 @@ export function ItemRow({ index, categories, onRemove }: Props) {
           </div>
         )}
       </div>
+
+      {createCategoryOpen && (
+        <CreateCategoryDialog
+          open
+          onClose={() => {
+            setCreateCategoryOpen(false);
+          }}
+          onCreated={(name) => {
+            setValue(`items.${index}.category`, name, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
