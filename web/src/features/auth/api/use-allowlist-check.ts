@@ -4,8 +4,8 @@ import { useCurrentUser } from './use-current-user';
 
 /**
  * Checks whether the current user's email is in `public.app_users`. RLS
- * policy `self_read_app_users` allows each user to read their own row only,
- * so a 1-row result means "allowed", 0 rows means "not allowed".
+ * policy `allowlist_read_app_users` returns every row to an allowlisted user
+ * and zero rows otherwise, so a 1-row result means "allowed".
  */
 export function useAllowlistCheck() {
   const { data: user } = useCurrentUser();

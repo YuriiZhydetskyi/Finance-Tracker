@@ -8,6 +8,7 @@ import {
   type PairDetectionResult,
 } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
+import { useAppUsers } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import {
@@ -63,6 +64,7 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
   const navigate = useNavigate();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
+  const appUsersQuery = useAppUsers();
   const save = useSavePhotoReceiptMutation();
 
   const initialItems = useMemo(
@@ -93,6 +95,7 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
 
   const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
   const productNames = productsQuery.data?.map((p) => p.name) ?? [];
+  const paidByOptions = appUsersQuery.data ?? [];
 
   const onSubmit = methods.handleSubmit(async (values) => {
     const result = await save.mutateAsync({
@@ -137,6 +140,7 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
           itemsArray={itemsArray}
           categories={categoryNames}
           productNames={productNames}
+          paidByOptions={paidByOptions}
           saveError={save.isError ? save.error : null}
           actions={
             <>

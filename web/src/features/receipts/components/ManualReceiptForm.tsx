@@ -2,6 +2,7 @@ import type { FormEvent } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/shared/ui/Button';
+import { useAppUsers } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import { useReceiptForm } from '../hooks/use-receipt-form';
@@ -12,11 +13,13 @@ export function ManualReceiptForm() {
   const { methods, itemsArray } = useReceiptForm();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
+  const appUsersQuery = useAppUsers();
   const save = useSaveReceiptMutation();
   const navigate = useNavigate();
 
   const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
   const productNames = productsQuery.data?.map((p) => p.name) ?? [];
+  const paidByOptions = appUsersQuery.data ?? [];
 
   const onSubmit = methods.handleSubmit(async (values) => {
     const result = await save.mutateAsync({
@@ -56,6 +59,7 @@ export function ManualReceiptForm() {
           itemsArray={itemsArray}
           categories={categoryNames}
           productNames={productNames}
+          paidByOptions={paidByOptions}
           saveError={save.isError ? save.error : null}
           actions={
             <>

@@ -120,11 +120,9 @@ export function ItemRow({ index, categories, onRemove }: Props) {
         <div className="col-span-6 sm:col-span-3">
           <label className={FIELD_LABEL_CLASS}>Хто</label>
           <select className={SELECT_CLASS} {...register(`items.${index}.consumed_by`)}>
-            <option value="shared">Спільно</option>
             <option value="his">Він</option>
             <option value="hers">Вона</option>
-            <option value="custom:30/70">30 / 70</option>
-            <option value="custom:70/30">70 / 30</option>
+            <option value="shared">Спільне</option>
           </select>
         </div>
         <div className="col-span-3 sm:col-span-2">

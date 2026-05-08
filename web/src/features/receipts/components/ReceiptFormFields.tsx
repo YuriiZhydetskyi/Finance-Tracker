@@ -15,6 +15,7 @@ type Props = {
   itemsArray: UseFieldArrayReturn<ManualFormValues, 'items', 'id'>;
   categories: string[];
   productNames: string[];
+  paidByOptions: string[];
   saveError?: Error | null;
   /** Action buttons rendered at the bottom of the form (Save/Cancel/Delete). */
   actions: ReactNode;
@@ -29,6 +30,7 @@ export function ReceiptFormFields({
   itemsArray,
   categories,
   productNames,
+  paidByOptions,
   saveError,
   actions,
 }: Props) {
@@ -65,7 +67,16 @@ export function ReceiptFormFields({
           </div>
           <div className="col-span-12 sm:col-span-2">
             <label className={FIELD_LABEL_CLASS}>Оплатив</label>
-            <Input type="email" autoComplete="email" {...register('paid_by')} />
+            <select className={SELECT_CLASS} {...register('paid_by')}>
+              {paidByOptions.map((email) => (
+                <option key={email} value={email}>
+                  {email}
+                </option>
+              ))}
+            </select>
+            {errors.paid_by && (
+              <span className="text-xs text-red-600">{errors.paid_by.message}</span>
+            )}
           </div>
           <div className="col-span-12">
             <label className={FIELD_LABEL_CLASS}>Нотатка (опц.)</label>

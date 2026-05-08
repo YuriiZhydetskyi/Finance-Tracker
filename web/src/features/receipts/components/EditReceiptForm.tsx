@@ -3,6 +3,7 @@ import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import type { Item, Receipt } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
+import { useAppUsers } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import { useReceiptForm, emptyItemRow } from '../hooks/use-receipt-form';
@@ -46,6 +47,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
   const navigate = useNavigate();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
+  const appUsersQuery = useAppUsers();
   const update = useUpdateReceiptMutation();
   const remove = useDeleteReceiptMutation();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -64,6 +66,12 @@ export function EditReceiptForm({ receipt, items }: Props) {
 
   const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
   const productNames = productsQuery.data?.map((p) => p.name) ?? [];
+  const allowlistEmails = appUsersQuery.data ?? [];
+  // Preserve a legacy paid_by value (e.g. someone removed from the allowlist)
+  // so editing an old receipt doesn't silently rewrite who paid.
+  const paidByOptions = allowlistEmails.includes(receipt.paid_by)
+    ? allowlistEmails
+    : [...allowlistEmails, receipt.paid_by];
 
   const onSubmit = methods.handleSubmit(async (values: ManualFormValues) => {
     await update.mutateAsync({
@@ -119,6 +127,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
           itemsArray={itemsArray}
           categories={categoryNames}
           productNames={productNames}
+          paidByOptions={paidByOptions}
           saveError={update.isError ? update.error : remove.isError ? remove.error : null}
           actions={
             <>
