@@ -151,7 +151,7 @@ These rules live in `packages/domain/`:
 - **Quantity** rounding: 3dp via `roundQty`. Allows `0.350 kg`.
 - **FX rate** rounding: 6dp via `roundFxRate`. Stored on the Receipt as audit trail; never recomputed.
 - **Total invariant**: `total_orig = round(qty * (unit_price_orig - discount_orig), 2)`. Enforced by `makeItem`. `total_eur = round(total_orig * fx_rate_eur, 2)`.
-- **Negative line items**: `unit_price_orig` may be negative (cancellation, Pfand refund, Rabatt). `qty` always positive. See ADR-0012 + ADR-0014 + `pair-detector.ts` for client-side grouping logic. After parse, exact ±X pairs become a single 0-priced row with `pair_marker.kind = 'cancelled'`; partial discounts (|neg| < pos) merge into one row with `discount_orig` set and `pair_marker.kind = 'discount-merged'`. The marker is a UI-only hint (drives ItemRow badge + footer breakdown), never persisted.
+- **Negative line items**: `unit_price_orig` may be negative (cancellation, Pfand refund, Rabatt). `qty` always positive. See ADR-0012 + ADR-0014 + ADR-0015 + `pair-detector.ts` for client-side grouping logic. The detector runs in three passes: (1) exact `±X` cancellation pairs (works for 3+ groups, e.g. cashier-punched-twice-then-voided) → single 0-priced row, `pair_marker.kind = 'cancelled'`; (2) partial discounts (`|neg| < pos`) → single row with `discount_orig` set, `pair_marker.kind = 'discount-merged'`; (3) orthogonal aggregation by `(name, unit_price, discount, marker.kind)` → identical rows merge into one with summed `qty`, `pair_marker.kind = 'aggregated'`. All markers carry `count` (number of source rows merged); marker is a UI-only hint (drives ItemRow badge + footer breakdown), never persisted.
 
 ## Testing strategy
 

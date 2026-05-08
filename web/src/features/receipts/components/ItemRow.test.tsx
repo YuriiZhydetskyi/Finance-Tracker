@@ -50,10 +50,11 @@ function getInput(container: HTMLElement, field: string): HTMLInputElement {
 
 describe('ItemRow — pair_marker visual treatment', () => {
   describe('no marker (normal)', () => {
-    it('does not render either badge and shows single-line footer', () => {
+    it('does not render any badge and shows single-line footer', () => {
       render(<Wrapper item={makeItem()} />);
       expect(screen.queryByText(/Пробито випадково/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Знижка · автоматично/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Знижка · /)).not.toBeInTheDocument();
+      expect(screen.queryByText(/🔗/)).not.toBeInTheDocument();
       expect(screen.getByText(/Рядок:/)).toBeInTheDocument();
     });
 
@@ -65,14 +66,14 @@ describe('ItemRow — pair_marker visual treatment', () => {
     });
   });
 
-  describe('cancelled marker', () => {
-    it('renders the "Пробито випадково" badge', () => {
+  describe('cancelled marker (count=1)', () => {
+    it('renders the "Пробито випадково · автоматично згруповано" badge', () => {
       render(
         <Wrapper
           item={makeItem({
             unit_price_orig: 0,
             discount_orig: 0,
-            pair_marker: { kind: 'cancelled' },
+            pair_marker: { kind: 'cancelled', count: 1 },
           })}
         />,
       );
@@ -85,7 +86,7 @@ describe('ItemRow — pair_marker visual treatment', () => {
           item={makeItem({
             unit_price_orig: 0,
             discount_orig: 0,
-            pair_marker: { kind: 'cancelled' },
+            pair_marker: { kind: 'cancelled', count: 1 },
           })}
         />,
       );
@@ -102,16 +103,33 @@ describe('ItemRow — pair_marker visual treatment', () => {
             qty: 1,
             unit_price_orig: 0,
             discount_orig: 0,
-            pair_marker: { kind: 'cancelled' },
+            pair_marker: { kind: 'cancelled', count: 1 },
           })}
         />,
       );
-      // Ukrainian locale renders 0 as "0,00 €"
       expect(screen.getByText(/Рядок:.*0,00/)).toBeInTheDocument();
     });
   });
 
-  describe('discount-merged marker', () => {
+  describe('cancelled marker with count > 1', () => {
+    it('badge mentions the merged-pair count', () => {
+      render(
+        <Wrapper
+          item={makeItem({
+            qty: 2,
+            unit_price_orig: 0,
+            discount_orig: 0,
+            pair_marker: { kind: 'cancelled', count: 2 },
+          })}
+        />,
+      );
+      expect(
+        screen.getByText(/Пробито випадково · 2 однакові пари згруповано/),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('discount-merged marker (count=1)', () => {
     it('renders the "Знижка · автоматично згруповано" badge', () => {
       render(
         <Wrapper
@@ -119,7 +137,7 @@ describe('ItemRow — pair_marker visual treatment', () => {
             qty: 1,
             unit_price_orig: 5,
             discount_orig: 1.5,
-            pair_marker: { kind: 'discount-merged' },
+            pair_marker: { kind: 'discount-merged', count: 1 },
           })}
         />,
       );
@@ -133,12 +151,11 @@ describe('ItemRow — pair_marker visual treatment', () => {
             qty: 1,
             unit_price_orig: 5,
             discount_orig: 1.5,
-            pair_marker: { kind: 'discount-merged' },
+            pair_marker: { kind: 'discount-merged', count: 1 },
           })}
         />,
       );
       expect(screen.getByText(/Оригінал:/)).toBeInTheDocument();
-      // The Знижка label inside the footer breakdown (distinct from the input label).
       expect(screen.getByText(/^Знижка:/)).toBeInTheDocument();
       expect(screen.getByText(/−.*1,50/)).toBeInTheDocument();
       expect(screen.getByText(/Фінал:/)).toBeInTheDocument();
@@ -152,13 +169,95 @@ describe('ItemRow — pair_marker visual treatment', () => {
             qty: 1,
             unit_price_orig: 5,
             discount_orig: 1.5,
-            pair_marker: { kind: 'discount-merged' },
+            pair_marker: { kind: 'discount-merged', count: 1 },
           })}
         />,
       );
       expect(getInput(container, 'qty').disabled).toBe(false);
       expect(getInput(container, 'unit_price_orig').disabled).toBe(false);
       expect(getInput(container, 'discount_orig').disabled).toBe(false);
+    });
+  });
+
+  describe('discount-merged marker with count > 1', () => {
+    it('badge mentions the merged-pair count and triblock reflects summed qty', () => {
+      render(
+        <Wrapper
+          item={makeItem({
+            qty: 2,
+            unit_price_orig: 5,
+            discount_orig: 1,
+            pair_marker: { kind: 'discount-merged', count: 2 },
+          })}
+        />,
+      );
+      expect(screen.getByText(/Знижка · 2 однакові пари згруповано/)).toBeInTheDocument();
+      // Original total = 2 × 5 = 10. Discount total = 2 × 1 = 2. Final = 8.
+      expect(screen.getByText(/Оригінал:.*2.*×.*5,00/)).toBeInTheDocument();
+      expect(screen.getByText(/10,00/)).toBeInTheDocument();
+      expect(screen.getByText(/−.*2,00/)).toBeInTheDocument();
+      expect(screen.getByText(/8,00/)).toBeInTheDocument();
+    });
+  });
+
+  describe('aggregated marker', () => {
+    it('renders the "🔗 N рядки з чека згруповано" badge', () => {
+      render(
+        <Wrapper
+          item={makeItem({
+            qty: 4,
+            unit_price_orig: 0.5,
+            pair_marker: { kind: 'aggregated', count: 4 },
+          })}
+        />,
+      );
+      expect(screen.getByText(/🔗 4 рядки з чека згруповано/)).toBeInTheDocument();
+    });
+
+    it('uses subtle slate background, not amber/emerald', () => {
+      const { container } = render(
+        <Wrapper
+          item={makeItem({
+            qty: 4,
+            unit_price_orig: 0.5,
+            pair_marker: { kind: 'aggregated', count: 4 },
+          })}
+        />,
+      );
+      const card = container.querySelector('.bg-slate-50\\/50');
+      expect(card).toBeInTheDocument();
+      // Sanity: not coloured like cancelled/discount-merged.
+      expect(container.querySelector('.border-amber-300')).toBeNull();
+      expect(container.querySelector('.border-emerald-300')).toBeNull();
+    });
+
+    it('keeps inputs editable', () => {
+      const { container } = render(
+        <Wrapper
+          item={makeItem({
+            qty: 4,
+            unit_price_orig: 0.5,
+            pair_marker: { kind: 'aggregated', count: 4 },
+          })}
+        />,
+      );
+      expect(getInput(container, 'qty').disabled).toBe(false);
+      expect(getInput(container, 'unit_price_orig').disabled).toBe(false);
+      expect(getInput(container, 'discount_orig').disabled).toBe(false);
+    });
+
+    it('footer shows normal "Рядок:" with summed total (qty × unit_price)', () => {
+      render(
+        <Wrapper
+          item={makeItem({
+            qty: 4,
+            unit_price_orig: 0.5,
+            pair_marker: { kind: 'aggregated', count: 4 },
+          })}
+        />,
+      );
+      // 4 × 0.50 = 2.00 EUR.
+      expect(screen.getByText(/Рядок:.*2,00/)).toBeInTheDocument();
     });
   });
 });

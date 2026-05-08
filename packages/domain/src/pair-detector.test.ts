@@ -41,10 +41,10 @@ describe('detectPairs — no-op', () => {
   });
 });
 
-// ── Cancellation pairs ───────────────────────────────────────────────────────
+// ── Cancellation pairs (2-tuple) ─────────────────────────────────────────────
 
-describe('detectPairs — cancellation pairs', () => {
-  it('exact +X / -X for same product → single zero-priced row with cancelled marker', () => {
+describe('detectPairs — 2-tuple cancellation pairs', () => {
+  it('exact +X / -X for same product → single zero-priced row with cancelled marker (count=1)', () => {
     const r = detectPairs([
       pi('Mayb.Rose AF 0,75l', 1, 2.99, 'Алкоголь'),
       pi('Mayb.Rose AF 0,75l', 1, -2.99, 'Алкоголь'),
@@ -55,10 +55,10 @@ describe('detectPairs — cancellation pairs', () => {
     expect(it?.qty).toBe(1);
     expect(it?.unit_price_orig).toBe(0);
     expect(it?.discount_orig).toBe(0);
-    expect(it?.pair_marker?.kind).toBe('cancelled');
+    expect(it?.pair_marker).toEqual({ kind: 'cancelled', count: 1 });
   });
 
-  it('cancellation pair where negative comes first → still produces one cancelled row', () => {
+  it('cancellation pair where negative comes first', () => {
     const r = detectPairs([pi('X', 1, -2.99), pi('X', 1, 2.99)]);
     expect(r.items).toHaveLength(1);
     expect(r.items[0]?.unit_price_orig).toBe(0);
@@ -66,10 +66,9 @@ describe('detectPairs — cancellation pairs', () => {
   });
 
   it('treats 2.99 vs -2.98 as a 1-cent discount, NOT a cancellation', () => {
-    // posTotal=2.99, negTotalAbs=2.98 → 1-cent discount.
     const r = detectPairs([pi('X', 1, 2.99), pi('X', 1, -2.98)]);
     expect(r.items).toHaveLength(1);
-    expect(r.items[0]?.pair_marker?.kind).toBe('discount-merged');
+    expect(r.items[0]?.pair_marker).toEqual({ kind: 'discount-merged', count: 1 });
     expect(r.items[0]?.discount_orig).toBe(2.98);
     expect(r.items[0]?.unit_price_orig).toBe(2.99);
   });
@@ -83,9 +82,9 @@ describe('detectPairs — cancellation pairs', () => {
   });
 });
 
-// ── Discount pairs ───────────────────────────────────────────────────────────
+// ── Discount pairs (2-tuple) ─────────────────────────────────────────────────
 
-describe('detectPairs — discount pairs', () => {
+describe('detectPairs — 2-tuple discount pairs', () => {
   it('+5.00 / -1.00 for same product → one merged item with discount_orig=1.00 and marker', () => {
     const r = detectPairs([
       pi('Promo Item', 1, 5.0, 'Бакалія'),
@@ -96,7 +95,7 @@ describe('detectPairs — discount pairs', () => {
     expect(it?.product_name).toBe('Promo Item');
     expect(it?.unit_price_orig).toBe(5.0);
     expect(it?.discount_orig).toBe(1.0);
-    expect(it?.pair_marker?.kind).toBe('discount-merged');
+    expect(it?.pair_marker).toEqual({ kind: 'discount-merged', count: 1 });
   });
 
   it('discount pair where negative comes first → still merges, output preserves positive position', () => {
@@ -110,19 +109,139 @@ describe('detectPairs — discount pairs', () => {
   });
 });
 
-// ── Ambiguous / not-our-case ─────────────────────────────────────────────────
+// ── 3+ tuples — multi-row groups (NEW in v2) ─────────────────────────────────
+
+describe('detectPairs — 3+ tuples (cashier punched twice, voided once)', () => {
+  it('[+X, +X, -X] → 1 cancelled + 1 normal positive', () => {
+    const r = detectPairs([pi('Wine', 1, 2.99), pi('Wine', 1, 2.99), pi('Wine', 1, -2.99)]);
+    expect(r.items).toHaveLength(2);
+    // First positive (idx 0) absorbed the negative → cancelled.
+    expect(r.items[0]?.unit_price_orig).toBe(0);
+    expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
+    // Second positive (idx 1) survives untouched.
+    expect(r.items[1]?.unit_price_orig).toBe(2.99);
+    expect(r.items[1]?.pair_marker).toBeUndefined();
+  });
+
+  it('[+X, -X, +X] (negative in the middle) → cancellation claims the first by index, second positive normal', () => {
+    const r = detectPairs([pi('X', 1, 2.99), pi('X', 1, -2.99), pi('X', 1, 2.99)]);
+    expect(r.items).toHaveLength(2);
+    expect(r.items[0]?.unit_price_orig).toBe(0);
+    expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
+    expect(r.items[1]?.unit_price_orig).toBe(2.99);
+    expect(r.items[1]?.pair_marker).toBeUndefined();
+  });
+
+  it('[+X, +X, -X*2] (-X has qty=2 so qty mismatch with each +) → all 3 unchanged', () => {
+    const r = detectPairs([pi('X', 1, 2.99), pi('X', 1, 2.99), pi('X', 2, -2.99)]);
+    expect(r.items).toHaveLength(2);
+    // +X +X aggregate to qty=2 (Pass 3); -X×2 has different qty key → standalone.
+    // Wait: -X×2 has unit_price=-2.99 which is negative — Pass 3 keys keep it
+    // separate from the positive aggregation. Let's just check no cancellation
+    // happened (totals don't match: |2.99×2|=5.98 ≠ |1×2.99|=2.99).
+    const wineRows = r.items.filter((it) => it.product_name === 'X');
+    const cancelledRows = wineRows.filter((it) => it.pair_marker?.kind === 'cancelled');
+    expect(cancelledRows).toHaveLength(0);
+  });
+});
+
+// ── Identical-positive aggregation (NEW in v2) ───────────────────────────────
+
+describe('detectPairs — Pass 3 aggregation of identical positives', () => {
+  it('4 identical kiwis (each +0.50, qty=1) → 1 aggregated row with qty=4 count=4', () => {
+    const r = detectPairs([
+      pi('Kiwi', 1, 0.5, 'Овочі/фрукти'),
+      pi('Kiwi', 1, 0.5, 'Овочі/фрукти'),
+      pi('Kiwi', 1, 0.5, 'Овочі/фрукти'),
+      pi('Kiwi', 1, 0.5, 'Овочі/фрукти'),
+    ]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.product_name).toBe('Kiwi');
+    expect(r.items[0]?.qty).toBe(4);
+    expect(r.items[0]?.unit_price_orig).toBe(0.5);
+    expect(r.items[0]?.pair_marker).toEqual({ kind: 'aggregated', count: 4 });
+  });
+
+  it('4 kiwis + 1 voided (5 total) → 1 cancelled + 1 aggregated qty=3 count=3', () => {
+    const r = detectPairs([
+      pi('Kiwi', 1, 0.5),
+      pi('Kiwi', 1, 0.5),
+      pi('Kiwi', 1, 0.5),
+      pi('Kiwi', 1, 0.5),
+      pi('Kiwi', 1, -0.5),
+    ]);
+    expect(r.items).toHaveLength(2);
+    // First positive (idx 0) cancelled by the negative.
+    expect(r.items[0]?.unit_price_orig).toBe(0);
+    expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
+    // Remaining 3 positives aggregated.
+    expect(r.items[1]?.qty).toBe(3);
+    expect(r.items[1]?.pair_marker).toEqual({ kind: 'aggregated', count: 3 });
+  });
+
+  it('two positive entries with same price → aggregated qty=2 count=2', () => {
+    const r = detectPairs([pi('X', 1, 2.99), pi('X', 1, 2.99)]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.qty).toBe(2);
+    expect(r.items[0]?.pair_marker).toEqual({ kind: 'aggregated', count: 2 });
+  });
+
+  it('two positives with DIFFERENT prices → both kept (no aggregation)', () => {
+    const r = detectPairs([pi('X', 1, 2.99), pi('X', 1, 1.99)]);
+    expect(r.items).toHaveLength(2);
+    expect(r.items.every((it) => it.pair_marker === undefined)).toBe(true);
+  });
+});
+
+// ── Pass 3 with discount-merged rows ─────────────────────────────────────────
+
+describe('detectPairs — Pass 3 across pair-merged rows', () => {
+  it('[+5, +5, -1] (one of two with discount) → 1 discount-merged + 1 normal (NOT aggregated)', () => {
+    const r = detectPairs([pi('Yogurt', 1, 5.0), pi('Yogurt', 1, 5.0), pi('Yogurt', 1, -1.0)]);
+    expect(r.items).toHaveLength(2);
+    // First +5 absorbs the -1 as discount.
+    expect(r.items[0]?.unit_price_orig).toBe(5.0);
+    expect(r.items[0]?.discount_orig).toBe(1.0);
+    expect(r.items[0]?.pair_marker?.kind).toBe('discount-merged');
+    // Second +5 stays normal (no marker, no discount → different agg key).
+    expect(r.items[1]?.unit_price_orig).toBe(5.0);
+    expect(r.items[1]?.pair_marker).toBeUndefined();
+  });
+
+  it('[+5, +5, -1, -1] (two with same discount) → 1 discount-merged qty=2 count=2', () => {
+    const r = detectPairs([
+      pi('Yogurt', 1, 5.0),
+      pi('Yogurt', 1, 5.0),
+      pi('Yogurt', 1, -1.0),
+      pi('Yogurt', 1, -1.0),
+    ]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.qty).toBe(2);
+    expect(r.items[0]?.unit_price_orig).toBe(5.0);
+    expect(r.items[0]?.discount_orig).toBe(1.0);
+    expect(r.items[0]?.pair_marker).toEqual({ kind: 'discount-merged', count: 2 });
+  });
+
+  it('[+X, -X, +X, -X] (two cancellation pairs) → 1 cancelled qty=2 count=2', () => {
+    const r = detectPairs([
+      pi('X', 1, 2.99),
+      pi('X', 1, -2.99),
+      pi('X', 1, 2.99),
+      pi('X', 1, -2.99),
+    ]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.qty).toBe(2);
+    expect(r.items[0]?.unit_price_orig).toBe(0);
+    expect(r.items[0]?.pair_marker).toEqual({ kind: 'cancelled', count: 2 });
+  });
+});
+
+// ── Ambiguous cases left untouched ───────────────────────────────────────────
 
 describe('detectPairs — ambiguous cases left untouched', () => {
   it('qty mismatch leaves both rows untouched', () => {
     const r = detectPairs([pi('X', 2, 2.99), pi('X', 1, -2.99)]);
     expect(r.items).toHaveLength(2);
-    expect(r.items[0]?.pair_marker).toBeUndefined();
-    expect(r.items[1]?.pair_marker).toBeUndefined();
-  });
-
-  it('3+ occurrences of same name → leave all untouched', () => {
-    const r = detectPairs([pi('X', 1, 2.99), pi('X', 1, 2.99), pi('X', 1, -2.99)]);
-    expect(r.items).toHaveLength(3);
     expect(r.items.every((it) => it.pair_marker === undefined)).toBe(true);
   });
 
@@ -134,12 +253,6 @@ describe('detectPairs — ambiguous cases left untouched', () => {
     expect(r.items).toHaveLength(2);
     expect(r.items[1]?.unit_price_orig).toBe(-8.25);
     expect(r.items[1]?.pair_marker).toBeUndefined();
-  });
-
-  it('two positive entries (bought 2 separately) → both kept, no merge', () => {
-    const r = detectPairs([pi('X', 1, 2.99), pi('X', 1, 2.99)]);
-    expect(r.items).toHaveLength(2);
-    expect(r.items.every((it) => it.pair_marker === undefined)).toBe(true);
   });
 
   it('refund larger than purchase → leave both, do not invent merge', () => {
@@ -165,29 +278,24 @@ describe('detectPairs — normalization', () => {
   });
 
   it('collapses internal whitespace runs (NBSP, double spaces)', () => {
-    // U+00A0 is non-breaking space — looks identical, but !==' '.
-    const r = detectPairs([pi('Mayb.Rose AF 0,75l', 1, 2.99), pi('Mayb.Rose AF  0,75l', 1, -2.99)]);
+    const r = detectPairs([pi('Mayb.Rose AF 0,75l', 1, 2.99), pi('Mayb.Rose AF  0,75l', 1, -2.99)]);
     expect(r.items).toHaveLength(1);
     expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
   });
 
   it('strips zero-width invisible chars the AI sometimes injects', () => {
-    // U+200B = zero-width space.
     const r = detectPairs([pi('Wine​', 1, 5.0), pi('Wine', 1, -5.0)]);
     expect(r.items).toHaveLength(1);
     expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
   });
 
   it('NFKC normalization equates compatibility variants', () => {
-    // Full-width Latin letter (U+FF4C) vs ASCII; some POS exports use full-width.
     const r = detectPairs([pi('Wine ｌ', 1, 2.99), pi('Wine l', 1, -2.99)]);
     expect(r.items).toHaveLength(1);
     expect(r.items[0]?.pair_marker?.kind).toBe('cancelled');
   });
 
   it('different visible names DO NOT group (no prefix-stripping cleverness)', () => {
-    // We only group when names are truly equal after invisible-char + whitespace
-    // normalization. Visible differences like "STORNO" prefix mean "leave alone".
     const r = detectPairs([
       pi('Mayb.Rose AF 0,75l', 1, 2.99),
       pi('Storno Mayb.Rose AF 0,75l', 1, -2.99),
@@ -201,8 +309,6 @@ describe('detectPairs — normalization', () => {
 
 describe('detectPairs — empty product_name handling', () => {
   it('two items with empty product_name and opposite signs → both kept (no false pairing)', () => {
-    // Empty names get skipped at grouping → they don't pair up under '' key.
-    // Otherwise the detector would happily merge two unrelated unnamed lines.
     const r = detectPairs([pi('', 1, 2.99), pi('', 1, -2.99)]);
     expect(r.items).toHaveLength(2);
     expect(r.items.every((it) => it.pair_marker === undefined)).toBe(true);

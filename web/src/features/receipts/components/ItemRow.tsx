@@ -32,6 +32,8 @@ export function ItemRow({ index, categories, onRemove }: Props) {
   const marker = item?.pair_marker;
   const isCancelled = marker?.kind === 'cancelled';
   const isDiscountMerged = marker?.kind === 'discount-merged';
+  const isAggregated = marker?.kind === 'aggregated';
+  const markerCount = marker?.count ?? 1;
 
   const qty = item?.qty ?? 0;
   const unitPrice = item?.unit_price_orig ?? 0;
@@ -39,23 +41,39 @@ export function ItemRow({ index, categories, onRemove }: Props) {
   const originalTotal = qty * unitPrice;
   const discountTotal = qty * discount;
 
+  const cancelledLabel =
+    markerCount > 1
+      ? `⚠ Пробито випадково · ${String(markerCount)} однакові пари згруповано`
+      : '⚠ Пробито випадково · автоматично згруповано';
+  const discountMergedLabel =
+    markerCount > 1
+      ? `🏷 Знижка · ${String(markerCount)} однакові пари згруповано`
+      : '🏷 Знижка · автоматично згруповано';
+  const aggregatedLabel = `🔗 ${String(markerCount)} рядки з чека згруповано`;
+
   return (
     <div
       className={cn(
         'rounded-md border bg-white p-3 shadow-sm',
         isCancelled && 'border-amber-300 bg-amber-50/50',
         isDiscountMerged && 'border-emerald-300 bg-emerald-50/30',
-        !isCancelled && !isDiscountMerged && 'border-slate-200',
+        isAggregated && 'border-slate-200 bg-slate-50/50',
+        !isCancelled && !isDiscountMerged && !isAggregated && 'border-slate-200',
       )}
     >
       {isCancelled && (
         <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-          ⚠ Пробито випадково · автоматично згруповано
+          {cancelledLabel}
         </div>
       )}
       {isDiscountMerged && (
         <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-          🏷 Знижка · автоматично згруповано
+          {discountMergedLabel}
+        </div>
+      )}
+      {isAggregated && (
+        <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+          {aggregatedLabel}
         </div>
       )}
 

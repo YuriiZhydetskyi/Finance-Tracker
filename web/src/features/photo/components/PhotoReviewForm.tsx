@@ -3,6 +3,7 @@ import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import {
   todayIso,
+  explainPairs,
   type DetectedItem,
   type ParsedReceipt,
   type PairDetectionResult,
@@ -136,17 +137,40 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
   const rawItemCount = parsed.items.length;
   const detectedCount = pairResult.items.length;
   const groupedPairs = rawItemCount - detectedCount;
+  const diagnostics = useMemo(() => explainPairs(parsed.items), [parsed.items]);
 
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleFormSubmit} className="space-y-4">
-        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          AI розпізнав {rawItemCount}{' '}
-          {rawItemCount === 1 ? 'позицію' : rawItemCount < 5 ? 'позиції' : 'позицій'}
-          {groupedPairs > 0
-            ? `, автоматично згруповано ${groupedPairs} ${groupedPairs === 1 ? 'пару' : groupedPairs < 5 ? 'пари' : 'пар'} (cancellation/discount)`
-            : '. Пар не знайдено'}
-          .
+        <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <div>
+            AI розпізнав {rawItemCount}{' '}
+            {rawItemCount === 1 ? 'позицію' : rawItemCount < 5 ? 'позиції' : 'позицій'}
+            {groupedPairs > 0
+              ? `, автоматично згруповано ${groupedPairs} ${groupedPairs === 1 ? 'пару' : groupedPairs < 5 ? 'пари' : 'пар'} (cancellation/discount)`
+              : '. Пар не знайдено'}
+            .
+          </div>
+          <details>
+            <summary className="cursor-pointer text-slate-700 underline">
+              Debug: показати raw AI output + normalize-ключі
+            </summary>
+            <div className="mt-2 space-y-2">
+              <div className="text-slate-700">
+                Кожен рядок — як AI повернув + ключ після normalize() + розмір групи. Pair-detector
+                групує тільки коли два рядки мають однаковий ключ (group_size = 2). Якщо ключі різні
+                — назви не збігаються після нормалізації; якщо group_size ≥ 3 — детектор
+                консервативно пропускає.
+              </div>
+              <pre className="overflow-x-auto rounded-sm bg-white p-2 text-[11px] leading-tight">
+                {JSON.stringify(diagnostics, null, 2)}
+              </pre>
+              <div className="text-slate-700">Сирий ParsedReceipt.items:</div>
+              <pre className="overflow-x-auto rounded-sm bg-white p-2 text-[11px] leading-tight">
+                {JSON.stringify(parsed.items, null, 2)}
+              </pre>
+            </div>
+          </details>
         </div>
         <ReceiptFormFields
           itemsArray={itemsArray}

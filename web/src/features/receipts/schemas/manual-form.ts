@@ -18,11 +18,15 @@ export const SUPPORTED_CURRENCIES = ['EUR', 'UAH'] as const;
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
 // pair_marker is a UI-only hint produced by detectPairs() and read by ItemRow
-// to render a "Пробито випадково" / "Знижка · автоматично згруповано" badge.
-// Never persisted to the DB: PhotoReviewForm strips it before insert.
-const PairMarkerSchema = z.object({
-  kind: z.enum(['cancelled', 'discount-merged']),
-});
+// to render a "Пробито випадково" / "Знижка · автоматично згруповано" /
+// "Згруповано N рядків" badge. Never persisted to the DB: PhotoReviewForm
+// strips it before insert. `count` reflects how many input rows merged into
+// this one (1 for plain pair without aggregation; ≥2 when Pass 3 fired).
+const PairMarkerSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('cancelled'), count: z.number().int().positive() }),
+  z.object({ kind: z.literal('discount-merged'), count: z.number().int().positive() }),
+  z.object({ kind: z.literal('aggregated'), count: z.number().int().min(2) }),
+]);
 
 const ItemFormSchema = z.object({
   product_id: ULID_SCHEMA.nullable().optional(),

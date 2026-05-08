@@ -1,15 +1,25 @@
-// detectPairs — collapse Rabatt-style cancellation/discount pairs emitted by
-// the AI parser into a UI-ready shape. See ADR-0012 + ADR-0014.
+// detectPairs v2 — collapse Rabatt-style cancellation/discount pairs AND
+// aggregate identical residual rows. See ADR-0012 + ADR-0014 + ADR-0015.
 //
-// Conservative on purpose: only matches groups of exactly 2 items with the
-// same normalized product_name. 3-or-more occurrences (two purchases plus a
-// partial refund, etc.) are left alone for the user to handle manually.
+// Three-pass algorithm:
+//   Pass 1: exact cancellation pairs within a name-group (+X paired with -X
+//           where qty matches and totals are equal in absolute value).
+//   Pass 2: discount pairs within a name-group (+X paired with -Y where
+//           qty matches and pos_total > |neg_total|).
+//   Pass 3: orthogonal aggregation across all surviving items, keyed by
+//           (normalized_name, unit_price, discount_orig, marker.kind).
+//           Identical rows collapse into one with summed qty and count.
 //
-// Originally a port of legacy/apps-script/src/ui/shared/pairDetector.html.
+// Originally a port of legacy/apps-script/src/ui/shared/pairDetector.html;
+// extended in 2026-05 to handle 3+ groups (cancellation triples) and
+// aggregation of identical positives (e.g. 4 separately-rung kiwis).
 
 import type { ParsedItem } from './schemas';
 
-export type PairMarker = { kind: 'cancelled' } | { kind: 'discount-merged' };
+export type PairMarker =
+  | { kind: 'cancelled'; count: number }
+  | { kind: 'discount-merged'; count: number }
+  | { kind: 'aggregated'; count: number };
 
 export type DetectedItem = ParsedItem & {
   pair_marker?: PairMarker;
@@ -19,15 +29,10 @@ export type PairDetectionResult = {
   items: DetectedItem[];
 };
 
-type Disposition =
-  | { kind: 'keep' }
-  | { kind: 'replace-cancelled' }
-  | { kind: 'merged-discount'; discount_orig: number }
-  | { kind: 'skip-merged' };
-
 // Zero-width / BOM-style invisible characters the AI sometimes injects into
 // product names. They survive a naive trim() but defeat string equality, so
-// strip them before grouping.
+// strip them before grouping. (Escape forms used so eslint's
+// no-irregular-whitespace doesn't flag the literal source.)
 const INVISIBLE_CHARS = /\u200B|\u200C|\u200D|\uFEFF/g;
 
 function normalize(name: string | undefined | null): string {
@@ -43,9 +48,65 @@ function roundCents(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+// ── Diagnostic ────────────────────────────────────────────────────────────
+
+export type PairDiagnostic = {
+  index: number;
+  product_name: string;
+  normalized_key: string;
+  qty: number;
+  unit_price_orig: number;
+  group_size: number;
+  reason: 'paired-cancelled' | 'paired-discount' | 'aggregated' | 'unpaired';
+};
+
+export function explainPairs(parsedItems: ParsedItem[] | null | undefined): PairDiagnostic[] {
+  if (!Array.isArray(parsedItems)) return [];
+  const groupSizes = new Map<string, number>();
+  parsedItems.forEach((it) => {
+    const key = normalize(it.product_name);
+    if (!key) return;
+    groupSizes.set(key, (groupSizes.get(key) ?? 0) + 1);
+  });
+  const result = detectPairs(parsedItems);
+  // Build a per-key map of detected markers so we can label each input row
+  // with the survivor's reason. Multiple surviving rows can share a key (e.g.
+  // 3-tuple → 1 cancelled + 1 normal); we report the most-informative kind.
+  const markerByKey = new Map<string, PairMarker['kind']>();
+  result.items.forEach((it) => {
+    const key = normalize(it.product_name);
+    if (!it.pair_marker) return;
+    if (!markerByKey.has(key)) markerByKey.set(key, it.pair_marker.kind);
+  });
+  return parsedItems.map((it, index) => {
+    const key = normalize(it.product_name);
+    const size = groupSizes.get(key) ?? 1;
+    const kind = markerByKey.get(key);
+    let reason: PairDiagnostic['reason'] = 'unpaired';
+    if (kind === 'cancelled') reason = 'paired-cancelled';
+    else if (kind === 'discount-merged') reason = 'paired-discount';
+    else if (kind === 'aggregated') reason = 'aggregated';
+    return {
+      index,
+      product_name: it.product_name,
+      normalized_key: key,
+      qty: it.qty,
+      unit_price_orig: it.unit_price_orig,
+      group_size: size,
+      reason,
+    };
+  });
+}
+
+// ── detectPairs ───────────────────────────────────────────────────────────
+
+type Survivor = DetectedItem & { _origIdx: number };
+
 export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairDetectionResult {
   if (!Array.isArray(parsedItems)) return { items: [] };
 
+  // Group input indices by normalized name. Empty/whitespace names skipped so
+  // unrelated unnamed rows don't pair under the empty-string key.
   const groups = new Map<string, number[]>();
   parsedItems.forEach((it, idx) => {
     const key = normalize(it.product_name);
@@ -55,68 +116,172 @@ export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairD
     else groups.set(key, [idx]);
   });
 
+  // Disposition[idx] = what to do with parsedItems[idx] after pair-passes.
+  // 'keep' → emit verbatim. 'skip' → drop (paired/aggregated into another).
+  // 'replace-cancelled' → emit zeroed-out with cancelled marker.
+  // 'merged-discount' → emit with discount_orig set + discount-merged marker.
+  type Disposition =
+    | { kind: 'keep' }
+    | { kind: 'skip' }
+    | { kind: 'replace-cancelled' }
+    | { kind: 'merged-discount'; discount_orig: number };
   const disposition: Disposition[] = parsedItems.map(() => ({ kind: 'keep' }));
 
+  // ── Per-group: Pass 1 (exact cancellation) + Pass 2 (discount). ─────────
   groups.forEach((indices) => {
-    if (indices.length !== 2) return;
-    const [firstIdx, secondIdx] = indices as [number, number];
-    const first = parsedItems[firstIdx];
-    const second = parsedItems[secondIdx];
-    if (!first || !second) return;
-
-    const firstTotal = first.qty * first.unit_price_orig;
-    const secondTotal = second.qty * second.unit_price_orig;
-    const hasOpposite = (firstTotal > 0 && secondTotal < 0) || (firstTotal < 0 && secondTotal > 0);
-    if (!hasOpposite) return;
-
-    const isFirstPositive = firstTotal > 0;
-    const pos = isFirstPositive ? first : second;
-    const posIdx = isFirstPositive ? firstIdx : secondIdx;
-    const neg = isFirstPositive ? second : first;
-    const negIdx = isFirstPositive ? secondIdx : firstIdx;
-
-    // qty mismatch → ambiguous (e.g. +2 × X and -1 × X = partial refund); skip.
-    if (Math.abs(pos.qty - neg.qty) > 0.001) return;
-
-    // Round to 2dp before comparing so float drift (2.99 - 2.98 ≠ 0.01 in IEEE 754)
-    // doesn't push a true cancellation off the equality branch.
-    const posTotalR = roundCents(pos.qty * pos.unit_price_orig);
-    const negTotalAbsR = roundCents(Math.abs(neg.qty * neg.unit_price_orig));
-
-    if (posTotalR === negTotalAbsR) {
-      disposition[posIdx] = { kind: 'replace-cancelled' };
-      disposition[negIdx] = { kind: 'skip-merged' };
-    } else if (negTotalAbsR < posTotalR) {
-      disposition[posIdx] = {
-        kind: 'merged-discount',
-        discount_orig: Math.abs(neg.unit_price_orig),
-      };
-      disposition[negIdx] = { kind: 'skip-merged' };
+    if (indices.length < 2) return;
+    // Split into positives/negatives by sign of qty × unit_price.
+    const positives: number[] = [];
+    const negatives: number[] = [];
+    for (const idx of indices) {
+      const it = parsedItems[idx];
+      if (!it) continue;
+      const total = it.qty * it.unit_price_orig;
+      if (total > 0) positives.push(idx);
+      else if (total < 0) negatives.push(idx);
     }
-    // negTotalAbsR > posTotalR → refund larger than purchase; leave both.
+
+    // Pass 1: exact cancellation. Iterate negatives in input order; for each,
+    // claim the first unmatched positive whose total magnitude matches.
+    const claimed = new Set<number>();
+    for (const negIdx of negatives) {
+      const neg = parsedItems[negIdx];
+      if (!neg) continue;
+      const negTotalAbsR = roundCents(Math.abs(neg.qty * neg.unit_price_orig));
+      const matchIdx = positives.find((posIdx) => {
+        if (claimed.has(posIdx)) return false;
+        const pos = parsedItems[posIdx];
+        if (!pos) return false;
+        if (Math.abs(pos.qty - neg.qty) > 0.001) return false;
+        const posTotalR = roundCents(pos.qty * pos.unit_price_orig);
+        return posTotalR === negTotalAbsR;
+      });
+      if (matchIdx !== undefined) {
+        claimed.add(matchIdx);
+        claimed.add(negIdx);
+        disposition[matchIdx] = { kind: 'replace-cancelled' };
+        disposition[negIdx] = { kind: 'skip' };
+      }
+    }
+
+    // Pass 2: discount. Remaining negatives look for a positive with bigger
+    // total (same qty). Refund > purchase has no match → leave both.
+    for (const negIdx of negatives) {
+      if (claimed.has(negIdx)) continue;
+      const neg = parsedItems[negIdx];
+      if (!neg) continue;
+      const negTotalAbsR = roundCents(Math.abs(neg.qty * neg.unit_price_orig));
+      const matchIdx = positives.find((posIdx) => {
+        if (claimed.has(posIdx)) return false;
+        const pos = parsedItems[posIdx];
+        if (!pos) return false;
+        if (Math.abs(pos.qty - neg.qty) > 0.001) return false;
+        const posTotalR = roundCents(pos.qty * pos.unit_price_orig);
+        return posTotalR > negTotalAbsR;
+      });
+      if (matchIdx !== undefined) {
+        claimed.add(matchIdx);
+        claimed.add(negIdx);
+        disposition[matchIdx] = {
+          kind: 'merged-discount',
+          discount_orig: Math.abs(neg.unit_price_orig),
+        };
+        disposition[negIdx] = { kind: 'skip' };
+      }
+    }
   });
 
-  const items: DetectedItem[] = [];
+  // Build the post-pair survivor list (preserving input order). Each survivor
+  // has an _origIdx tag so Pass 3 can pick a stable representative.
+  const survivors: Survivor[] = [];
   parsedItems.forEach((it, idx) => {
     const d = disposition[idx];
     if (!d) return;
     if (d.kind === 'keep') {
-      items.push(it);
+      survivors.push({ ...it, _origIdx: idx });
     } else if (d.kind === 'replace-cancelled') {
-      items.push({
+      survivors.push({
         ...it,
         unit_price_orig: 0,
         discount_orig: 0,
-        pair_marker: { kind: 'cancelled' },
+        pair_marker: { kind: 'cancelled', count: 1 },
+        _origIdx: idx,
       });
     } else if (d.kind === 'merged-discount') {
-      items.push({
+      survivors.push({
         ...it,
         discount_orig: d.discount_orig,
-        pair_marker: { kind: 'discount-merged' },
+        pair_marker: { kind: 'discount-merged', count: 1 },
+        _origIdx: idx,
       });
+    }
+    // 'skip' → drop
+  });
+
+  // ── Pass 3: orthogonal aggregation. ──────────────────────────────────────
+  // Group survivors by composite key. Identical rows merge into one with
+  // summed qty and count = group.length. Heterogeneous markers (e.g. one
+  // 'cancelled' + one undefined) end up in different keys → not merged.
+  type AggKey = string;
+  const aggKey = (s: Survivor): AggKey => {
+    const name = normalize(s.product_name);
+    if (!name) return `__unkeyed_${String(s._origIdx)}`; // unique → never aggregates
+    const price = roundCents(s.unit_price_orig);
+    const discount = roundCents(s.discount_orig ?? 0);
+    const kind = s.pair_marker?.kind ?? 'normal';
+    return `${name}|${String(price)}|${String(discount)}|${kind}`;
+  };
+
+  const aggGroups = new Map<AggKey, Survivor[]>();
+  for (const s of survivors) {
+    const key = aggKey(s);
+    const arr = aggGroups.get(key);
+    if (arr) arr.push(s);
+    else aggGroups.set(key, [s]);
+  }
+
+  // Build a Map: _origIdx → final DetectedItem (or null if dropped by Pass 3).
+  // We then output in input order using survivors[*]._origIdx.
+  const finalByOrigIdx = new Map<number, DetectedItem | null>();
+  aggGroups.forEach((group) => {
+    if (group.length < 2) {
+      const only = group[0];
+      if (only) {
+        const { _origIdx, ...rest } = only;
+        finalByOrigIdx.set(_origIdx, rest);
+      }
+      return;
+    }
+    // Group has 2+ identical rows → aggregate.
+    const head = group[0];
+    if (!head) return;
+    const totalQty = group.reduce((sum, m) => sum + m.qty, 0);
+    const existingKind = head.pair_marker?.kind;
+    const newMarker: PairMarker =
+      existingKind === 'cancelled'
+        ? { kind: 'cancelled', count: group.length }
+        : existingKind === 'discount-merged'
+          ? { kind: 'discount-merged', count: group.length }
+          : { kind: 'aggregated', count: group.length };
+    const { _origIdx: headOrigIdx, ...headRest } = head;
+    finalByOrigIdx.set(headOrigIdx, {
+      ...headRest,
+      qty: totalQty,
+      pair_marker: newMarker,
+    });
+    // Drop the rest.
+    for (let i = 1; i < group.length; i++) {
+      const drop = group[i];
+      if (drop) finalByOrigIdx.set(drop._origIdx, null);
     }
   });
 
+  // Emit in original input order. (Survivors order matched input; we look
+  // them up by _origIdx and skip nulls.)
+  const items: DetectedItem[] = [];
+  for (const s of survivors) {
+    const final = finalByOrigIdx.get(s._origIdx);
+    if (final) items.push(final);
+  }
   return { items };
 }
