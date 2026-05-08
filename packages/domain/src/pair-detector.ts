@@ -28,7 +28,7 @@ type Disposition =
 // Zero-width / BOM-style invisible characters the AI sometimes injects into
 // product names. They survive a naive trim() but defeat string equality, so
 // strip them before grouping.
-const INVISIBLE_CHARS = /[​‌‍﻿]/g;
+const INVISIBLE_CHARS = /\u200B|\u200C|\u200D|\uFEFF/g;
 
 function normalize(name: string | undefined | null): string {
   return String(name ?? '')
