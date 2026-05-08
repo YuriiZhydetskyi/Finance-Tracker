@@ -33,5 +33,6 @@ insert into public.categories (name, group_name) values
   ('Підписки',        'Сервіси'),
   ('Послуги',         'Сервіси'),
   -- Інше
-  ('Інше',            'Інше')
+  ('Інше',            'Інше'),
+  ('Pfand',           'Інше')
 on conflict (name) do nothing;
