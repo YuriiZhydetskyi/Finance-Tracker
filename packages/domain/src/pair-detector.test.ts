@@ -155,6 +155,30 @@ describe('detectPairs — normalization', () => {
   });
 });
 
+// ── Empty / missing product names ────────────────────────────────────────────
+
+describe('detectPairs — empty product_name handling', () => {
+  it('two items with empty product_name and opposite signs → both kept (no false pairing)', () => {
+    // Empty names get skipped at grouping → they don't pair up under '' key.
+    // Otherwise the detector would happily merge two unrelated unnamed lines.
+    const r = detectPairs([pi('', 1, 2.99), pi('', 1, -2.99)]);
+    expect(r.cancellations).toHaveLength(0);
+    expect(r.items).toHaveLength(2);
+  });
+
+  it('whitespace-only name is treated like empty (no false pairing)', () => {
+    const r = detectPairs([pi('   ', 1, 2.99), pi('\t\t', 1, -2.99)]);
+    expect(r.cancellations).toHaveLength(0);
+    expect(r.items).toHaveLength(2);
+  });
+
+  it('one named item + one empty-name item with same totals → no pair', () => {
+    const r = detectPairs([pi('Bread', 1, 2.99), pi('', 1, -2.99)]);
+    expect(r.cancellations).toHaveLength(0);
+    expect(r.items).toHaveLength(2);
+  });
+});
+
 // ── Realistic EDEKA fixture ──────────────────────────────────────────────────
 
 describe('detectPairs — realistic EDEKA fixture', () => {

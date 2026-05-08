@@ -84,4 +84,85 @@ describe('nbuFxRateProvider.getRateLive', () => {
     expect(calls).toBe(2);
     expect(rate).toBeGreaterThan(0);
   });
+
+  // ── Bad rate values from API ────────────────────────────────────────────────
+
+  it('skips rate = 0 (would divide by zero on inversion)', async () => {
+    let calls = 0;
+    mockFetch(() => {
+      calls += 1;
+      if (calls === 1) return { ok: true, json: () => [{ cc: 'EUR', rate: 0 }] };
+      return { ok: true, json: () => nbuSample };
+    });
+    const rate = await nbuFxRateProvider.getRateLive('UAH', '2026-05-04');
+    expect(calls).toBe(2);
+    expect(rate).toBeGreaterThan(0);
+  });
+
+  it('skips negative rate', async () => {
+    let calls = 0;
+    mockFetch(() => {
+      calls += 1;
+      if (calls === 1) return { ok: true, json: () => [{ cc: 'EUR', rate: -5 }] };
+      return { ok: true, json: () => nbuSample };
+    });
+    const rate = await nbuFxRateProvider.getRateLive('UAH', '2026-05-04');
+    expect(calls).toBe(2);
+    expect(rate).toBeGreaterThan(0);
+  });
+
+  it('skips non-numeric rate', async () => {
+    let calls = 0;
+    mockFetch(() => {
+      calls += 1;
+      if (calls === 1) return { ok: true, json: () => [{ cc: 'EUR', rate: 'oops' }] };
+      return { ok: true, json: () => nbuSample };
+    });
+    const rate = await nbuFxRateProvider.getRateLive('UAH', '2026-05-04');
+    expect(calls).toBe(2);
+    expect(rate).toBeGreaterThan(0);
+  });
+
+  // ── Date arithmetic boundaries ──────────────────────────────────────────────
+
+  it('walk-back across a month boundary uses correct prior-month dates', async () => {
+    // Start 2026-04-02; after empty hits we expect 04-02, 04-01, 03-31, 03-30, ...
+    const queriedDates: string[] = [];
+    mockFetch((url) => {
+      const m = /date=(\d{8})/.exec(url);
+      if (m?.[1]) queriedDates.push(m[1]);
+      return { ok: true, json: () => [] };
+    });
+    await expect(nbuFxRateProvider.getRateLive('UAH', '2026-04-02')).rejects.toThrow();
+    expect(queriedDates).toEqual([
+      '20260402',
+      '20260401',
+      '20260331',
+      '20260330',
+      '20260329',
+      '20260328',
+      '20260327',
+    ]);
+  });
+
+  it('walk-back across the spring DST transition does not double-step', async () => {
+    // 2026-03-30 → walk back through 03-29 (DST jump) → 03-23. Berlin/Kyiv DST shouldn't
+    // shift the calendar date even though setHours-like maths would in some impls.
+    const queriedDates: string[] = [];
+    mockFetch((url) => {
+      const m = /date=(\d{8})/.exec(url);
+      if (m?.[1]) queriedDates.push(m[1]);
+      return { ok: true, json: () => [] };
+    });
+    await expect(nbuFxRateProvider.getRateLive('UAH', '2026-03-30')).rejects.toThrow();
+    expect(queriedDates).toEqual([
+      '20260330',
+      '20260329',
+      '20260328',
+      '20260327',
+      '20260326',
+      '20260325',
+      '20260324',
+    ]);
+  });
 });

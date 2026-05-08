@@ -94,4 +94,36 @@ describe('edgeFunctionParseReceiptService.parse', () => {
     const callArgs = invokeMock.mock.calls[0]?.[1] as { body: { products: unknown[] } };
     expect(callArgs.body.products).toEqual([]);
   });
+
+  // ── Error-shape edge cases ──────────────────────────────────────────────────
+
+  it('falls back to "unknown error" when error has no message string', async () => {
+    invokeMock.mockResolvedValue({
+      data: null,
+      // Realistic: Supabase wraps non-Error throws; the message field can be missing.
+      error: {} as unknown as { message: string },
+    });
+    await expect(
+      edgeFunctionParseReceiptService.parse({ imageBase64: 'AAAA', categories: [] }),
+    ).rejects.toThrow(/parse-receipt failed: unknown error/);
+  });
+
+  it('falls back to "unknown error" when error.message is not a string', async () => {
+    invokeMock.mockResolvedValue({
+      data: null,
+      error: { message: 12345 } as unknown as { message: string },
+    });
+    await expect(
+      edgeFunctionParseReceiptService.parse({ imageBase64: 'AAAA', categories: [] }),
+    ).rejects.toThrow(/parse-receipt failed: unknown error/);
+  });
+
+  it('throws Zod-shaped error when data is null and error is also null', async () => {
+    // Ambiguous response: no error object, but data didn't come through either.
+    // We expect the schema to fail fast rather than returning a malformed receipt.
+    invokeMock.mockResolvedValue({ data: null, error: null });
+    await expect(
+      edgeFunctionParseReceiptService.parse({ imageBase64: 'AAAA', categories: [] }),
+    ).rejects.toThrow(/invalid shape/);
+  });
 });

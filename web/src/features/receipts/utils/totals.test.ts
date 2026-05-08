@@ -91,4 +91,39 @@ describe('computeCategoryBreakdown', () => {
     ]);
     expect(breakdown).toEqual([{ category: 'Pfand', total: -0.25 }]);
   });
+
+  it('skips items with whitespace-only category (treated as empty after trim)', () => {
+    const breakdown = computeCategoryBreakdown([
+      row({ category: '   ', qty: 1, unit_price_orig: 5 }),
+      row({ category: '\t', qty: 1, unit_price_orig: 5 }),
+      row({ category: 'Молочка', qty: 1, unit_price_orig: 1 }),
+    ]);
+    expect(breakdown).toHaveLength(1);
+    expect(breakdown[0]?.category).toBe('Молочка');
+  });
+
+  it('treats missing category like empty (skipped)', () => {
+    // Partial form row — category property absent entirely (exactOptionalPropertyTypes).
+    const noCategoryRow: Partial<ItemFormValues> = {
+      product_name: 'X',
+      qty: 1,
+      unit_price_orig: 5,
+      consumed_by: 'shared',
+    };
+    const breakdown = computeCategoryBreakdown([
+      noCategoryRow,
+      row({ category: 'Бакалія', qty: 1, unit_price_orig: 2 }),
+    ]);
+    expect(breakdown).toHaveLength(1);
+    expect(breakdown[0]?.category).toBe('Бакалія');
+  });
+
+  it('does NOT normalize case — different casing stays as separate buckets', () => {
+    // Documented current behaviour. Change the test if/when normalization is added.
+    const breakdown = computeCategoryBreakdown([
+      row({ category: 'Бакалія', qty: 1, unit_price_orig: 2 }),
+      row({ category: 'бакалія', qty: 1, unit_price_orig: 3 }),
+    ]);
+    expect(breakdown).toHaveLength(2);
+  });
 });

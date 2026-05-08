@@ -31,6 +31,34 @@ describe('parseConsumedBy', () => {
     expect(() => parseConsumedBy('custom:abc/def')).toThrow(/Invalid consumed_by/);
     expect(() => parseConsumedBy('')).toThrow(/Invalid consumed_by/);
   });
+
+  it('accepts boundary 100/0', () => {
+    expect(parseConsumedBy('custom:100/0')).toEqual({
+      type: 'custom',
+      hisShare: 100,
+      hersShare: 0,
+    });
+  });
+
+  it('rejects negative shares (regex \\d+ blocks the leading minus)', () => {
+    expect(() => parseConsumedBy('custom:-10/110')).toThrow(/Invalid consumed_by/);
+    expect(() => parseConsumedBy('custom:50/-50')).toThrow(/Invalid consumed_by/);
+  });
+
+  it('rejects whitespace inside the custom expression', () => {
+    expect(() => parseConsumedBy('custom: 30 / 70')).toThrow(/Invalid consumed_by/);
+    expect(() => parseConsumedBy(' custom:30/70')).toThrow(/Invalid consumed_by/);
+  });
+
+  it('accepts leading-zero shares (parsed as decimal)', () => {
+    // \\d+ matches '01' which parseInt reads as 1, so 01/99 is valid (sum=100).
+    // Documenting current behaviour — may want to tighten regex if surprising.
+    expect(parseConsumedBy('custom:01/99')).toEqual({
+      type: 'custom',
+      hisShare: 1,
+      hersShare: 99,
+    });
+  });
 });
 
 describe('isValidConsumedBy', () => {

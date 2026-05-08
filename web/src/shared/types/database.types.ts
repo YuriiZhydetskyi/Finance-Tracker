@@ -230,35 +230,43 @@ export type Database = {
       };
     };
     Views: {
-      v_stats_by_month: {
-        Row: {
-          month: string;
-          total_eur: number;
-          receipts_count: number;
-        };
-        Relationships: [];
-      };
       v_stats_by_category: {
         Row: {
-          category: string;
-          total_eur: number;
-          items_count: number;
+          category: string | null;
+          items_count: number | null;
+          total_eur: number | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'items_category_fkey';
+            columns: ['category'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['name'];
+          },
+        ];
       };
-      v_stats_by_user: {
+      v_stats_by_month: {
         Row: {
-          paid_by: string;
-          total_eur: number;
-          receipts_count: number;
+          month: string | null;
+          receipts_count: number | null;
+          total_eur: number | null;
         };
         Relationships: [];
       };
       v_stats_by_store: {
         Row: {
-          store: string;
-          total_eur: number;
-          receipts_count: number;
+          receipts_count: number | null;
+          store: string | null;
+          total_eur: number | null;
+        };
+        Relationships: [];
+      };
+      v_stats_by_user: {
+        Row: {
+          paid_by: string | null;
+          receipts_count: number | null;
+          total_eur: number | null;
         };
         Relationships: [];
       };
