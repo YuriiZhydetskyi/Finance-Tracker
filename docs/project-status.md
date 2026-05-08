@@ -16,6 +16,10 @@
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 
+**Operational runbook:** [deploy.md](deploy.md) — як деплоїти, додавати env vars, ротувати ключі, troubleshooting. Цей файл (project-status.md) — про "що зроблено і де ми зараз"; deploy.md — про "як підтримувати працююче".
+
+> **Note:** Старі архітектурні docs ([architecture.md](architecture.md), [setup.md](setup.md)) досі описують legacy Apps Script стек. Повний rewrite під новий стек — backlog item; до того часу читай ADR-0013 + цей файл + deploy.md.
+
 ---
 
 ## Стек (актуальні версії, May 2026)
@@ -352,4 +356,7 @@ supabase functions serve parse-receipt --env-file supabase/.env.local           
 9. **`jsdom` не реалізує native `<dialog>`.** Тести `<DeleteConfirmDialog>` стабають `HTMLDialogElement.prototype.showModal/close` у `beforeAll` — інакше `dialog.showModal()` кидає TypeError.
 10. **TanStack Router `<Link>` потребує router context.** Render-only тести (наприклад `<ReceiptCard>`) мокають Link через `vi.mock('@tanstack/react-router')` що повертає plain `<a>` з `href` сформованим з `params.id`.
 11. **Deno НЕ резолвить Vite-style workspace packages.** `@finance-tracker/domain` має `"main": "./src/index.ts"` + extensionless internal imports, що Deno без додаткового конфігу не розуміє. Phase 7 рішення — vendor 25 LOC `ParsedReceipt` types у функцію + покладатися на client-side Zod validation. Альтернатива (`allowImportingTsExtensions: true` у tsconfig) має занадто великий blast radius.
-12. **Supabase Edge Function: одна tooling-інстанція.** Vitest НЕ запускає файли з `.ts`-extensioned imports без додаткового config; Deno вимагає їх. Тому handler unit-тести у Vitest skipped — залишається `deno check` + `deno lint` для server-side, і клієнтський адаптер тестується через Vitest.
+12. **Supabase Edge Function: одна tooling-інстанція.** Vitest НЕ запускає файли з `.ts`-extensioned imports без додаткового config; Deno вимагає їх. Тому handler unit-тести у Vitest skipped — залишається `deno check` + `deno lint` для server-side, і клієнтський адаптер тестується через Vitest. (Phase 10 update: handler.test.ts таки додано через окремий `supabase/functions/parse-receipt/vitest.config.ts` як sub-workspace — runtime-portable handler тестується у Node.)
+13. **Cloudflare Pages «Connect GitHub» loop.** CF GitHub-app має відомий баг: іноді натискання «Connect GitHub» закидає у нескінченний loop redirect-у на GitHub permissions сторінку де немає чого клацати. Uninstall + re-install GitHub app не допомагає, інший браузер не допомагає. Workaround: повний обхід через wrangler CLI + GitHub Actions замість CF auto-build. Documented у [`deploy.md`](deploy.md) разом з усією deploy-топологією.
+14. **Vite `VITE_*` env vars — build-time, не runtime.** `import.meta.env.VITE_X` буквально замінюється на string у згенерованому JS під час `vite build`. Після цього бандл — статичні файли, ніяких env-lookup-ів. Тому у direct-upload deploy-моделі (як у нас) Cloudflare Pages dashboard env vars **ігноруються** — vars мають бути у середовищі того, хто білдить (`web/.env.local` локально, GitHub secrets у CI). У CF dashboard — нічого. Часта плутанина бо більшість hosting-платформ працює інакше.
+15. **Supabase anon key — public by design.** Префікс `VITE_` означає public-by-design (Vite inline'ить у клієнтський бандл). Anon key самий по собі = роль `anon` → RLS блокує все. Справжня авторизація — через JWT після magic link login + RLS policies. service_role key (який обходить RLS) — ніколи не у frontend; живе тільки у Supabase Edge Function secrets через `Deno.env.get`.
