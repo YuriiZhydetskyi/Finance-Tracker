@@ -1,0 +1,68 @@
+name: Deploy to Cloudflare Pages
+
+# Bypasses Cloudflare's broken GitHub-app UI: this workflow runs the same
+# checks the dev runs locally (lint + typecheck + test) and then publishes
+# `web/dist/` to Cloudflare Pages via the wrangler CLI.
+#
+# Required GitHub secrets:
+#   CLOUDFLARE_API_TOKEN  — API token with `Account → Cloudflare Pages → Edit`
+#                           permission (create at dash.cloudflare.com →
+#                           My Profile → API Tokens → Create Token).
+#   CLOUDFLARE_ACCOUNT_ID — your Cloudflare Account ID
+#                           (right sidebar of any account-scoped page).
+#   VITE_SUPABASE_URL     — Supabase REST URL, e.g. https://<project>.supabase.co.
+#                           Vite inlines it into the bundle at build time.
+#                           Public — RLS + JWT do real authorization.
+#   VITE_SUPABASE_ANON_KEY — Supabase anon (public) key. Same story — public
+#                            by design. The service_role key is NOT used here.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # manual trigger via Actions tab
+
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm --workspace web run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web/dist --project-name=finance-tracker --branch=main
