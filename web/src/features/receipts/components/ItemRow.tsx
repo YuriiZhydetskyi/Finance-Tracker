@@ -29,9 +29,36 @@ export function ItemRow({ index, categories, onRemove }: Props) {
   const rowTotal = computeRowTotal(item);
   const itemErrors = errors.items?.[index];
   const priceIsNegative = (item?.unit_price_orig ?? 0) < 0;
+  const marker = item?.pair_marker;
+  const isCancelled = marker?.kind === 'cancelled';
+  const isDiscountMerged = marker?.kind === 'discount-merged';
+
+  const qty = item?.qty ?? 0;
+  const unitPrice = item?.unit_price_orig ?? 0;
+  const discount = item?.discount_orig ?? 0;
+  const originalTotal = qty * unitPrice;
+  const discountTotal = qty * discount;
 
   return (
-    <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+    <div
+      className={cn(
+        'rounded-md border bg-white p-3 shadow-sm',
+        isCancelled && 'border-amber-300 bg-amber-50/50',
+        isDiscountMerged && 'border-emerald-300 bg-emerald-50/30',
+        !isCancelled && !isDiscountMerged && 'border-slate-200',
+      )}
+    >
+      {isCancelled && (
+        <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+          ⚠ Пробито випадково · автоматично згруповано
+        </div>
+      )}
+      {isDiscountMerged && (
+        <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+          🏷 Знижка · автоматично згруповано
+        </div>
+      )}
+
       <div className="grid grid-cols-12 gap-2">
         <div className="col-span-12 sm:col-span-5">
           <label className={FIELD_LABEL_CLASS}>Товар</label>
@@ -67,6 +94,7 @@ export function ItemRow({ index, categories, onRemove }: Props) {
             step="0.001"
             min="0"
             inputMode="decimal"
+            disabled={isCancelled}
             {...register(`items.${index}.qty`, { valueAsNumber: true })}
           />
           {itemErrors?.qty && (
@@ -81,6 +109,7 @@ export function ItemRow({ index, categories, onRemove }: Props) {
             type="number"
             step="0.01"
             inputMode="decimal"
+            disabled={isCancelled}
             className={cn(priceIsNegative && 'border-red-400 text-red-700')}
             {...register(`items.${index}.unit_price_orig`, { valueAsNumber: true })}
           />
@@ -105,6 +134,7 @@ export function ItemRow({ index, categories, onRemove }: Props) {
             step="0.01"
             min="0"
             inputMode="decimal"
+            disabled={isCancelled}
             {...register(`items.${index}.discount_orig`, { valueAsNumber: true })}
           />
         </div>
@@ -115,6 +145,7 @@ export function ItemRow({ index, categories, onRemove }: Props) {
             step="0.001"
             min="0"
             inputMode="decimal"
+            disabled={isCancelled}
             {...register(`items.${index}.wasted_qty`, { valueAsNumber: true })}
           />
         </div>
@@ -124,18 +155,46 @@ export function ItemRow({ index, categories, onRemove }: Props) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-        <span
-          className={cn(
-            'text-sm tabular-nums text-slate-700',
-            rowTotal < 0 && 'font-medium text-red-600',
-          )}
-        >
-          Рядок: {formatMoney(rowTotal, currency)}
-        </span>
-        <Button variant="ghost" type="button" onClick={onRemove}>
-          Видалити
-        </Button>
+      <div className="mt-3 border-t border-slate-100 pt-2">
+        {isDiscountMerged ? (
+          <div className="flex flex-col gap-1 text-sm tabular-nums sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5 text-xs text-slate-600">
+              <div>
+                Оригінал: {qty} × {formatMoney(unitPrice, currency)} ={' '}
+                <span className="font-medium text-slate-700">
+                  {formatMoney(originalTotal, currency)}
+                </span>
+              </div>
+              <div>
+                Знижка:{' '}
+                <span className="font-medium text-emerald-700">
+                  −{formatMoney(discountTotal, currency)}
+                </span>
+              </div>
+              <div className="text-sm text-slate-800">
+                Фінал: <span className="font-semibold">{formatMoney(rowTotal, currency)}</span>
+              </div>
+            </div>
+            <Button variant="ghost" type="button" onClick={onRemove}>
+              Видалити
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span
+              className={cn(
+                'text-sm tabular-nums text-slate-700',
+                rowTotal < 0 && 'font-medium text-red-600',
+                isCancelled && 'text-amber-700',
+              )}
+            >
+              Рядок: {formatMoney(rowTotal, currency)}
+            </span>
+            <Button variant="ghost" type="button" onClick={onRemove}>
+              Видалити
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

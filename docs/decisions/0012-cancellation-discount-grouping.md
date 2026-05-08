@@ -1,6 +1,6 @@
 # ADR-0012: Групування cancellation/discount пар клієнтським UI; `Items.discount_orig` як структуроване поле
 
-- Status: accepted
+- Status: accepted (§A3 + §B1); §C1 superseded by [ADR-0014](0014-cancellations-as-zero-rows.md)
 - Date: 2026-05-06
 
 ## Context and Problem Statement

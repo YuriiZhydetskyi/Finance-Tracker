@@ -17,6 +17,13 @@ import {
 export const SUPPORTED_CURRENCIES = ['EUR', 'UAH'] as const;
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
+// pair_marker is a UI-only hint produced by detectPairs() and read by ItemRow
+// to render a "Пробито випадково" / "Знижка · автоматично згруповано" badge.
+// Never persisted to the DB: PhotoReviewForm strips it before insert.
+const PairMarkerSchema = z.object({
+  kind: z.enum(['cancelled', 'discount-merged']),
+});
+
 const ItemFormSchema = z.object({
   product_id: ULID_SCHEMA.nullable().optional(),
   product_name: z.string().min(1, "Назва товару обов'язкова"),
@@ -27,6 +34,7 @@ const ItemFormSchema = z.object({
   note: z.string().nullable().optional(),
   wasted_qty: z.number().finite().nonnegative().optional(),
   discount_orig: z.number().finite().nonnegative().optional(),
+  pair_marker: PairMarkerSchema.optional(),
 });
 export type ItemFormValues = z.infer<typeof ItemFormSchema>;
 

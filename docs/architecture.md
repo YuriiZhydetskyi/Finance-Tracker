@@ -82,7 +82,7 @@ React SPA → Supabase
 | `web/src/routes/auth.callback.tsx`             | Magic-link landing — Supabase Auth обробляє URL fragment автоматично.                                                                                                                                                                                                                                                                       |
 | `web/src/features/auth/*`                      | `SignInForm`, `<RequireAuth>` guard, `useCurrentUser`, `useAllowlistCheck`, `useSignInMutation`, `useSignOutMutation`.                                                                                                                                                                                                                      |
 | `web/src/features/receipts/*`                  | CRUD: `useReceipts/useReceipt/useSaveReceiptMutation/useUpdateReceiptMutation/useDeleteReceiptMutation`; форми (`ManualReceiptForm`, `EditReceiptForm`, `ReceiptFormFields`); ItemRow, ItemsList, SummaryFooter; `<ReceiptCard>`, `<DeleteConfirmDialog>`, `<EmptyReceiptsState>`; форм-схема (Zod) + `useReceiptForm` hook + utils/totals. |
-| `web/src/features/photo/*`                     | `PhotoPicker`, `PhotoReviewForm`, `CancellationCard`; `useParseReceiptMutation` (виклик Edge Function), `useSavePhotoReceiptMutation` (wrapper навколо save mutation з photoStorage cleanup); `resizeImage`, `blobToBase64`.                                                                                                                |
+| `web/src/features/photo/*`                     | `PhotoPicker`, `PhotoReviewForm`; `useParseReceiptMutation` (виклик Edge Function), `useSavePhotoReceiptMutation` (wrapper навколо save mutation з photoStorage cleanup); `resizeImage`, `blobToBase64`.                                                                                                                                    |
 | `web/src/features/stats/*`                     | `useStatsByMonth/Category/User/Store` (4 хуки); 4 chart-компонента + chart-setup.ts (Chart.js registration).                                                                                                                                                                                                                                |
 | `web/src/features/categories/*`                | `useCategories` — read-only хук.                                                                                                                                                                                                                                                                                                            |
 | `web/src/features/products/*`                  | `useProducts` — read-only хук, lightweight (id, name, category).                                                                                                                                                                                                                                                                            |
@@ -158,13 +158,15 @@ React SPA → Supabase
    │ throw if fail (invalid shape)
    ▼
 [6. detectPairs(parsed.items)]      packages/domain/src/pair-detector.ts
-   │ Збирає cancellation/discount пари (ADR-0012)
-   │ → { items: ParsedItem[], cancellations: Cancellation[] }
+   │ Збирає cancellation/discount пари (ADR-0012 + ADR-0014)
+   │ → { items: DetectedItem[] } — кожен item опціонально має pair_marker
+   │   ('cancelled' = +X/-X пара, унормована до 0-цінового рядка;
+   │    'discount-merged' = |neg| < pos, з discount_orig set)
    ▼
 [7. <PhotoReviewForm>]              web/src/features/photo/components/PhotoReviewForm.tsx
    │ Pre-fills useReceiptForm({ source: 'photo', ...parsed }) з detected items
-   │ Cancellation cards рендерять окремо, default unchecked (не зберігаються)
-   │ User edits, toggles cancellations on/off
+   │ ItemRow рендерить бейдж + footer-розклад на основі pair_marker
+   │ pair_marker — UI-only hint, не персиститься в БД
    ▼
 [8. onSubmit]
    │ Form items + included cancellations → merged into items[]

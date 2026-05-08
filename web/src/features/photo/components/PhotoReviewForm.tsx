@@ -1,9 +1,9 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, type FormEvent } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import {
   todayIso,
-  type ParsedItem,
+  type DetectedItem,
   type ParsedReceipt,
   type PairDetectionResult,
 } from '@finance-tracker/domain';
@@ -18,9 +18,6 @@ import {
   type SupportedCurrency,
 } from '@/features/receipts';
 import { useSavePhotoReceiptMutation } from '../api/use-save-photo-receipt-mutation';
-import { CancellationCard } from './CancellationCard';
-
-type Cancellation = PairDetectionResult['cancellations'][number];
 
 type Props = {
   parsed: ParsedReceipt;
@@ -37,7 +34,7 @@ function toFormCurrency(currency: string | null | undefined): SupportedCurrency 
     : 'EUR';
 }
 
-function parsedItemToFormRow(it: ParsedItem): ItemFormValues {
+function detectedItemToFormRow(it: DetectedItem): ItemFormValues {
   return {
     product_id: null,
     product_name: it.product_name,
@@ -45,23 +42,10 @@ function parsedItemToFormRow(it: ParsedItem): ItemFormValues {
     qty: it.qty,
     unit_price_orig: it.unit_price_orig,
     consumed_by: 'shared',
-    note: null,
+    note: it.pair_marker?.kind === 'cancelled' ? 'пробито випадково' : null,
     wasted_qty: 0,
     discount_orig: it.discount_orig ?? 0,
-  };
-}
-
-function cancellationToFormRow(c: Cancellation): ItemFormValues {
-  return {
-    product_id: null,
-    product_name: c.product_name,
-    category: c.category_suggestion ?? '',
-    qty: c.qty,
-    unit_price_orig: c.unit_price_orig,
-    consumed_by: 'shared',
-    note: null,
-    wasted_qty: 0,
-    discount_orig: 0,
+    ...(it.pair_marker ? { pair_marker: it.pair_marker } : {}),
   };
 }
 
@@ -83,9 +67,9 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel }: Pro
   const initialItems = useMemo(
     () =>
       pairResult.items.length > 0
-        ? pairResult.items.map(parsedItemToFormRow)
+        ? pairResult.items.map(detectedItemToFormRow)
         : [
-            parsedItemToFormRow({
+            detectedItemToFormRow({
               product_name: '',
               qty: 1,
               unit_price_orig: 0,
@@ -106,28 +90,10 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel }: Pro
     items: initialItems,
   });
 
-  const [includedCancellations, setIncludedCancellations] = useState<Set<number>>(new Set());
-
   const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
   const productNames = productsQuery.data?.map((p) => p.name) ?? [];
-  const currentCurrency = methods.watch('currency');
-
-  const handleToggleCancellation = (index: number, included: boolean) => {
-    setIncludedCancellations((prev) => {
-      const next = new Set(prev);
-      if (included) next.add(index);
-      else next.delete(index);
-      return next;
-    });
-  };
 
   const onSubmit = methods.handleSubmit(async (values) => {
-    const extraItems = pairResult.cancellations
-      .filter((_, i) => includedCancellations.has(i))
-      .map(cancellationToFormRow);
-
-    const allItems = [...values.items, ...extraItems];
-
     const result = await save.mutateAsync({
       receipt: {
         date: values.date,
@@ -138,7 +104,7 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel }: Pro
         note: values.note ?? null,
         raw_ocr_json: values.raw_ocr_json ?? null,
       },
-      items: allItems.map((it) => ({
+      items: values.items.map((it) => ({
         product_id: it.product_id ?? null,
         product_name: it.product_name,
         category: it.category,
@@ -162,29 +128,6 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel }: Pro
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleFormSubmit} className="space-y-4">
-        {pairResult.cancellations.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="text-sm font-semibold text-amber-700">
-              Скасування / повернення ({pairResult.cancellations.length})
-            </h2>
-            <p className="text-xs text-slate-600">
-              Знайдено пари «купив + повернув» з однаковою сумою. За замовчуванням не зберігаються.
-            </p>
-            <div className="space-y-2">
-              {pairResult.cancellations.map((c, i) => (
-                <CancellationCard
-                  key={`${c.product_name}-${String(i)}`}
-                  cancellation={c}
-                  index={i}
-                  included={includedCancellations.has(i)}
-                  onToggle={handleToggleCancellation}
-                  currency={currentCurrency}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
         <ReceiptFormFields
           itemsArray={itemsArray}
           categories={categoryNames}

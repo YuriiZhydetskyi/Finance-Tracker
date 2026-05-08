@@ -2,7 +2,6 @@
 
 export { PhotoPicker } from './components/PhotoPicker';
 export { PhotoReviewForm } from './components/PhotoReviewForm';
-export { CancellationCard } from './components/CancellationCard';
 
 export { useParseReceiptMutation } from './api/use-parse-receipt-mutation';
 export type { ParseReceiptVars } from './api/use-parse-receipt-mutation';

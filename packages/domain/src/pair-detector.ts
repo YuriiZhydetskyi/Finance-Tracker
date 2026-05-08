@@ -1,28 +1,27 @@
 // detectPairs — collapse Rabatt-style cancellation/discount pairs emitted by
-// the AI parser into a UI-ready shape. See ADR-0012.
+// the AI parser into a UI-ready shape. See ADR-0012 + ADR-0014.
 //
 // Conservative on purpose: only matches groups of exactly 2 items with the
 // same normalized product_name. 3-or-more occurrences (two purchases plus a
 // partial refund, etc.) are left alone for the user to handle manually.
 //
-// Direct port of legacy/apps-script/src/ui/shared/pairDetector.html. All 16
-// behaviour tests carry over.
+// Originally a port of legacy/apps-script/src/ui/shared/pairDetector.html.
 
 import type { ParsedItem } from './schemas';
 
+export type PairMarker = { kind: 'cancelled' } | { kind: 'discount-merged' };
+
+export type DetectedItem = ParsedItem & {
+  pair_marker?: PairMarker;
+};
+
 export type PairDetectionResult = {
-  items: ParsedItem[];
-  cancellations: Array<{
-    product_name: string;
-    category_suggestion: string | null;
-    qty: number;
-    unit_price_orig: number;
-  }>;
+  items: DetectedItem[];
 };
 
 type Disposition =
   | { kind: 'keep' }
-  | { kind: 'skip-cancellation' }
+  | { kind: 'replace-cancelled' }
   | { kind: 'merged-discount'; discount_orig: number }
   | { kind: 'skip-merged' };
 
@@ -37,7 +36,7 @@ function roundCents(value: number): number {
 }
 
 export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairDetectionResult {
-  if (!Array.isArray(parsedItems)) return { items: [], cancellations: [] };
+  if (!Array.isArray(parsedItems)) return { items: [] };
 
   const groups = new Map<string, number[]>();
   parsedItems.forEach((it, idx) => {
@@ -49,7 +48,6 @@ export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairD
   });
 
   const disposition: Disposition[] = parsedItems.map(() => ({ kind: 'keep' }));
-  const cancellations: PairDetectionResult['cancellations'] = [];
 
   groups.forEach((indices) => {
     if (indices.length !== 2) return;
@@ -78,14 +76,8 @@ export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairD
     const negTotalAbsR = roundCents(Math.abs(neg.qty * neg.unit_price_orig));
 
     if (posTotalR === negTotalAbsR) {
-      disposition[posIdx] = { kind: 'skip-cancellation' };
-      disposition[negIdx] = { kind: 'skip-cancellation' };
-      cancellations.push({
-        product_name: pos.product_name,
-        category_suggestion: pos.category_suggestion ?? null,
-        qty: pos.qty,
-        unit_price_orig: pos.unit_price_orig,
-      });
+      disposition[posIdx] = { kind: 'replace-cancelled' };
+      disposition[negIdx] = { kind: 'skip-merged' };
     } else if (negTotalAbsR < posTotalR) {
       disposition[posIdx] = {
         kind: 'merged-discount',
@@ -96,16 +88,27 @@ export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairD
     // negTotalAbsR > posTotalR → refund larger than purchase; leave both.
   });
 
-  const items: ParsedItem[] = [];
+  const items: DetectedItem[] = [];
   parsedItems.forEach((it, idx) => {
     const d = disposition[idx];
     if (!d) return;
     if (d.kind === 'keep') {
       items.push(it);
+    } else if (d.kind === 'replace-cancelled') {
+      items.push({
+        ...it,
+        unit_price_orig: 0,
+        discount_orig: 0,
+        pair_marker: { kind: 'cancelled' },
+      });
     } else if (d.kind === 'merged-discount') {
-      items.push({ ...it, discount_orig: d.discount_orig });
+      items.push({
+        ...it,
+        discount_orig: d.discount_orig,
+        pair_marker: { kind: 'discount-merged' },
+      });
     }
   });
 
-  return { items, cancellations };
+  return { items };
 }
