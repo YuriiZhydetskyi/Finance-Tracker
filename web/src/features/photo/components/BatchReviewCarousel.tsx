@@ -119,7 +119,7 @@ export function BatchReviewCarousel({ batch }: Props) {
           <label className="cursor-pointer text-sm font-medium text-slate-700 underline">
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,application/pdf,.heic,.heif"
               multiple
               className="sr-only"
               onChange={handlePickMore}
@@ -183,18 +183,35 @@ type SlideProps = {
   onSaved: (receipt_id: string) => void;
 };
 
+function FilePreview({ item }: { item: BatchItem }) {
+  if (item.previewUrl) {
+    return (
+      <img
+        src={item.previewUrl}
+        alt={item.fileName}
+        className="max-h-64 w-auto rounded-md border border-slate-200 object-contain"
+      />
+    );
+  }
+  return (
+    <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+      <span
+        aria-hidden
+        className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-xs uppercase text-slate-700"
+      >
+        PDF
+      </span>
+      <span className="truncate">{item.fileName}</span>
+    </div>
+  );
+}
+
 function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
   switch (item.status.kind) {
     case 'queued':
       return (
         <div className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
-          {item.previewUrl ? (
-            <img
-              src={item.previewUrl}
-              alt={item.fileName}
-              className="max-h-64 w-auto rounded-md border border-slate-200 object-contain"
-            />
-          ) : null}
+          <FilePreview item={item} />
           <div className="text-sm text-slate-700">Очікує черги...</div>
           <Button type="button" variant="ghost" onClick={onRemove}>
             Видалити з пачки
@@ -204,13 +221,7 @@ function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
     case 'parsing':
       return (
         <div className="space-y-3 rounded-md border border-blue-200 bg-blue-50/50 p-4">
-          {item.previewUrl ? (
-            <img
-              src={item.previewUrl}
-              alt={item.fileName}
-              className="max-h-64 w-auto rounded-md border border-slate-200 object-contain"
-            />
-          ) : null}
+          <FilePreview item={item} />
           <div className="text-sm text-slate-700">Розпізнаю чек... 10–30 секунд.</div>
           <Button type="button" variant="ghost" onClick={onRemove}>
             Видалити з пачки

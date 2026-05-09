@@ -15,6 +15,8 @@ function extensionFor(contentType: string | null | undefined): string {
     case 'image/heic':
     case 'image/heif':
       return 'heic';
+    case 'application/pdf':
+      return 'pdf';
     case 'image/jpeg':
     case 'image/jpg':
     default:

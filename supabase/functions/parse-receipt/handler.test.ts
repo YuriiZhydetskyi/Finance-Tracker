@@ -302,4 +302,20 @@ describe('handler — body normalization', () => {
     await handler(authedReq({ imageBase64: 'AAA', mimeType: 'image/png' }));
     expect(captured?.mimeType).toBe('image/png');
   });
+
+  it('passes through application/pdf mimeType to the provider', async () => {
+    let captured: AiContext | undefined;
+    const deps = makeDeps({
+      primary: provider(
+        'gemini',
+        vi.fn((_img, ctx) => {
+          captured = ctx;
+          return Promise.resolve(sampleResult);
+        }),
+      ),
+    });
+    const handler = createHandler(deps);
+    await handler(authedReq({ imageBase64: 'AAA', mimeType: 'application/pdf' }));
+    expect(captured?.mimeType).toBe('application/pdf');
+  });
 });

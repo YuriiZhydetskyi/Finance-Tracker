@@ -27,11 +27,14 @@ vi.mock('../api/use-parse-receipt-mutation', () => ({
   useParseReceiptMutation: () => ({ mutateAsync: parseMock }),
 }));
 
-vi.mock('../utils/resize-image', () => ({
-  resizeImage: vi.fn((file: File) =>
-    Promise.resolve(new Blob([file.name], { type: 'image/jpeg' })),
+vi.mock('../utils/prepare-file', () => ({
+  prepareFile: vi.fn((file: File) =>
+    Promise.resolve({
+      blob: new Blob([file.name], { type: 'image/jpeg' }),
+      previewUrl: 'blob://fake',
+      mimeType: 'image/jpeg',
+    }),
   ),
-  blobToBase64: vi.fn(),
 }));
 
 beforeEach(() => {

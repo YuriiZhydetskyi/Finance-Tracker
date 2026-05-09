@@ -17,6 +17,17 @@ export class AnthropicProvider implements IAiProvider {
   constructor(private readonly cfg: Config) {}
 
   async parse(imageBase64: string, ctx: AiContext): Promise<ParsedReceipt> {
+    const isPdf = ctx.mimeType === 'application/pdf';
+    const mediaBlock = isPdf
+      ? {
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: imageBase64 },
+        }
+      : {
+          type: 'image',
+          source: { type: 'base64', media_type: ctx.mimeType, data: imageBase64 },
+        };
+
     const body = {
       model: this.cfg.model ?? DEFAULT_MODEL,
       max_tokens: MAX_TOKENS,
@@ -32,13 +43,7 @@ export class AnthropicProvider implements IAiProvider {
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: ctx.mimeType, data: imageBase64 },
-            },
-            { type: 'text', text: buildPrompt(ctx) },
-          ],
+          content: [mediaBlock, { type: 'text', text: buildPrompt(ctx) }],
         },
       ],
     };

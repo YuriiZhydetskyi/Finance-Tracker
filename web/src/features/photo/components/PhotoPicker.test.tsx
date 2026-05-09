@@ -31,7 +31,7 @@ describe('PhotoPicker', () => {
     const { container } = render(<PhotoPicker onPicked={onPicked} />);
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
     await user.upload(input, [makeFile('a.jpg'), makeFile('b.jpg')]);
-    expect(screen.getByText(/Вибрано 2 фото/)).toBeInTheDocument();
+    expect(screen.getByText(/Вибрано файлів: 2/)).toBeInTheDocument();
   });
 
   it('shows preview image for a single picked file', async () => {

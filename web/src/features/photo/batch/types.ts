@@ -11,7 +11,8 @@ export type BatchItem = {
   id: string;
   fileName: string;
   blob: Blob;
-  previewUrl: string;
+  /** `null` for PDFs — no in-browser image preview. */
+  previewUrl: string | null;
   attempts: number;
   status: BatchItemStatus;
 };
@@ -25,7 +26,7 @@ export type BatchEnqueueInput = {
   id: string;
   fileName: string;
   blob: Blob;
-  previewUrl: string;
+  previewUrl: string | null;
 };
 
 export type BatchAction =

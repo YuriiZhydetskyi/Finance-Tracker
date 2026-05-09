@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { detectPairs } from '@finance-tracker/domain';
 import { useParseReceiptMutation } from '../api/use-parse-receipt-mutation';
-import { resizeImage } from '../utils/resize-image';
+import { prepareFile } from '../utils/prepare-file';
 import { batchReducer } from './batch-reducer';
 import { initialBatchState, type BatchEnqueueInput, type BatchItem } from './types';
 
@@ -65,19 +65,19 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     if (files.length === 0) return;
     const results = await Promise.allSettled(
       files.map(async (file): Promise<BatchEnqueueInput> => {
-        const blob = await resizeImage(file);
+        const prepared = await prepareFile(file);
         return {
           id: crypto.randomUUID(),
           fileName: file.name || 'photo.jpg',
-          blob,
-          previewUrl: URL.createObjectURL(blob),
+          blob: prepared.blob,
+          previewUrl: prepared.previewUrl,
         };
       }),
     );
     const enqueueInputs: BatchEnqueueInput[] = [];
     for (const r of results) {
       if (r.status === 'fulfilled') enqueueInputs.push(r.value);
-      else console.error('Resize failed; skipping file', r.reason);
+      else console.error('File prep failed; skipping file', r.reason);
     }
     if (enqueueInputs.length > 0) dispatch({ type: 'enqueued', items: enqueueInputs });
   }, []);
