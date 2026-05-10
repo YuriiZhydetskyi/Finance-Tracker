@@ -72,6 +72,7 @@ export type Database = {
           product_name: string;
           qty: number;
           receipt_id: string;
+          store_product_code: string | null;
           total_eur: number;
           total_orig: number;
           unit_price_orig: number;
@@ -89,6 +90,7 @@ export type Database = {
           product_name: string;
           qty: number;
           receipt_id: string;
+          store_product_code?: string | null;
           total_eur: number;
           total_orig: number;
           unit_price_orig: number;
@@ -106,6 +108,7 @@ export type Database = {
           product_name?: string;
           qty?: number;
           receipt_id?: string;
+          store_product_code?: string | null;
           total_eur?: number;
           total_orig?: number;
           unit_price_orig?: number;
@@ -143,6 +146,8 @@ export type Database = {
           id: string;
           name: string;
           notes: string | null;
+          store: string;
+          store_product_code: string | null;
           unit: Database['public']['Enums']['product_unit'] | null;
           unit_size: number | null;
           updated_at: string;
@@ -153,6 +158,8 @@ export type Database = {
           id: string;
           name: string;
           notes?: string | null;
+          store?: string;
+          store_product_code?: string | null;
           unit?: Database['public']['Enums']['product_unit'] | null;
           unit_size?: number | null;
           updated_at?: string;
@@ -163,6 +170,8 @@ export type Database = {
           id?: string;
           name?: string;
           notes?: string | null;
+          store?: string;
+          store_product_code?: string | null;
           unit?: Database['public']['Enums']['product_unit'] | null;
           unit_size?: number | null;
           updated_at?: string;
@@ -174,6 +183,54 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'categories';
             referencedColumns: ['name'];
+          },
+        ];
+      };
+      product_prices: {
+        Row: {
+          created_at: string;
+          currency: string;
+          date: string;
+          id: string;
+          price_net: number;
+          price_orig: number;
+          product_id: string;
+          receipt_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          currency: string;
+          date: string;
+          id: string;
+          price_net: number;
+          price_orig: number;
+          product_id: string;
+          receipt_id: string;
+        };
+        Update: {
+          created_at?: string;
+          currency?: string;
+          date?: string;
+          id?: string;
+          price_net?: number;
+          price_orig?: number;
+          product_id?: string;
+          receipt_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'product_prices_product_id_fkey';
+            columns: ['product_id'];
+            isOneToOne: false;
+            referencedRelation: 'products';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'product_prices_receipt_id_fkey';
+            columns: ['receipt_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipts';
+            referencedColumns: ['id'];
           },
         ];
       };

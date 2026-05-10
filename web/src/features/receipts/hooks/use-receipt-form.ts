@@ -12,6 +12,7 @@ export function emptyItemRow(): ItemFormValues {
   return {
     product_id: null,
     product_name: '',
+    store_product_code: null,
     category: '',
     qty: 1,
     unit_price_orig: 0,

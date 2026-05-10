@@ -55,6 +55,7 @@ export const ItemSchema = z
     receipt_id: ULID_SCHEMA,
     product_id: ULID_SCHEMA.nullable(),
     product_name: z.string().min(1, 'product_name is required'),
+    store_product_code: z.string().nullable(),
     category: z.string().min(1, 'category is required'),
     qty: z.number().finite().positive('qty must be positive number'),
     unit_price_orig: z.number().finite(),
@@ -90,6 +91,8 @@ export type Item = z.infer<typeof ItemSchema>;
 export const ProductSchema = z.object({
   id: ULID_SCHEMA,
   name: z.string().min(1, 'name is required'),
+  store: z.string().min(1, 'store is required'),
+  store_product_code: z.string().nullable(),
   category: z.string().min(1, 'category is required'),
   unit: PRODUCT_UNIT_SCHEMA.nullable(),
   unit_size: z.number().finite().nullable(),
@@ -98,6 +101,23 @@ export const ProductSchema = z.object({
   updated_at: ISO_DATETIME_SCHEMA,
 });
 export type Product = z.infer<typeof ProductSchema>;
+
+// ── ProductPrice (price-history snapshot) ───────────────────────────────────
+// Append-only: one row per saved item line. Both `price_orig` (before discount)
+// and `price_net` (after) are stored — orig drives long-term trend charts that
+// shouldn't bend under store promotions; net is what was actually paid per unit.
+
+export const ProductPriceSchema = z.object({
+  id: ULID_SCHEMA,
+  product_id: ULID_SCHEMA,
+  receipt_id: ULID_SCHEMA,
+  price_orig: z.number().finite(),
+  price_net: z.number().finite(),
+  currency: ISO_4217_CURRENCY_SCHEMA,
+  date: ISO_DATE_SCHEMA,
+  created_at: ISO_DATETIME_SCHEMA,
+});
+export type ProductPrice = z.infer<typeof ProductPriceSchema>;
 
 // ── Parsed (AI output) ──────────────────────────────────────────────────────
 // Soft validator: store/date/total_orig may be null because the AI can
@@ -109,6 +129,10 @@ export const ParsedItemSchema = z.object({
   unit_price_orig: z.number().finite(),
   category_suggestion: z.string().nullable().default(null),
   discount_orig: z.number().finite().nonnegative().optional(),
+  // Optional + nullable: not every receipt has per-line codes (e.g. Aldi yes,
+  // many corner shops no). Optional preserves backward compat for raw_ocr_json
+  // snapshots written before this field existed.
+  product_code: z.string().nullable().optional(),
 });
 export type ParsedItem = z.infer<typeof ParsedItemSchema>;
 
@@ -143,6 +167,7 @@ export const ItemInputSchema = z.object({
   receipt_id: ULID_SCHEMA,
   product_id: ULID_SCHEMA.nullable().optional(),
   product_name: z.string().min(1),
+  store_product_code: z.string().nullable().optional(),
   category: z.string().min(1),
   qty: z.number().finite().positive(),
   unit_price_orig: z.number().finite(),
@@ -156,9 +181,21 @@ export type ItemInput = z.infer<typeof ItemInputSchema>;
 
 export const ProductInputSchema = z.object({
   name: z.string().min(1),
+  store: z.string().min(1),
+  store_product_code: z.string().nullable().optional(),
   category: z.string().min(1),
   unit: PRODUCT_UNIT_SCHEMA.nullable().optional(),
   unit_size: z.number().finite().nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 export type ProductInput = z.infer<typeof ProductInputSchema>;
+
+export const ProductPriceInputSchema = z.object({
+  product_id: ULID_SCHEMA,
+  receipt_id: ULID_SCHEMA,
+  price_orig: z.number().finite(),
+  price_net: z.number().finite(),
+  currency: ISO_4217_CURRENCY_SCHEMA,
+  date: ISO_DATE_SCHEMA,
+});
+export type ProductPriceInput = z.infer<typeof ProductPriceInputSchema>;

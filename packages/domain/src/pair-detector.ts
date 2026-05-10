@@ -222,14 +222,46 @@ export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairD
   // Group survivors by composite key. Identical rows merge into one with
   // summed qty and count = group.length. Heterogeneous markers (e.g. one
   // 'cancelled' + one undefined) end up in different keys → not merged.
+  //
+  // product_code is part of the key — if a store rings two different SKUs
+  // under identical name+price (legit dupes or POS oddities), keep them split.
+  // BUT: null code is treated as wildcard. If a partial group (name+price+
+  // discount+marker_kind) has exactly one concrete code, items with null code
+  // there merge with it (typical: AI missed the code on one of N identical
+  // lines). If the partial group has two or more different concrete codes,
+  // null stays a distinct key — the merge target would be ambiguous.
   type AggKey = string;
-  const aggKey = (s: Survivor): AggKey => {
+  const partialKey = (s: Survivor): string => {
     const name = normalize(s.product_name);
-    if (!name) return `__unkeyed_${String(s._origIdx)}`; // unique → never aggregates
+    if (!name) return `__unkeyed_${String(s._origIdx)}`;
     const price = roundCents(s.unit_price_orig);
     const discount = roundCents(s.discount_orig ?? 0);
     const kind = s.pair_marker?.kind ?? 'normal';
     return `${name}|${String(price)}|${String(discount)}|${kind}`;
+  };
+
+  // partialKey → set of non-null codes seen on its members.
+  const codesByPartial = new Map<string, Set<string>>();
+  for (const s of survivors) {
+    const code = s.product_code;
+    if (code == null || code === '') continue;
+    const pk = partialKey(s);
+    const set = codesByPartial.get(pk);
+    if (set) set.add(code);
+    else codesByPartial.set(pk, new Set([code]));
+  }
+
+  const aggKey = (s: Survivor): AggKey => {
+    const pk = partialKey(s);
+    if (pk.startsWith('__unkeyed_')) return pk;
+    const code = s.product_code;
+    if (code != null && code !== '') return `${pk}|${code}`;
+    const codeSet = codesByPartial.get(pk);
+    if (codeSet && codeSet.size === 1) {
+      const [only] = codeSet;
+      return `${pk}|${only ?? ''}`;
+    }
+    return `${pk}|__nullcode`;
   };
 
   const aggGroups = new Map<AggKey, Survivor[]>();
@@ -256,6 +288,13 @@ export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairD
     const head = group[0];
     if (!head) return;
     const totalQty = group.reduce((sum, m) => sum + m.qty, 0);
+    // If head's code is null but a merged-in row carries a concrete code (the
+    // wildcard-null case), promote it onto the survivor.
+    const survivorCode =
+      head.product_code != null && head.product_code !== ''
+        ? head.product_code
+        : (group.find((m) => m.product_code != null && m.product_code !== '')?.product_code ??
+          head.product_code);
     const existingKind = head.pair_marker?.kind;
     const newMarker: PairMarker =
       existingKind === 'cancelled'
@@ -267,6 +306,7 @@ export function detectPairs(parsedItems: ParsedItem[] | null | undefined): PairD
     finalByOrigIdx.set(headOrigIdx, {
       ...headRest,
       qty: totalQty,
+      product_code: survivorCode,
       pair_marker: newMarker,
     });
     // Drop the rest.

@@ -1,9 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { makeItem, makeReceipt, type ItemInput, type ReceiptInput } from '@finance-tracker/domain';
+import {
+  makeItem,
+  makeProductPrice,
+  makeReceipt,
+  type ItemInput,
+  type ReceiptInput,
+} from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { fxRateProvider } from '@/shared/lib/dependencies';
+import { productsQueryKey } from '@/features/products/api/use-products';
 import { computeGrandTotal } from '../utils/totals';
 import { receiptsQueryKey } from './receipts-query-keys';
+import { resolveProducts } from './resolve-products';
 
 // What the caller provides — derived fields (fx_rate_eur, total_orig, total_eur,
 // receipt_id, ids, timestamps) are computed inside this mutation. Keeping
@@ -25,16 +33,19 @@ export type SaveReceiptResult = {
 /**
  * Save flow:
  *   1. Fetch FX rate (live NBU for UAH; 1.0 for EUR).
- *   2. Build Receipt via factory (assigns id, computes total_eur, validates).
- *   3. Build Items via factory (each gets receipt_id + same fx_rate_eur).
- *   4. Insert receipt → if it fails, throw; nothing partial.
- *   5. Insert items → on failure, best-effort delete the receipt
- *      (RLS allows the user to delete their own row; cascade keeps cleanup tight).
- *   6. Invalidate receipts list.
+ *   2. Build Receipt via factory.
+ *   3. Fetch existing products for receipt.store; resolve each item to a
+ *      product_id (link / backfill code / create new). See resolve-products.ts.
+ *   4. Insert NEW products (multi-row); UPDATE backfilled codes (per row).
+ *   5. Build Items via factory with assigned product_id.
+ *   6. Insert receipt → items (existing flow).
+ *   7. Insert product_prices snapshots — one per item, both price_orig and
+ *      price_net so trends survive store-side promotions.
  *
- * No transaction — Supabase JS client doesn't expose them. The rollback path
- * keeps orphans rare. If both insert AND rollback fail, we surface the original
- * error; the orphan can be cleaned up via Studio.
+ * Rollback: if items insert fails, the receipt is deleted (cascades items +
+ * prices on retry). Newly-created products stay; they're idempotent (next
+ * save with the same key will reuse them) and the cost of orphans is low.
+ * Price-snapshot insert failure also rolls back the receipt.
  */
 export function useSaveReceiptMutation() {
   const queryClient = useQueryClient();
@@ -49,8 +60,45 @@ export function useSaveReceiptMutation() {
       const total_orig = computeGrandTotal(itemInputs);
 
       const receipt = makeReceipt({ ...receiptInput, fx_rate_eur, total_orig });
-      const items = itemInputs.map((it) =>
-        makeItem({ ...it, receipt_id: receipt.id, fx_rate_eur }),
+
+      const { data: existing, error: fetchError } = await supabase
+        .from('products')
+        .select('id, name, store, store_product_code, category')
+        .eq('store', receipt.store);
+      if (fetchError) throw new Error(`Products fetch failed: ${fetchError.message}`);
+
+      const resolution = resolveProducts({
+        store: receipt.store,
+        items: itemInputs.map((it) => ({
+          product_name: it.product_name,
+          store_product_code: it.store_product_code ?? null,
+          category: it.category,
+        })),
+        existingProducts: existing ?? [],
+      });
+
+      if (resolution.newProducts.length > 0) {
+        const { error: productsError } = await supabase
+          .from('products')
+          .insert(resolution.newProducts);
+        if (productsError) throw new Error(`Products insert failed: ${productsError.message}`);
+      }
+
+      for (const bf of resolution.backfills) {
+        const { error: bfError } = await supabase
+          .from('products')
+          .update({ store_product_code: bf.store_product_code })
+          .eq('id', bf.id);
+        if (bfError) throw new Error(`Product backfill failed: ${bfError.message}`);
+      }
+
+      const items = itemInputs.map((it, idx) =>
+        makeItem({
+          ...it,
+          receipt_id: receipt.id,
+          product_id: resolution.productIdByIndex[idx] ?? null,
+          fx_rate_eur,
+        }),
       );
 
       const { error: receiptError } = await supabase.from('receipts').insert(receipt);
@@ -64,10 +112,34 @@ export function useSaveReceiptMutation() {
         }
       }
 
+      const prices = items
+        .filter((it) => it.product_id != null)
+        .map((it) =>
+          makeProductPrice({
+            product_id: it.product_id!,
+            receipt_id: receipt.id,
+            price_orig: it.unit_price_orig,
+            price_net: it.unit_price_orig - it.discount_orig,
+            currency: receipt.currency,
+            date: receipt.date,
+          }),
+        );
+
+      if (prices.length > 0) {
+        const { error: pricesError } = await supabase.from('product_prices').insert(prices);
+        if (pricesError) {
+          await supabase.from('receipts').delete().eq('id', receipt.id);
+          throw new Error(`Price snapshot insert failed: ${pricesError.message}`);
+        }
+      }
+
       return { receipt_id: receipt.id, items_count: items.length };
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: receiptsQueryKey });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: receiptsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: productsQueryKey }),
+      ]);
     },
   });
 }

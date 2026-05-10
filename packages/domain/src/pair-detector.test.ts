@@ -327,6 +327,66 @@ describe('detectPairs — empty product_name handling', () => {
   });
 });
 
+// ── product_code in Pass 3 key (NEW) ─────────────────────────────────────────
+
+describe('detectPairs — product_code in aggregation key', () => {
+  const piWithCode = (
+    name: string,
+    qty: number,
+    price: number,
+    code: string | null,
+  ): ParsedItem => ({
+    product_name: name,
+    qty,
+    unit_price_orig: price,
+    category_suggestion: null,
+    product_code: code,
+  });
+
+  it('two identical positives with the SAME code → aggregated qty=2', () => {
+    const r = detectPairs([
+      piWithCode('Multivitamin 1l', 1, 1.39, '297855'),
+      piWithCode('Multivitamin 1l', 1, 1.39, '297855'),
+    ]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.qty).toBe(2);
+    expect(r.items[0]?.product_code).toBe('297855');
+    expect(r.items[0]?.pair_marker?.kind).toBe('aggregated');
+  });
+
+  it('two positives with same name+price but DIFFERENT codes → kept separate', () => {
+    const r = detectPairs([
+      piWithCode('Mix Item', 1, 1.99, '111111'),
+      piWithCode('Mix Item', 1, 1.99, '222222'),
+    ]);
+    expect(r.items).toHaveLength(2);
+    expect(r.items.every((it) => it.pair_marker === undefined)).toBe(true);
+    expect(r.items[0]?.product_code).toBe('111111');
+    expect(r.items[1]?.product_code).toBe('222222');
+  });
+
+  it('one with code, one without (single concrete code in group) → merged; survivor takes the code', () => {
+    const r = detectPairs([
+      piWithCode('Pfand', 1, 0.25, '80000291'),
+      piWithCode('Pfand', 1, 0.25, null),
+    ]);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]?.qty).toBe(2);
+    expect(r.items[0]?.product_code).toBe('80000291');
+    expect(r.items[0]?.pair_marker?.kind).toBe('aggregated');
+  });
+
+  it('two concrete codes + one null in same name+price → null is ambiguous, kept apart', () => {
+    const r = detectPairs([
+      piWithCode('Pfand', 1, 0.25, '111'),
+      piWithCode('Pfand', 1, 0.25, '222'),
+      piWithCode('Pfand', 1, 0.25, null),
+    ]);
+    // Three distinct keys: 111, 222, nullcode-marker.
+    expect(r.items).toHaveLength(3);
+  });
+});
+
 // ── Realistic EDEKA fixture ──────────────────────────────────────────────────
 
 describe('detectPairs — realistic EDEKA fixture', () => {

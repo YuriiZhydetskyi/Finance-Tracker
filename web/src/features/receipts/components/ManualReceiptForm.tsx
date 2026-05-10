@@ -36,6 +36,7 @@ export function ManualReceiptForm() {
       items: values.items.map((it) => ({
         product_id: it.product_id ?? null,
         product_name: it.product_name,
+        store_product_code: it.store_product_code ?? null,
         category: it.category,
         qty: it.qty,
         unit_price_orig: it.unit_price_orig,

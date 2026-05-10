@@ -19,6 +19,7 @@ export function buildPrompt(ctx: AiContext): string {
     '',
     'Return JSON conforming to the response schema. Rules:',
     '- product_name: copy verbatim as printed on the receipt; do not translate or normalize.',
+    '- product_code: numeric/alphanumeric per-line article number printed BEFORE the product name (e.g. Aldi prints "297855 Multivitamin 1l 1,39"; here product_code="297855"). Copy verbatim, no leading zeros stripped. Set null if no per-line code is printed (many smaller stores have none). Do NOT use receipt-level numbers like TA-Nr / Beleg-Nr / barcodes.',
     '- qty: numeric quantity, always POSITIVE (>= 1). 1.0 if not specified per-line.',
     '- unit_price_orig: numeric price per unit in the receipt currency. CAN BE NEGATIVE for discounts, deposit refunds, and cancellations (see below).',
     '- category_suggestion: one of the listed categories (verbatim) or null if uncertain. Do not invent new categories.',
@@ -63,6 +64,7 @@ export function buildSchema(ctx: AiContext): Record<string, unknown> {
           type: 'object',
           properties: {
             product_name: { type: 'string' },
+            product_code: { type: ['string', 'null'] },
             qty: { type: 'number' },
             unit_price_orig: { type: 'number' },
             category_suggestion: { type: ['string', 'null'], enum: categoryEnum },

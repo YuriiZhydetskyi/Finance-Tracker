@@ -12,12 +12,15 @@ import { nowIso } from './time';
 import { ulid } from './ulid';
 import {
   ItemSchema,
+  ProductPriceSchema,
   ProductSchema,
   ReceiptSchema,
   type Item,
   type ItemInput,
   type Product,
   type ProductInput,
+  type ProductPrice,
+  type ProductPriceInput,
   type Receipt,
   type ReceiptInput,
 } from './schemas';
@@ -59,6 +62,7 @@ export function makeItem(input: ItemInput): Item {
     receipt_id: input.receipt_id,
     product_id: input.product_id ?? null,
     product_name: input.product_name,
+    store_product_code: input.store_product_code ?? null,
     category: input.category,
     qty,
     unit_price_orig,
@@ -79,6 +83,8 @@ export function makeProduct(input: ProductInput): Product {
   const candidate: Product = {
     id: ulid(),
     name: input.name,
+    store: input.store,
+    store_product_code: input.store_product_code ?? null,
     category: input.category,
     unit: input.unit ?? null,
     unit_size: typeof input.unit_size === 'number' ? input.unit_size : null,
@@ -87,6 +93,21 @@ export function makeProduct(input: ProductInput): Product {
     updated_at: now,
   };
   return ProductSchema.parse(candidate);
+}
+
+export function makeProductPrice(input: ProductPriceInput): ProductPrice {
+  const now = nowIso();
+  const candidate: ProductPrice = {
+    id: ulid(),
+    product_id: input.product_id,
+    receipt_id: input.receipt_id,
+    price_orig: roundMoney(input.price_orig),
+    price_net: roundMoney(input.price_net),
+    currency: input.currency,
+    date: input.date,
+    created_at: now,
+  };
+  return ProductPriceSchema.parse(candidate);
 }
 
 // ── Patch helpers (UPDATE) ──────────────────────────────────────────────────
@@ -123,6 +144,7 @@ export type ItemPatch = Partial<
     Item,
     | 'product_id'
     | 'product_name'
+    | 'store_product_code'
     | 'category'
     | 'qty'
     | 'unit_price_orig'

@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { applyItemPatch, applyReceiptPatch, makeItem, makeProduct, makeReceipt } from './factories';
+import {
+  applyItemPatch,
+  applyReceiptPatch,
+  makeItem,
+  makeProduct,
+  makeProductPrice,
+  makeReceipt,
+} from './factories';
 
 const RECEIPT_DEFAULTS = {
   date: '2026-05-04',
@@ -60,6 +67,21 @@ describe('makeItem', () => {
     const it = makeItem({ ...ITEM_DEFAULTS, qty: 1, unit_price_orig: 1 });
     expect(it.wasted_qty).toBe(0);
     expect(it.product_id).toBe(null);
+  });
+
+  it('defaults store_product_code to null when omitted', () => {
+    const it = makeItem({ ...ITEM_DEFAULTS, qty: 1, unit_price_orig: 1 });
+    expect(it.store_product_code).toBe(null);
+  });
+
+  it('preserves store_product_code when provided', () => {
+    const it = makeItem({
+      ...ITEM_DEFAULTS,
+      qty: 1,
+      unit_price_orig: 1,
+      store_product_code: '297855',
+    });
+    expect(it.store_product_code).toBe('297855');
   });
 
   it('rejects wasted_qty > qty at construction', () => {
@@ -124,23 +146,74 @@ describe('makeItem — discount_orig (ADR-0012)', () => {
 });
 
 describe('makeProduct', () => {
-  it('builds a minimal product', () => {
-    const p = makeProduct({ name: 'Bread', category: 'Бакалія' });
+  it('builds a minimal product with store and null code', () => {
+    const p = makeProduct({ name: 'Bread', store: 'Aldi', category: 'Бакалія' });
     expect(p.id).toHaveLength(26);
+    expect(p.store).toBe('Aldi');
+    expect(p.store_product_code).toBe(null);
     expect(p.unit).toBe(null);
     expect(p.unit_size).toBe(null);
     expect(p.notes).toBe(null);
   });
 
+  it('preserves store_product_code when provided', () => {
+    const p = makeProduct({
+      name: 'Multivitamin 1l',
+      store: 'ALDI SÜD',
+      store_product_code: '297855',
+      category: 'Напої',
+    });
+    expect(p.store_product_code).toBe('297855');
+  });
+
+  it('rejects empty store (Zod requires non-empty)', () => {
+    expect(() => makeProduct({ name: 'X', store: '', category: 'Бакалія' })).toThrow();
+  });
+
   it('accepts unit + unit_size', () => {
     const p = makeProduct({
       name: 'Pesto 190g',
+      store: 'Aldi',
       category: 'Бакалія',
       unit: 'g',
       unit_size: 190,
     });
     expect(p.unit).toBe('g');
     expect(p.unit_size).toBe(190);
+  });
+});
+
+describe('makeProductPrice', () => {
+  const PRICE_DEFAULTS = {
+    product_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
+    receipt_id: '01HM4N6RXX5K2P9F8DZ7QWXYZ0',
+    currency: 'EUR' as const,
+    date: '2026-05-04',
+  };
+
+  it('rounds price_orig and price_net to 2dp', () => {
+    const p = makeProductPrice({
+      ...PRICE_DEFAULTS,
+      price_orig: 1.999,
+      price_net: 1.789,
+    });
+    expect(p.price_orig).toBe(2.0);
+    expect(p.price_net).toBe(1.79);
+  });
+
+  it('generates a 26-char ULID id', () => {
+    const p = makeProductPrice({ ...PRICE_DEFAULTS, price_orig: 1, price_net: 1 });
+    expect(p.id).toHaveLength(26);
+  });
+
+  it('preserves negative prices (Pfand refund snapshot)', () => {
+    const p = makeProductPrice({
+      ...PRICE_DEFAULTS,
+      price_orig: -0.25,
+      price_net: -0.25,
+    });
+    expect(p.price_orig).toBe(-0.25);
+    expect(p.price_net).toBe(-0.25);
   });
 });
 

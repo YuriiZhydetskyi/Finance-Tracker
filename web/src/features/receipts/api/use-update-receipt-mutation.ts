@@ -1,10 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { applyReceiptPatch, makeItem, type Receipt } from '@finance-tracker/domain';
+import {
+  applyReceiptPatch,
+  makeItem,
+  makeProductPrice,
+  type Receipt,
+} from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { fxRateProvider } from '@/shared/lib/dependencies';
+import { productsQueryKey } from '@/features/products/api/use-products';
 import { computeGrandTotal } from '../utils/totals';
 import { receiptQueryKey, receiptsQueryKey } from './receipts-query-keys';
 import type { SaveItemInput, SaveReceiptInput } from './use-save-receipt-mutation';
+import { resolveProducts } from './resolve-products';
 
 export type UpdateReceiptVars = {
   id: string;
@@ -20,15 +27,15 @@ export type UpdateReceiptResult = {
 
 /**
  * Update flow (mirrors legacy Web.updateReceipt semantics):
- *   1. Re-fetch FX rate ONLY if currency or date changed; otherwise keep
- *      the stored rate so an unrelated edit doesn't drift the audit trail.
- *   2. Recompute total_orig from items (sum of per-row rounded subtotals).
- *   3. applyReceiptPatch — recomputes total_eur, bumps updated_at, validates.
- *   4. Build new items via makeItem (fresh ULIDs, fresh timestamps).
- *   5. UPDATE receipts → DELETE items → INSERT items. No DB transaction
- *      (Supabase JS doesn't expose them); failure between steps leaves
- *      visible empty receipt — documented Studio cleanup path.
- *   6. Invalidate receipts list AND receipt(id) caches.
+ *   1. Re-fetch FX rate ONLY if currency or date changed.
+ *   2. Recompute total_orig + apply patch.
+ *   3. Resolve products for the new items (fresh link / backfill / create);
+ *      reusing the same logic as save makes editing the store name auto-create
+ *      the right products.
+ *   4. UPDATE receipts → DELETE existing items + product_prices for this
+ *      receipt → INSERT new items + new product_prices snapshots.
+ *      No DB transaction (Supabase JS doesn't expose them); failure between
+ *      steps leaves a visible empty receipt — documented Studio cleanup path.
  *
  * source is forced to 'edit' to mark the receipt as user-modified.
  */
@@ -58,7 +65,45 @@ export function useUpdateReceiptMutation() {
         total_orig,
       });
 
-      const newItems = itemInputs.map((it) => makeItem({ ...it, receipt_id: id, fx_rate_eur }));
+      const { data: existingProducts, error: fetchError } = await supabase
+        .from('products')
+        .select('id, name, store, store_product_code, category')
+        .eq('store', patched.store);
+      if (fetchError) throw new Error(`Products fetch failed: ${fetchError.message}`);
+
+      const resolution = resolveProducts({
+        store: patched.store,
+        items: itemInputs.map((it) => ({
+          product_name: it.product_name,
+          store_product_code: it.store_product_code ?? null,
+          category: it.category,
+        })),
+        existingProducts: existingProducts ?? [],
+      });
+
+      if (resolution.newProducts.length > 0) {
+        const { error: productsError } = await supabase
+          .from('products')
+          .insert(resolution.newProducts);
+        if (productsError) throw new Error(`Products insert failed: ${productsError.message}`);
+      }
+
+      for (const bf of resolution.backfills) {
+        const { error: bfError } = await supabase
+          .from('products')
+          .update({ store_product_code: bf.store_product_code })
+          .eq('id', bf.id);
+        if (bfError) throw new Error(`Product backfill failed: ${bfError.message}`);
+      }
+
+      const newItems = itemInputs.map((it, idx) =>
+        makeItem({
+          ...it,
+          receipt_id: id,
+          product_id: resolution.productIdByIndex[idx] ?? null,
+          fx_rate_eur,
+        }),
+      );
 
       const { error: updateError } = await supabase
         .from('receipts')
@@ -79,12 +124,40 @@ export function useUpdateReceiptMutation() {
         .eq('id', id);
       if (updateError) throw new Error(`Receipt update failed: ${updateError.message}`);
 
+      // Wipe the receipt's old item + price snapshots before reinserting.
+      // product_prices.receipt_id has ON DELETE CASCADE only via receipt
+      // delete — for an UPDATE we have to scrub explicitly.
       const { error: deleteError } = await supabase.from('items').delete().eq('receipt_id', id);
       if (deleteError) throw new Error(`Items delete failed: ${deleteError.message}`);
+
+      const { error: pricesDeleteError } = await supabase
+        .from('product_prices')
+        .delete()
+        .eq('receipt_id', id);
+      if (pricesDeleteError)
+        throw new Error(`Price snapshots delete failed: ${pricesDeleteError.message}`);
 
       if (newItems.length > 0) {
         const { error: insertError } = await supabase.from('items').insert(newItems);
         if (insertError) throw new Error(`Items insert failed: ${insertError.message}`);
+      }
+
+      const prices = newItems
+        .filter((it) => it.product_id != null)
+        .map((it) =>
+          makeProductPrice({
+            product_id: it.product_id!,
+            receipt_id: id,
+            price_orig: it.unit_price_orig,
+            price_net: it.unit_price_orig - it.discount_orig,
+            currency: patched.currency,
+            date: patched.date,
+          }),
+        );
+
+      if (prices.length > 0) {
+        const { error: pricesError } = await supabase.from('product_prices').insert(prices);
+        if (pricesError) throw new Error(`Price snapshot insert failed: ${pricesError.message}`);
       }
 
       return { receipt_id: id, items_count: newItems.length };
@@ -93,6 +166,7 @@ export function useUpdateReceiptMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: receiptsQueryKey }),
         queryClient.invalidateQueries({ queryKey: receiptQueryKey(id) }),
+        queryClient.invalidateQueries({ queryKey: productsQueryKey }),
       ]);
     },
   });

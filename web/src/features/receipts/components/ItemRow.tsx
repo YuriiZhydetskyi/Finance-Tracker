@@ -85,11 +85,22 @@ export function ItemRow({ index, categories, onRemove }: Props) {
       <div className="grid grid-cols-12 gap-2">
         <div className="col-span-12 sm:col-span-5">
           <label className={FIELD_LABEL_CLASS}>Товар</label>
-          <Input
-            list="products-datalist"
-            placeholder="Назва"
-            {...register(`items.${index}.product_name`)}
-          />
+          <div className="flex gap-1">
+            <Input
+              list="products-datalist"
+              placeholder="Назва"
+              className="flex-1 min-w-0"
+              {...register(`items.${index}.product_name`)}
+            />
+            <Input
+              placeholder="Код"
+              title="Код товару у магазині (з чека)"
+              className="w-20 shrink-0"
+              {...register(`items.${index}.store_product_code`, {
+                setValueAs: (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null),
+              })}
+            />
+          </div>
           {itemErrors?.product_name && (
             <span className="text-xs text-red-600">{itemErrors.product_name.message}</span>
           )}

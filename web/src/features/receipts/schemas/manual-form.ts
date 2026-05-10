@@ -31,6 +31,7 @@ const PairMarkerSchema = z.discriminatedUnion('kind', [
 const ItemFormSchema = z.object({
   product_id: ULID_SCHEMA.nullable().optional(),
   product_name: z.string().min(1, "Назва товару обов'язкова"),
+  store_product_code: z.string().nullable().optional(),
   category: z.string().min(1, "Категорія обов'язкова"),
   qty: z.number().finite().positive('Кількість має бути більша 0'),
   unit_price_orig: z.number().finite(),

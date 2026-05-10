@@ -31,6 +31,7 @@ const validItem = (overrides: Partial<Item> = {}): Item => ({
   receipt_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
   product_id: null,
   product_name: 'Bread',
+  store_product_code: null,
   category: 'Бакалія',
   qty: 1,
   unit_price_orig: 2.49,
@@ -133,6 +134,8 @@ describe('ProductSchema', () => {
   const validProduct = {
     id: '01HM4N6RPP3K2P9F8DZ7QWERTZ',
     name: 'Pesto Barilla 190g',
+    store: 'Aldi',
+    store_product_code: null,
     category: 'Бакалія',
     unit: 'g' as const,
     unit_size: 190,

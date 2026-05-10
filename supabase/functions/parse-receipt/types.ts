@@ -11,6 +11,7 @@ export type ParsedItem = {
   unit_price_orig: number;
   category_suggestion: string | null;
   discount_orig?: number;
+  product_code?: string | null;
 };
 
 export type ParsedReceipt = {
