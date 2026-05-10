@@ -53,6 +53,13 @@ jobs:
 
       - name: Test
         run: npm run test
+        env:
+          # env.ts validates VITE_* at module load. Some component tests
+          # transitively import supabase-client (e.g. ItemRow → categories
+          # barrel → useCategories) and fail to load without these. Tests
+          # never reach Supabase — adapters are mocked via vi.mock.
+          VITE_SUPABASE_URL: https://test.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-anon-key-placeholder-not-used
 
       - name: Build
         run: npm --workspace web run build
