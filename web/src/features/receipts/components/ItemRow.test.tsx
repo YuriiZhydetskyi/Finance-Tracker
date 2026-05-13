@@ -179,6 +179,41 @@ describe('ItemRow — pair_marker visual treatment', () => {
     });
   });
 
+  describe('saved item with discount but no marker (post-save edit view)', () => {
+    it('shows the original / discount / final breakdown', () => {
+      // pair_marker is UI-only and lost on save. When re-opening a saved
+      // discounted item, the breakdown must still render so the user can see
+      // which lines had a discount and how big it was.
+      render(
+        <Wrapper
+          item={makeItem({
+            qty: 1,
+            unit_price_orig: 3.29,
+            discount_orig: 1.64,
+          })}
+        />,
+      );
+      expect(screen.getByText(/Оригінал:/)).toBeInTheDocument();
+      expect(screen.getByText(/^Знижка:/)).toBeInTheDocument();
+      expect(screen.getByText(/−.*1,64/)).toBeInTheDocument();
+      expect(screen.getByText(/Фінал:/)).toBeInTheDocument();
+      expect(screen.getByText(/1,65/)).toBeInTheDocument();
+    });
+
+    it('does not render the auto-grouped badge (no marker means user kept it)', () => {
+      render(
+        <Wrapper
+          item={makeItem({
+            qty: 1,
+            unit_price_orig: 3.29,
+            discount_orig: 1.64,
+          })}
+        />,
+      );
+      expect(screen.queryByText(/Знижка · /)).not.toBeInTheDocument();
+    });
+  });
+
   describe('discount-merged marker with count > 1', () => {
     it('badge mentions the merged-pair count and triblock reflects summed qty', () => {
       render(

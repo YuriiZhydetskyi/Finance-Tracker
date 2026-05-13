@@ -14,6 +14,7 @@ import type {
   StatsByMonthRow,
   StatsByStoreRow,
   StatsByUserRow,
+  StatsSavingsByMonthRow,
 } from './stats.types';
 
 const FIVE_MIN = 5 * 60_000;
@@ -22,6 +23,7 @@ export const statsByMonthQueryKey = ['stats', 'by-month'] as const;
 export const statsByCategoryQueryKey = ['stats', 'by-category'] as const;
 export const statsByUserQueryKey = ['stats', 'by-user'] as const;
 export const statsByStoreQueryKey = ['stats', 'by-store'] as const;
+export const statsSavingsByMonthQueryKey = ['stats', 'savings-by-month'] as const;
 
 type RawNumericRow = Record<string, unknown>;
 
@@ -88,6 +90,26 @@ export function useStatsByUser() {
         paid_by: asString(r.paid_by),
         total_eur: asNumber(r.total_eur),
         receipts_count: asNumber(r.receipts_count),
+      }));
+    },
+    staleTime: FIVE_MIN,
+  });
+}
+
+export function useStatsSavingsByMonth(limit = 12) {
+  return useQuery<StatsSavingsByMonthRow[]>({
+    queryKey: [...statsSavingsByMonthQueryKey, { limit }],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_stats_savings_by_month')
+        .select('month, savings_eur, discounted_items_count')
+        .order('month', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data as RawNumericRow[]).map((r) => ({
+        month: asString(r.month),
+        savings_eur: asNumber(r.savings_eur),
+        discounted_items_count: asNumber(r.discounted_items_count),
       }));
     },
     staleTime: FIVE_MIN,

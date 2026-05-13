@@ -7,11 +7,14 @@ import {
   ByMonthChart,
   ByStoreChart,
   ByUserChart,
+  SavingsByMonthChart,
   useStatsByCategory,
   useStatsByMonth,
   useStatsByStore,
   useStatsByUser,
+  useStatsSavingsByMonth,
 } from '@/features/stats';
+import { formatMoney } from '@/shared/utils/format-money';
 
 const StatsSearchSchema = z.object({}).optional();
 
@@ -89,6 +92,11 @@ function StatsDashboard() {
   const categoryQuery = useStatsByCategory();
   const userQuery = useStatsByUser();
   const storeQuery = useStatsByStore(10);
+  const savingsQuery = useStatsSavingsByMonth(12);
+
+  const savingsRows = savingsQuery.data ?? [];
+  const totalSaved = savingsRows.reduce((acc, r) => acc + r.savings_eur, 0);
+  const totalDiscountedItems = savingsRows.reduce((acc, r) => acc + r.discounted_items_count, 0);
 
   return (
     <div className="space-y-4">
@@ -96,6 +104,22 @@ function StatsDashboard() {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Статистика</h1>
         <p className="text-sm text-slate-600">Усі суми у EUR. Дані оновлюються при перезаході.</p>
       </div>
+
+      <section className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-emerald-900">Заощаджено на знижках</h2>
+            <p className="text-xs text-emerald-700">
+              {savingsQuery.isLoading
+                ? 'Завантажую...'
+                : `Сума знижок по всіх позиціях за останні 12 місяців · ${String(totalDiscountedItems)} позицій зі знижкою`}
+            </p>
+          </div>
+          <span className="text-3xl font-semibold tabular-nums text-emerald-900">
+            {savingsQuery.isLoading ? '—' : formatMoney(totalSaved, 'EUR')}
+          </span>
+        </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="По місяцях" subtitle="Останні 12 місяців">
@@ -106,6 +130,17 @@ function StatsDashboard() {
             isEmpty={monthQuery.isSuccess && monthQuery.data.length === 0}
           >
             <ByMonthChart rows={monthQuery.data ?? []} />
+          </ChartState>
+        </Section>
+
+        <Section title="Заощаджено по місяцях" subtitle="Сума знижок по позиціях у EUR">
+          <ChartState
+            isLoading={savingsQuery.isLoading}
+            isError={savingsQuery.isError}
+            error={savingsQuery.error}
+            isEmpty={savingsQuery.isSuccess && savingsRows.length === 0}
+          >
+            <SavingsByMonthChart rows={savingsRows} />
           </ChartState>
         </Section>
 

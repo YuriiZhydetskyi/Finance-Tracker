@@ -45,6 +45,10 @@ export function ItemRow({ index, categories, onRemove }: Props) {
   const discount = item?.discount_orig ?? 0;
   const originalTotal = qty * unitPrice;
   const discountTotal = qty * discount;
+  // Show the price/discount/final breakdown whenever a discount is applied,
+  // regardless of how it got there. pair_marker is UI-only (lost on save), so
+  // saved discounted items would otherwise lose the breakdown on /edit.
+  const hasDiscount = discount > 0;
 
   const cancelledLabel =
     markerCount > 1
@@ -61,9 +65,9 @@ export function ItemRow({ index, categories, onRemove }: Props) {
       className={cn(
         'rounded-md border bg-white p-3 shadow-sm',
         isCancelled && 'border-amber-300 bg-amber-50/50',
-        isDiscountMerged && 'border-emerald-300 bg-emerald-50/30',
-        isAggregated && 'border-slate-200 bg-slate-50/50',
-        !isCancelled && !isDiscountMerged && !isAggregated && 'border-slate-200',
+        (isDiscountMerged || hasDiscount) && 'border-emerald-300 bg-emerald-50/30',
+        isAggregated && !hasDiscount && 'border-slate-200 bg-slate-50/50',
+        !isCancelled && !isDiscountMerged && !isAggregated && !hasDiscount && 'border-slate-200',
       )}
     >
       {isCancelled && (
@@ -203,7 +207,7 @@ export function ItemRow({ index, categories, onRemove }: Props) {
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-2">
-        {isDiscountMerged ? (
+        {hasDiscount ? (
           <div className="flex flex-col gap-1 text-sm tabular-nums sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-0.5 text-xs text-slate-600">
               <div>

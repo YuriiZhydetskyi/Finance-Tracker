@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useStatsByMonth, useStatsByCategory, useStatsByUser, useStatsByStore } from './use-stats';
+import {
+  useStatsByMonth,
+  useStatsByCategory,
+  useStatsByUser,
+  useStatsByStore,
+  useStatsSavingsByMonth,
+} from './use-stats';
 
 type Row = Record<string, unknown>;
 type ChainResult = { data: Row[] | null; error: { message: string } | null };
@@ -126,6 +132,38 @@ describe('useStatsByUser', () => {
     expect(fromMock).toHaveBeenCalledWith('v_stats_by_user');
     expect(result.current.data).toEqual([
       { paid_by: 'you@example.com', total_eur: 50, receipts_count: 4 },
+    ]);
+  });
+});
+
+describe('useStatsSavingsByMonth', () => {
+  it('queries v_stats_savings_by_month, sorts month desc, limits, coerces numerics', async () => {
+    selectMock.mockReturnValue(
+      Object.assign(Promise.resolve({ data: [], error: null }), {
+        order: orderMock,
+        limit: limitMock,
+      }),
+    );
+    orderMock.mockReturnValue({ limit: limitMock });
+    limitMock.mockResolvedValue({
+      data: [
+        { month: '2026-05', savings_eur: '3.20', discounted_items_count: '2' },
+        { month: '2026-04', savings_eur: 1, discounted_items_count: 1 },
+      ],
+      error: null,
+    });
+
+    const { result } = renderHook(() => useStatsSavingsByMonth(12), { wrapper });
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(fromMock).toHaveBeenCalledWith('v_stats_savings_by_month');
+    expect(orderMock).toHaveBeenCalledWith('month', { ascending: false });
+    expect(limitMock).toHaveBeenCalledWith(12);
+    expect(result.current.data).toEqual([
+      { month: '2026-05', savings_eur: 3.2, discounted_items_count: 2 },
+      { month: '2026-04', savings_eur: 1, discounted_items_count: 1 },
     ]);
   });
 });

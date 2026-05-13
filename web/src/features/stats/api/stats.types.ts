@@ -27,3 +27,9 @@ export type StatsByStoreRow = {
   total_eur: number;
   receipts_count: number;
 };
+
+export type StatsSavingsByMonthRow = {
+  month: string; // 'YYYY-MM'
+  savings_eur: number;
+  discounted_items_count: number;
+};

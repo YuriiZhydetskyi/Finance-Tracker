@@ -139,53 +139,6 @@ export type Database = {
           },
         ];
       };
-      products: {
-        Row: {
-          category: string;
-          created_at: string;
-          id: string;
-          name: string;
-          notes: string | null;
-          store: string;
-          store_product_code: string | null;
-          unit: Database['public']['Enums']['product_unit'] | null;
-          unit_size: number | null;
-          updated_at: string;
-        };
-        Insert: {
-          category: string;
-          created_at?: string;
-          id: string;
-          name: string;
-          notes?: string | null;
-          store?: string;
-          store_product_code?: string | null;
-          unit?: Database['public']['Enums']['product_unit'] | null;
-          unit_size?: number | null;
-          updated_at?: string;
-        };
-        Update: {
-          category?: string;
-          created_at?: string;
-          id?: string;
-          name?: string;
-          notes?: string | null;
-          store?: string;
-          store_product_code?: string | null;
-          unit?: Database['public']['Enums']['product_unit'] | null;
-          unit_size?: number | null;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'products_category_fkey';
-            columns: ['category'];
-            isOneToOne: false;
-            referencedRelation: 'categories';
-            referencedColumns: ['name'];
-          },
-        ];
-      };
       product_prices: {
         Row: {
           created_at: string;
@@ -231,6 +184,53 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'receipts';
             referencedColumns: ['id'];
+          },
+        ];
+      };
+      products: {
+        Row: {
+          category: string;
+          created_at: string;
+          id: string;
+          name: string;
+          notes: string | null;
+          store: string;
+          store_product_code: string | null;
+          unit: Database['public']['Enums']['product_unit'] | null;
+          unit_size: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          category: string;
+          created_at?: string;
+          id: string;
+          name: string;
+          notes?: string | null;
+          store?: string;
+          store_product_code?: string | null;
+          unit?: Database['public']['Enums']['product_unit'] | null;
+          unit_size?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          store?: string;
+          store_product_code?: string | null;
+          unit?: Database['public']['Enums']['product_unit'] | null;
+          unit_size?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'products_category_fkey';
+            columns: ['category'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['name'];
           },
         ];
       };
@@ -324,6 +324,14 @@ export type Database = {
           paid_by: string | null;
           receipts_count: number | null;
           total_eur: number | null;
+        };
+        Relationships: [];
+      };
+      v_stats_savings_by_month: {
+        Row: {
+          discounted_items_count: number | null;
+          month: string | null;
+          savings_eur: number | null;
         };
         Relationships: [];
       };
