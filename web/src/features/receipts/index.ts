@@ -5,12 +5,18 @@ export { EditReceiptForm } from './components/EditReceiptForm';
 export { ReceiptFormFields } from './components/ReceiptFormFields';
 export { ReceiptCard } from './components/ReceiptCard';
 export { EmptyReceiptsState } from './components/EmptyReceiptsState';
+export { NoMatchingReceipts } from './components/NoMatchingReceipts';
 export { DuplicateWarningBanner } from './components/DuplicateWarningBanner';
+export { RecentFiltersBar } from './components/RecentFiltersBar';
 export { ItemsList } from './components/ItemsList';
 export { ItemRow } from './components/ItemRow';
 export { SummaryFooter } from './components/SummaryFooter';
 
+export { RecentSearchSchema, countActiveFilters, searchToFilters } from './recent-search';
+export type { RecentSearchParams, RecentSearchInput } from './recent-search';
+
 export { useReceipts } from './api/use-receipts';
+export type { ReceiptFilters } from './api/use-receipts';
 export { useReceipt } from './api/use-receipt';
 export type { ReceiptBundle } from './api/use-receipt';
 export { useSaveReceiptMutation } from './api/use-save-receipt-mutation';

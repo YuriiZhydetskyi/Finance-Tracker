@@ -2,14 +2,10 @@ import type { ReactNode } from 'react';
 import type { UseFieldArrayReturn } from 'react-hook-form';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
+import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
 import { ItemsList } from './ItemsList';
 import { SummaryFooter } from './SummaryFooter';
 import { SUPPORTED_CURRENCIES, type ManualFormValues } from '../schemas/manual-form';
-
-const SELECT_CLASS =
-  'flex h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900';
-
-const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
 
 // RHF `register` returns `any` from the input event, so an inline arrow trips
 // no-unsafe-return. Hoist as a typed helper; HTML inputs always emit string.

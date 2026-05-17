@@ -1,6 +1,6 @@
 {
   "name": "finance-tracker",
-  "version": "0.2.3",
+  "version": "0.2.6",
   "private": true,
   "description": "Personal finance tracker — React + Vite + Supabase. Photo-receipt OCR via Gemini/Claude, multi-currency, two-user.",
   "workspaces": [
