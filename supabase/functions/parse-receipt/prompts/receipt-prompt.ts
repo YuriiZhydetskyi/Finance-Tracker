@@ -24,7 +24,9 @@ export function buildPrompt(ctx: AiContext): string {
     '- unit_price_orig: numeric price per unit in the receipt currency. For count-based items this is the price for ONE unit (the receipt usually prints this explicitly, e.g. "3,89 € x 2"). For weight/volume items this is the per-kg / per-l price (NOT the total for that weight). CAN BE NEGATIVE for discounts, deposit refunds, and cancellations (see below).',
     '- category_suggestion: one of the listed categories (verbatim) or null if uncertain. Do not invent new categories.',
     '- store: best-effort store/merchant name; null if illegible.',
+    '- store_address: street address printed on receipt header (street, number, city); null if not printed or illegible. Copy as a single line, comma-separated.',
     '- date: receipt date as YYYY-MM-DD; null if illegible.',
+    '- time: time of purchase as HH:MM (24-hour, no seconds); null if illegible.',
     '- currency: ISO 4217 (e.g. EUR, UAH); default to "EUR" if not visible.',
     '- total_orig: numeric total as printed (the "to pay" / "Zu bezahlen" / "Сума до сплати" line); null if illegible.',
     '',
@@ -55,7 +57,9 @@ export function buildSchema(ctx: AiContext): Record<string, unknown> {
     type: 'object',
     properties: {
       store: { type: ['string', 'null'] },
+      store_address: { type: ['string', 'null'] },
       date: { type: ['string', 'null'], description: 'YYYY-MM-DD' },
+      time: { type: ['string', 'null'], description: 'HH:MM (24-hour)' },
       currency: { type: 'string', description: 'ISO 4217 (default EUR)' },
       total_orig: { type: ['number', 'null'] },
       items: {

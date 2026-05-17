@@ -11,6 +11,12 @@ const SELECT_CLASS =
 
 const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
 
+// RHF `register` returns `any` from the input event, so an inline arrow trips
+// no-unsafe-return. Hoist as a typed helper; HTML inputs always emit string.
+function emptyStringToNull(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
 type Props = {
   itemsArray: UseFieldArrayReturn<ManualFormValues, 'items', 'id'>;
   categories: string[];
@@ -45,12 +51,17 @@ export function ReceiptFormFields({
     <div className="space-y-4">
       <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
         <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-6 sm:col-span-3">
+          <div className="col-span-6 sm:col-span-2">
             <label className={FIELD_LABEL_CLASS}>Дата</label>
             <Input type="date" {...register('date')} />
             {errors.date && <span className="text-xs text-red-600">{errors.date.message}</span>}
           </div>
-          <div className="col-span-12 sm:col-span-5">
+          <div className="col-span-6 sm:col-span-2">
+            <label className={FIELD_LABEL_CLASS}>Час (опц.)</label>
+            <Input type="time" {...register('time', { setValueAs: emptyStringToNull })} />
+            {errors.time && <span className="text-xs text-red-600">{errors.time.message}</span>}
+          </div>
+          <div className="col-span-12 sm:col-span-4">
             <label className={FIELD_LABEL_CLASS}>Магазин / опис</label>
             <Input placeholder="Lidl, Amazon, оренда..." {...register('store')} />
             {errors.store && <span className="text-xs text-red-600">{errors.store.message}</span>}
@@ -65,7 +76,7 @@ export function ReceiptFormFields({
               ))}
             </select>
           </div>
-          <div className="col-span-12 sm:col-span-2">
+          <div className="col-span-6 sm:col-span-2">
             <label className={FIELD_LABEL_CLASS}>Оплатив</label>
             <select className={SELECT_CLASS} {...register('paid_by')}>
               {paidByOptions.map((email) => (
@@ -77,6 +88,13 @@ export function ReceiptFormFields({
             {errors.paid_by && (
               <span className="text-xs text-red-600">{errors.paid_by.message}</span>
             )}
+          </div>
+          <div className="col-span-12">
+            <label className={FIELD_LABEL_CLASS}>Адреса магазину (опц.)</label>
+            <Input
+              placeholder="Hauptstr. 12, 80331 München"
+              {...register('store_address', { setValueAs: emptyStringToNull })}
+            />
           </div>
           <div className="col-span-12">
             <label className={FIELD_LABEL_CLASS}>Нотатка (опц.)</label>

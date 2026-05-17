@@ -16,7 +16,9 @@ export type ParsedItem = {
 
 export type ParsedReceipt = {
   store: string | null;
+  store_address?: string | null;
   date: string | null;
+  time?: string | null;
   currency: string;
   total_orig: number | null;
   items: ParsedItem[];

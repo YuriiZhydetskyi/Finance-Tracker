@@ -53,6 +53,32 @@ describe('makeReceipt', () => {
     expect(r.photo_url).toBe(null);
     expect(r.note).toBe(null);
     expect(r.raw_ocr_json).toBe(null);
+    expect(r.store_address).toBe(null);
+    expect(r.time).toBe(null);
+  });
+
+  it('preserves store_address when provided', () => {
+    const r = makeReceipt({
+      ...RECEIPT_DEFAULTS,
+      total_orig: 1,
+      store_address: 'Hauptstr. 12, 80331 München',
+    });
+    expect(r.store_address).toBe('Hauptstr. 12, 80331 München');
+  });
+
+  it('normalizes HH:MM time input to HH:MM:SS', () => {
+    const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 1, time: '14:32' });
+    expect(r.time).toBe('14:32:00');
+  });
+
+  it('preserves HH:MM:SS time input unchanged', () => {
+    const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 1, time: '14:32:45' });
+    expect(r.time).toBe('14:32:45');
+  });
+
+  it('coerces empty-string time to null', () => {
+    const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 1, time: '' });
+    expect(r.time).toBe(null);
   });
 });
 
@@ -244,6 +270,25 @@ describe('applyReceiptPatch', () => {
     const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 1 });
     const updated = applyReceiptPatch(r, { note: 'foo' });
     expect(updated.id).toBe(r.id);
+  });
+
+  it('normalizes HH:MM time in patch to HH:MM:SS', () => {
+    const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 1 });
+    const updated = applyReceiptPatch(r, { time: '09:15' });
+    expect(updated.time).toBe('09:15:00');
+  });
+
+  it('clears time when patch sets it to null', () => {
+    const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 1, time: '14:00' });
+    expect(r.time).toBe('14:00:00');
+    const updated = applyReceiptPatch(r, { time: null });
+    expect(updated.time).toBe(null);
+  });
+
+  it('updates store_address through a patch', () => {
+    const r = makeReceipt({ ...RECEIPT_DEFAULTS, total_orig: 1 });
+    const updated = applyReceiptPatch(r, { store_address: 'Bahnhofstr. 5' });
+    expect(updated.store_address).toBe('Bahnhofstr. 5');
   });
 });
 

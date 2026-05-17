@@ -55,7 +55,10 @@ export function EditReceiptForm({ receipt, items }: Props) {
 
   const { methods, itemsArray } = useReceiptForm({
     date: receipt.date,
+    // Form input accepts HH:MM only; DB stores HH:MM:SS. Slice for display.
+    time: receipt.time ? receipt.time.slice(0, 5) : null,
     store: receipt.store,
+    store_address: receipt.store_address,
     currency: toFormCurrency(receipt.currency),
     paid_by: receipt.paid_by,
     source: receipt.source,
@@ -80,7 +83,9 @@ export function EditReceiptForm({ receipt, items }: Props) {
       existing: receipt,
       receipt: {
         date: values.date,
+        time: values.time ?? null,
         store: values.store,
+        store_address: values.store_address ?? null,
         currency: values.currency,
         paid_by: values.paid_by,
         source: values.source,

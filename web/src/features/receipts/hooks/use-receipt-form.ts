@@ -36,7 +36,9 @@ export function useReceiptForm(initial?: Partial<ManualFormValues>) {
     mode: 'onTouched',
     defaultValues: {
       date: todayIso(),
+      time: null,
       store: '',
+      store_address: null,
       currency: 'EUR',
       paid_by: user?.email ?? '',
       source: 'manual',

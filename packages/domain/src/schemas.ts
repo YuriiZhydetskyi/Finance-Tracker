@@ -14,6 +14,16 @@ import { ULID_REGEX } from './ulid';
 export const ULID_SCHEMA = z.string().regex(ULID_REGEX, 'Must be a 26-char Crockford ULID');
 export const ISO_DATE_SCHEMA = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD');
 export const ISO_DATETIME_SCHEMA = z.string().min(1);
+// Strict HH:MM:SS — the canonical in-domain shape, matching what PostgREST
+// returns for a `time` column and what factories normalize inputs into.
+// Form inputs accept HH:MM (browser `<input type="time">`) and the factory
+// pads the seconds before validation; see normalizeTime() in factories.ts.
+export const ISO_TIME_SCHEMA = z.string().regex(/^\d{2}:\d{2}:\d{2}$/, 'Must be HH:MM:SS');
+// Loose HH:MM or HH:MM:SS — used at factory input boundaries (form values,
+// AI output) where the source can be either format.
+export const ISO_TIME_INPUT_SCHEMA = z
+  .string()
+  .regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Must be HH:MM or HH:MM:SS');
 export const ISO_4217_CURRENCY_SCHEMA = z
   .string()
   .regex(/^[A-Z]{3}$/, 'Must be ISO 4217 (3 uppercase letters)');
@@ -33,6 +43,7 @@ export const ReceiptSchema = z.object({
   id: ULID_SCHEMA,
   date: ISO_DATE_SCHEMA,
   store: z.string().min(1, 'store is required'),
+  store_address: z.string().nullable(),
   currency: ISO_4217_CURRENCY_SCHEMA,
   total_orig: z.number().finite(),
   fx_rate_eur: z.number().finite().positive(),
@@ -42,6 +53,7 @@ export const ReceiptSchema = z.object({
   source: SOURCE_SCHEMA,
   raw_ocr_json: z.string().max(45_000, 'raw_ocr_json exceeds 45000 chars').nullable(),
   note: z.string().nullable(),
+  time: ISO_TIME_SCHEMA.nullable(),
   created_at: ISO_DATETIME_SCHEMA,
   updated_at: ISO_DATETIME_SCHEMA,
 });
@@ -138,7 +150,9 @@ export type ParsedItem = z.infer<typeof ParsedItemSchema>;
 
 export const ParsedReceiptSchema = z.object({
   store: z.string().nullable(),
+  store_address: z.string().nullable().optional(),
   date: ISO_DATE_SCHEMA.nullable(),
+  time: ISO_TIME_INPUT_SCHEMA.nullable().optional(),
   currency: ISO_4217_CURRENCY_SCHEMA,
   total_orig: z.number().finite().nullable(),
   items: z.array(ParsedItemSchema),
@@ -152,6 +166,7 @@ export type ParsedReceipt = z.infer<typeof ParsedReceiptSchema>;
 export const ReceiptInputSchema = z.object({
   date: ISO_DATE_SCHEMA,
   store: z.string().min(1),
+  store_address: z.string().nullable().optional(),
   currency: ISO_4217_CURRENCY_SCHEMA,
   total_orig: z.number().finite(),
   fx_rate_eur: z.number().finite().positive(),
@@ -160,6 +175,7 @@ export const ReceiptInputSchema = z.object({
   photo_url: z.string().nullable().optional(),
   raw_ocr_json: z.string().max(45_000).nullable().optional(),
   note: z.string().nullable().optional(),
+  time: ISO_TIME_INPUT_SCHEMA.nullable().optional(),
 });
 export type ReceiptInput = z.infer<typeof ReceiptInputSchema>;
 

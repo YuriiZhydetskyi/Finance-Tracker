@@ -12,6 +12,7 @@ const validReceipt = (overrides: Partial<Receipt> = {}): Receipt => ({
   id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
   date: '2026-05-04',
   store: 'Test Store',
+  store_address: null,
   currency: 'EUR',
   total_orig: 5.49,
   fx_rate_eur: 1.0,
@@ -21,6 +22,7 @@ const validReceipt = (overrides: Partial<Receipt> = {}): Receipt => ({
   source: 'manual',
   raw_ocr_json: null,
   note: null,
+  time: null,
   created_at: '2026-05-04T14:30:00.000Z',
   updated_at: '2026-05-04T14:30:00.000Z',
   ...overrides,
@@ -78,6 +80,20 @@ describe('ReceiptSchema', () => {
 
   it('rejects missing id', () => {
     expect(() => ReceiptSchema.parse(validReceipt({ id: '' }))).toThrow(/id/);
+  });
+
+  it('accepts store_address as freeform string or null', () => {
+    expect(() =>
+      ReceiptSchema.parse(validReceipt({ store_address: 'Hauptstr. 12, 80331 München' })),
+    ).not.toThrow();
+    expect(() => ReceiptSchema.parse(validReceipt({ store_address: null }))).not.toThrow();
+  });
+
+  it('accepts time only in canonical HH:MM:SS form (not HH:MM)', () => {
+    expect(() => ReceiptSchema.parse(validReceipt({ time: '14:32:00' }))).not.toThrow();
+    expect(() => ReceiptSchema.parse(validReceipt({ time: null }))).not.toThrow();
+    // Loose HH:MM only allowed at the INPUT boundary, not on the canonical entity.
+    expect(() => ReceiptSchema.parse(validReceipt({ time: '14:32' }))).toThrow(/time/);
   });
 });
 
@@ -199,6 +215,43 @@ describe('ParsedReceiptSchema', () => {
         items: [],
       }),
     ).toThrow(/currency/);
+  });
+
+  it('parses a snapshot WITHOUT store_address/time keys (backward compat)', () => {
+    // raw_ocr_json snapshots written before these fields existed lack the keys;
+    // optional+nullable means re-parsing must succeed.
+    const parsed = ParsedReceiptSchema.parse({
+      store: 'Old Store',
+      date: '2025-01-01',
+      currency: 'EUR',
+      total_orig: 9.99,
+      items: [],
+    });
+    expect(parsed.store_address).toBeUndefined();
+    expect(parsed.time).toBeUndefined();
+  });
+
+  it('accepts time in HH:MM or HH:MM:SS from AI output', () => {
+    expect(() =>
+      ParsedReceiptSchema.parse({
+        store: 'X',
+        date: '2026-05-04',
+        time: '14:32',
+        currency: 'EUR',
+        total_orig: 1,
+        items: [],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      ParsedReceiptSchema.parse({
+        store: 'X',
+        date: '2026-05-04',
+        time: '14:32:05',
+        currency: 'EUR',
+        total_orig: 1,
+        items: [],
+      }),
+    ).not.toThrow();
   });
 
   it('rejects items with non-positive qty', () => {

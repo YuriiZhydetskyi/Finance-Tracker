@@ -45,7 +45,16 @@ export type ItemFormValues = z.infer<typeof ItemFormSchema>;
 
 export const ManualFormSchema = z.object({
   date: ISO_DATE_SCHEMA,
+  // Browser `<input type="time">` returns HH:MM (or '' when empty); the
+  // setValueAs transform in ReceiptFormFields coerces '' → null before this
+  // schema runs. Factory normalizes HH:MM → HH:MM:SS at save time.
+  time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'Час у форматі HH:MM')
+    .nullable()
+    .optional(),
   store: z.string().min(1, "Магазин обов'язковий"),
+  store_address: z.string().nullable().optional(),
   currency: z.enum(SUPPORTED_CURRENCIES),
   paid_by: EMAIL_LIKE_SCHEMA,
   source: SOURCE_SCHEMA,

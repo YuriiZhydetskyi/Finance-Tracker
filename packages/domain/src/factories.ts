@@ -10,6 +10,14 @@
 import { roundFxRate, roundMoney, roundQty } from './money';
 import { nowIso } from './time';
 import { ulid } from './ulid';
+
+// Normalize a time-of-day input (HH:MM or HH:MM:SS, possibly null/undefined/'')
+// into the canonical HH:MM:SS string stored on Receipt. Empty string → null
+// because `<input type="time">` returns '' when cleared.
+function normalizeTime(input: string | null | undefined): string | null {
+  if (input == null || input === '') return null;
+  return /^\d{2}:\d{2}$/.test(input) ? `${input}:00` : input;
+}
 import {
   ItemSchema,
   ProductPriceSchema,
@@ -34,6 +42,7 @@ export function makeReceipt(input: ReceiptInput): Receipt {
     id: ulid(),
     date: input.date,
     store: input.store,
+    store_address: input.store_address ?? null,
     currency: input.currency,
     total_orig,
     fx_rate_eur,
@@ -43,6 +52,7 @@ export function makeReceipt(input: ReceiptInput): Receipt {
     source: input.source,
     raw_ocr_json: input.raw_ocr_json ?? null,
     note: input.note ?? null,
+    time: normalizeTime(input.time),
     created_at: now,
     updated_at: now,
   };
@@ -119,6 +129,7 @@ export type ReceiptPatch = Partial<
     Receipt,
     | 'date'
     | 'store'
+    | 'store_address'
     | 'currency'
     | 'total_orig'
     | 'fx_rate_eur'
@@ -127,6 +138,7 @@ export type ReceiptPatch = Partial<
     | 'source'
     | 'raw_ocr_json'
     | 'note'
+    | 'time'
   >
 >;
 
@@ -134,6 +146,7 @@ export function applyReceiptPatch(existing: Receipt, patch: ReceiptPatch): Recei
   const merged: Receipt = { ...existing, ...patch };
   if (patch.total_orig !== undefined) merged.total_orig = roundMoney(patch.total_orig);
   if (patch.fx_rate_eur !== undefined) merged.fx_rate_eur = roundFxRate(patch.fx_rate_eur);
+  if (patch.time !== undefined) merged.time = normalizeTime(patch.time);
   merged.total_eur = roundMoney(merged.total_orig * merged.fx_rate_eur);
   merged.updated_at = nowIso();
   return ReceiptSchema.parse(merged);

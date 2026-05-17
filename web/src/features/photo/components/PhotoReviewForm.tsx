@@ -86,7 +86,9 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
 
   const { methods, itemsArray } = useReceiptForm({
     date: parsed.date ?? todayIso(),
+    time: parsed.time ?? null,
     store: parsed.store ?? '',
+    store_address: parsed.store_address ?? null,
     currency: toFormCurrency(parsed.currency),
     source: 'photo',
     note: null,
@@ -103,7 +105,9 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
     const result = await save.mutateAsync({
       receipt: {
         date: values.date,
+        time: values.time ?? null,
         store: values.store,
+        store_address: values.store_address ?? null,
         currency: values.currency,
         paid_by: values.paid_by,
         source: 'photo',

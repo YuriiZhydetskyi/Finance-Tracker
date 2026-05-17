@@ -28,10 +28,16 @@ export function ReceiptCard({ receipt }: Props) {
         </span>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
-        <span>{formatDate(receipt.date)}</span>
+        <span>
+          {formatDate(receipt.date)}
+          {receipt.time ? ` · ${receipt.time.slice(0, 5)}` : ''}
+        </span>
         {isNonEur && <span>· {formatMoney(receipt.total_orig, receipt.currency)}</span>}
         {receipt.note && <span className="italic">· {receipt.note}</span>}
       </div>
+      {receipt.store_address && (
+        <div className="mt-0.5 truncate text-xs text-slate-400">{receipt.store_address}</div>
+      )}
     </Link>
   );
 }

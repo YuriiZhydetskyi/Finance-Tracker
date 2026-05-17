@@ -55,11 +55,13 @@ export function useUpdateReceiptMutation() {
       const patched = applyReceiptPatch(existing, {
         date: receiptInput.date,
         store: receiptInput.store,
+        store_address: receiptInput.store_address ?? null,
         currency: receiptInput.currency,
         paid_by: receiptInput.paid_by,
         photo_url: receiptInput.photo_url ?? null,
         raw_ocr_json: receiptInput.raw_ocr_json ?? null,
         note: receiptInput.note ?? null,
+        time: receiptInput.time ?? null,
         source: 'edit',
         fx_rate_eur,
         total_orig,
@@ -110,6 +112,7 @@ export function useUpdateReceiptMutation() {
         .update({
           date: patched.date,
           store: patched.store,
+          store_address: patched.store_address,
           currency: patched.currency,
           total_orig: patched.total_orig,
           fx_rate_eur: patched.fx_rate_eur,
@@ -118,6 +121,7 @@ export function useUpdateReceiptMutation() {
           photo_url: patched.photo_url,
           raw_ocr_json: patched.raw_ocr_json,
           note: patched.note,
+          time: patched.time,
           source: patched.source,
           updated_at: patched.updated_at,
         })

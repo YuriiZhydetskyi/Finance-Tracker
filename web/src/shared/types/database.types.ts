@@ -247,6 +247,8 @@ export type Database = {
           raw_ocr_json: string | null;
           source: Database['public']['Enums']['receipt_source'];
           store: string;
+          store_address: string | null;
+          time: string | null;
           total_eur: number;
           total_orig: number;
           updated_at: string;
@@ -263,6 +265,8 @@ export type Database = {
           raw_ocr_json?: string | null;
           source: Database['public']['Enums']['receipt_source'];
           store: string;
+          store_address?: string | null;
+          time?: string | null;
           total_eur: number;
           total_orig: number;
           updated_at?: string;
@@ -279,6 +283,8 @@ export type Database = {
           raw_ocr_json?: string | null;
           source?: Database['public']['Enums']['receipt_source'];
           store?: string;
+          store_address?: string | null;
+          time?: string | null;
           total_eur?: number;
           total_orig?: number;
           updated_at?: string;
