@@ -1,5 +1,5 @@
-import { useMemo, type FormEvent } from 'react';
-import { FormProvider } from 'react-hook-form';
+import { useMemo, useState, type FormEvent } from 'react';
+import { FormProvider, useWatch } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import {
   todayIso,
@@ -13,8 +13,11 @@ import { useAppUsers } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import {
+  computeGrandTotal,
+  DuplicateWarningBanner,
   ReceiptFormFields,
   SUPPORTED_CURRENCIES,
+  useDuplicateReceipts,
   useReceiptForm,
   type ItemFormValues,
   type SupportedCurrency,
@@ -101,6 +104,20 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
   const productNames = productsQuery.data?.map((p) => p.name) ?? [];
   const paidByOptions = appUsersQuery.data ?? [];
 
+  const watchedStore = useWatch({ control: methods.control, name: 'store' });
+  const watchedDate = useWatch({ control: methods.control, name: 'date' });
+  const watchedTime = useWatch({ control: methods.control, name: 'time' });
+  const watchedItems = useWatch({ control: methods.control, name: 'items' });
+  const watchedTotal = useMemo(() => computeGrandTotal(watchedItems ?? []), [watchedItems]);
+  const [duplicatesDismissed, setDuplicatesDismissed] = useState(false);
+  const duplicatesQuery = useDuplicateReceipts({
+    store: watchedStore,
+    date: watchedDate,
+    time: watchedTime,
+    total_orig: watchedTotal,
+  });
+  const visibleDuplicates = duplicatesDismissed ? [] : (duplicatesQuery.data ?? []);
+
   const onSubmit = methods.handleSubmit(async (values) => {
     const result = await save.mutateAsync({
       receipt: {
@@ -178,6 +195,10 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
             </div>
           </details>
         </div>
+        <DuplicateWarningBanner
+          candidates={visibleDuplicates}
+          onDismiss={() => setDuplicatesDismissed(true)}
+        />
         <ReceiptFormFields
           itemsArray={itemsArray}
           categories={categoryNames}

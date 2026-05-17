@@ -5,6 +5,7 @@ export { EditReceiptForm } from './components/EditReceiptForm';
 export { ReceiptFormFields } from './components/ReceiptFormFields';
 export { ReceiptCard } from './components/ReceiptCard';
 export { EmptyReceiptsState } from './components/EmptyReceiptsState';
+export { DuplicateWarningBanner } from './components/DuplicateWarningBanner';
 export { ItemsList } from './components/ItemsList';
 export { ItemRow } from './components/ItemRow';
 export { SummaryFooter } from './components/SummaryFooter';
@@ -24,6 +25,8 @@ export type { UpdateReceiptVars, UpdateReceiptResult } from './api/use-update-re
 export { useDeleteReceiptMutation } from './api/use-delete-receipt-mutation';
 export type { DeleteReceiptVars } from './api/use-delete-receipt-mutation';
 export { receiptsQueryKey, receiptQueryKey } from './api/receipts-query-keys';
+export { useDuplicateReceipts, withinTimeWindow } from './api/use-duplicate-receipts';
+export type { DuplicateCandidate, DuplicateCheckInput } from './api/use-duplicate-receipts';
 
 export { useReceiptForm, emptyItemRow } from './hooks/use-receipt-form';
 export type { ManualFormValues, ItemFormValues, SupportedCurrency } from './schemas/manual-form';

@@ -1,5 +1,5 @@
-import type { FormEvent } from 'react';
-import { FormProvider } from 'react-hook-form';
+import { useMemo, useState, type FormEvent } from 'react';
+import { FormProvider, useWatch } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/shared/ui/Button';
 import { useAppUsers } from '@/features/auth';
@@ -7,7 +7,10 @@ import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import { useReceiptForm } from '../hooks/use-receipt-form';
 import { useSaveReceiptMutation } from '../api/use-save-receipt-mutation';
+import { useDuplicateReceipts } from '../api/use-duplicate-receipts';
+import { computeGrandTotal } from '../utils/totals';
 import { ReceiptFormFields } from './ReceiptFormFields';
+import { DuplicateWarningBanner } from './DuplicateWarningBanner';
 
 export function ManualReceiptForm() {
   const { methods, itemsArray } = useReceiptForm();
@@ -20,6 +23,20 @@ export function ManualReceiptForm() {
   const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
   const productNames = productsQuery.data?.map((p) => p.name) ?? [];
   const paidByOptions = appUsersQuery.data ?? [];
+
+  const watchedStore = useWatch({ control: methods.control, name: 'store' });
+  const watchedDate = useWatch({ control: methods.control, name: 'date' });
+  const watchedTime = useWatch({ control: methods.control, name: 'time' });
+  const watchedItems = useWatch({ control: methods.control, name: 'items' });
+  const watchedTotal = useMemo(() => computeGrandTotal(watchedItems ?? []), [watchedItems]);
+  const [duplicatesDismissed, setDuplicatesDismissed] = useState(false);
+  const duplicatesQuery = useDuplicateReceipts({
+    store: watchedStore,
+    date: watchedDate,
+    time: watchedTime,
+    total_orig: watchedTotal,
+  });
+  const visibleDuplicates = duplicatesDismissed ? [] : (duplicatesQuery.data ?? []);
 
   const onSubmit = methods.handleSubmit(async (values) => {
     const result = await save.mutateAsync({
@@ -55,7 +72,11 @@ export function ManualReceiptForm() {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleFormSubmit}>
+      <form onSubmit={handleFormSubmit} className="space-y-4">
+        <DuplicateWarningBanner
+          candidates={visibleDuplicates}
+          onDismiss={() => setDuplicatesDismissed(true)}
+        />
         <ReceiptFormFields
           itemsArray={itemsArray}
           categories={categoryNames}
