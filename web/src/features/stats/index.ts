@@ -5,6 +5,7 @@ export { ByCategoryChart } from './components/ByCategoryChart';
 export { ByUserChart } from './components/ByUserChart';
 export { ByStoreChart } from './components/ByStoreChart';
 export { SavingsByMonthChart } from './components/SavingsByMonthChart';
+export { WasteByMonthChart } from './components/WasteByMonthChart';
 
 export {
   useStatsByMonth,
@@ -12,11 +13,13 @@ export {
   useStatsByUser,
   useStatsByStore,
   useStatsSavingsByMonth,
+  useStatsWasteByMonth,
   statsByMonthQueryKey,
   statsByCategoryQueryKey,
   statsByUserQueryKey,
   statsByStoreQueryKey,
   statsSavingsByMonthQueryKey,
+  wasteByMonthQueryKey,
 } from './api/use-stats';
 
 export type {
@@ -25,4 +28,5 @@ export type {
   StatsByUserRow,
   StatsByStoreRow,
   StatsSavingsByMonthRow,
+  StatsWasteByMonthRow,
 } from './api/stats.types';

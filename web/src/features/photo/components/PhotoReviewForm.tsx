@@ -51,6 +51,7 @@ function detectedItemToFormRow(it: DetectedItem): ItemFormValues {
     consumed_by: 'shared',
     note: it.pair_marker?.kind === 'cancelled' ? 'пробито випадково' : null,
     wasted_qty: 0,
+    wasted_at: null,
     discount_orig: it.discount_orig ?? 0,
     ...(it.pair_marker ? { pair_marker: it.pair_marker } : {}),
   };
@@ -141,6 +142,7 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
         consumed_by: it.consumed_by,
         note: it.note ?? null,
         wasted_qty: it.wasted_qty ?? 0,
+        wasted_at: it.wasted_at ?? null,
         discount_orig: it.discount_orig ?? 0,
       })),
       photoBlob,

@@ -19,6 +19,7 @@ export function emptyItemRow(): ItemFormValues {
     consumed_by: 'shared',
     note: null,
     wasted_qty: 0,
+    wasted_at: null,
     discount_orig: 0,
   };
 }

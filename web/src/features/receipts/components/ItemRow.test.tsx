@@ -80,7 +80,7 @@ describe('ItemRow — pair_marker visual treatment', () => {
       expect(screen.getByText(/Пробито випадково · автоматично згруповано/)).toBeInTheDocument();
     });
 
-    it('disables qty / price / discount / wasted_qty inputs', () => {
+    it('disables qty / price / discount inputs', () => {
       const { container } = render(
         <Wrapper
           item={makeItem({
@@ -93,7 +93,6 @@ describe('ItemRow — pair_marker visual treatment', () => {
       expect(getInput(container, 'qty').disabled).toBe(true);
       expect(getInput(container, 'unit_price_orig').disabled).toBe(true);
       expect(getInput(container, 'discount_orig').disabled).toBe(true);
-      expect(getInput(container, 'wasted_qty').disabled).toBe(true);
     });
 
     it('footer shows €0 row total', () => {

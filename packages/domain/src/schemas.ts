@@ -76,6 +76,7 @@ export const ItemSchema = z
     consumed_by: CONSUMED_BY_SCHEMA,
     note: z.string().nullable(),
     wasted_qty: z.number().finite().nonnegative('wasted_qty must be non-negative number'),
+    wasted_at: ISO_DATETIME_SCHEMA.nullable(),
     discount_orig: z.number().finite().nonnegative('discount_orig must be non-negative number'),
     created_at: ISO_DATETIME_SCHEMA,
     updated_at: ISO_DATETIME_SCHEMA,
@@ -93,6 +94,21 @@ export const ItemSchema = z
         code: 'custom',
         message: `discount_orig (${String(it.discount_orig)}) cannot exceed unit_price_orig (${String(it.unit_price_orig)})`,
         path: ['discount_orig'],
+      });
+    }
+    // wasted_at must be present iff wasted_qty > 0.
+    if (it.wasted_qty > 0 && it.wasted_at == null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'wasted_at is required when wasted_qty > 0',
+        path: ['wasted_at'],
+      });
+    }
+    if (it.wasted_qty === 0 && it.wasted_at != null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'wasted_at must be null when wasted_qty is 0',
+        path: ['wasted_at'],
       });
     }
   });
@@ -191,6 +207,7 @@ export const ItemInputSchema = z.object({
   consumed_by: CONSUMED_BY_SCHEMA,
   note: z.string().nullable().optional(),
   wasted_qty: z.number().finite().nonnegative().optional(),
+  wasted_at: ISO_DATETIME_SCHEMA.nullable().optional(),
   discount_orig: z.number().finite().nonnegative().optional(),
 });
 export type ItemInput = z.infer<typeof ItemInputSchema>;

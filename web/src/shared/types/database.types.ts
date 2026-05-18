@@ -77,6 +77,7 @@ export type Database = {
           total_orig: number;
           unit_price_orig: number;
           updated_at: string;
+          wasted_at: string | null;
           wasted_qty: number;
         };
         Insert: {
@@ -95,6 +96,7 @@ export type Database = {
           total_orig: number;
           unit_price_orig: number;
           updated_at?: string;
+          wasted_at?: string | null;
           wasted_qty?: number;
         };
         Update: {
@@ -113,6 +115,7 @@ export type Database = {
           total_orig?: number;
           unit_price_orig?: number;
           updated_at?: string;
+          wasted_at?: string | null;
           wasted_qty?: number;
         };
         Relationships: [
@@ -338,6 +341,14 @@ export type Database = {
           discounted_items_count: number | null;
           month: string | null;
           savings_eur: number | null;
+        };
+        Relationships: [];
+      };
+      v_stats_waste_by_month: {
+        Row: {
+          month: string | null;
+          wasted_items_count: number | null;
+          wasted_value_eur: number | null;
         };
         Relationships: [];
       };

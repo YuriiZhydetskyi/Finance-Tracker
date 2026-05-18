@@ -185,6 +185,7 @@ create table public.items (
   note            text,
   wasted_qty      numeric(10, 3) not null default 0
                   check (wasted_qty >= 0 and wasted_qty <= qty),
+  wasted_at       timestamptz,
   discount_orig   numeric(12, 2) not null default 0
                   check (discount_orig >= 0),
   created_at      timestamptz not null default now(),
@@ -206,6 +207,7 @@ create table public.items (
 | `consumed_by`     | text          | ні             | `'his' \| 'hers' \| 'shared' \| 'custom:N/M'`                               | `shared` / `custom:30/70`     |
 | `note`            | text          | так            |                                                                             | `Купили на знижці -50%`       |
 | `wasted_qty`      | numeric(10,3) | ні (default 0) | ≤ `qty`                                                                     | `0.000`                       |
+| `wasted_at`       | timestamptz   | так            | non-null iff `wasted_qty > 0` (Zod-level); перезаписується на останню дату  | `2026-05-18T12:00:00Z`        |
 | `discount_orig`   | numeric(12,2) | ні (default 0) | ≥ 0; ≤ `unit_price_orig` коли positive                                      | `0.00` / `1.00`               |
 | `created_at`      | timestamptz   | ні             | default `now()`                                                             |                               |
 | `updated_at`      | timestamptz   | ні             | trigger                                                                     |                               |
@@ -215,6 +217,7 @@ create table public.items (
 - `total_orig = round(qty * (unit_price_orig - discount_orig), 2)` — перевіряється у `makeItem` factory.
 - `total_eur = round(total_orig * receipt.fx_rate_eur, 2)` — денормалізовано (зберігається копія) для аналітики без джойнів.
 - `wasted_qty <= qty` — Postgres check + Zod superRefine.
+- `wasted_at` non-null iff `wasted_qty > 0` — Zod superRefine only (Postgres колонка просто nullable; інваріант підтримується на write-боці у `makeItem` factory + `useUpdateItemWasteMutation`). При `wasted_qty=0` `wasted_at` стає `null`; при `wasted_qty>0` — `now()` (перезапис при кожному оновленні).
 - `discount_orig <= unit_price_orig` коли `unit_price_orig > 0` — Zod superRefine (Postgres check тільки `>= 0`).
 - **Negative line items.** `unit_price_orig` (і `total_orig` / `total_eur`) може бути від'ємним. Три типові причини на німецьких чеках: cancellation pair, discount/Rabatt, Pfand/Leergut refund. `qty` лишається додатнім (≥ 1) — змінюється тільки знак ціни. Receipt's `total_orig` природно нетятиме.
 - **Pair grouping** (тільки на photo flow): коли AI повертає Rabatt-пару (`+X` + `−Y` з тим самим product_name), `detectPairs` ([packages/domain/src/pair-detector.ts](../packages/domain/src/pair-detector.ts)) зливає їх у один Item з `unit_price_orig=X` і `discount_orig=Y` перед review-formою. Cancellation pair (`+X` + `−X`) — за замовчуванням не зберігається; user може override через checkbox у `<CancellationCard>`. Див. [ADR-0012](decisions/0012-cancellation-discount-grouping.md).
@@ -383,12 +386,14 @@ group by store
 order by sum(total_eur) desc;
 ```
 
-| View                  | Колонки                                          | Sort              | Використання                   |
-| --------------------- | ------------------------------------------------ | ----------------- | ------------------------------ |
-| `v_stats_by_month`    | `month` (YYYY-MM), `total_eur`, `receipts_count` | desc              | `/stats` ByMonthChart, last 12 |
-| `v_stats_by_category` | `category`, `total_eur`, `items_count`           | desc by total_eur | `/stats` ByCategoryChart       |
-| `v_stats_by_user`     | `paid_by`, `total_eur`, `receipts_count`         | desc by total_eur | `/stats` ByUserChart (pie)     |
-| `v_stats_by_store`    | `store`, `total_eur`, `receipts_count`           | desc by total_eur | `/stats` ByStoreChart, top 10  |
+| View                       | Колонки                                           | Sort              | Використання                   |
+| -------------------------- | ------------------------------------------------- | ----------------- | ------------------------------ |
+| `v_stats_by_month`         | `month` (YYYY-MM), `total_eur`, `receipts_count`  | desc              | `/stats` ByMonthChart, last 12 |
+| `v_stats_by_category`      | `category`, `total_eur`, `items_count`            | desc by total_eur | `/stats` ByCategoryChart       |
+| `v_stats_by_user`          | `paid_by`, `total_eur`, `receipts_count`          | desc by total_eur | `/stats` ByUserChart (pie)     |
+| `v_stats_by_store`         | `store`, `total_eur`, `receipts_count`            | desc by total_eur | `/stats` ByStoreChart, top 10  |
+| `v_stats_savings_by_month` | `month`, `savings_eur`, `discounted_items_count`  | month desc        | `/stats` SavingsByMonthChart   |
+| `v_stats_waste_by_month`   | `month`, `wasted_value_eur`, `wasted_items_count` | month desc        | `/stats` WasteByMonthChart     |
 
 **PostgREST quirk:** numeric columns повертаються JSON-ом як strings, не numbers. Хуки coerce'ять через `asNumber()` у [`web/src/features/stats/api/use-stats.ts`](../web/src/features/stats/api/use-stats.ts).
 

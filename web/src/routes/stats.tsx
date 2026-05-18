@@ -8,11 +8,13 @@ import {
   ByStoreChart,
   ByUserChart,
   SavingsByMonthChart,
+  WasteByMonthChart,
   useStatsByCategory,
   useStatsByMonth,
   useStatsByStore,
   useStatsByUser,
   useStatsSavingsByMonth,
+  useStatsWasteByMonth,
 } from '@/features/stats';
 import { formatMoney } from '@/shared/utils/format-money';
 
@@ -93,10 +95,15 @@ function StatsDashboard() {
   const userQuery = useStatsByUser();
   const storeQuery = useStatsByStore(10);
   const savingsQuery = useStatsSavingsByMonth(12);
+  const wasteQuery = useStatsWasteByMonth(12);
 
   const savingsRows = savingsQuery.data ?? [];
   const totalSaved = savingsRows.reduce((acc, r) => acc + r.savings_eur, 0);
   const totalDiscountedItems = savingsRows.reduce((acc, r) => acc + r.discounted_items_count, 0);
+
+  const wasteRows = wasteQuery.data ?? [];
+  const totalWasted = wasteRows.reduce((acc, r) => acc + r.wasted_value_eur, 0);
+  const totalWastedItems = wasteRows.reduce((acc, r) => acc + r.wasted_items_count, 0);
 
   return (
     <div className="space-y-4">
@@ -121,6 +128,22 @@ function StatsDashboard() {
         </div>
       </section>
 
+      <section className="rounded-md border border-red-200 bg-red-50 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-red-900">Викинули</h2>
+            <p className="text-xs text-red-700">
+              {wasteQuery.isLoading
+                ? 'Завантажую...'
+                : `Сума зіпсованого за останні 12 місяців · ${String(totalWastedItems)} позицій`}
+            </p>
+          </div>
+          <span className="text-3xl font-semibold tabular-nums text-red-900">
+            {wasteQuery.isLoading ? '—' : formatMoney(totalWasted, 'EUR')}
+          </span>
+        </div>
+      </section>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="По місяцях" subtitle="Останні 12 місяців">
           <ChartState
@@ -141,6 +164,17 @@ function StatsDashboard() {
             isEmpty={savingsQuery.isSuccess && savingsRows.length === 0}
           >
             <SavingsByMonthChart rows={savingsRows} />
+          </ChartState>
+        </Section>
+
+        <Section title="Викинули по місяцях" subtitle="Сума зіпсованого у EUR">
+          <ChartState
+            isLoading={wasteQuery.isLoading}
+            isError={wasteQuery.isError}
+            error={wasteQuery.error}
+            isEmpty={wasteQuery.isSuccess && wasteRows.length === 0}
+          >
+            <WasteByMonthChart rows={wasteRows} />
           </ChartState>
         </Section>
 

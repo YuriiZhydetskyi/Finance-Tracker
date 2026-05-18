@@ -33,3 +33,9 @@ export type StatsSavingsByMonthRow = {
   savings_eur: number;
   discounted_items_count: number;
 };
+
+export type StatsWasteByMonthRow = {
+  month: string; // 'YYYY-MM'
+  wasted_value_eur: number;
+  wasted_items_count: number;
+};

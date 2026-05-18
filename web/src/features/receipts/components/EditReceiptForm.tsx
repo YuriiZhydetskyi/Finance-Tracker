@@ -40,6 +40,9 @@ function toFormRow(item: Item): ItemFormValues {
     consumed_by: item.consumed_by,
     note: item.note,
     wasted_qty: item.wasted_qty,
+    // Preserve wasted_at on re-save: /edit shouldn't touch the spoilage
+    // timestamp of items the user is just adjusting category/note for.
+    wasted_at: item.wasted_at,
     discount_orig: item.discount_orig,
   };
 }
@@ -103,6 +106,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
         consumed_by: it.consumed_by,
         note: it.note ?? null,
         wasted_qty: it.wasted_qty ?? 0,
+        wasted_at: it.wasted_at ?? null,
         discount_orig: it.discount_orig ?? 0,
       })),
     });

@@ -42,6 +42,7 @@ const validItem = (overrides: Partial<Item> = {}): Item => ({
   consumed_by: 'shared',
   note: null,
   wasted_qty: 0,
+  wasted_at: null,
   discount_orig: 0,
   created_at: '2026-05-04T14:30:00.000Z',
   updated_at: '2026-05-04T14:30:00.000Z',
@@ -117,6 +118,24 @@ describe('ItemSchema', () => {
 
   it('rejects negative discount_orig', () => {
     expect(() => ItemSchema.parse(validItem({ discount_orig: -0.5 }))).toThrow(/discount_orig/);
+  });
+
+  it('rejects wasted_at non-null when wasted_qty is 0', () => {
+    expect(() =>
+      ItemSchema.parse(validItem({ wasted_qty: 0, wasted_at: '2026-05-18T10:00:00.000Z' })),
+    ).toThrow(/wasted_at/);
+  });
+
+  it('rejects wasted_at null when wasted_qty > 0', () => {
+    expect(() => ItemSchema.parse(validItem({ qty: 2, wasted_qty: 1, wasted_at: null }))).toThrow(
+      /wasted_at/,
+    );
+  });
+
+  it('accepts wasted_at + wasted_qty when both consistent', () => {
+    expect(() =>
+      ItemSchema.parse(validItem({ qty: 2, wasted_qty: 1, wasted_at: '2026-05-18T10:00:00.000Z' })),
+    ).not.toThrow();
   });
 
   it('rejects discount_orig that exceeds unit_price_orig (positive price)', () => {

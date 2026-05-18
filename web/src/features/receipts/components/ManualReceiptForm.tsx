@@ -60,6 +60,7 @@ export function ManualReceiptForm() {
         consumed_by: it.consumed_by,
         note: it.note ?? null,
         wasted_qty: it.wasted_qty ?? 0,
+        wasted_at: it.wasted_at ?? null,
         discount_orig: it.discount_orig ?? 0,
       })),
     });

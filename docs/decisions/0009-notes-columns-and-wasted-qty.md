@@ -4,6 +4,8 @@
 - Date: 2026-05-04
 
 > **Changelog 2026-05-06**: той самий «вузька-колонка-замість-таблиці» патерн застосовано для знижок — додано колонку `Items.discount_orig`. Деталі і evolution rule — у [ADR-0012](0012-cancellation-discount-grouping.md).
+>
+> **Changelog 2026-05-18**: spoilage переїхав на окрему сторінку `/waste`. Додано колонку `Items.wasted_at` (timestamptz nullable, перезаписується на останню дату списання). UI-редагування `wasted_qty` прибрано з форм чеків (`ItemRow.tsx`) — тепер виставляється тільки на `/waste` через targeted `UPDATE` (новий mutation `useUpdateItemWasteMutation`, без delete+insert цілого чеку). Інваріант `wasted_at non-null iff wasted_qty > 0` тримається на write-боці у `makeItem` / mutation; Postgres-колонка просто nullable. Додано Postgres view `v_stats_waste_by_month` і чарт "Викинули по місяцях" у `/stats`.
 
 
 ## Context and Problem Statement

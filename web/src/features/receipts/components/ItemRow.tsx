@@ -189,18 +189,8 @@ export function ItemRow({ index, categories, onRemove }: Props) {
             {...register(`items.${index}.discount_orig`, { valueAsNumber: true })}
           />
         </div>
-        <div className="col-span-3 sm:col-span-2">
-          <label className={FIELD_LABEL_CLASS}>Зіпсовано</label>
-          <Input
-            type="number"
-            step="0.001"
-            min="0"
-            inputMode="decimal"
-            disabled={isCancelled}
-            {...register(`items.${index}.wasted_qty`, { valueAsNumber: true })}
-          />
-        </div>
-        <div className="col-span-12 sm:col-span-5">
+        {/* "Зіпсовано" moved to /waste — set there per-item, not at receipt entry. */}
+        <div className="col-span-12 sm:col-span-7">
           <label className={FIELD_LABEL_CLASS}>Нотатка</label>
           <Input placeholder="—" {...register(`items.${index}.note`)} />
         </div>

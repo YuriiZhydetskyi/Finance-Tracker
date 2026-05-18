@@ -45,6 +45,9 @@ function HomePage() {
             <Link to="/recent">
               <Button variant="secondary">Останні чеки</Button>
             </Link>
+            <Link to="/waste">
+              <Button variant="secondary">Викинули</Button>
+            </Link>
             <Link to="/stats">
               <Button variant="secondary">Статистика</Button>
             </Link>

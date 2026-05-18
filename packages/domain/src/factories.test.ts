@@ -116,6 +116,32 @@ describe('makeItem', () => {
     );
   });
 
+  it('defaults wasted_at to null when wasted_qty is 0', () => {
+    const it = makeItem({ ...ITEM_DEFAULTS, qty: 2, unit_price_orig: 1 });
+    expect(it.wasted_qty).toBe(0);
+    expect(it.wasted_at).toBe(null);
+  });
+
+  it('sets wasted_at to now() when wasted_qty > 0 and no wasted_at provided', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-18T12:00:00.000Z'));
+    const it = makeItem({ ...ITEM_DEFAULTS, qty: 2, unit_price_orig: 1, wasted_qty: 1 });
+    expect(it.wasted_at).toBe('2026-05-18T12:00:00.000Z');
+    vi.useRealTimers();
+  });
+
+  it('preserves provided wasted_at when wasted_qty > 0', () => {
+    const fixed = '2026-04-01T08:00:00.000Z';
+    const it = makeItem({
+      ...ITEM_DEFAULTS,
+      qty: 2,
+      unit_price_orig: 1,
+      wasted_qty: 1,
+      wasted_at: fixed,
+    });
+    expect(it.wasted_at).toBe(fixed);
+  });
+
   it('accepts negative unit_price_orig (Pfand refund / discount / cancellation)', () => {
     const it = makeItem({
       ...ITEM_DEFAULTS,

@@ -67,6 +67,10 @@ export function makeItem(input: ItemInput): Item {
   const total_eur = roundMoney(total_orig * input.fx_rate_eur);
   const wasted_qty = roundQty(input.wasted_qty ?? 0);
   const now = nowIso();
+  // Mirror the column invariant from schemas.ts: wasted_at present iff
+  // wasted_qty > 0. If caller provided a value, trust it; otherwise default
+  // to now() for newly-wasted items and null for clean ones.
+  const wasted_at = wasted_qty > 0 ? (input.wasted_at ?? now) : null;
   const candidate: Item = {
     id: ulid(),
     receipt_id: input.receipt_id,
@@ -81,6 +85,7 @@ export function makeItem(input: ItemInput): Item {
     consumed_by: input.consumed_by,
     note: input.note ?? null,
     wasted_qty,
+    wasted_at,
     discount_orig,
     created_at: now,
     updated_at: now,
@@ -164,6 +169,7 @@ export type ItemPatch = Partial<
     | 'consumed_by'
     | 'note'
     | 'wasted_qty'
+    | 'wasted_at'
     | 'discount_orig'
   >
 >;
@@ -178,5 +184,11 @@ export function applyItemPatch(existing: Item, patch: ItemPatch, parentFxRate: n
   merged.total_orig = roundMoney(merged.qty * (merged.unit_price_orig - merged.discount_orig));
   merged.total_eur = roundMoney(merged.total_orig * parentFxRate);
   merged.updated_at = nowIso();
+  // Enforce wasted_at ↔ wasted_qty invariant: if patch changed wasted_qty
+  // without also setting wasted_at, derive it. Explicit wasted_at in the
+  // patch takes precedence (caller knows best).
+  if (patch.wasted_qty !== undefined && patch.wasted_at === undefined) {
+    merged.wasted_at = merged.wasted_qty > 0 ? (existing.wasted_at ?? merged.updated_at) : null;
+  }
   return ItemSchema.parse(merged);
 }

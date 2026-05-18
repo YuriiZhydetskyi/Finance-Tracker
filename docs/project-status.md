@@ -2,7 +2,7 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Останнє оновлення:** 2026-05-08 (Phase 10 — live на Cloudflare Pages; усі міграції застосовані до live Supabase; manual smoke триває)
+**Останнє оновлення:** 2026-05-18 (Waste tracking page — окрема сторінка `/waste` для позначення зіпсованого, замість редагування `wasted_qty` всередині форм чеків; `wasted_at` колонка + view `v_stats_waste_by_month`)
 
 **Production URL:** https://<your-app>.pages.dev (stable production alias; `<hash>.<your-app>.pages.dev` — preview-deployment URLs з кожного pushed коміту)
 

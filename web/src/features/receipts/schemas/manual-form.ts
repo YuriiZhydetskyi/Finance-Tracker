@@ -38,6 +38,10 @@ const ItemFormSchema = z.object({
   consumed_by: CONSUMED_BY_SCHEMA,
   note: z.string().nullable().optional(),
   wasted_qty: z.number().finite().nonnegative().optional(),
+  // Carried through edit flow as a pass-through so /edit doesn't reset the
+  // "last wasted at" timestamp of items that already had spoilage logged.
+  // Set/cleared on /waste, never edited here.
+  wasted_at: z.string().nullable().optional(),
   discount_orig: z.number().finite().nonnegative().optional(),
   pair_marker: PairMarkerSchema.optional(),
 });
