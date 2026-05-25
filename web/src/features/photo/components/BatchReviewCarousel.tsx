@@ -233,7 +233,7 @@ function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
         <PhotoReviewForm
           parsed={item.status.parsed}
           pairResult={item.status.pairResult}
-          photoBlob={item.blob}
+          photoBlob={item.source === 'file' ? item.blob : null}
           onCancel={onRemove}
           onSaved={onSaved}
         />

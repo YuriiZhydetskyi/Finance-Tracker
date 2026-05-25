@@ -207,4 +207,19 @@ describe('useBatchParser', () => {
     expect(result.current.state.items).toHaveLength(0);
     expect(parseMock).not.toHaveBeenCalled();
   });
+
+  it('addParsedReceipt adds pasted JSON without calling the parser', () => {
+    const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+
+    act(() => {
+      result.current.addParsedReceipt(fakeParsed('Manual'));
+    });
+
+    const item = result.current.state.items[0]!;
+    expect(parseMock).not.toHaveBeenCalled();
+    expect(item.source).toBe('manual-json');
+    expect(item.status.kind).toBe('parsed');
+  });
 });

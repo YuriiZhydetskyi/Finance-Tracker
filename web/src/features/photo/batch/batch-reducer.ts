@@ -22,6 +22,7 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
       const newItems: BatchItem[] = action.items.map((it) => ({
         id: it.id,
         fileName: it.fileName,
+        source: 'file',
         blob: it.blob,
         previewUrl: it.previewUrl,
         attempts: 0,
@@ -31,6 +32,26 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
       return {
         items: [...state.items, ...newItems],
         currentIndex: wasEmpty ? 0 : state.currentIndex,
+      };
+    }
+
+    case 'manualParsed': {
+      const item: BatchItem = {
+        id: action.id,
+        fileName: action.fileName,
+        source: 'manual-json',
+        blob: new Blob([], { type: 'application/json' }),
+        previewUrl: null,
+        attempts: 0,
+        status: {
+          kind: 'parsed',
+          parsed: action.parsed,
+          pairResult: action.pairResult,
+        },
+      };
+      return {
+        items: [...state.items, item],
+        currentIndex: state.items.length,
       };
     }
 

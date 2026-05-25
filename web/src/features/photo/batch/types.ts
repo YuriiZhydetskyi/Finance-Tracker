@@ -10,6 +10,7 @@ export type BatchItemStatus =
 export type BatchItem = {
   id: string;
   fileName: string;
+  source: 'file' | 'manual-json';
   blob: Blob;
   /** `null` for PDFs — no in-browser image preview. */
   previewUrl: string | null;
@@ -31,6 +32,13 @@ export type BatchEnqueueInput = {
 
 export type BatchAction =
   | { type: 'enqueued'; items: BatchEnqueueInput[] }
+  | {
+      type: 'manualParsed';
+      id: string;
+      fileName: string;
+      parsed: ParsedReceipt;
+      pairResult: PairDetectionResult;
+    }
   | { type: 'parseStart'; id: string }
   | { type: 'parseSuccess'; id: string; parsed: ParsedReceipt; pairResult: PairDetectionResult }
   | { type: 'parseError'; id: string; message: string }

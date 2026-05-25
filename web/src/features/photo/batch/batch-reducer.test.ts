@@ -42,6 +42,7 @@ describe('batchReducer', () => {
       expect(state.items).toHaveLength(3);
       expect(state.items.map((i) => i.id)).toEqual(['A', 'B', 'C']);
       expect(state.items.every((i) => i.status.kind === 'queued')).toBe(true);
+      expect(state.items.every((i) => i.source === 'file')).toBe(true);
       expect(state.items.every((i) => i.attempts === 0)).toBe(true);
       expect(state.currentIndex).toBe(0);
     });
@@ -52,6 +53,7 @@ describe('batchReducer', () => {
           {
             id: 'X',
             fileName: 'X.jpg',
+            source: 'file',
             blob: new Blob(),
             previewUrl: '',
             attempts: 0,
@@ -71,6 +73,29 @@ describe('batchReducer', () => {
     it('is a no-op for empty input', () => {
       const state = batchReducer(initialBatchState, { type: 'enqueued', items: [] });
       expect(state).toBe(initialBatchState);
+    });
+  });
+
+  describe('manualParsed', () => {
+    it('appends a pasted JSON receipt as already parsed and focuses it', () => {
+      const s1 = batchReducer(initialBatchState, {
+        type: 'enqueued',
+        items: [makeEnqueueInput('A')],
+      });
+      const state = batchReducer(s1, {
+        type: 'manualParsed',
+        id: 'M',
+        fileName: 'Pasted AI JSON',
+        parsed: fakeParsed,
+        pairResult: fakePairResult,
+      });
+      const item = findItem(state, 'M');
+      expect(state.items.map((i) => i.id)).toEqual(['A', 'M']);
+      expect(state.currentIndex).toBe(1);
+      expect(item.source).toBe('manual-json');
+      expect(item.blob.type).toBe('application/json');
+      expect(item.previewUrl).toBeNull();
+      expect(item.status.kind).toBe('parsed');
     });
   });
 
@@ -101,6 +126,7 @@ describe('batchReducer', () => {
           {
             id: 'A',
             fileName: 'A.jpg',
+            source: 'file',
             blob: new Blob(),
             previewUrl: '',
             attempts: 1,

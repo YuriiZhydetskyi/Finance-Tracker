@@ -3,6 +3,7 @@
 export { PhotoPicker } from './components/PhotoPicker';
 export { PhotoReviewForm } from './components/PhotoReviewForm';
 export { BatchReviewCarousel } from './components/BatchReviewCarousel';
+export { ManualJsonImportDialog } from './components/ManualJsonImportDialog';
 
 export { useParseReceiptMutation } from './api/use-parse-receipt-mutation';
 export type { ParseReceiptVars } from './api/use-parse-receipt-mutation';
