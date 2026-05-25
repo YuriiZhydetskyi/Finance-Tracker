@@ -50,3 +50,6 @@ coverage/
 
 # Husky local
 .husky/_
+
+# Claude Code local settings (may contain personal allowlist with secrets)
+.claude/settings.local.json
