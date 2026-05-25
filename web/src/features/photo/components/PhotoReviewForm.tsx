@@ -67,6 +67,19 @@ function stringifyForOcr(parsed: ParsedReceipt): string | null {
   }
 }
 
+/**
+ * Render a receipt review/edit form prepopulated from parsed OCR results and AI-detected item pairs.
+ *
+ * The form lets the user inspect and adjust store/date/time/items, shows diagnostics and duplicate
+ * candidates, and saves the receipt either with an attached photo blob or as a non-photo receipt.
+ *
+ * @param parsed - The OCR-parsed receipt data used to prefill form fields and diagnostics
+ * @param pairResult - AI pair-detection results used to build initial item rows
+ * @param photoBlob - Optional photo blob; when provided the form will save the photo with the receipt
+ * @param onCancel - Callback invoked when the user cancels the form
+ * @param onSaved - Optional callback invoked with the saved `receipt_id` after a successful save
+ * @returns The rendered JSX element containing the receipt review form
+ */
 export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSaved }: Props) {
   const navigate = useNavigate();
   const categoriesQuery = useCategories();

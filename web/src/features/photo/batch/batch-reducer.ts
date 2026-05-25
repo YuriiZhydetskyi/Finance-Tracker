@@ -15,6 +15,13 @@ function mapItem(state: BatchState, id: string, fn: (item: BatchItem) => BatchIt
   return { ...state, items: next };
 }
 
+/**
+ * Produce the next batch state by applying the given batch action.
+ *
+ * @param state - The current batch state to update
+ * @param action - The action describing the update to apply
+ * @returns The updated BatchState after applying `action`; may be the unchanged `state` if the action has no effect
+ */
 export function batchReducer(state: BatchState, action: BatchAction): BatchState {
   switch (action.type) {
     case 'enqueued': {
