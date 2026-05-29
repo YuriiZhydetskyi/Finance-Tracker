@@ -4,4 +4,11 @@ export { usePriceHistory, priceHistoryQueryKey, type PricePoint } from './api/us
 export { computePriceTrend, type PriceTrend } from './lib/price-trend';
 export { toEur } from './lib/price-math';
 export { ensureProduct } from './api/upsert-product';
+export { generateShareToken } from './lib/share-token';
+export {
+  useSharedLink,
+  useCreateShareLinkMutation,
+  sharedLinkQueryKey,
+  type SharedLink,
+} from './api/use-shared-link';
 export { ProductInsights } from './components/ProductInsights';

@@ -312,6 +312,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      shared_links: {
+        Row: {
+          created_at: string;
+          product_id: string;
+          snapshot: string;
+          token: string;
+          view_count: number;
+        };
+        Insert: {
+          created_at?: string;
+          product_id: string;
+          snapshot: string;
+          token: string;
+          view_count?: number;
+        };
+        Update: {
+          created_at?: string;
+          product_id?: string;
+          snapshot?: string;
+          token?: string;
+          view_count?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'shared_links_product_id_fkey';
+            columns: ['product_id'];
+            isOneToOne: false;
+            referencedRelation: 'products';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       v_stats_by_category: {

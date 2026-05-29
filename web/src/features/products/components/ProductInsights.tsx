@@ -8,6 +8,7 @@ import type { ProductRow } from '../api/use-products';
 import { useSearchProducts } from '../api/use-search-products';
 import { usePriceHistory } from '../api/use-price-history';
 import { computePriceTrend } from '../lib/price-trend';
+import { useCreateShareLinkMutation } from '../api/use-shared-link';
 
 // Wrap each occurrence of the query in the product name with guillemets so the
 // matched part stands out in the suggestion list.
@@ -27,6 +28,8 @@ export function ProductInsights() {
   const [suggestions, setSuggestions] = useState<ProductRow[]>([]);
   const [selected, setSelected] = useState<ProductRow | null>(null);
   const [targetPrice, setTargetPrice] = useState('');
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const share = useCreateShareLinkMutation();
 
   const results = useSearchProducts(query, store);
   const history = usePriceHistory(selected?.id ?? '');
@@ -141,6 +144,21 @@ export function ProductInsights() {
             <span className="text-sm text-slate-600">
               {((trend.latest / target) * 100).toFixed(0)}% від цілі
             </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                void share
+                  .mutateAsync({ productId: selected.id, points: history.data ?? [] })
+                  .then(setShareToken);
+              }}
+            >
+              Поділитися
+            </Button>
+            {shareToken && (
+              <code className="rounded bg-slate-100 px-1 text-xs">/share/{shareToken}</code>
+            )}
           </div>
           <Button variant="secondary" onClick={() => setSelected(null)}>
             Закрити
