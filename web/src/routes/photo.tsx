@@ -27,6 +27,16 @@ function PhotoPage() {
   );
 }
 
+/**
+ * Renders the photo receipt upload and review flow with an option to paste AI-generated JSON.
+ *
+ * Displays a title and instructions, a right-aligned "Paste AI JSON" button to open the manual import
+ * dialog, and either the photo picker (when no batch items exist) or the batch review carousel
+ * (when items are present). Integrates category and product data into the batch parsing logic and
+ * adds parsed receipts from the manual import into the batch.
+ *
+ * @returns The React element tree for the photo receipt flow UI.
+ */
 function PhotoFlow() {
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();

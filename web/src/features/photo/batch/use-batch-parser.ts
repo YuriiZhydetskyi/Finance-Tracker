@@ -10,6 +10,23 @@ type UseBatchParserOptions = {
   products: { name: string }[];
 };
 
+/**
+ * Manages a batch of receipt parsing items and provides actions to enqueue files or parsed receipts,
+ * process queued items sequentially, retry or remove items, mark items as saved, navigate the batch, and reset state.
+ *
+ * The hook also revokes generated preview URLs when items are removed or when the hook is unmounted.
+ *
+ * @param opts - Options for the batch parser; includes `categories` and `products` used during parsing
+ * @returns An object with:
+ *   - `state`: current batch state
+ *   - `addFiles(files: File[])`: enqueue local files for parsing
+ *   - `addParsedReceipt(parsed: ParsedReceipt)`: add a manually provided parsed receipt
+ *   - `retryItem(id: string)`: retry parsing for an item
+ *   - `removeItem(id: string)`: remove an item and revoke its preview URL if present
+ *   - `markSaved(id: string, receipt_id: string)`: mark an item as saved and revoke its preview URL if present
+ *   - `goto(index: number)`: navigate to an item by index
+ *   - `reset()`: revoke all preview URLs and reset the batch state
+ */
 export function useBatchParser(opts: UseBatchParserOptions) {
   const [state, dispatch] = useReducer(batchReducer, initialBatchState);
   const parseMutation = useParseReceiptMutation();

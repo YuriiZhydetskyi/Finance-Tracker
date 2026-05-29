@@ -206,6 +206,17 @@ function FilePreview({ item }: { item: BatchItem }) {
   );
 }
 
+/**
+ * Render the appropriate review slide for a batch item based on its current status.
+ *
+ * Renders UI for the item's status (queued, parsing, parsed, parse-error, saved) and wires user actions to the provided callbacks.
+ *
+ * @param item - The batch item to render.
+ * @param onRemove - Called when the item should be removed from the batch.
+ * @param onRetry - Called to retry parsing the item (when applicable).
+ * @param onSaved - Called when the item is saved; receives an optional receipt identifier.
+ * @returns A JSX element representing the slide for the item's current status.
+ */
 function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
   switch (item.status.kind) {
     case 'queued':

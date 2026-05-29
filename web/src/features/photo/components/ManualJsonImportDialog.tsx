@@ -29,6 +29,16 @@ const EXAMPLE_JSON = `{
   ]
 }`;
 
+/**
+ * Builds a multi-line instruction prompt for an AI to analyze receipt images and output only valid JSON.
+ *
+ * The prompt embeds an example JSON schema, field-specific rules (store, address, date, time, currency,
+ * totals, per-line fields, and category guidance), an allowed-categories list, and optional known-product hints.
+ *
+ * @param categories - Allowed category strings that will be included verbatim in the prompt; if empty, the prompt notes that no categories were supplied.
+ * @param products - Prior product records whose names are included as hints; up to the first 50 product names are used.
+ * @returns The assembled prompt string to present to the AI model.
+ */
 function buildPrompt(categories: string[], products: { name: string }[]): string {
   const categoryList = categories.length > 0 ? categories.join(', ') : 'No categories supplied';
   const productHints = products
@@ -64,6 +74,16 @@ function buildPrompt(categories: string[], products: { name: string }[]): string
   ].join('\n');
 }
 
+/**
+ * Flatten a wrapper object that contains `receipt` and `items` into a single receipt-shaped object.
+ *
+ * If `value` is an object with a `receipt` object and an `items` array, returns a new object
+ * that merges the properties of `receipt` and sets `items` to the original `items` array.
+ * For any other input, returns `value` unchanged.
+ *
+ * @param value - The parsed JSON candidate to normalize; may be any value.
+ * @returns The normalized receipt-shaped object when a `{ receipt, items }` wrapper is detected, otherwise the original `value`.
+ */
 function normalizeCandidate(value: unknown): unknown {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     const record = value as Record<string, unknown>;
@@ -79,6 +99,17 @@ function normalizeCandidate(value: unknown): unknown {
   return value;
 }
 
+/**
+ * Parse JSON from a user-pasted string, supporting fenced ```json``` blocks and best-effort extraction.
+ *
+ * Extracts the inner contents if the input contains a fenced code block (```json ... ```), otherwise uses the full trimmed input.
+ * If initial parsing fails, attempts to recover by locating the first `{` and last `}` and parsing that substring.
+ *
+ * @param text - The raw pasted text that should contain JSON (may include fenced code block markers).
+ * @returns The parsed JavaScript value represented by the JSON text.
+ * @throws Error('Paste JSON first.') if `text` is empty or only whitespace.
+ * @throws Error('Could not parse JSON.') if parsing and recovery both fail.
+ */
 function parseJsonText(text: string): unknown {
   const trimmed = text.trim();
   if (!trimmed) throw new Error('Paste JSON first.');
@@ -98,6 +129,18 @@ function parseJsonText(text: string): unknown {
   }
 }
 
+/**
+ * Renders a dialog allowing the user to paste AI-generated receipt JSON, validate it, and import the parsed receipt.
+ *
+ * The dialog shows a generated AI prompt (with a copy-to-clipboard action) and an editable JSON input prefilled with an example.
+ *
+ * @param open - Whether the dialog is visible. When false, the component renders nothing.
+ * @param categories - Allowed category strings used to build the AI prompt.
+ * @param products - Prior product names used as hints when building the AI prompt.
+ * @param onClose - Callback invoked to close the dialog.
+ * @param onImported - Callback invoked with the validated receipt object when import succeeds.
+ * @returns The dialog UI when `open` is true, otherwise `null`.
+ */
 export function ManualJsonImportDialog({ open, categories, products, onClose, onImported }: Props) {
   const prompt = useMemo(() => buildPrompt(categories, products), [categories, products]);
   const [jsonText, setJsonText] = useState('');
