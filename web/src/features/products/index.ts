@@ -4,6 +4,7 @@ export { usePriceHistory, priceHistoryQueryKey, type PricePoint } from './api/us
 export { computePriceTrend, type PriceTrend } from './lib/price-trend';
 export { toEur } from './lib/price-math';
 export { ensureProduct } from './api/upsert-product';
+export { useImportPricesMutation } from './api/use-import-prices';
 export { generateShareToken } from './lib/share-token';
 export {
   useSharedLink,

@@ -9,6 +9,7 @@ import { useSearchProducts } from '../api/use-search-products';
 import { usePriceHistory } from '../api/use-price-history';
 import { computePriceTrend } from '../lib/price-trend';
 import { useCreateShareLinkMutation } from '../api/use-shared-link';
+import { useImportPricesMutation } from '../api/use-import-prices';
 
 // Wrap each occurrence of the query in the product name with guillemets so the
 // matched part stands out in the suggestion list.
@@ -30,6 +31,8 @@ export function ProductInsights() {
   const [targetPrice, setTargetPrice] = useState('');
   const [shareToken, setShareToken] = useState<string | null>(null);
   const share = useCreateShareLinkMutation();
+  const [importUrl, setImportUrl] = useState('');
+  const importPrices = useImportPricesMutation();
 
   const results = useSearchProducts(query, store);
   const history = usePriceHistory(selected?.id ?? '');
@@ -73,6 +76,26 @@ export function ProductInsights() {
           className="sm:w-56"
         />
       </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          placeholder="URL прайсу конкурента для імпорту"
+          value={importUrl}
+          onChange={(e) => setImportUrl(e.target.value)}
+        />
+        <Button
+          variant="secondary"
+          onClick={() => importPrices.mutate({ url: importUrl })}
+          className="sm:w-40"
+        >
+          Імпорт цін
+        </Button>
+      </div>
+      {importPrices.data && (
+        <pre className="max-h-40 overflow-auto rounded-md bg-slate-50 p-3 text-xs text-slate-700">
+          {importPrices.data}
+        </pre>
+      )}
 
       {suggestions.length > 0 && (
         <ul className="overflow-hidden rounded-md border border-slate-200 bg-white text-sm">
