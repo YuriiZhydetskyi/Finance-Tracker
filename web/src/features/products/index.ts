@@ -5,6 +5,8 @@ export { computePriceTrend, type PriceTrend } from './lib/price-trend';
 export { toEur } from './lib/price-math';
 export { ensureProduct } from './api/upsert-product';
 export { useImportPricesMutation } from './api/use-import-prices';
+export { useProductDetail, type ProductDetail } from './api/use-product-detail';
+export { ProductNote } from './components/ProductNote';
 export { generateShareToken } from './lib/share-token';
 export {
   useSharedLink,

@@ -10,6 +10,8 @@ import { usePriceHistory } from '../api/use-price-history';
 import { computePriceTrend } from '../lib/price-trend';
 import { useCreateShareLinkMutation } from '../api/use-shared-link';
 import { useImportPricesMutation } from '../api/use-import-prices';
+import { useProductDetail } from '../api/use-product-detail';
+import { ProductNote } from './ProductNote';
 
 // Wrap each occurrence of the query in the product name with guillemets so the
 // matched part stands out in the suggestion list.
@@ -33,6 +35,7 @@ export function ProductInsights() {
   const share = useCreateShareLinkMutation();
   const [importUrl, setImportUrl] = useState('');
   const importPrices = useImportPricesMutation();
+  const detail = useProductDetail(selected?.id ?? '');
 
   const results = useSearchProducts(query, store);
   const history = usePriceHistory(selected?.id ?? '');
@@ -137,6 +140,7 @@ export function ProductInsights() {
       {selected && (
         <section className="space-y-3 rounded-md border border-slate-200 p-4">
           <h2 className="font-semibold text-slate-900">{selected.name}</h2>
+          {detail.data?.notes && <ProductNote markdown={detail.data.notes} />}
           {history.isSuccess && (
             <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
               <div>
