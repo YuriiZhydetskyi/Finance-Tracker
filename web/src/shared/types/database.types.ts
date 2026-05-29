@@ -190,6 +190,24 @@ export type Database = {
           },
         ];
       };
+      product_search_log: {
+        Row: {
+          id: string;
+          query: string;
+          searched_at: string;
+        };
+        Insert: {
+          id: string;
+          query: string;
+          searched_at?: string;
+        };
+        Update: {
+          id?: string;
+          query?: string;
+          searched_at?: string;
+        };
+        Relationships: [];
+      };
       products: {
         Row: {
           category: string;
@@ -355,6 +373,10 @@ export type Database = {
     };
     Functions: {
       is_allowed_user: { Args: never; Returns: boolean };
+      search_products: {
+        Args: { search: string };
+        Returns: Database['public']['Tables']['products']['Row'][];
+      };
     };
     Enums: {
       product_unit: 'pcs' | 'g' | 'kg' | 'ml' | 'l';
