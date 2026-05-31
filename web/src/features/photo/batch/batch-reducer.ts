@@ -1,4 +1,22 @@
-import { initialBatchState, type BatchAction, type BatchItem, type BatchState } from './types';
+import {
+  initialBatchState,
+  type BatchAction,
+  type BatchItem,
+  type BatchState,
+  type ManualParsedInput,
+} from './types';
+
+function makeManualItem(input: ManualParsedInput): BatchItem {
+  return {
+    id: input.id,
+    fileName: input.fileName,
+    source: 'manual-json',
+    blob: new Blob([], { type: 'application/json' }),
+    previewUrl: null,
+    attempts: 0,
+    status: { kind: 'parsed', parsed: input.parsed, pairResult: input.pairResult },
+  };
+}
 
 function clampIndex(index: number, length: number): number {
   if (length === 0) return 0;
@@ -35,22 +53,11 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
       };
     }
 
-    case 'manualParsed': {
-      const item: BatchItem = {
-        id: action.id,
-        fileName: action.fileName,
-        source: 'manual-json',
-        blob: new Blob([], { type: 'application/json' }),
-        previewUrl: null,
-        attempts: 0,
-        status: {
-          kind: 'parsed',
-          parsed: action.parsed,
-          pairResult: action.pairResult,
-        },
-      };
+    case 'manualParsedMany': {
+      if (action.items.length === 0) return state;
+      // Focus the first of the freshly pasted batch.
       return {
-        items: [...state.items, item],
+        items: [...state.items, ...action.items.map(makeManualItem)],
         currentIndex: state.items.length,
       };
     }

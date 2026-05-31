@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeCandidate, parseJsonText } from './ManualJsonImportDialog';
+import { normalizeCandidate, parseJsonText, toReceiptCandidates } from './ManualJsonImportDialog';
 
 describe('parseJsonText', () => {
   it('parses raw JSON', () => {
@@ -89,5 +89,35 @@ describe('normalizeCandidate', () => {
   it('returns original when receipt has no items at any level', () => {
     const value = { receipt: { store: 'Lidl' } };
     expect(normalizeCandidate(value)).toBe(value);
+  });
+});
+
+describe('toReceiptCandidates', () => {
+  it('wraps a single receipt object in a one-element list', () => {
+    const value = { store: 'Lidl', items: [{ name: 'Bread' }] };
+    expect(toReceiptCandidates(value)).toEqual([value]);
+  });
+
+  it('returns each element of a top-level array', () => {
+    const a = { store: 'Lidl', items: [] };
+    const b = { store: 'Aldi', items: [] };
+    expect(toReceiptCandidates([a, b])).toEqual([a, b]);
+  });
+
+  it('unwraps a { receipts: [...] } wrapper', () => {
+    const a = { store: 'Lidl', items: [] };
+    const b = { store: 'Aldi', items: [] };
+    expect(toReceiptCandidates({ receipts: [a, b] })).toEqual([a, b]);
+  });
+
+  it('normalizes each element of an array', () => {
+    const wrapped = { receipt: { store: 'Lidl', date: '2026-05-01' }, items: [{ name: 'Bread' }] };
+    expect(toReceiptCandidates([wrapped])).toEqual([
+      { store: 'Lidl', date: '2026-05-01', items: [{ name: 'Bread' }] },
+    ]);
+  });
+
+  it('returns an empty list for an empty array', () => {
+    expect(toReceiptCandidates([])).toEqual([]);
   });
 });

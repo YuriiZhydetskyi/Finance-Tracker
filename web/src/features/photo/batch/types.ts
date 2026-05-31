@@ -30,15 +30,16 @@ export type BatchEnqueueInput = {
   previewUrl: string | null;
 };
 
+export type ManualParsedInput = {
+  id: string;
+  fileName: string;
+  parsed: ParsedReceipt;
+  pairResult: PairDetectionResult;
+};
+
 export type BatchAction =
   | { type: 'enqueued'; items: BatchEnqueueInput[] }
-  | {
-      type: 'manualParsed';
-      id: string;
-      fileName: string;
-      parsed: ParsedReceipt;
-      pairResult: PairDetectionResult;
-    }
+  | { type: 'manualParsedMany'; items: ManualParsedInput[] }
   | { type: 'parseStart'; id: string }
   | { type: 'parseSuccess'; id: string; parsed: ParsedReceipt; pairResult: PairDetectionResult }
   | { type: 'parseError'; id: string; message: string }

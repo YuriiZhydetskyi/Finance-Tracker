@@ -87,16 +87,27 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     if (enqueueInputs.length > 0) dispatch({ type: 'enqueued', items: enqueueInputs });
   }, []);
 
-  const addParsedReceipt = useCallback((parsed: ParsedReceipt) => {
-    const seq = itemsRef.current.filter((i) => i.source === 'manual-json').length + 1;
+  const addParsedReceipts = useCallback((receipts: ParsedReceipt[]) => {
+    if (receipts.length === 0) return;
+    // Single dispatch so cross-receipt numbering stays correct — itemsRef only
+    // refreshes after a render, so per-receipt dispatches would all read the
+    // same stale count and collide on "#N".
+    const base = itemsRef.current.filter((i) => i.source === 'manual-json').length;
     dispatch({
-      type: 'manualParsed',
-      id: crypto.randomUUID(),
-      fileName: `${PASTED_JSON_LABEL} #${seq}`,
-      parsed,
-      pairResult: detectPairs(parsed.items),
+      type: 'manualParsedMany',
+      items: receipts.map((parsed, idx) => ({
+        id: crypto.randomUUID(),
+        fileName: `${PASTED_JSON_LABEL} #${base + idx + 1}`,
+        parsed,
+        pairResult: detectPairs(parsed.items),
+      })),
     });
   }, []);
+
+  const addParsedReceipt = useCallback(
+    (parsed: ParsedReceipt) => addParsedReceipts([parsed]),
+    [addParsedReceipts],
+  );
 
   const retryItem = useCallback((id: string) => {
     dispatch({ type: 'retry', id });
@@ -125,5 +136,15 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     dispatch({ type: 'reset' });
   }, []);
 
-  return { state, addFiles, addParsedReceipt, retryItem, removeItem, markSaved, goto, reset };
+  return {
+    state,
+    addFiles,
+    addParsedReceipt,
+    addParsedReceipts,
+    retryItem,
+    removeItem,
+    markSaved,
+    goto,
+    reset,
+  };
 }

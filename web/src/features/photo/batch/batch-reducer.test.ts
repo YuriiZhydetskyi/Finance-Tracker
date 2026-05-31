@@ -76,18 +76,22 @@ describe('batchReducer', () => {
     });
   });
 
-  describe('manualParsed', () => {
-    it('appends a pasted JSON receipt as already parsed and focuses it', () => {
+  describe('manualParsedMany', () => {
+    it('appends a single pasted JSON receipt as already parsed and focuses it', () => {
       const s1 = batchReducer(initialBatchState, {
         type: 'enqueued',
         items: [makeEnqueueInput('A')],
       });
       const state = batchReducer(s1, {
-        type: 'manualParsed',
-        id: 'M',
-        fileName: 'Pasted AI JSON',
-        parsed: fakeParsed,
-        pairResult: fakePairResult,
+        type: 'manualParsedMany',
+        items: [
+          {
+            id: 'M',
+            fileName: 'Pasted AI JSON #1',
+            parsed: fakeParsed,
+            pairResult: fakePairResult,
+          },
+        ],
       });
       const item = findItem(state, 'M');
       expect(state.items.map((i) => i.id)).toEqual(['A', 'M']);
@@ -96,6 +100,40 @@ describe('batchReducer', () => {
       expect(item.blob.type).toBe('application/json');
       expect(item.previewUrl).toBeNull();
       expect(item.status.kind).toBe('parsed');
+    });
+
+    it('appends every receipt as already parsed and focuses the first new one', () => {
+      const s1 = batchReducer(initialBatchState, {
+        type: 'enqueued',
+        items: [makeEnqueueInput('A')],
+      });
+      const state = batchReducer(s1, {
+        type: 'manualParsedMany',
+        items: [
+          {
+            id: 'M1',
+            fileName: 'Pasted AI JSON #1',
+            parsed: fakeParsed,
+            pairResult: fakePairResult,
+          },
+          {
+            id: 'M2',
+            fileName: 'Pasted AI JSON #2',
+            parsed: fakeParsed,
+            pairResult: fakePairResult,
+          },
+        ],
+      });
+      expect(state.items.map((i) => i.id)).toEqual(['A', 'M1', 'M2']);
+      // Focuses the first of the freshly pasted batch, not the last.
+      expect(state.currentIndex).toBe(1);
+      expect(findItem(state, 'M1').source).toBe('manual-json');
+      expect(findItem(state, 'M2').status.kind).toBe('parsed');
+    });
+
+    it('is a no-op for empty input', () => {
+      const state = batchReducer(initialBatchState, { type: 'manualParsedMany', items: [] });
+      expect(state).toBe(initialBatchState);
     });
   });
 

@@ -245,4 +245,52 @@ describe('useBatchParser', () => {
       'Pasted AI JSON #3',
     ]);
   });
+
+  it('addParsedReceipts adds a whole array with sequential, non-colliding labels', () => {
+    const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+
+    act(() => {
+      result.current.addParsedReceipts([fakeParsed('A'), fakeParsed('B')]);
+    });
+
+    expect(result.current.state.items.map((i) => i.fileName)).toEqual([
+      'Pasted AI JSON #1',
+      'Pasted AI JSON #2',
+    ]);
+    expect(result.current.state.items.every((i) => i.source === 'manual-json')).toBe(true);
+    // Focuses the first of the freshly pasted batch.
+    expect(result.current.state.currentIndex).toBe(0);
+    expect(parseMock).not.toHaveBeenCalled();
+  });
+
+  it('addParsedReceipts continues numbering after prior manual pastes', () => {
+    const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+
+    act(() => {
+      result.current.addParsedReceipt(fakeParsed('First'));
+    });
+    act(() => {
+      result.current.addParsedReceipts([fakeParsed('Second'), fakeParsed('Third')]);
+    });
+
+    expect(result.current.state.items.map((i) => i.fileName)).toEqual([
+      'Pasted AI JSON #1',
+      'Pasted AI JSON #2',
+      'Pasted AI JSON #3',
+    ]);
+  });
+
+  it('addParsedReceipts with empty input is a no-op', () => {
+    const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+    act(() => {
+      result.current.addParsedReceipts([]);
+    });
+    expect(result.current.state.items).toHaveLength(0);
+  });
 });

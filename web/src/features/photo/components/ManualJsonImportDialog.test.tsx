@@ -112,7 +112,9 @@ describe('ManualJsonImportDialog', () => {
     fireEvent.change(screen.getByLabelText('JSON'), { target: { value: validReceiptJson } });
     fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
     expect(onImported).toHaveBeenCalledOnce();
-    expect(onImported.mock.calls[0]![0]).toMatchObject({
+    const importedSingle = onImported.mock.calls[0]![0] as unknown[];
+    expect(importedSingle).toHaveLength(1);
+    expect(importedSingle[0]).toMatchObject({
       store: 'Lidl',
       store_address: 'Hauptstr. 1',
       date: '2026-05-25',
@@ -120,6 +122,53 @@ describe('ManualJsonImportDialog', () => {
       currency: 'EUR',
     });
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('imports a top-level array as multiple receipts', () => {
+    const onImported = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={onClose}
+        onImported={onImported}
+      />,
+    );
+    const arrayJson = JSON.stringify([
+      JSON.parse(validReceiptJson),
+      { ...JSON.parse(validReceiptJson), store: 'Aldi', date: '2026-05-26' },
+    ]);
+    fireEvent.change(screen.getByLabelText('JSON'), { target: { value: arrayJson } });
+    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    expect(onImported).toHaveBeenCalledOnce();
+    const imported = onImported.mock.calls[0]![0] as { store: string }[];
+    expect(imported).toHaveLength(2);
+    expect(imported.map((r) => r.store)).toEqual(['Lidl', 'Aldi']);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('blocks the whole array when one receipt is invalid and labels the bad index', () => {
+    const onImported = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={noop}
+        onImported={onImported}
+      />,
+    );
+    const arrayJson = JSON.stringify([
+      JSON.parse(validReceiptJson),
+      { ...JSON.parse(validReceiptJson), currency: undefined },
+    ]);
+    fireEvent.change(screen.getByLabelText('JSON'), { target: { value: arrayJson } });
+    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    expect(onImported).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/Чек #2/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/currency/);
   });
 
   it('resets error and copyState on close but preserves jsonText', () => {
