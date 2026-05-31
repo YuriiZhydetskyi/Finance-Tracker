@@ -3,7 +3,12 @@ import { detectPairs, type ParsedReceipt } from '@finance-tracker/domain';
 import { useParseReceiptMutation } from '../api/use-parse-receipt-mutation';
 import { prepareFile } from '../utils/prepare-file';
 import { batchReducer } from './batch-reducer';
-import { initialBatchState, type BatchEnqueueInput, type BatchItem } from './types';
+import {
+  initialBatchState,
+  PASTED_JSON_LABEL,
+  type BatchEnqueueInput,
+  type BatchItem,
+} from './types';
 
 type UseBatchParserOptions = {
   categories: string[];
@@ -83,10 +88,11 @@ export function useBatchParser(opts: UseBatchParserOptions) {
   }, []);
 
   const addParsedReceipt = useCallback((parsed: ParsedReceipt) => {
+    const seq = itemsRef.current.filter((i) => i.source === 'manual-json').length + 1;
     dispatch({
       type: 'manualParsed',
       id: crypto.randomUUID(),
-      fileName: 'Pasted AI JSON',
+      fileName: `${PASTED_JSON_LABEL} #${seq}`,
       parsed,
       pairResult: detectPairs(parsed.items),
     });

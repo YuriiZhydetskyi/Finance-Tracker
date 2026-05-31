@@ -221,5 +221,28 @@ describe('useBatchParser', () => {
     expect(parseMock).not.toHaveBeenCalled();
     expect(item.source).toBe('manual-json');
     expect(item.status.kind).toBe('parsed');
+    expect(item.fileName).toBe('Pasted AI JSON #1');
+  });
+
+  it('addParsedReceipt numbers repeat pastes so carousel labels stay distinguishable', () => {
+    const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+
+    act(() => {
+      result.current.addParsedReceipt(fakeParsed('First'));
+    });
+    act(() => {
+      result.current.addParsedReceipt(fakeParsed('Second'));
+    });
+    act(() => {
+      result.current.addParsedReceipt(fakeParsed('Third'));
+    });
+
+    expect(result.current.state.items.map((i) => i.fileName)).toEqual([
+      'Pasted AI JSON #1',
+      'Pasted AI JSON #2',
+      'Pasted AI JSON #3',
+    ]);
   });
 });

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { ParsedReceiptSchema, type ParsedReceipt } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
 
@@ -29,10 +29,16 @@ const EXAMPLE_JSON = `{
   ]
 }`;
 
+// Cap at 50 names: keeps the prompt under typical ~8k-token context windows
+// for external AI tools (ChatGPT/Claude desktop) when the product catalog grows.
+const PRODUCT_HINT_LIMIT = 50;
+
+const COPY_RESET_MS = 2000;
+
 function buildPrompt(categories: string[], products: { name: string }[]): string {
   const categoryList = categories.length > 0 ? categories.join(', ') : 'No categories supplied';
   const productHints = products
-    .slice(0, 50)
+    .slice(0, PRODUCT_HINT_LIMIT)
     .map((p) => p.name)
     .join(', ');
 
@@ -64,24 +70,26 @@ function buildPrompt(categories: string[], products: { name: string }[]): string
   ].join('\n');
 }
 
-function normalizeCandidate(value: unknown): unknown {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const record = value as Record<string, unknown>;
-    if (
-      record.receipt &&
-      typeof record.receipt === 'object' &&
-      !Array.isArray(record.receipt) &&
-      Array.isArray(record.items)
-    ) {
-      return { ...(record.receipt as Record<string, unknown>), items: record.items };
-    }
-  }
-  return value;
+export function normalizeCandidate(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const record = value as Record<string, unknown>;
+  const receipt =
+    record.receipt && typeof record.receipt === 'object' && !Array.isArray(record.receipt)
+      ? (record.receipt as Record<string, unknown>)
+      : null;
+  if (!receipt) return value;
+
+  const topItems = Array.isArray(record.items) ? (record.items as unknown[]) : null;
+  const nestedItems = Array.isArray(receipt.items) ? (receipt.items as unknown[]) : null;
+  const items = topItems ?? nestedItems;
+  if (!items) return value;
+
+  return { ...receipt, items };
 }
 
-function parseJsonText(text: string): unknown {
+export function parseJsonText(text: string): unknown {
   const trimmed = text.trim();
-  if (!trimmed) throw new Error('Paste JSON first.');
+  if (!trimmed) throw new Error('Спочатку вставте JSON.');
 
   const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(trimmed);
   const candidate = fenced?.[1]?.trim() ?? trimmed;
@@ -89,22 +97,52 @@ function parseJsonText(text: string): unknown {
   try {
     return JSON.parse(candidate);
   } catch {
+    // Best-effort recovery when JSON is surrounded by prose. Misbehaves when
+    // trailing prose also contains '}' (lastIndexOf overshoots) — rare in AI
+    // tool output. The inner parse is wrapped so users always see the friendly
+    // message instead of JSON.parse's positional native error.
     const start = candidate.indexOf('{');
     const end = candidate.lastIndexOf('}');
     if (start >= 0 && end > start) {
-      return JSON.parse(candidate.slice(start, end + 1));
+      try {
+        return JSON.parse(candidate.slice(start, end + 1));
+      } catch {
+        // fall through to friendly error
+      }
     }
-    throw new Error('Could not parse JSON.');
+    throw new Error('Не вдалося розпарсити JSON.');
   }
 }
 
 export function ManualJsonImportDialog({ open, categories, products, onClose, onImported }: Props) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const prompt = useMemo(() => buildPrompt(categories, products), [categories, products]);
   const [jsonText, setJsonText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
-  if (!open) return null;
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) dialog.showModal();
+    if (!open && dialog.open) dialog.close();
+  }, [open]);
+
+  useEffect(() => {
+    if (copyState === 'idle') return;
+    const id = window.setTimeout(() => setCopyState('idle'), COPY_RESET_MS);
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, [copyState]);
+
+  // jsonText is intentionally preserved across close/reopen so an accidental
+  // close doesn't wipe a paste the user is mid-way through validating.
+  const handleClose = () => {
+    setError(null);
+    setCopyState('idle');
+    onClose();
+  };
 
   const handleCopyPrompt = async () => {
     try {
@@ -123,32 +161,46 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
       const parsedJson = normalizeCandidate(parseJsonText(jsonText));
       const parsed = ParsedReceiptSchema.safeParse(parsedJson);
       if (!parsed.success) {
-        setError(parsed.error.issues.map((issue) => issue.message).join('; '));
+        setError(
+          parsed.error.issues
+            .map((issue) => {
+              const path = issue.path.join('.');
+              return path ? `${path}: ${issue.message}` : issue.message;
+            })
+            .join('; '),
+        );
         return;
       }
       onImported(parsed.data);
       setJsonText('');
-      onClose();
+      handleClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not parse JSON.');
+      setError(e instanceof Error ? e.message : 'Не вдалося розпарсити JSON.');
     }
   };
 
+  const handleBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
+    if (event.target === dialogRef.current) handleClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-3">
-      <form
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="manual-json-title"
-        onSubmit={handleSubmit}
-        className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-md bg-white shadow-xl"
-      >
+    <dialog
+      ref={dialogRef}
+      onCancel={(e) => {
+        e.preventDefault();
+        handleClose();
+      }}
+      onClick={handleBackdropClick}
+      aria-labelledby="manual-json-title"
+      className="max-h-[92vh] w-[min(96vw,64rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
+    >
+      <form onSubmit={handleSubmit} className="flex max-h-[92vh] flex-col overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <h2 id="manual-json-title" className="text-base font-semibold text-slate-900">
-            Paste AI JSON
+            Вставити AI JSON
           </h2>
-          <Button type="button" variant="ghost" onClick={onClose} className="px-3">
-            Close
+          <Button type="button" variant="ghost" onClick={handleClose} className="px-3">
+            Закрити
           </Button>
         </div>
 
@@ -160,10 +212,10 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
               </label>
               <Button type="button" variant="secondary" onClick={() => void handleCopyPrompt()}>
                 {copyState === 'copied'
-                  ? 'Copied'
+                  ? 'Скопійовано'
                   : copyState === 'failed'
-                    ? 'Copy failed'
-                    : 'Copy prompt'}
+                    ? 'Не вдалося скопіювати'
+                    : 'Скопіювати prompt'}
               </Button>
             </div>
             <textarea
@@ -199,12 +251,12 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
         </div>
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
+          <Button type="button" variant="ghost" onClick={handleClose}>
+            Скасувати
           </Button>
-          <Button type="submit">Preview receipt</Button>
+          <Button type="submit">Переглянути чек</Button>
         </div>
       </form>
-    </div>
+    </dialog>
   );
 }

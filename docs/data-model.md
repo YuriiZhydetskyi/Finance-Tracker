@@ -124,7 +124,7 @@ create table public.receipts (
   total_eur     numeric(12, 2) not null,
   paid_by       text not null check (paid_by like '%@%'),
   photo_url     text,
-  source        public.receipt_source not null,    -- enum: 'photo' | 'manual' | 'edit'
+  source        public.receipt_source not null,    -- enum: 'photo' | 'manual' | 'edit' | 'manual-json'
   raw_ocr_json  text check (raw_ocr_json is null or length(raw_ocr_json) <= 45000),
   note          text,
   created_at    timestamptz not null default now(),
@@ -132,22 +132,22 @@ create table public.receipts (
 );
 ```
 
-| Колонка        | Тип           | Nullable | Правила                                                                                              | Приклад                                                                                  |
-| -------------- | ------------- | -------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `id`           | text (ULID)   | ні       | 26 символів                                                                                          | `01HM4N6RXX5K2P9F8DZ7QWERTY`                                                             |
-| `date`         | date          | ні       | ISO 8601 yyyy-mm-dd                                                                                  | `2026-05-04`                                                                             |
-| `store`        | text          | ні       | вільний текст; рекомендована soft-нормалізація на UI                                                 | `ALDI Süd`                                                                               |
-| `currency`     | text          | ні       | ISO 4217                                                                                             | `EUR` / `UAH`                                                                            |
-| `total_orig`   | numeric(12,2) | ні       | у валюті чеку, 2dp                                                                                   | `34.78`                                                                                  |
-| `fx_rate_eur`  | numeric(14,6) | ні       | курс currency→EUR на дату чеку, 6dp; > 0                                                             | `1.000000` (EUR) / `0.024500` (UAH)                                                      |
-| `total_eur`    | numeric(12,2) | ні       | `round(total_orig * fx_rate_eur, 2)`                                                                 | `34.78`                                                                                  |
-| `paid_by`      | text (email)  | ні       | гілд-перевірка `like '%@%'`                                                                          | `you@example.com`                                                                         |
-| `photo_url`    | text          | так      | signed URL з Storage; TTL 1 година (re-sign on display)                                              | `https://<your-project-ref>.supabase.co/storage/v1/object/sign/receipts/...?token=...` |
-| `source`       | enum          | ні       | `'photo' \| 'manual' \| 'edit'`                                                                      | `photo`                                                                                  |
-| `raw_ocr_json` | text          | так      | JSON-stringify ParsedReceipt; **обмежено 45,000 chars**; null коли source=manual або занадто великий | `{"store":"Lidl","items":[...]}`                                                         |
-| `note`         | text          | так      | вільна нотатка                                                                                       | `Закупка для вечірки`                                                                    |
-| `created_at`   | timestamptz   | ні       | default `now()`                                                                                      | `2026-05-04T14:30:00+02:00`                                                              |
-| `updated_at`   | timestamptz   | ні       | trigger `set_updated_at()` оновлює на UPDATE                                                         |                                                                                          |
+| Колонка        | Тип           | Nullable | Правила                                                                                                                                                                     | Приклад                                                                                |
+| -------------- | ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `id`           | text (ULID)   | ні       | 26 символів                                                                                                                                                                 | `01HM4N6RXX5K2P9F8DZ7QWERTY`                                                           |
+| `date`         | date          | ні       | ISO 8601 yyyy-mm-dd                                                                                                                                                         | `2026-05-04`                                                                           |
+| `store`        | text          | ні       | вільний текст; рекомендована soft-нормалізація на UI                                                                                                                        | `ALDI Süd`                                                                             |
+| `currency`     | text          | ні       | ISO 4217                                                                                                                                                                    | `EUR` / `UAH`                                                                          |
+| `total_orig`   | numeric(12,2) | ні       | у валюті чеку, 2dp                                                                                                                                                          | `34.78`                                                                                |
+| `fx_rate_eur`  | numeric(14,6) | ні       | курс currency→EUR на дату чеку, 6dp; > 0                                                                                                                                    | `1.000000` (EUR) / `0.024500` (UAH)                                                    |
+| `total_eur`    | numeric(12,2) | ні       | `round(total_orig * fx_rate_eur, 2)`                                                                                                                                        | `34.78`                                                                                |
+| `paid_by`      | text (email)  | ні       | гілд-перевірка `like '%@%'`                                                                                                                                                 | `you@example.com`                                                                      |
+| `photo_url`    | text          | так      | signed URL з Storage; TTL 1 година (re-sign on display)                                                                                                                     | `https://<your-project-ref>.supabase.co/storage/v1/object/sign/receipts/...?token=...` |
+| `source`       | enum          | ні       | `'photo' \| 'manual' \| 'edit' \| 'manual-json'` (`manual-json` — користувач сам прогнав prompt у external AI tool і вставив JSON через діалог "Paste AI JSON" на `/photo`) | `photo`                                                                                |
+| `raw_ocr_json` | text          | так      | JSON-stringify ParsedReceipt; **обмежено 45,000 chars**; null коли source=manual або занадто великий (для source=photo та source=manual-json — збережено)                   | `{"store":"Lidl","items":[...]}`                                                       |
+| `note`         | text          | так      | вільна нотатка                                                                                                                                                              | `Закупка для вечірки`                                                                  |
+| `created_at`   | timestamptz   | ні       | default `now()`                                                                                                                                                             | `2026-05-04T14:30:00+02:00`                                                            |
+| `updated_at`   | timestamptz   | ні       | trigger `set_updated_at()` оновлює на UPDATE                                                                                                                                |                                                                                        |
 
 **Інваріанти:**
 
@@ -311,8 +311,8 @@ create table public.app_users (
 );
 ```
 
-| Колонка | Тип       | Приклад          |
-| ------- | --------- | ---------------- |
+| Колонка | Тип       | Приклад           |
+| ------- | --------- | ----------------- |
 | `email` | text (PK) | `you@example.com` |
 
 **Правила:**

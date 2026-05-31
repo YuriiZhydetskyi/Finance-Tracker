@@ -155,6 +155,7 @@ export function BatchReviewCarousel({ batch }: Props) {
         </Button>
         <div className="flex-1">
           <Slide
+            key={current.id}
             item={current}
             onRemove={() => removeItem(current.id)}
             onRetry={() => retryItem(current.id)}

@@ -358,7 +358,7 @@ export type Database = {
     };
     Enums: {
       product_unit: 'pcs' | 'g' | 'kg' | 'ml' | 'l';
-      receipt_source: 'photo' | 'manual' | 'edit';
+      receipt_source: 'photo' | 'manual' | 'edit' | 'manual-json';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -488,7 +488,7 @@ export const Constants = {
   public: {
     Enums: {
       product_unit: ['pcs', 'g', 'kg', 'ml', 'l'],
-      receipt_source: ['photo', 'manual', 'edit'],
+      receipt_source: ['photo', 'manual', 'edit', 'manual-json'],
     },
   },
 } as const;

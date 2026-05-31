@@ -90,13 +90,15 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
     [pairResult.items],
   );
 
+  const receiptSource: 'photo' | 'manual-json' = photoBlob ? 'photo' : 'manual-json';
+
   const { methods, itemsArray } = useReceiptForm({
     date: parsed.date ?? todayIso(),
     time: parsed.time ?? null,
     store: parsed.store ?? '',
     store_address: parsed.store_address ?? null,
     currency: toFormCurrency(parsed.currency),
-    source: 'photo',
+    source: receiptSource,
     note: null,
     photo_url: null,
     raw_ocr_json: stringifyForOcr(parsed),
@@ -129,7 +131,7 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
       store_address: values.store_address ?? null,
       currency: values.currency,
       paid_by: values.paid_by,
-      source: 'photo' as const,
+      source: receiptSource,
       note: values.note ?? null,
       raw_ocr_json: values.raw_ocr_json ?? null,
     };

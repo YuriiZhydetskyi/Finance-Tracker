@@ -50,4 +50,6 @@ export type BatchAction =
 
 export const MAX_RETRY_ATTEMPTS = 2;
 
+export const PASTED_JSON_LABEL = 'Pasted AI JSON';
+
 export const initialBatchState: BatchState = { items: [], currentIndex: 0 };
