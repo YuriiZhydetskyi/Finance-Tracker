@@ -74,7 +74,7 @@ function PhotoFlow() {
         categories={categoryNames}
         products={productList}
         onClose={() => setJsonDialogOpen(false)}
-        onImported={(parsed) => batch.addParsedReceipt(parsed)}
+        onImported={(parsed) => batch.addParsedReceipts(parsed)}
       />
     </div>
   );

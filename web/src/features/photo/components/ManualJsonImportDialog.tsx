@@ -7,7 +7,7 @@ type Props = {
   categories: string[];
   products: { name: string }[];
   onClose: () => void;
-  onImported: (parsed: ParsedReceipt) => void;
+  onImported: (parsed: ParsedReceipt[]) => void;
 };
 
 const EXAMPLE_JSON = `{
@@ -48,6 +48,8 @@ function buildPrompt(categories: string[], products: { name: string }[]): string
     'The JSON must match this shape:',
     EXAMPLE_JSON,
     '',
+    'If several receipts are shown, return a JSON array of these objects instead of a single object.',
+    '',
     'Rules:',
     '- store: merchant name, or null if illegible.',
     '- store_address: printed address as one line, or null.',
@@ -85,6 +87,18 @@ export function normalizeCandidate(value: unknown): unknown {
   if (!items) return value;
 
   return { ...receipt, items };
+}
+
+// One pasted blob may hold a single receipt, a top-level array of receipts, or
+// a { receipts: [...] } wrapper. Always returns a flat list of receipt-shaped
+// candidates, each already run through normalizeCandidate.
+export function toReceiptCandidates(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value.map(normalizeCandidate);
+  if (value && typeof value === 'object') {
+    const receipts = (value as Record<string, unknown>).receipts;
+    if (Array.isArray(receipts)) return receipts.map(normalizeCandidate);
+  }
+  return [normalizeCandidate(value)];
 }
 
 export function parseJsonText(text: string): unknown {
@@ -158,20 +172,38 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
     setError(null);
 
     try {
-      const parsedJson = normalizeCandidate(parseJsonText(jsonText));
-      const parsed = ParsedReceiptSchema.safeParse(parsedJson);
-      if (!parsed.success) {
-        setError(
-          parsed.error.issues
-            .map((issue) => {
-              const path = issue.path.join('.');
-              return path ? `${path}: ${issue.message}` : issue.message;
-            })
-            .join('; '),
-        );
+      const candidates = toReceiptCandidates(parseJsonText(jsonText));
+      if (candidates.length === 0) {
+        setError('JSON не містить жодного чека.');
         return;
       }
-      onImported(parsed.data);
+
+      const receipts: ParsedReceipt[] = [];
+      const errors: string[] = [];
+      candidates.forEach((candidate, index) => {
+        const result = ParsedReceiptSchema.safeParse(candidate);
+        if (result.success) {
+          receipts.push(result.data);
+          return;
+        }
+        const detail = result.error.issues
+          .map((issue) => {
+            const path = issue.path.join('.');
+            return path ? `${path}: ${issue.message}` : issue.message;
+          })
+          .join('; ');
+        // Number the receipt only when there's more than one to disambiguate.
+        errors.push(candidates.length > 1 ? `Чек #${index + 1} — ${detail}` : detail);
+      });
+
+      // All-or-nothing: one bad receipt blocks the whole paste so the user fixes
+      // the source rather than silently importing a partial batch.
+      if (errors.length > 0) {
+        setError(errors.join('\n'));
+        return;
+      }
+
+      onImported(receipts);
       setJsonText('');
       handleClose();
     } catch (e) {
@@ -242,7 +274,7 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
             {error ? (
               <div
                 role="alert"
-                className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-800"
+                className="whitespace-pre-line rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-800"
               >
                 {error}
               </div>

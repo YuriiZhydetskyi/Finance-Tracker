@@ -62,6 +62,7 @@ function makeBatch(
   spies: {
     addFiles: ReturnType<typeof vi.fn>;
     addParsedReceipt: ReturnType<typeof vi.fn>;
+    addParsedReceipts: ReturnType<typeof vi.fn>;
     retryItem: ReturnType<typeof vi.fn>;
     removeItem: ReturnType<typeof vi.fn>;
     markSaved: ReturnType<typeof vi.fn>;
@@ -73,6 +74,7 @@ function makeBatch(
   const spies = {
     addFiles: vi.fn<(files: File[]) => Promise<void>>().mockResolvedValue(undefined),
     addParsedReceipt: vi.fn(),
+    addParsedReceipts: vi.fn(),
     retryItem: vi.fn(),
     removeItem: vi.fn(),
     markSaved: vi.fn(),
@@ -84,6 +86,7 @@ function makeBatch(
       state,
       addFiles: spies.addFiles,
       addParsedReceipt: spies.addParsedReceipt,
+      addParsedReceipts: spies.addParsedReceipts,
       retryItem: spies.retryItem,
       removeItem: spies.removeItem,
       markSaved: spies.markSaved,
