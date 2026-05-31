@@ -70,6 +70,12 @@ describe('ReceiptSchema', () => {
     );
   });
 
+  it('accepts all four source enum values', () => {
+    for (const source of ['photo', 'manual', 'edit', 'manual-json'] as const) {
+      expect(() => ReceiptSchema.parse(validReceipt({ source }))).not.toThrow();
+    }
+  });
+
   it('rejects email without @', () => {
     expect(() => ReceiptSchema.parse(validReceipt({ paid_by: 'noemailhere' }))).toThrow(/paid_by/);
   });

@@ -34,7 +34,7 @@ export const EMAIL_LIKE_SCHEMA = z
 export const CONSUMED_BY_SCHEMA = z.string().refine(isValidConsumedBy, {
   message: 'Invalid consumed_by. Expected: his | hers | shared | custom:N/M (N+M=100)',
 });
-export const SOURCE_SCHEMA = z.enum(['photo', 'manual', 'edit']);
+export const SOURCE_SCHEMA = z.enum(['photo', 'manual', 'edit', 'manual-json']);
 export const PRODUCT_UNIT_SCHEMA = z.enum(['pcs', 'g', 'kg', 'ml', 'l']);
 
 // ── Receipt ─────────────────────────────────────────────────────────────────

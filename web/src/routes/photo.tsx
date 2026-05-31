@@ -1,10 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { RequireAuth } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
-import { BatchReviewCarousel, PhotoPicker, useBatchParser } from '@/features/photo';
+import {
+  BatchReviewCarousel,
+  ManualJsonImportDialog,
+  PhotoPicker,
+  useBatchParser,
+} from '@/features/photo';
+import { Button } from '@/shared/ui/Button';
 
 const PhotoSearchSchema = z.object({}).optional();
 
@@ -24,6 +30,7 @@ function PhotoPage() {
 function PhotoFlow() {
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
+  const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
 
   const categoryNames = useMemo(
     () => categoriesQuery.data?.map((c) => c.name) ?? [],
@@ -51,11 +58,24 @@ function PhotoFlow() {
         </p>
       </div>
 
+      <div className="flex justify-end">
+        <Button type="button" variant="secondary" onClick={() => setJsonDialogOpen(true)}>
+          Paste AI JSON
+        </Button>
+      </div>
+
       {batch.state.items.length === 0 ? (
         <PhotoPicker onPicked={handlePicked} />
       ) : (
         <BatchReviewCarousel batch={batch} />
       )}
+      <ManualJsonImportDialog
+        open={jsonDialogOpen}
+        categories={categoryNames}
+        products={productList}
+        onClose={() => setJsonDialogOpen(false)}
+        onImported={(parsed) => batch.addParsedReceipt(parsed)}
+      />
     </div>
   );
 }

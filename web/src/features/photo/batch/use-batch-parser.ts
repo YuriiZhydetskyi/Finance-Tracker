@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { detectPairs } from '@finance-tracker/domain';
+import { detectPairs, type ParsedReceipt } from '@finance-tracker/domain';
 import { useParseReceiptMutation } from '../api/use-parse-receipt-mutation';
 import { prepareFile } from '../utils/prepare-file';
 import { batchReducer } from './batch-reducer';
-import { initialBatchState, type BatchEnqueueInput, type BatchItem } from './types';
+import {
+  initialBatchState,
+  PASTED_JSON_LABEL,
+  type BatchEnqueueInput,
+  type BatchItem,
+} from './types';
 
 type UseBatchParserOptions = {
   categories: string[];
@@ -82,6 +87,17 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     if (enqueueInputs.length > 0) dispatch({ type: 'enqueued', items: enqueueInputs });
   }, []);
 
+  const addParsedReceipt = useCallback((parsed: ParsedReceipt) => {
+    const seq = itemsRef.current.filter((i) => i.source === 'manual-json').length + 1;
+    dispatch({
+      type: 'manualParsed',
+      id: crypto.randomUUID(),
+      fileName: `${PASTED_JSON_LABEL} #${seq}`,
+      parsed,
+      pairResult: detectPairs(parsed.items),
+    });
+  }, []);
+
   const retryItem = useCallback((id: string) => {
     dispatch({ type: 'retry', id });
   }, []);
@@ -109,5 +125,5 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     dispatch({ type: 'reset' });
   }, []);
 
-  return { state, addFiles, retryItem, removeItem, markSaved, goto, reset };
+  return { state, addFiles, addParsedReceipt, retryItem, removeItem, markSaved, goto, reset };
 }

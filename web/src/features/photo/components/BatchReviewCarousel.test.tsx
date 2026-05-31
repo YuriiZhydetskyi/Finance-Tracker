@@ -46,6 +46,7 @@ function makeItem(id: string, status: BatchItem['status'], attempts = 0): BatchI
   return {
     id,
     fileName: `${id}.jpg`,
+    source: 'file',
     blob: new Blob(),
     previewUrl: `blob://${id}`,
     attempts,
@@ -60,6 +61,7 @@ function makeBatch(
   batch: Handle;
   spies: {
     addFiles: ReturnType<typeof vi.fn>;
+    addParsedReceipt: ReturnType<typeof vi.fn>;
     retryItem: ReturnType<typeof vi.fn>;
     removeItem: ReturnType<typeof vi.fn>;
     markSaved: ReturnType<typeof vi.fn>;
@@ -70,6 +72,7 @@ function makeBatch(
   const state: BatchState = { items, currentIndex };
   const spies = {
     addFiles: vi.fn<(files: File[]) => Promise<void>>().mockResolvedValue(undefined),
+    addParsedReceipt: vi.fn(),
     retryItem: vi.fn(),
     removeItem: vi.fn(),
     markSaved: vi.fn(),
@@ -80,6 +83,7 @@ function makeBatch(
     batch: {
       state,
       addFiles: spies.addFiles,
+      addParsedReceipt: spies.addParsedReceipt,
       retryItem: spies.retryItem,
       removeItem: spies.removeItem,
       markSaved: spies.markSaved,

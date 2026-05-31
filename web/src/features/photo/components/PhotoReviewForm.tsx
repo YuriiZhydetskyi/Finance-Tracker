@@ -19,6 +19,7 @@ import {
   SUPPORTED_CURRENCIES,
   useDuplicateReceipts,
   useReceiptForm,
+  useSaveReceiptMutation,
   type ItemFormValues,
   type SupportedCurrency,
 } from '@/features/receipts';
@@ -27,7 +28,7 @@ import { useSavePhotoReceiptMutation } from '../api/use-save-photo-receipt-mutat
 type Props = {
   parsed: ParsedReceipt;
   pairResult: PairDetectionResult;
-  photoBlob: Blob;
+  photoBlob?: Blob | null;
   onCancel: () => void;
   onSaved?: (receipt_id: string) => void;
 };
@@ -71,7 +72,8 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
   const appUsersQuery = useAppUsers();
-  const save = useSavePhotoReceiptMutation();
+  const savePhoto = useSavePhotoReceiptMutation();
+  const saveReceipt = useSaveReceiptMutation();
 
   const initialItems = useMemo(
     () =>
@@ -88,13 +90,15 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
     [pairResult.items],
   );
 
+  const receiptSource: 'photo' | 'manual-json' = photoBlob ? 'photo' : 'manual-json';
+
   const { methods, itemsArray } = useReceiptForm({
     date: parsed.date ?? todayIso(),
     time: parsed.time ?? null,
     store: parsed.store ?? '',
     store_address: parsed.store_address ?? null,
     currency: toFormCurrency(parsed.currency),
-    source: 'photo',
+    source: receiptSource,
     note: null,
     photo_url: null,
     raw_ocr_json: stringifyForOcr(parsed),
@@ -120,33 +124,37 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
   const visibleDuplicates = duplicatesDismissed ? [] : (duplicatesQuery.data ?? []);
 
   const onSubmit = methods.handleSubmit(async (values) => {
-    const result = await save.mutateAsync({
-      receipt: {
-        date: values.date,
-        time: values.time ?? null,
-        store: values.store,
-        store_address: values.store_address ?? null,
-        currency: values.currency,
-        paid_by: values.paid_by,
-        source: 'photo',
-        note: values.note ?? null,
-        raw_ocr_json: values.raw_ocr_json ?? null,
-      },
-      items: values.items.map((it) => ({
-        product_id: it.product_id ?? null,
-        product_name: it.product_name,
-        store_product_code: it.store_product_code ?? null,
-        category: it.category,
-        qty: it.qty,
-        unit_price_orig: it.unit_price_orig,
-        consumed_by: it.consumed_by,
-        note: it.note ?? null,
-        wasted_qty: it.wasted_qty ?? 0,
-        wasted_at: it.wasted_at ?? null,
-        discount_orig: it.discount_orig ?? 0,
-      })),
-      photoBlob,
-    });
+    const receipt = {
+      date: values.date,
+      time: values.time ?? null,
+      store: values.store,
+      store_address: values.store_address ?? null,
+      currency: values.currency,
+      paid_by: values.paid_by,
+      source: receiptSource,
+      note: values.note ?? null,
+      raw_ocr_json: values.raw_ocr_json ?? null,
+    };
+    const items = values.items.map((it) => ({
+      product_id: it.product_id ?? null,
+      product_name: it.product_name,
+      store_product_code: it.store_product_code ?? null,
+      category: it.category,
+      qty: it.qty,
+      unit_price_orig: it.unit_price_orig,
+      consumed_by: it.consumed_by,
+      note: it.note ?? null,
+      wasted_qty: it.wasted_qty ?? 0,
+      wasted_at: it.wasted_at ?? null,
+      discount_orig: it.discount_orig ?? 0,
+    }));
+
+    const result = photoBlob
+      ? await savePhoto.mutateAsync({ receipt, items, photoBlob })
+      : await saveReceipt.mutateAsync({
+          receipt: { ...receipt, photo_url: null },
+          items,
+        });
 
     if (onSaved) {
       onSaved(result.receipt_id);
@@ -163,6 +171,12 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
   const detectedCount = pairResult.items.length;
   const groupedPairs = rawItemCount - detectedCount;
   const diagnostics = useMemo(() => explainPairs(parsed.items), [parsed.items]);
+  const isSaving = savePhoto.isPending || saveReceipt.isPending;
+  const saveError = savePhoto.isError
+    ? savePhoto.error
+    : saveReceipt.isError
+      ? saveReceipt.error
+      : null;
 
   return (
     <FormProvider {...methods}>
@@ -206,13 +220,13 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
           categories={categoryNames}
           productNames={productNames}
           paidByOptions={paidByOptions}
-          saveError={save.isError ? save.error : null}
+          saveError={saveError}
           actions={
             <>
-              <Button type="submit" disabled={save.isPending}>
-                {save.isPending ? 'Зберігаю...' : 'Зберегти'}
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Зберігаю...' : 'Зберегти'}
               </Button>
-              <Button variant="ghost" type="button" onClick={onCancel} disabled={save.isPending}>
+              <Button variant="ghost" type="button" onClick={onCancel} disabled={isSaving}>
                 Скасувати
               </Button>
             </>

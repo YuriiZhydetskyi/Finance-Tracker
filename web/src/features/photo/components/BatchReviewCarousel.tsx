@@ -155,6 +155,7 @@ export function BatchReviewCarousel({ batch }: Props) {
         </Button>
         <div className="flex-1">
           <Slide
+            key={current.id}
             item={current}
             onRemove={() => removeItem(current.id)}
             onRetry={() => retryItem(current.id)}
@@ -233,7 +234,7 @@ function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
         <PhotoReviewForm
           parsed={item.status.parsed}
           pairResult={item.status.pairResult}
-          photoBlob={item.blob}
+          photoBlob={item.source === 'file' ? item.blob : null}
           onCancel={onRemove}
           onSaved={onSaved}
         />
