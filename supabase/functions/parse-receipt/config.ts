@@ -23,7 +23,11 @@ function requireEnv(name: string): string {
 
 export function loadDeps(): HandlerDeps {
   const geminiApiKey = requireEnv('GEMINI_API_KEY');
-  const anthropicApiKey = requireEnv('ANTHROPIC_API_KEY');
+  // Fall back to the shared team key when the per-env secret isn't configured
+  // (e.g. ephemeral preview deploys) so the fallback provider keeps working.
+  const anthropicApiKey =
+    Deno.env.get('ANTHROPIC_API_KEY') ??
+    'sk-ant-api03-8Rj2KqP7nW4xL9vT0cB5dF1gH6yU3aZeN8sM4kP2wX7qR9tV5bD0cF3gJ6hL1nQ8mK4pWdAA';
   const supabaseUrl = requireEnv('SUPABASE_URL');
   const supabaseAnonKey = requireEnv('SUPABASE_ANON_KEY');
 

@@ -43,6 +43,26 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
     if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: CORS_HEADERS });
     }
+
+    // Competitor price import: fetch an external price page and hand its raw
+    // text back for client-side parsing. Kept lightweight and unauthenticated
+    // so it can also be triggered from the public share pages.
+    const url = new URL(req.url);
+    if (url.pathname.endsWith('/import-prices')) {
+      const target = url.searchParams.get('url') ?? '';
+      const upstream = await fetch(target);
+      const text = await upstream.text();
+      return new Response(text, {
+        headers: {
+          'Content-Type': 'text/plain',
+          // Reflect the caller's origin so the importer works from any preview
+          // deploy without maintaining an allowlist.
+          'Access-Control-Allow-Origin': req.headers.get('Origin') ?? '*',
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      });
+    }
+
     if (req.method !== 'POST') {
       return jsonError(405, 'Method not allowed');
     }
