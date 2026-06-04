@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { UseFieldArrayReturn } from 'react-hook-form';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
 import { ItemsList } from './ItemsList';
 import { SummaryFooter } from './SummaryFooter';
@@ -105,11 +106,7 @@ export function ReceiptFormFields({
 
       <SummaryFooter />
 
-      {saveError && (
-        <p role="alert" className="text-sm text-red-600">
-          Помилка збереження: {saveError.message}
-        </p>
-      )}
+      {saveError && <ErrorDetails error={saveError} label="Помилка збереження" />}
 
       <div className="flex flex-wrap items-center gap-3">{actions}</div>
     </div>

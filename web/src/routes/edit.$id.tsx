@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { RequireAuth } from '@/features/auth';
 import { useReceipt, EditReceiptForm } from '@/features/receipts';
 
@@ -29,11 +30,7 @@ function EditView({ id }: { id: string }) {
       </div>
 
       {query.isLoading && <p className="text-sm text-slate-500">Завантажую...</p>}
-      {query.isError && (
-        <p role="alert" className="text-sm text-red-600">
-          Не вдалося завантажити: {query.error.message}
-        </p>
-      )}
+      {query.isError && <ErrorDetails error={query.error} label="Не вдалося завантажити" />}
       {query.isSuccess && !query.data && (
         <div className="rounded-md border border-slate-200 bg-white p-6 text-center">
           <p className="text-sm text-slate-700">Чек не знайдено.</p>

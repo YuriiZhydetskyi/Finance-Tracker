@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import type { ReactNode } from 'react';
 import { RequireAuth } from '@/features/auth';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import {
   ByCategoryChart,
   ByMonthChart,
@@ -74,8 +75,8 @@ function ChartState({
   }
   if (isError) {
     return (
-      <div role="alert" className="flex h-full items-center justify-center text-sm text-red-600">
-        Не вдалося завантажити: {error?.message ?? 'unknown error'}
+      <div className="flex h-full items-center justify-center overflow-auto p-2">
+        <ErrorDetails error={error} label="Не вдалося завантажити" className="max-w-full" />
       </div>
     );
   }

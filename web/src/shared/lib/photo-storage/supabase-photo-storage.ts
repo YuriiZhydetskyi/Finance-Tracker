@@ -1,6 +1,7 @@
 import { ulid } from '@finance-tracker/domain';
 import { supabase } from '../supabase-client';
 import { authService } from '../auth';
+import { wrapError } from '@/shared/utils/wrap-error';
 import type { IPhotoStorage, UploadedPhoto } from './photo-storage.types';
 
 const BUCKET = 'receipts';
@@ -42,7 +43,7 @@ export const supabasePhotoStorage: IPhotoStorage = {
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
       .upload(path, blob, { contentType, upsert: false });
-    if (uploadError) throw new Error(`Photo upload failed: ${uploadError.message}`);
+    if (uploadError) throw wrapError('Photo upload failed', uploadError);
 
     const { data: signed, error: signError } = await supabase.storage
       .from(BUCKET)
@@ -56,7 +57,9 @@ export const supabasePhotoStorage: IPhotoStorage = {
         .catch(() => {
           /* swallow — original error is more useful */
         });
-      throw new Error(`Photo URL signing failed: ${signError?.message ?? 'no data returned'}`);
+      throw new Error(`Photo URL signing failed: ${signError?.message ?? 'no data returned'}`, {
+        cause: signError,
+      });
     }
 
     return { path, signedUrl: signed.signedUrl };
@@ -65,13 +68,15 @@ export const supabasePhotoStorage: IPhotoStorage = {
   async getSignedUrl(path, ttlSec = DEFAULT_TTL_SEC) {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, ttlSec);
     if (error || !data) {
-      throw new Error(`Signed URL refresh failed: ${error?.message ?? 'no data returned'}`);
+      throw new Error(`Signed URL refresh failed: ${error?.message ?? 'no data returned'}`, {
+        cause: error,
+      });
     }
     return data.signedUrl;
   },
 
   async remove(path) {
     const { error } = await supabase.storage.from(BUCKET).remove([path]);
-    if (error) throw new Error(`Photo delete failed: ${error.message}`);
+    if (error) throw wrapError('Photo delete failed', error);
   },
 };

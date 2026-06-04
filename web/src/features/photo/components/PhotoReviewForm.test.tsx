@@ -21,6 +21,7 @@ type SavedPhotoReceipt = SavedReceipt & { photoBlob: Blob };
 
 const saveReceiptMock = vi.fn();
 const savePhotoMock = vi.fn();
+const savePendingMock = vi.fn();
 const navigateMock = vi.fn();
 
 // `@/features/receipts` barrel transitively imports supabase-client which
@@ -73,9 +74,19 @@ vi.mock('../api/use-save-photo-receipt-mutation', () => ({
   }),
 }));
 
+vi.mock('../api/use-save-pending-receipt-mutation', () => ({
+  useSavePendingReceiptMutation: () => ({
+    mutateAsync: savePendingMock,
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
 beforeEach(() => {
   saveReceiptMock.mockReset();
   savePhotoMock.mockReset();
+  savePendingMock.mockReset();
   navigateMock.mockReset();
 });
 
@@ -172,5 +183,42 @@ describe('PhotoReviewForm photoBlob branching', () => {
     const vars = savePhotoMock.mock.calls[0]![0] as SavedPhotoReceipt;
     expect(vars.receipt.source).toBe('photo');
     expect(vars.photoBlob).toBe(blob);
+  });
+
+  it('calls savePending (reuse photo, prefilled payer) when pendingParse is set', async () => {
+    savePendingMock.mockResolvedValue({ receipt_id: 'R3', items_count: 1 });
+    const blob = new Blob(['x'], { type: 'image/jpeg' });
+    const onCancel = vi.fn();
+    const onSaved = vi.fn();
+
+    render(
+      <PhotoReviewForm
+        parsed={parsedReceipt}
+        pairResult={pairResult}
+        photoBlob={blob}
+        presetPaidBy="her@example.com"
+        pendingParse={{ id: 'PP-1', photoPath: 'her@example.com/2026/06/x.jpg' }}
+        onCancel={onCancel}
+        onSaved={onSaved}
+      />,
+      { wrapper },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Зберегти/i }));
+
+    await waitFor(() => expect(savePendingMock).toHaveBeenCalledTimes(1));
+    expect(savePhotoMock).not.toHaveBeenCalled();
+    expect(saveReceiptMock).not.toHaveBeenCalled();
+    const vars = savePendingMock.mock.calls[0]![0] as {
+      receipt: { paid_by: string; source: string };
+      photoPath: string;
+      pendingId: string;
+    };
+    expect(vars).toMatchObject({
+      photoPath: 'her@example.com/2026/06/x.jpg',
+      pendingId: 'PP-1',
+    });
+    expect(vars.receipt.paid_by).toBe('her@example.com');
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('R3'));
   });
 });

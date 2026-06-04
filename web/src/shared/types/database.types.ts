@@ -142,6 +142,39 @@ export type Database = {
           },
         ];
       };
+      pending_parses: {
+        Row: {
+          attempts: number;
+          created_at: string;
+          error_message: string | null;
+          id: string;
+          original_filename: string | null;
+          paid_by: string;
+          photo_path: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          created_at?: string;
+          error_message?: string | null;
+          id: string;
+          original_filename?: string | null;
+          paid_by: string;
+          photo_path: string;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          created_at?: string;
+          error_message?: string | null;
+          id?: string;
+          original_filename?: string | null;
+          paid_by?: string;
+          photo_path?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       product_prices: {
         Row: {
           created_at: string;

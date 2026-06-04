@@ -4,7 +4,7 @@
 >
 > Канонічні DDL — у [supabase/migrations/](../supabase/migrations/). Згенеровані TS-типи — у [web/src/shared/types/database.types.ts](../web/src/shared/types/database.types.ts) (regenerate через `npx supabase gen types typescript --linked`). Zod-схеми (in-app валідація + factories) — у [packages/domain/src/schemas.ts](../packages/domain/src/schemas.ts).
 
-Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
+Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + `pending_parses` (черга невдалих парсингів) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
 
 Чому Postgres + Supabase замість Sheets — див. [ADR-0013](decisions/0013-migrate-to-react-supabase.md). Курси валют **не зберігаються** в окремій таблиці — конвертація відбувається on-the-fly при збереженні чеку через NBU API; курс фіксується назавжди на самому Receipt-рядку як audit trail (ADR-0004).
 
@@ -89,7 +89,7 @@ as $$ select exists (select 1 from public.app_users where email = (auth.jwt() ->
 
 Policies:
 
-- `receipts`, `items`, `products` — full read+write для allowlisted users.
+- `receipts`, `items`, `products`, `pending_parses` — full read+write для allowlisted users.
 - `categories` — read-only для allowlisted users; mutate тільки через Studio SQL editor.
 - `app_users` — self-read (`email = auth.jwt() ->> 'email'`); mutate тільки через Studio.
 - `storage.objects` для bucket_id `receipts` — full read+write для allowlisted users.
@@ -324,6 +324,49 @@ create table public.app_users (
   ```
 - RLS policy `self_read_app_users` дозволяє користувачу читати ТІЛЬКИ свій рядок (для allowlist-перевірки у frontend через `useAllowlistCheck`).
 - Без `app_users`-row — `is_allowed_user()` повертає `false` → RLS блокує все.
+
+---
+
+## Таблиця `pending_parses`
+
+Персистентна **черга невдалих парсингів**. Один рядок = одне фото чеку, яке AI не зміг розпізнати і яке чекає повторної спроби. Окрема таблиця (а не прапорець на `receipts`), бо впалий парсинг не має ні `total_orig`, ні `items`, ні курсу — це засмітило б `receipts` і stats-в'юхи. Наявність рядка = «чекає»; колонки `status` немає.
+
+Міграція: [`supabase/migrations/20260604000001_add_pending_parses.sql`](../supabase/migrations/20260604000001_add_pending_parses.sql).
+
+```sql
+create table public.pending_parses (
+  id                text primary key,            -- ULID
+  photo_path        text not null,               -- Storage path, НЕ signed URL
+  paid_by           text not null check (paid_by like '%@%'),
+  error_message     text,
+  attempts          integer not null default 0,
+  original_filename text,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
+);
+```
+
+| Колонка             | Тип         | Nullable       | Правила / Примітка                                                              |
+| ------------------- | ----------- | -------------- | ------------------------------------------------------------------------------- |
+| `id`                | text (ULID) | ні             | client-generated                                                                |
+| `photo_path`        | text        | ні             | Storage path `{email}/{yyyy}/{mm}/{ulid}.{ext}` — re-sign on demand, **не** URL |
+| `paid_by`           | text(email) | ні             | хто оплатив — зафіксовано при завантаженні (per-photo), `like '%@%'`            |
+| `error_message`     | text        | так            | serialized `ErrorDetail` останньої спроби (для показу на `/pending`)            |
+| `attempts`          | integer     | ні (default 0) | скільки разів парсинг падав                                                     |
+| `original_filename` | text        | так            | для відображення у списку                                                       |
+| `created_at`        | timestamptz | ні             | default `now()`                                                                 |
+| `updated_at`        | timestamptz | ні             | trigger `set_updated_at()`                                                      |
+
+**RLS:** `enable row level security` + одна policy `allowlist_all_pending_parses` (full read+write для allowlisted users, gated через `is_allowed_user()`). Індекс `idx_pending_parses_created_at` (created_at desc).
+
+**Lifecycle фото (важливо — щоб не плодити orphan-blob-и):**
+
+- Парсинг впав і вичерпано retry → фото заливається в Storage (раніше воно ніколи не заливалось на впалих) + створюється рядок із `photo_path` і `paid_by`. Логіка у [`useCreatePendingParseMutation`](../web/src/features/pending-parses/api/use-create-pending-parse-mutation.ts), тригер — у [`use-batch-parser.ts`](../web/src/features/photo/batch/use-batch-parser.ts) (auto-persist коли `attempts >= MAX_RETRY_ATTEMPTS`).
+- Re-parse + збереження чеку → receipt **переюзовує те саме фото** (re-sign наявного `photo_path`, без повторної заливки — [`useSavePendingReceiptMutation`](../web/src/features/photo/api/use-save-pending-receipt-mutation.ts)); рядок `pending_parses` видаляється, blob лишається за чеком.
+- Re-parse знову впав → `attempts++` (`useIncrementPendingAttemptsMutation`), рядок і фото лишаються.
+- «Відкинути» на `/pending` → видаляється і рядок, і blob.
+
+Entry-point — окремий роут [`/pending`](../web/src/routes/pending.tsx) + лічильник на головній. Re-parse переюзовує наявну `BatchReviewCarousel` з передзаповненим `paid_by`.
 
 ---
 

@@ -2,7 +2,9 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Останнє оновлення:** 2026-05-18 (Waste tracking page — окрема сторінка `/waste` для позначення зіпсованого, замість редагування `wasted_qty` всередині форм чеків; `wasted_at` колонка + view `v_stats_waste_by_month`)
+**Останнє оновлення:** 2026-06-04 (Failed-parse queue — нова таблиця `pending_parses` + роут `/pending`. `paid_by` обирається per-photo при завантаженні (`PhotoUploadAssign`); коли AI-парсинг падає і вичерпано retry, фото + payer + помилка зберігаються в чергу; на `/pending` чек можна розпарсити заново, не вводячи payer. Фото переюзовується при re-parse, без дублікатів у Storage. Деталі — [data-model.md](data-model.md) «Таблиця pending_parses».)
+
+**Попереднє:** 2026-05-18 (Waste tracking page — окрема сторінка `/waste` для позначення зіпсованого, замість редагування `wasted_qty` всередині форм чеків; `wasted_at` колонка + view `v_stats_waste_by_month`)
 
 **Production URL:** https://<your-app>.pages.dev (stable production alias; `<hash>.<your-app>.pages.dev` — preview-deployment URLs з кожного pushed коміту)
 
@@ -49,12 +51,12 @@ ESLint 9.x (не 10) — `eslint-plugin-react@7.37.5` ще не оновився
 
 ### Backend / платформа
 
-| Сервіс           | Налаштування                                                                                                                                  |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Supabase project | `<your-project-ref>` (eu-west-2 за замовчуванням; перевірити у Settings → Infrastructure)                                                   |
-| Supabase CLI     | 2.98.x як devDep, для `db push` / `gen types` / `functions deploy`                                                                            |
-| AI               | Gemini Flash primary + Claude Sonnet 4.6 fallback (порт ADR-0011) — реалізація Phase 7                                                        |
-| FX               | NBU live rates для UAH — клієнт-сайд (CORS-open public API) — Phase 5                                                                         |
+| Сервіс           | Налаштування                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Supabase project | `<your-project-ref>` (eu-west-2 за замовчуванням; перевірити у Settings → Infrastructure)                                            |
+| Supabase CLI     | 2.98.x як devDep, для `db push` / `gen types` / `functions deploy`                                                                   |
+| AI               | Gemini Flash primary + Claude Sonnet 4.6 fallback (порт ADR-0011) — реалізація Phase 7                                               |
+| FX               | NBU live rates для UAH — клієнт-сайд (CORS-open public API) — Phase 5                                                                |
 | Hosting          | Cloudflare Pages: `<your-app>.pages.dev`. Edge Function `parse-receipt` задеплоєно у Supabase. CI/CD: `.github/workflows/deploy.yml` |
 
 ---
@@ -388,3 +390,4 @@ supabase functions serve parse-receipt --env-file supabase/.env.local           
 13. **Cloudflare Pages «Connect GitHub» loop.** CF GitHub-app має відомий баг: іноді натискання «Connect GitHub» закидає у нескінченний loop redirect-у на GitHub permissions сторінку де немає чого клацати. Uninstall + re-install GitHub app не допомагає, інший браузер не допомагає. Workaround: повний обхід через wrangler CLI + GitHub Actions замість CF auto-build. Documented у [`deploy.md`](deploy.md) разом з усією deploy-топологією.
 14. **Vite `VITE_*` env vars — build-time, не runtime.** `import.meta.env.VITE_X` буквально замінюється на string у згенерованому JS під час `vite build`. Після цього бандл — статичні файли, ніяких env-lookup-ів. Тому у direct-upload deploy-моделі (як у нас) Cloudflare Pages dashboard env vars **ігноруються** — vars мають бути у середовищі того, хто білдить (`web/.env.local` локально, GitHub secrets у CI). У CF dashboard — нічого. Часта плутанина бо більшість hosting-платформ працює інакше.
 15. **Supabase anon key — public by design.** Префікс `VITE_` означає public-by-design (Vite inline'ить у клієнтський бандл). Anon key самий по собі = роль `anon` → RLS блокує все. Справжня авторизація — через JWT після magic link login + RLS policies. service_role key (який обходить RLS) — ніколи не у frontend; живе тільки у Supabase Edge Function secrets через `Deno.env.get`.
+16. **`react-hooks/set-state-in-effect` (ESLint) забороняє `setState` синхронно в тілі ефекту.** Виринуло у `PhotoUploadAssign` коли заповнювали дефолтні значення payer через `useEffect` після завантаження allowlist. Фікс — не зберігати дефолти у стані: тримати лише явні overrides (`Record<number,string>`), а ефективне значення рахувати на рендері як `override ?? defaultPayer`. Менше стану, нуль cascading renders, лінт зелений.

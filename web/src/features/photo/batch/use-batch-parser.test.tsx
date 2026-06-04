@@ -22,9 +22,17 @@ function defer<T>(): Deferred<T> {
 }
 
 const parseMock = vi.fn<(args: { blob: Blob }) => Promise<ParsedReceipt>>();
+const createPendingMock = vi.fn();
+const incrementAttemptsMock = vi.fn();
 
 vi.mock('../api/use-parse-receipt-mutation', () => ({
   useParseReceiptMutation: () => ({ mutateAsync: parseMock }),
+}));
+
+// Stub the queue mutations so the hook doesn't pull supabase into the test.
+vi.mock('@/features/pending-parses', () => ({
+  useCreatePendingParseMutation: () => ({ mutateAsync: createPendingMock }),
+  useIncrementPendingAttemptsMutation: () => ({ mutateAsync: incrementAttemptsMock }),
 }));
 
 vi.mock('../utils/prepare-file', () => ({
@@ -39,6 +47,10 @@ vi.mock('../utils/prepare-file', () => ({
 
 beforeEach(() => {
   parseMock.mockReset();
+  createPendingMock.mockReset();
+  createPendingMock.mockResolvedValue({ id: 'PP-1', photo_path: 'me@example.com/2026/06/x.jpg' });
+  incrementAttemptsMock.mockReset();
+  incrementAttemptsMock.mockResolvedValue(undefined);
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => 'blob://fake');
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 });
@@ -60,6 +72,10 @@ function makeFile(name: string): File {
   return new File(['x'], name, { type: 'image/jpeg' });
 }
 
+function addInput(name: string): { file: File; paidBy: string } {
+  return { file: makeFile(name), paidBy: 'me@example.com' };
+}
+
 describe('useBatchParser', () => {
   it('enqueues all files and starts parsing exactly one at a time (sequential)', async () => {
     const d1 = defer<ParsedReceipt>();
@@ -74,7 +90,7 @@ describe('useBatchParser', () => {
     });
 
     await act(async () => {
-      await result.current.addFiles([makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')]);
+      await result.current.addFiles([addInput('a.jpg'), addInput('b.jpg'), addInput('c.jpg')]);
     });
 
     await waitFor(() => {
@@ -96,7 +112,7 @@ describe('useBatchParser', () => {
     });
 
     await act(async () => {
-      await result.current.addFiles([makeFile('a.jpg'), makeFile('b.jpg')]);
+      await result.current.addFiles([addInput('a.jpg'), addInput('b.jpg')]);
     });
     await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
 
@@ -121,7 +137,7 @@ describe('useBatchParser', () => {
     });
 
     await act(async () => {
-      await result.current.addFiles([makeFile('a.jpg'), makeFile('b.jpg')]);
+      await result.current.addFiles([addInput('a.jpg'), addInput('b.jpg')]);
     });
     await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
 
@@ -147,7 +163,7 @@ describe('useBatchParser', () => {
     });
 
     await act(async () => {
-      await result.current.addFiles([makeFile('a.jpg')]);
+      await result.current.addFiles([addInput('a.jpg')]);
     });
     await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
 
@@ -168,6 +184,89 @@ describe('useBatchParser', () => {
     expect(result.current.state.items[0]!.attempts).toBe(2);
   });
 
+  it('persists to the queue after retries are exhausted, then marks the item archived', async () => {
+    const d1 = defer<ParsedReceipt>();
+    const d2 = defer<ParsedReceipt>();
+    parseMock.mockImplementationOnce(() => d1.promise);
+    parseMock.mockImplementationOnce(() => d2.promise);
+
+    const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+
+    await act(async () => {
+      await result.current.addFiles([addInput('a.jpg')]);
+    });
+    await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
+
+    // First failure — a retry still remains, so nothing is persisted yet.
+    await act(async () => {
+      d1.reject(new Error('boom 1'));
+      await d1.promise.catch(() => undefined);
+    });
+    await waitFor(() => expect(result.current.state.items[0]!.status.kind).toBe('parse-error'));
+    expect(createPendingMock).not.toHaveBeenCalled();
+
+    // Retry → second failure → retries exhausted → auto-persist to the queue.
+    act(() => {
+      result.current.retryItem(result.current.state.items[0]!.id);
+    });
+    await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      d2.reject(new Error('boom 2'));
+      await d2.promise.catch(() => undefined);
+    });
+
+    await waitFor(() => expect(createPendingMock).toHaveBeenCalledTimes(1));
+    expect(createPendingMock.mock.calls[0]![0]).toMatchObject({ paidBy: 'me@example.com' });
+    await waitFor(() => expect(result.current.state.items[0]!.status.kind).toBe('archived'));
+  });
+
+  it('bumps attempts on a re-parsed queue item that fails again (no new row)', async () => {
+    const d1 = defer<ParsedReceipt>();
+    const d2 = defer<ParsedReceipt>();
+    parseMock.mockImplementationOnce(() => d1.promise);
+    parseMock.mockImplementationOnce(() => d2.promise);
+
+    const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+
+    act(() => {
+      result.current.hydratePending([
+        {
+          pendingId: 'PP-7',
+          photoPath: 'me@example.com/2026/06/x.jpg',
+          paidBy: 'me@example.com',
+          fileName: 'x.jpg',
+          baseAttempts: 3,
+          blob: new Blob(['x'], { type: 'image/jpeg' }),
+        },
+      ]);
+    });
+    await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      d1.reject(new Error('still bad'));
+      await d1.promise.catch(() => undefined);
+    });
+    act(() => {
+      result.current.retryItem(result.current.state.items[0]!.id);
+    });
+    await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      d2.reject(new Error('still bad 2'));
+      await d2.promise.catch(() => undefined);
+    });
+
+    await waitFor(() => expect(incrementAttemptsMock).toHaveBeenCalledTimes(1));
+    // Cumulative: baseAttempts (3) + this session's 2 failed parses = 5.
+    expect(incrementAttemptsMock.mock.calls[0]![0]).toMatchObject({ id: 'PP-7', attempts: 5 });
+    expect(createPendingMock).not.toHaveBeenCalled();
+    // Stays in parse-error (row persists for a later /pending retry).
+    expect(result.current.state.items[0]!.status.kind).toBe('parse-error');
+  });
+
   it('removeItem on a parsing slot survives the eventual resolve (no zombie state)', async () => {
     const d1 = defer<ParsedReceipt>();
     const d2 = defer<ParsedReceipt>();
@@ -179,7 +278,7 @@ describe('useBatchParser', () => {
     });
 
     await act(async () => {
-      await result.current.addFiles([makeFile('a.jpg'), makeFile('b.jpg')]);
+      await result.current.addFiles([addInput('a.jpg'), addInput('b.jpg')]);
     });
     await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
 

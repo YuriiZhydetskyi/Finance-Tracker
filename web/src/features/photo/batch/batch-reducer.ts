@@ -3,6 +3,7 @@ import {
   type BatchAction,
   type BatchItem,
   type BatchState,
+  type HydratePendingInput,
   type ManualParsedInput,
 } from './types';
 
@@ -13,8 +14,25 @@ function makeManualItem(input: ManualParsedInput): BatchItem {
     source: 'manual-json',
     blob: new Blob([], { type: 'application/json' }),
     previewUrl: null,
+    // Manual-json receipts capture no payer up-front; the review form falls
+    // back to the current user.
+    paidBy: '',
     attempts: 0,
     status: { kind: 'parsed', parsed: input.parsed, pairResult: input.pairResult },
+  };
+}
+
+function makeHydratedItem(input: HydratePendingInput): BatchItem {
+  return {
+    id: input.id,
+    fileName: input.fileName,
+    source: 'file',
+    blob: input.blob,
+    previewUrl: input.previewUrl,
+    paidBy: input.paidBy,
+    pendingParse: input.pendingParse,
+    attempts: 0,
+    status: { kind: 'queued' },
   };
 }
 
@@ -43,6 +61,7 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
         source: 'file',
         blob: it.blob,
         previewUrl: it.previewUrl,
+        paidBy: it.paidBy,
         attempts: 0,
         status: { kind: 'queued' },
       }));
@@ -50,6 +69,15 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
       return {
         items: [...state.items, ...newItems],
         currentIndex: wasEmpty ? 0 : state.currentIndex,
+      };
+    }
+
+    case 'hydratePending': {
+      if (action.items.length === 0) return state;
+      // Focus the first of the freshly hydrated batch.
+      return {
+        items: [...state.items, ...action.items.map(makeHydratedItem)],
+        currentIndex: state.items.length,
       };
     }
 
@@ -80,13 +108,25 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
     case 'parseError':
       return mapItem(state, action.id, (item) => {
         if (item.status.kind !== 'parsing') return item;
-        return { ...item, status: { kind: 'parse-error', message: action.message } };
+        return { ...item, status: { kind: 'parse-error', detail: action.detail } };
       });
 
     case 'retry':
       return mapItem(state, action.id, (item) => {
         if (item.status.kind !== 'parse-error') return item;
         return { ...item, status: { kind: 'queued' } };
+      });
+
+    case 'archiveSuccess':
+      return mapItem(state, action.id, (item) => {
+        if (item.status.kind !== 'parse-error') return item;
+        // Photo is now safe in the queue — drop the in-memory blob/preview.
+        return {
+          ...item,
+          blob: new Blob(),
+          previewUrl: '',
+          status: { kind: 'archived', pendingId: action.pendingId },
+        };
       });
 
     case 'saveSuccess':

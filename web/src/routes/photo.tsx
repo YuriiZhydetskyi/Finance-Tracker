@@ -8,7 +8,9 @@ import {
   BatchReviewCarousel,
   ManualJsonImportDialog,
   PhotoPicker,
+  PhotoUploadAssign,
   useBatchParser,
+  type AddFileInput,
 } from '@/features/photo';
 import { Button } from '@/shared/ui/Button';
 
@@ -31,6 +33,9 @@ function PhotoFlow() {
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
   const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
+  // Files picked but not yet assigned a payer. While set, the assignment step
+  // is shown; both the initial picker and the carousel's "+ Додати ще" feed it.
+  const [filesToAssign, setFilesToAssign] = useState<File[] | null>(null);
 
   const categoryNames = useMemo(
     () => categoriesQuery.data?.map((c) => c.name) ?? [],
@@ -43,8 +48,9 @@ function PhotoFlow() {
 
   const batch = useBatchParser({ categories: categoryNames, products: productList });
 
-  const handlePicked = (files: File[]) => {
-    void batch.addFiles(files);
+  const handleConfirmPayers = (inputs: AddFileInput[]) => {
+    void batch.addFiles(inputs);
+    setFilesToAssign(null);
   };
 
   return (
@@ -64,10 +70,16 @@ function PhotoFlow() {
         </Button>
       </div>
 
-      {batch.state.items.length === 0 ? (
-        <PhotoPicker onPicked={handlePicked} />
+      {filesToAssign ? (
+        <PhotoUploadAssign
+          files={filesToAssign}
+          onConfirm={handleConfirmPayers}
+          onCancel={() => setFilesToAssign(null)}
+        />
+      ) : batch.state.items.length === 0 ? (
+        <PhotoPicker onPicked={setFilesToAssign} />
       ) : (
-        <BatchReviewCarousel batch={batch} />
+        <BatchReviewCarousel batch={batch} onPickMore={setFilesToAssign} />
       )}
       <ManualJsonImportDialog
         open={jsonDialogOpen}

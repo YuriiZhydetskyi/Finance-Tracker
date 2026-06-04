@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { RequireAuth } from '@/features/auth';
 import { useCategories } from '@/features/categories';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { formatMoney } from '@/shared/utils/format-money';
 import {
   WasteFiltersBar,
@@ -67,9 +68,7 @@ function WasteList() {
 
       {itemsQuery.isLoading && <p className="text-sm text-slate-500">Завантажую…</p>}
       {itemsQuery.isError && (
-        <p role="alert" className="text-sm text-red-600">
-          Не вдалося завантажити: {itemsQuery.error.message}
-        </p>
+        <ErrorDetails error={itemsQuery.error} label="Не вдалося завантажити" />
       )}
       {itemsQuery.isSuccess && itemsQuery.data.length === 0 && (
         <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">

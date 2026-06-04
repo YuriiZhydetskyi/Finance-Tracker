@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
+import { wrapError } from '@/shared/utils/wrap-error';
 import { categoriesQueryKey, type Category } from './use-categories';
 
 export type CreateCategoryVars = { name: string; group_name: string };
@@ -19,7 +20,7 @@ export function useCreateCategoryMutation() {
         .insert({ name: trimmed_name, group_name: trimmed_group })
         .select('name, group_name')
         .single();
-      if (error) throw new Error(`Category insert failed: ${error.message}`);
+      if (error) throw wrapError('Category insert failed', error);
       return data;
     },
     onSuccess: async () => {
