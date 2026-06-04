@@ -24,11 +24,19 @@ import {
   type SupportedCurrency,
 } from '@/features/receipts';
 import { useSavePhotoReceiptMutation } from '../api/use-save-photo-receipt-mutation';
+import { useSavePendingReceiptMutation } from '../api/use-save-pending-receipt-mutation';
 
 type Props = {
   parsed: ParsedReceipt;
   pairResult: PairDetectionResult;
   photoBlob?: Blob | null;
+  /** Pre-fills paid_by (captured per-photo at upload, or from the queue row). */
+  presetPaidBy?: string;
+  /**
+   * Set when re-parsing a queued photo: the photo already lives in Storage, so
+   * save reuses `photoPath` (no re-upload) and deletes the queue row `id`.
+   */
+  pendingParse?: { id: string; photoPath: string } | undefined;
   onCancel: () => void;
   onSaved?: (receipt_id: string) => void;
 };
@@ -67,13 +75,22 @@ function stringifyForOcr(parsed: ParsedReceipt): string | null {
   }
 }
 
-export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSaved }: Props) {
+export function PhotoReviewForm({
+  parsed,
+  pairResult,
+  photoBlob,
+  presetPaidBy,
+  pendingParse,
+  onCancel,
+  onSaved,
+}: Props) {
   const navigate = useNavigate();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
   const appUsersQuery = useAppUsers();
   const savePhoto = useSavePhotoReceiptMutation();
   const saveReceipt = useSaveReceiptMutation();
+  const savePending = useSavePendingReceiptMutation();
 
   const initialItems = useMemo(
     () =>
@@ -103,6 +120,9 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
     photo_url: null,
     raw_ocr_json: stringifyForOcr(parsed),
     items: initialItems,
+    // Only override when known — an empty preset would clobber the
+    // current-user default that useReceiptForm applies.
+    ...(presetPaidBy ? { paid_by: presetPaidBy } : {}),
   });
 
   const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
@@ -149,12 +169,19 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
       discount_orig: it.discount_orig ?? 0,
     }));
 
-    const result = photoBlob
-      ? await savePhoto.mutateAsync({ receipt, items, photoBlob })
-      : await saveReceipt.mutateAsync({
-          receipt: { ...receipt, photo_url: null },
+    const result = pendingParse
+      ? await savePending.mutateAsync({
+          receipt,
           items,
-        });
+          photoPath: pendingParse.photoPath,
+          pendingId: pendingParse.id,
+        })
+      : photoBlob
+        ? await savePhoto.mutateAsync({ receipt, items, photoBlob })
+        : await saveReceipt.mutateAsync({
+            receipt: { ...receipt, photo_url: null },
+            items,
+          });
 
     if (onSaved) {
       onSaved(result.receipt_id);
@@ -171,12 +198,14 @@ export function PhotoReviewForm({ parsed, pairResult, photoBlob, onCancel, onSav
   const detectedCount = pairResult.items.length;
   const groupedPairs = rawItemCount - detectedCount;
   const diagnostics = useMemo(() => explainPairs(parsed.items), [parsed.items]);
-  const isSaving = savePhoto.isPending || saveReceipt.isPending;
+  const isSaving = savePhoto.isPending || saveReceipt.isPending || savePending.isPending;
   const saveError = savePhoto.isError
     ? savePhoto.error
     : saveReceipt.isError
       ? saveReceipt.error
-      : null;
+      : savePending.isError
+        ? savePending.error
+        : null;
 
   return (
     <FormProvider {...methods}>

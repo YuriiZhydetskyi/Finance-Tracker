@@ -11,6 +11,12 @@ type BatchHandle = ReturnType<typeof useBatchParser>;
 
 type Props = {
   batch: BatchHandle;
+  /**
+   * When provided, shows "+ Додати ще" — the page routes picked files through
+   * the payer-assignment step (per-photo paid_by is captured before parsing).
+   * Omit (e.g. on /pending) to hide the control.
+   */
+  onPickMore?: (files: File[]) => void;
 };
 
 const AUTO_ADVANCE_MS = 800;
@@ -25,6 +31,8 @@ function statusLabel(item: BatchItem): string {
       return 'Готовий до огляду';
     case 'parse-error':
       return 'Помилка розпізнавання';
+    case 'archived':
+      return 'Збережено в чергу';
     case 'saved':
       return 'Збережено';
   }
@@ -42,24 +50,29 @@ function dotClass(item: BatchItem, isCurrent: boolean): string {
       return cn(base, ring, 'bg-green-500');
     case 'saved':
       return cn(base, ring, 'bg-green-700');
+    case 'archived':
+      return cn(base, ring, 'bg-amber-500');
     case 'parse-error':
       return cn(base, ring, 'bg-red-500');
   }
 }
 
-export function BatchReviewCarousel({ batch }: Props) {
-  const { state, addFiles, retryItem, removeItem, markSaved, goto, reset } = batch;
+export function BatchReviewCarousel({ batch, onPickMore }: Props) {
+  const { state, retryItem, deferItem, removeItem, markSaved, goto, reset } = batch;
   const { items, currentIndex } = state;
   const current = items[currentIndex];
 
   const summary = useMemo(() => {
     const total = items.length;
     const saved = items.filter((i) => i.status.kind === 'saved').length;
+    const archived = items.filter((i) => i.status.kind === 'archived').length;
     const failed = items.filter((i) => i.status.kind === 'parse-error').length;
-    return { total, saved, failed };
+    return { total, saved, archived, failed };
   }, [items]);
 
-  const allSaved = items.length > 0 && items.every((i) => i.status.kind === 'saved');
+  const allDone =
+    items.length > 0 &&
+    items.every((i) => i.status.kind === 'saved' || i.status.kind === 'archived');
 
   useEffect(() => {
     if (current?.status.kind !== 'saved') return;
@@ -71,7 +84,7 @@ export function BatchReviewCarousel({ batch }: Props) {
     };
   }, [current, currentIndex, items, goto]);
 
-  if (allSaved) {
+  if (allDone) {
     return (
       <div
         data-testid="batch-summary"
@@ -79,12 +92,24 @@ export function BatchReviewCarousel({ batch }: Props) {
       >
         <h2 className="text-lg font-semibold text-slate-900">
           Збережено {summary.saved} з {summary.total}
+          {summary.archived > 0 ? `, у черзі ${summary.archived}` : ''}
         </h2>
-        <p className="text-sm text-slate-600">Усі чеки з пачки записані.</p>
+        <p className="text-sm text-slate-600">
+          {summary.archived > 0
+            ? 'Частину чеків відкладено в чергу — розпарсиш їх пізніше.'
+            : 'Усі чеки з пачки записані.'}
+        </p>
         <div className="flex flex-wrap gap-2">
           <Link to="/recent">
             <Button type="button">Перейти до списку</Button>
           </Link>
+          {summary.archived > 0 ? (
+            <Link to="/pending">
+              <Button type="button" variant="secondary">
+                До черги
+              </Button>
+            </Link>
+          ) : null}
           <Button type="button" variant="ghost" onClick={reset}>
             Додати ще пачку
           </Button>
@@ -100,7 +125,7 @@ export function BatchReviewCarousel({ batch }: Props) {
 
   const handlePickMore = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    if (files.length > 0) void addFiles(files);
+    if (files.length > 0) onPickMore?.(files);
     e.target.value = '';
   };
 
@@ -115,18 +140,21 @@ export function BatchReviewCarousel({ batch }: Props) {
             <span className="ml-2 text-slate-500">
               {summary.saved} збережено
               {summary.failed > 0 ? `, ${summary.failed} помилок` : ''}
+              {summary.archived > 0 ? `, ${summary.archived} у черзі` : ''}
             </span>
           </div>
-          <label className="cursor-pointer text-sm font-medium text-slate-700 underline">
-            <input
-              type="file"
-              accept="image/*,application/pdf,.heic,.heif"
-              multiple
-              className="sr-only"
-              onChange={handlePickMore}
-            />
-            + Додати ще
-          </label>
+          {onPickMore ? (
+            <label className="cursor-pointer text-sm font-medium text-slate-700 underline">
+              <input
+                type="file"
+                accept="image/*,application/pdf,.heic,.heif"
+                multiple
+                className="sr-only"
+                onChange={handlePickMore}
+              />
+              + Додати ще
+            </label>
+          ) : null}
         </div>
         <div role="tablist" aria-label="Чеки в пачці" className="flex flex-wrap items-center gap-2">
           {items.map((it, idx) => (
@@ -160,6 +188,7 @@ export function BatchReviewCarousel({ batch }: Props) {
             item={current}
             onRemove={() => removeItem(current.id)}
             onRetry={() => retryItem(current.id)}
+            onDefer={() => deferItem(current.id)}
             onSaved={(receipt_id) => markSaved(current.id, receipt_id)}
           />
         </div>
@@ -182,6 +211,7 @@ type SlideProps = {
   item: BatchItem;
   onRemove: () => void;
   onRetry: () => void;
+  onDefer: () => void;
   onSaved: (receipt_id: string) => void;
 };
 
@@ -208,7 +238,7 @@ function FilePreview({ item }: { item: BatchItem }) {
   );
 }
 
-function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
+function Slide({ item, onRemove, onRetry, onDefer, onSaved }: SlideProps) {
   switch (item.status.kind) {
     case 'queued':
       return (
@@ -236,12 +266,17 @@ function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
           parsed={item.status.parsed}
           pairResult={item.status.pairResult}
           photoBlob={item.source === 'file' ? item.blob : null}
+          presetPaidBy={item.paidBy}
+          pendingParse={item.pendingParse}
           onCancel={onRemove}
           onSaved={onSaved}
         />
       );
     case 'parse-error': {
       const canRetry = item.attempts < MAX_RETRY_ATTEMPTS;
+      // Fresh photos can be parked in the queue early; items already in the
+      // queue (re-parse) have nothing to defer to.
+      const canDefer = canRetry && !item.pendingParse;
       return (
         <div className="space-y-3 rounded-md border border-red-300 bg-red-50 p-4">
           <ErrorDetails error={item.status.detail} label="Помилка розпізнавання" />
@@ -251,6 +286,11 @@ function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
                 Спробувати ще
               </Button>
             ) : null}
+            {canDefer ? (
+              <Button type="button" variant="secondary" onClick={onDefer}>
+                Відкласти в чергу
+              </Button>
+            ) : null}
             <Button type="button" variant="ghost" onClick={onRemove}>
               Видалити з пачки
             </Button>
@@ -258,6 +298,17 @@ function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
         </div>
       );
     }
+    case 'archived':
+      return (
+        <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <p>Чек збережено в чергу — розпарсиш пізніше на сторінці «Чеки з помилками».</p>
+          <Link to="/pending">
+            <Button type="button" variant="secondary">
+              До черги
+            </Button>
+          </Link>
+        </div>
+      );
     case 'saved':
       return (
         <div className="rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900">

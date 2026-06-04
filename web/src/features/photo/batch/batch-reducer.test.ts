@@ -14,6 +14,7 @@ function makeEnqueueInput(id: string, suffix = ''): BatchEnqueueInput {
     fileName: `${id}.jpg`,
     blob: new Blob([id + suffix], { type: 'image/jpeg' }),
     previewUrl: `blob://${id}`,
+    paidBy: 'payer@example.com',
   };
 }
 
@@ -44,6 +45,7 @@ describe('batchReducer', () => {
       expect(state.items.every((i) => i.status.kind === 'queued')).toBe(true);
       expect(state.items.every((i) => i.source === 'file')).toBe(true);
       expect(state.items.every((i) => i.attempts === 0)).toBe(true);
+      expect(state.items.every((i) => i.paidBy === 'payer@example.com')).toBe(true);
       expect(state.currentIndex).toBe(0);
     });
 
@@ -56,6 +58,7 @@ describe('batchReducer', () => {
             source: 'file',
             blob: new Blob(),
             previewUrl: '',
+            paidBy: 'payer@example.com',
             attempts: 0,
             status: { kind: 'queued' },
           },
@@ -167,6 +170,7 @@ describe('batchReducer', () => {
             source: 'file',
             blob: new Blob(),
             previewUrl: '',
+            paidBy: 'payer@example.com',
             attempts: 1,
             status: { kind: 'parsing' },
           },
@@ -393,6 +397,68 @@ describe('batchReducer', () => {
       });
       const s2 = batchReducer(s1, { type: 'reset' });
       expect(s2).toEqual(initialBatchState);
+    });
+  });
+
+  describe('hydratePending', () => {
+    it('appends queued items carrying paidBy + pendingParse and focuses the first new one', () => {
+      const s1 = batchReducer(initialBatchState, {
+        type: 'enqueued',
+        items: [makeEnqueueInput('A')],
+      });
+      const state = batchReducer(s1, {
+        type: 'hydratePending',
+        items: [
+          {
+            id: 'H1',
+            fileName: 'queued-1.jpg',
+            blob: new Blob(['h1'], { type: 'image/jpeg' }),
+            previewUrl: 'blob://h1',
+            paidBy: 'her@example.com',
+            pendingParse: { id: 'PP1', photoPath: 'her@example.com/2026/06/x.jpg' },
+          },
+        ],
+      });
+      expect(state.items.map((i) => i.id)).toEqual(['A', 'H1']);
+      expect(state.currentIndex).toBe(1);
+      const item = findItem(state, 'H1');
+      expect(item.status.kind).toBe('queued');
+      expect(item.source).toBe('file');
+      expect(item.paidBy).toBe('her@example.com');
+      expect(item.pendingParse).toEqual({ id: 'PP1', photoPath: 'her@example.com/2026/06/x.jpg' });
+    });
+
+    it('is a no-op for empty input', () => {
+      const state = batchReducer(initialBatchState, { type: 'hydratePending', items: [] });
+      expect(state).toBe(initialBatchState);
+    });
+  });
+
+  describe('archiveSuccess', () => {
+    it('flips parse-error → archived, clears blob/previewUrl, keeps pendingId', () => {
+      const s1 = batchReducer(initialBatchState, {
+        type: 'enqueued',
+        items: [makeEnqueueInput('A')],
+      });
+      const s2 = batchReducer(s1, { type: 'parseStart', id: 'A' });
+      const s3 = batchReducer(s2, { type: 'parseError', id: 'A', detail: { message: 'boom' } });
+      const s4 = batchReducer(s3, { type: 'archiveSuccess', id: 'A', pendingId: 'PP-9' });
+      const item = findItem(s4, 'A');
+      expect(item.status.kind).toBe('archived');
+      if (item.status.kind === 'archived') {
+        expect(item.status.pendingId).toBe('PP-9');
+      }
+      expect(item.blob.size).toBe(0);
+      expect(item.previewUrl).toBe('');
+    });
+
+    it('only transitions from parse-error', () => {
+      const s1 = batchReducer(initialBatchState, {
+        type: 'enqueued',
+        items: [makeEnqueueInput('A')],
+      });
+      const s2 = batchReducer(s1, { type: 'archiveSuccess', id: 'A', pendingId: 'PP-1' });
+      expect(findItem(s2, 'A').status.kind).toBe('queued');
     });
   });
 });

@@ -49,6 +49,7 @@ function makeItem(id: string, status: BatchItem['status'], attempts = 0): BatchI
     source: 'file',
     blob: new Blob(),
     previewUrl: `blob://${id}`,
+    paidBy: 'me@example.com',
     attempts,
     status,
   };
@@ -61,9 +62,11 @@ function makeBatch(
   batch: Handle;
   spies: {
     addFiles: ReturnType<typeof vi.fn>;
+    hydratePending: ReturnType<typeof vi.fn>;
     addParsedReceipt: ReturnType<typeof vi.fn>;
     addParsedReceipts: ReturnType<typeof vi.fn>;
     retryItem: ReturnType<typeof vi.fn>;
+    deferItem: ReturnType<typeof vi.fn>;
     removeItem: ReturnType<typeof vi.fn>;
     markSaved: ReturnType<typeof vi.fn>;
     goto: ReturnType<typeof vi.fn>;
@@ -72,10 +75,14 @@ function makeBatch(
 } {
   const state: BatchState = { items, currentIndex };
   const spies = {
-    addFiles: vi.fn<(files: File[]) => Promise<void>>().mockResolvedValue(undefined),
+    addFiles: vi
+      .fn<(inputs: { file: File; paidBy: string }[]) => Promise<void>>()
+      .mockResolvedValue(undefined),
+    hydratePending: vi.fn(),
     addParsedReceipt: vi.fn(),
     addParsedReceipts: vi.fn(),
     retryItem: vi.fn(),
+    deferItem: vi.fn(),
     removeItem: vi.fn(),
     markSaved: vi.fn(),
     goto: vi.fn(),
@@ -85,9 +92,11 @@ function makeBatch(
     batch: {
       state,
       addFiles: spies.addFiles,
+      hydratePending: spies.hydratePending,
       addParsedReceipt: spies.addParsedReceipt,
       addParsedReceipts: spies.addParsedReceipts,
       retryItem: spies.retryItem,
+      deferItem: spies.deferItem,
       removeItem: spies.removeItem,
       markSaved: spies.markSaved,
       goto: spies.goto,
@@ -251,5 +260,36 @@ describe('BatchReviewCarousel', () => {
       vi.advanceTimersByTime(2000);
     });
     expect(spies.goto).not.toHaveBeenCalled();
+  });
+
+  it('renders archived slide with a link to /pending', () => {
+    const { batch } = makeBatch(
+      [makeItem('A', { kind: 'archived', pendingId: 'P1' }), makeItem('B', { kind: 'queued' })],
+      0,
+    );
+    render(<BatchReviewCarousel batch={batch} />);
+    expect(screen.getByText(/Чек збережено в чергу/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /До черги/ })).toHaveAttribute('href', '/pending');
+  });
+
+  it('shows the defer button while retries remain and calls deferItem', async () => {
+    const user = userEvent.setup();
+    const { batch, spies } = makeBatch([
+      makeItem('A', { kind: 'parse-error', detail: { message: 'boom' } }, 1),
+    ]);
+    render(<BatchReviewCarousel batch={batch} />);
+    await user.click(screen.getByRole('button', { name: 'Відкласти в чергу' }));
+    expect(spies.deferItem).toHaveBeenCalledWith('A');
+  });
+
+  it('summary counts archived items and links to /pending', () => {
+    const { batch } = makeBatch([
+      makeItem('A', { kind: 'saved', receipt_id: 'R1' }),
+      makeItem('B', { kind: 'archived', pendingId: 'P1' }),
+    ]);
+    render(<BatchReviewCarousel batch={batch} />);
+    expect(screen.getByTestId('batch-summary')).toBeInTheDocument();
+    expect(screen.getByText(/Збережено 1 з 2, у черзі 1/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /До черги/ })).toHaveAttribute('href', '/pending');
   });
 });
