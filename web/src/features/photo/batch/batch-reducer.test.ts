@@ -415,7 +415,11 @@ describe('batchReducer', () => {
             blob: new Blob(['h1'], { type: 'image/jpeg' }),
             previewUrl: 'blob://h1',
             paidBy: 'her@example.com',
-            pendingParse: { id: 'PP1', photoPath: 'her@example.com/2026/06/x.jpg' },
+            pendingParse: {
+              id: 'PP1',
+              photoPath: 'her@example.com/2026/06/x.jpg',
+              baseAttempts: 2,
+            },
           },
         ],
       });
@@ -425,7 +429,11 @@ describe('batchReducer', () => {
       expect(item.status.kind).toBe('queued');
       expect(item.source).toBe('file');
       expect(item.paidBy).toBe('her@example.com');
-      expect(item.pendingParse).toEqual({ id: 'PP1', photoPath: 'her@example.com/2026/06/x.jpg' });
+      expect(item.pendingParse).toEqual({
+        id: 'PP1',
+        photoPath: 'her@example.com/2026/06/x.jpg',
+        baseAttempts: 2,
+      });
     });
 
     it('is a no-op for empty input', () => {

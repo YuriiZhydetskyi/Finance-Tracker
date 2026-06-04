@@ -149,6 +149,19 @@ describe('BatchReviewCarousel', () => {
     expect(screen.getByRole('button', { name: 'Видалити з пачки' })).toBeInTheDocument();
   });
 
+  it('keeps the defer button at MAX for a fresh item (re-trigger persist), calls deferItem', async () => {
+    const user = userEvent.setup();
+    const { batch, spies } = makeBatch([
+      makeItem('A', { kind: 'parse-error', detail: { message: 'final' } }, 2),
+    ]);
+    render(<BatchReviewCarousel batch={batch} />);
+    // Retries are gone, but the photo isn't queued yet — defer must remain so
+    // "Видалити" isn't the only option when auto-persist failed.
+    expect(screen.queryByRole('button', { name: 'Спробувати ще' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Відкласти в чергу' }));
+    expect(spies.deferItem).toHaveBeenCalledWith('A');
+  });
+
   it('Спробувати ще → calls retryItem with current id', async () => {
     const user = userEvent.setup();
     const { batch, spies } = makeBatch([

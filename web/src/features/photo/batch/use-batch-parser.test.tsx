@@ -239,6 +239,7 @@ describe('useBatchParser', () => {
           photoPath: 'me@example.com/2026/06/x.jpg',
           paidBy: 'me@example.com',
           fileName: 'x.jpg',
+          baseAttempts: 3,
           blob: new Blob(['x'], { type: 'image/jpeg' }),
         },
       ]);
@@ -259,7 +260,8 @@ describe('useBatchParser', () => {
     });
 
     await waitFor(() => expect(incrementAttemptsMock).toHaveBeenCalledTimes(1));
-    expect(incrementAttemptsMock.mock.calls[0]![0]).toMatchObject({ id: 'PP-7' });
+    // Cumulative: baseAttempts (3) + this session's 2 failed parses = 5.
+    expect(incrementAttemptsMock.mock.calls[0]![0]).toMatchObject({ id: 'PP-7', attempts: 5 });
     expect(createPendingMock).not.toHaveBeenCalled();
     // Stays in parse-error (row persists for a later /pending retry).
     expect(result.current.state.items[0]!.status.kind).toBe('parse-error');

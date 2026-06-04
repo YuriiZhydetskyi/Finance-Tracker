@@ -274,9 +274,12 @@ function Slide({ item, onRemove, onRetry, onDefer, onSaved }: SlideProps) {
       );
     case 'parse-error': {
       const canRetry = item.attempts < MAX_RETRY_ATTEMPTS;
-      // Fresh photos can be parked in the queue early; items already in the
-      // queue (re-parse) have nothing to defer to.
-      const canDefer = canRetry && !item.pendingParse;
+      // Fresh photos can always be parked in the queue: early (before retries
+      // run out) to bail without burning attempts, or — once retries are
+      // exhausted — to re-trigger the auto-persist if it failed, so the only
+      // remaining action isn't "delete and lose the photo". Items already in
+      // the queue (re-parse) have nothing to defer to.
+      const canDefer = !item.pendingParse;
       return (
         <div className="space-y-3 rounded-md border border-red-300 bg-red-50 p-4">
           <ErrorDetails error={item.status.detail} label="Помилка розпізнавання" />

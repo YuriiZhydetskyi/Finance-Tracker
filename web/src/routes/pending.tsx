@@ -62,6 +62,7 @@ function PendingFlow() {
         photoPath: row.photo_path,
         paidBy: row.paid_by,
         fileName: row.original_filename ?? 'Чек',
+        baseAttempts: row.attempts,
         blob: await fetchPendingBlob(row.photo_path),
       })),
     );

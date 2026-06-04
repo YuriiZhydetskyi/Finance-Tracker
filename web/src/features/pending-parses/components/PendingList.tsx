@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { photoStorage } from '@/shared/lib/dependencies';
 import { formatDate } from '@/shared/utils/format-date';
+import { isPdfPath } from '@/shared/utils/is-pdf-path';
 import { Button } from '@/shared/ui/Button';
 import type { PendingParseRow } from '../api/use-pending-parses';
 
@@ -14,20 +15,16 @@ type Props = {
   discardingId: string | null;
 };
 
-function isPdf(path: string): boolean {
-  return /\.pdf$/i.test(path);
-}
-
 function PendingThumbnail({ path }: { path: string }) {
   const { data: signedUrl } = useQuery({
     queryKey: ['pending-parse-thumb', path] as const,
     queryFn: () => photoStorage.getSignedUrl(path),
     // Signed URLs live 1h; refresh a bit earlier so the <img> never 403s.
     staleTime: 50 * 60_000,
-    enabled: !isPdf(path),
+    enabled: !isPdfPath(path),
   });
 
-  if (isPdf(path)) {
+  if (isPdfPath(path)) {
     return (
       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50">
         <span className="font-mono text-xs uppercase text-slate-500">PDF</span>

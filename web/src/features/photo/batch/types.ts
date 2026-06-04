@@ -9,6 +9,14 @@ export type BatchItemStatus =
   | { kind: 'archived'; pendingId: string }
   | { kind: 'saved'; receipt_id: string };
 
+/**
+ * Linkage to an existing failed-parse queue row, present when an item was
+ * hydrated from the queue for re-parsing. `baseAttempts` is the row's attempts
+ * count at hydration time, so a repeated failure can bump the DB value
+ * cumulatively (base + this session) rather than overwriting it.
+ */
+export type PendingParseRef = { id: string; photoPath: string; baseAttempts: number };
+
 export type BatchItem = {
   id: string;
   fileName: string;
@@ -28,7 +36,7 @@ export type BatchItem = {
    * deleted; on repeated failure the row's attempts are bumped instead of
    * creating a new row.
    */
-  pendingParse?: { id: string; photoPath: string };
+  pendingParse?: PendingParseRef;
   attempts: number;
   status: BatchItemStatus;
 };
@@ -52,7 +60,7 @@ export type HydratePendingInput = {
   blob: Blob;
   previewUrl: string | null;
   paidBy: string;
-  pendingParse: { id: string; photoPath: string };
+  pendingParse: PendingParseRef;
 };
 
 export type ManualParsedInput = {

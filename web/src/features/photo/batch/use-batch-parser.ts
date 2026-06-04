@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { detectPairs, type ParsedReceipt } from '@finance-tracker/domain';
 import { describeError, serializeErrorDetail } from '@/shared/utils/error-details';
+import { isPdfPath } from '@/shared/utils/is-pdf-path';
 import {
   useCreatePendingParseMutation,
   useIncrementPendingAttemptsMutation,
@@ -30,6 +31,8 @@ export type HydratePendingItem = {
   paidBy: string;
   fileName: string;
   blob: Blob;
+  /** The queue row's current attempts, so re-failures bump it cumulatively. */
+  baseAttempts: number;
 };
 
 export function useBatchParser(opts: UseBatchParserOptions) {
@@ -87,8 +90,10 @@ export function useBatchParser(opts: UseBatchParserOptions) {
       const errorMessage = serializeErrorDetail(item.status.detail);
 
       if (item.pendingParse) {
+        // Cumulative: the row's prior attempts plus the failures in this session.
+        const attempts = item.pendingParse.baseAttempts + item.attempts;
         void incrementAttempts
-          .mutateAsync({ id: item.pendingParse.id, attempts: item.attempts, errorMessage })
+          .mutateAsync({ id: item.pendingParse.id, attempts, errorMessage })
           .catch(() => {
             /* leave the card as-is; the row stays for a later retry from /pending */
           });
@@ -166,9 +171,13 @@ export function useBatchParser(opts: UseBatchParserOptions) {
           id: crypto.randomUUID(),
           fileName: it.fileName,
           blob: it.blob,
-          previewUrl: it.blob.type === 'application/pdf' ? null : URL.createObjectURL(it.blob),
+          previewUrl: isPdfPath(it.photoPath) ? null : URL.createObjectURL(it.blob),
           paidBy: it.paidBy,
-          pendingParse: { id: it.pendingId, photoPath: it.photoPath },
+          pendingParse: {
+            id: it.pendingId,
+            photoPath: it.photoPath,
+            baseAttempts: it.baseAttempts,
+          },
         }),
       ),
     });
