@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/shared/ui/Button';
 import { cn } from '@/shared/ui/cn';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import type { useBatchParser } from '../batch/use-batch-parser';
 import { MAX_RETRY_ATTEMPTS, type BatchItem } from '../batch/types';
 import { PhotoReviewForm } from './PhotoReviewForm';
@@ -243,9 +244,7 @@ function Slide({ item, onRemove, onRetry, onSaved }: SlideProps) {
       const canRetry = item.attempts < MAX_RETRY_ATTEMPTS;
       return (
         <div className="space-y-3 rounded-md border border-red-300 bg-red-50 p-4">
-          <div role="alert" className="text-sm text-red-800">
-            {item.status.message}
-          </div>
+          <ErrorDetails error={item.status.detail} label="Помилка розпізнавання" />
           <div className="flex flex-wrap gap-2">
             {canRetry ? (
               <Button type="button" onClick={onRetry}>

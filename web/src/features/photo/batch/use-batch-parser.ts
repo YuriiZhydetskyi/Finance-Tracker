@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { detectPairs, type ParsedReceipt } from '@finance-tracker/domain';
+import { describeError } from '@/shared/utils/error-details';
 import { useParseReceiptMutation } from '../api/use-parse-receipt-mutation';
 import { prepareFile } from '../utils/prepare-file';
 import { batchReducer } from './batch-reducer';
@@ -50,11 +51,7 @@ export function useBatchParser(opts: UseBatchParserOptions) {
       })
       .catch((e: unknown) => {
         inFlightRef.current = false;
-        dispatch({
-          type: 'parseError',
-          id: targetId,
-          message: e instanceof Error ? e.message : 'Не вдалося розпізнати чек.',
-        });
+        dispatch({ type: 'parseError', id: targetId, detail: describeError(e) });
       });
   }, [state.items, parseMutation, categories, products]);
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { roundQty } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { formatMoney } from '@/shared/utils/format-money';
 import { formatDate } from '@/shared/utils/format-date';
 import type { WasteItemRow } from '../api/use-waste-items';
@@ -120,11 +121,7 @@ export function WasteItemCard({ item }: Props) {
           Має бути число від 0 до {item.qty}.
         </p>
       )}
-      {mutation.isError && (
-        <p role="alert" className="mt-1 text-xs text-red-600">
-          {mutation.error.message}
-        </p>
-      )}
+      {mutation.isError && <ErrorDetails error={mutation.error} className="mt-1 text-xs" />}
 
       {hasWaste && (
         <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">

@@ -8,6 +8,7 @@ import {
 } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { fxRateProvider } from '@/shared/lib/dependencies';
+import { wrapError } from '@/shared/utils/wrap-error';
 import { productsQueryKey } from '@/features/products/api/use-products';
 import { computeGrandTotal } from '../utils/totals';
 import { receiptsQueryKey } from './receipts-query-keys';
@@ -65,7 +66,7 @@ export function useSaveReceiptMutation() {
         .from('products')
         .select('id, name, store, store_product_code, category')
         .eq('store', receipt.store);
-      if (fetchError) throw new Error(`Products fetch failed: ${fetchError.message}`);
+      if (fetchError) throw wrapError('Products fetch failed', fetchError);
 
       const resolution = resolveProducts({
         store: receipt.store,
@@ -81,7 +82,7 @@ export function useSaveReceiptMutation() {
         const { error: productsError } = await supabase
           .from('products')
           .insert(resolution.newProducts);
-        if (productsError) throw new Error(`Products insert failed: ${productsError.message}`);
+        if (productsError) throw wrapError('Products insert failed', productsError);
       }
 
       for (const bf of resolution.backfills) {
@@ -89,7 +90,7 @@ export function useSaveReceiptMutation() {
           .from('products')
           .update({ store_product_code: bf.store_product_code })
           .eq('id', bf.id);
-        if (bfError) throw new Error(`Product backfill failed: ${bfError.message}`);
+        if (bfError) throw wrapError('Product backfill failed', bfError);
       }
 
       const items = itemInputs.map((it, idx) =>
@@ -102,13 +103,13 @@ export function useSaveReceiptMutation() {
       );
 
       const { error: receiptError } = await supabase.from('receipts').insert(receipt);
-      if (receiptError) throw new Error(`Receipt insert failed: ${receiptError.message}`);
+      if (receiptError) throw wrapError('Receipt insert failed', receiptError);
 
       if (items.length > 0) {
         const { error: itemsError } = await supabase.from('items').insert(items);
         if (itemsError) {
           await supabase.from('receipts').delete().eq('id', receipt.id);
-          throw new Error(`Items insert failed: ${itemsError.message}`);
+          throw wrapError('Items insert failed', itemsError);
         }
       }
 
@@ -129,7 +130,7 @@ export function useSaveReceiptMutation() {
         const { error: pricesError } = await supabase.from('product_prices').insert(prices);
         if (pricesError) {
           await supabase.from('receipts').delete().eq('id', receipt.id);
-          throw new Error(`Price snapshot insert failed: ${pricesError.message}`);
+          throw wrapError('Price snapshot insert failed', pricesError);
         }
       }
 

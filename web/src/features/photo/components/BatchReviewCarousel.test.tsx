@@ -123,14 +123,18 @@ describe('BatchReviewCarousel', () => {
   });
 
   it('renders parse-error slide with retry button while attempts < MAX', () => {
-    const { batch } = makeBatch([makeItem('A', { kind: 'parse-error', message: 'boom' }, 1)]);
+    const { batch } = makeBatch([
+      makeItem('A', { kind: 'parse-error', detail: { message: 'boom' } }, 1),
+    ]);
     render(<BatchReviewCarousel batch={batch} />);
-    expect(screen.getByText('boom')).toBeInTheDocument();
+    expect(screen.getByText(/boom/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Спробувати ще' })).toBeInTheDocument();
   });
 
   it('hides retry button after attempts reach MAX', () => {
-    const { batch } = makeBatch([makeItem('A', { kind: 'parse-error', message: 'final' }, 2)]);
+    const { batch } = makeBatch([
+      makeItem('A', { kind: 'parse-error', detail: { message: 'final' } }, 2),
+    ]);
     render(<BatchReviewCarousel batch={batch} />);
     expect(screen.queryByRole('button', { name: 'Спробувати ще' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Видалити з пачки' })).toBeInTheDocument();
@@ -139,7 +143,7 @@ describe('BatchReviewCarousel', () => {
   it('Спробувати ще → calls retryItem with current id', async () => {
     const user = userEvent.setup();
     const { batch, spies } = makeBatch([
-      makeItem('A', { kind: 'parse-error', message: 'boom' }, 1),
+      makeItem('A', { kind: 'parse-error', detail: { message: 'boom' } }, 1),
     ]);
     render(<BatchReviewCarousel batch={batch} />);
     await user.click(screen.getByRole('button', { name: 'Спробувати ще' }));

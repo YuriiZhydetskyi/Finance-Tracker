@@ -215,17 +215,17 @@ describe('batchReducer', () => {
   });
 
   describe('parseError', () => {
-    it('flips parsing → parse-error with message; attempts unchanged here', () => {
+    it('flips parsing → parse-error with detail; attempts unchanged here', () => {
       const s1 = batchReducer(initialBatchState, {
         type: 'enqueued',
         items: [makeEnqueueInput('A')],
       });
       const s2 = batchReducer(s1, { type: 'parseStart', id: 'A' });
-      const s3 = batchReducer(s2, { type: 'parseError', id: 'A', message: 'boom' });
+      const s3 = batchReducer(s2, { type: 'parseError', id: 'A', detail: { message: 'boom' } });
       const item = findItem(s3, 'A');
       expect(item.status.kind).toBe('parse-error');
       if (item.status.kind === 'parse-error') {
-        expect(item.status.message).toBe('boom');
+        expect(item.status.detail.message).toBe('boom');
       }
       expect(item.attempts).toBe(1);
     });
@@ -235,7 +235,7 @@ describe('batchReducer', () => {
         type: 'enqueued',
         items: [makeEnqueueInput('A')],
       });
-      const s2 = batchReducer(s1, { type: 'parseError', id: 'A', message: 'x' });
+      const s2 = batchReducer(s1, { type: 'parseError', id: 'A', detail: { message: 'x' } });
       expect(findItem(s2, 'A').status.kind).toBe('queued');
     });
   });
@@ -247,7 +247,7 @@ describe('batchReducer', () => {
         items: [makeEnqueueInput('A')],
       });
       const s2 = batchReducer(s1, { type: 'parseStart', id: 'A' });
-      const s3 = batchReducer(s2, { type: 'parseError', id: 'A', message: 'boom' });
+      const s3 = batchReducer(s2, { type: 'parseError', id: 'A', detail: { message: 'boom' } });
       const s4 = batchReducer(s3, { type: 'retry', id: 'A' });
       const item = findItem(s4, 'A');
       expect(item.status.kind).toBe('queued');

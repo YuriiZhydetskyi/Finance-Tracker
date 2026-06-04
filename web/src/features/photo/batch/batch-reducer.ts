@@ -80,7 +80,7 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
     case 'parseError':
       return mapItem(state, action.id, (item) => {
         if (item.status.kind !== 'parsing') return item;
-        return { ...item, status: { kind: 'parse-error', message: action.message } };
+        return { ...item, status: { kind: 'parse-error', detail: action.detail } };
       });
 
     case 'retry':

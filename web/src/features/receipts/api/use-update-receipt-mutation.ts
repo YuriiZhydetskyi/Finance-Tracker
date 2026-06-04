@@ -7,6 +7,7 @@ import {
 } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { fxRateProvider } from '@/shared/lib/dependencies';
+import { wrapError } from '@/shared/utils/wrap-error';
 import { productsQueryKey } from '@/features/products/api/use-products';
 import { computeGrandTotal } from '../utils/totals';
 import { receiptQueryKey, receiptsQueryKey } from './receipts-query-keys';
@@ -71,7 +72,7 @@ export function useUpdateReceiptMutation() {
         .from('products')
         .select('id, name, store, store_product_code, category')
         .eq('store', patched.store);
-      if (fetchError) throw new Error(`Products fetch failed: ${fetchError.message}`);
+      if (fetchError) throw wrapError('Products fetch failed', fetchError);
 
       const resolution = resolveProducts({
         store: patched.store,
@@ -87,7 +88,7 @@ export function useUpdateReceiptMutation() {
         const { error: productsError } = await supabase
           .from('products')
           .insert(resolution.newProducts);
-        if (productsError) throw new Error(`Products insert failed: ${productsError.message}`);
+        if (productsError) throw wrapError('Products insert failed', productsError);
       }
 
       for (const bf of resolution.backfills) {
@@ -95,7 +96,7 @@ export function useUpdateReceiptMutation() {
           .from('products')
           .update({ store_product_code: bf.store_product_code })
           .eq('id', bf.id);
-        if (bfError) throw new Error(`Product backfill failed: ${bfError.message}`);
+        if (bfError) throw wrapError('Product backfill failed', bfError);
       }
 
       const newItems = itemInputs.map((it, idx) =>
@@ -126,24 +127,23 @@ export function useUpdateReceiptMutation() {
           updated_at: patched.updated_at,
         })
         .eq('id', id);
-      if (updateError) throw new Error(`Receipt update failed: ${updateError.message}`);
+      if (updateError) throw wrapError('Receipt update failed', updateError);
 
       // Wipe the receipt's old item + price snapshots before reinserting.
       // product_prices.receipt_id has ON DELETE CASCADE only via receipt
       // delete — for an UPDATE we have to scrub explicitly.
       const { error: deleteError } = await supabase.from('items').delete().eq('receipt_id', id);
-      if (deleteError) throw new Error(`Items delete failed: ${deleteError.message}`);
+      if (deleteError) throw wrapError('Items delete failed', deleteError);
 
       const { error: pricesDeleteError } = await supabase
         .from('product_prices')
         .delete()
         .eq('receipt_id', id);
-      if (pricesDeleteError)
-        throw new Error(`Price snapshots delete failed: ${pricesDeleteError.message}`);
+      if (pricesDeleteError) throw wrapError('Price snapshots delete failed', pricesDeleteError);
 
       if (newItems.length > 0) {
         const { error: insertError } = await supabase.from('items').insert(newItems);
-        if (insertError) throw new Error(`Items insert failed: ${insertError.message}`);
+        if (insertError) throw wrapError('Items insert failed', insertError);
       }
 
       const prices = newItems
@@ -161,7 +161,7 @@ export function useUpdateReceiptMutation() {
 
       if (prices.length > 0) {
         const { error: pricesError } = await supabase.from('product_prices').insert(prices);
-        if (pricesError) throw new Error(`Price snapshot insert failed: ${pricesError.message}`);
+        if (pricesError) throw wrapError('Price snapshot insert failed', pricesError);
       }
 
       return { receipt_id: id, items_count: newItems.length };

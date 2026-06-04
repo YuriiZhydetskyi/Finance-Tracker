@@ -1,10 +1,11 @@
 import type { ParsedReceipt, PairDetectionResult } from '@finance-tracker/domain';
+import type { ErrorDetail } from '@/shared/utils/error-details';
 
 export type BatchItemStatus =
   | { kind: 'queued' }
   | { kind: 'parsing' }
   | { kind: 'parsed'; parsed: ParsedReceipt; pairResult: PairDetectionResult }
-  | { kind: 'parse-error'; message: string }
+  | { kind: 'parse-error'; detail: ErrorDetail }
   | { kind: 'saved'; receipt_id: string };
 
 export type BatchItem = {
@@ -42,7 +43,7 @@ export type BatchAction =
   | { type: 'manualParsedMany'; items: ManualParsedInput[] }
   | { type: 'parseStart'; id: string }
   | { type: 'parseSuccess'; id: string; parsed: ParsedReceipt; pairResult: PairDetectionResult }
-  | { type: 'parseError'; id: string; message: string }
+  | { type: 'parseError'; id: string; detail: ErrorDetail }
   | { type: 'retry'; id: string }
   | { type: 'saveSuccess'; id: string; receipt_id: string }
   | { type: 'remove'; id: string }

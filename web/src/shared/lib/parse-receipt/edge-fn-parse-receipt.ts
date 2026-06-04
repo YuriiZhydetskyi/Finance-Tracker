@@ -25,11 +25,11 @@ export const edgeFunctionParseReceiptService: IParseReceiptService = {
         e && typeof e === 'object' && 'message' in e && typeof e.message === 'string'
           ? e.message
           : 'unknown error';
-      throw new Error(`parse-receipt failed: ${message}`);
+      throw new Error(`parse-receipt failed: ${message}`, { cause: response.error });
     }
     const parsed = ParsedReceiptSchema.safeParse(response.data);
     if (!parsed.success) {
-      throw new Error(`parse-receipt returned invalid shape: ${parsed.error.message}`);
+      throw new Error('parse-receipt returned invalid shape', { cause: parsed.error });
     }
     return parsed.data;
   },

@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { useAppUsers, RequireAuth } from '@/features/auth';
 import {
   countActiveFilters,
@@ -57,11 +58,7 @@ function RecentList() {
       />
 
       {query.isLoading && <p className="text-sm text-slate-500">Завантажую...</p>}
-      {query.isError && (
-        <p role="alert" className="text-sm text-red-600">
-          Не вдалося завантажити: {query.error.message}
-        </p>
-      )}
+      {query.isError && <ErrorDetails error={query.error} label="Не вдалося завантажити" />}
       {query.isSuccess &&
         query.data.length === 0 &&
         (activeCount > 0 ? (

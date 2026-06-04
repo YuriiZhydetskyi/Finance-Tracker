@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
+import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { useSignInMutation } from '../api/use-sign-in-mutation';
 
 const SignInSchema = z.object({
@@ -64,11 +65,7 @@ export function SignInForm() {
         {signIn.isPending ? 'Надсилаємо...' : 'Надіслати посилання'}
       </Button>
 
-      {signIn.isError && (
-        <p role="alert" className="text-sm text-red-600">
-          {signIn.error.message}
-        </p>
-      )}
+      {signIn.isError && <ErrorDetails error={signIn.error} />}
     </form>
   );
 }

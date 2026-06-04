@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { nowIso } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
+import { wrapError } from '@/shared/utils/wrap-error';
 import { receiptsQueryKey, receiptQueryKey } from '@/features/receipts';
 import { statsByCategoryQueryKey } from '@/features/stats';
 import { wasteItemsQueryKey } from './use-waste-items';
@@ -35,7 +36,7 @@ export function useUpdateItemWasteMutation() {
         .from('items')
         .update({ wasted_qty: wastedQty, wasted_at, updated_at: nowIso() })
         .eq('id', itemId);
-      if (error) throw new Error(`Item waste update failed: ${error.message}`);
+      if (error) throw wrapError('Item waste update failed', error);
     },
     onSuccess: async (_result, { receiptId }) => {
       await Promise.all([
