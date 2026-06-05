@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { ParsedReceiptSchema, type ParsedReceipt } from '@finance-tracker/domain';
+import { parseJsonText } from '@/shared/utils/parse-json-text';
+import { formatZodIssues } from '@/shared/utils/format-zod-issues';
+import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
 import { Button } from '@/shared/ui/Button';
 
 type Props = {
@@ -32,8 +35,6 @@ const EXAMPLE_JSON = `{
 // Cap at 50 names: keeps the prompt under typical ~8k-token context windows
 // for external AI tools (ChatGPT/Claude desktop) when the product catalog grows.
 const PRODUCT_HINT_LIMIT = 50;
-
-const COPY_RESET_MS = 2000;
 
 function buildPrompt(categories: string[], products: { name: string }[]): string {
   const categoryList = categories.length > 0 ? categories.join(', ') : 'No categories supplied';
@@ -101,39 +102,16 @@ export function toReceiptCandidates(value: unknown): unknown[] {
   return [normalizeCandidate(value)];
 }
 
-export function parseJsonText(text: string): unknown {
-  const trimmed = text.trim();
-  if (!trimmed) throw new Error('Спочатку вставте JSON.');
-
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(trimmed);
-  const candidate = fenced?.[1]?.trim() ?? trimmed;
-
-  try {
-    return JSON.parse(candidate);
-  } catch {
-    // Best-effort recovery when JSON is surrounded by prose. Misbehaves when
-    // trailing prose also contains '}' (lastIndexOf overshoots) — rare in AI
-    // tool output. The inner parse is wrapped so users always see the friendly
-    // message instead of JSON.parse's positional native error.
-    const start = candidate.indexOf('{');
-    const end = candidate.lastIndexOf('}');
-    if (start >= 0 && end > start) {
-      try {
-        return JSON.parse(candidate.slice(start, end + 1));
-      } catch {
-        // fall through to friendly error
-      }
-    }
-    throw new Error('Не вдалося розпарсити JSON.');
-  }
-}
+// Re-exported so existing tests importing it from this module stay green; the
+// implementation now lives in shared/utils so the statement-import dialog reuses it.
+export { parseJsonText };
 
 export function ManualJsonImportDialog({ open, categories, products, onClose, onImported }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const prompt = useMemo(() => buildPrompt(categories, products), [categories, products]);
   const [jsonText, setJsonText] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const { copyState, copy, reset: resetCopy } = useCopyToClipboard(prompt);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -142,29 +120,12 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  useEffect(() => {
-    if (copyState === 'idle') return;
-    const id = window.setTimeout(() => setCopyState('idle'), COPY_RESET_MS);
-    return () => {
-      window.clearTimeout(id);
-    };
-  }, [copyState]);
-
   // jsonText is intentionally preserved across close/reopen so an accidental
   // close doesn't wipe a paste the user is mid-way through validating.
   const handleClose = () => {
     setError(null);
-    setCopyState('idle');
+    resetCopy();
     onClose();
-  };
-
-  const handleCopyPrompt = async () => {
-    try {
-      await navigator.clipboard.writeText(prompt);
-      setCopyState('copied');
-    } catch {
-      setCopyState('failed');
-    }
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -186,12 +147,7 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
           receipts.push(result.data);
           return;
         }
-        const detail = result.error.issues
-          .map((issue) => {
-            const path = issue.path.join('.');
-            return path ? `${path}: ${issue.message}` : issue.message;
-          })
-          .join('; ');
+        const detail = formatZodIssues(result.error);
         // Number the receipt only when there's more than one to disambiguate.
         errors.push(candidates.length > 1 ? `Чек #${index + 1} — ${detail}` : detail);
       });
@@ -242,7 +198,7 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
               <label htmlFor="manual-json-prompt" className="text-sm font-medium text-slate-800">
                 Prompt
               </label>
-              <Button type="button" variant="secondary" onClick={() => void handleCopyPrompt()}>
+              <Button type="button" variant="secondary" onClick={() => void copy()}>
                 {copyState === 'copied'
                   ? 'Скопійовано'
                   : copyState === 'failed'
