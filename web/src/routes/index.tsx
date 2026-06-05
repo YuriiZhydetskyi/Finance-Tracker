@@ -62,6 +62,9 @@ function HomeNav({ savedId }: { savedId?: string | undefined }) {
           <Link to="/stats">
             <Button variant="secondary">Статистика</Button>
           </Link>
+          <Link to="/reconcile">
+            <Button variant="secondary">Звірка виписки</Button>
+          </Link>
           {pendingCount > 0 && (
             <Link to="/pending">
               <Button variant="secondary">

@@ -1,6 +1,8 @@
 // Display formatter for ISO date strings (YYYY-MM-DD). Domain stores dates
 // as plain ISO strings to dodge timezone drift; this is purely for UI display.
 
+import { isoToUtcDate } from '@finance-tracker/domain';
+
 const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
 
 function getFormatter(locale: string): Intl.DateTimeFormat {
@@ -17,9 +19,7 @@ function getFormatter(locale: string): Intl.DateTimeFormat {
  * Returns the original string if parsing fails (defensive — never throws).
  */
 export function formatDate(iso: string, locale = 'uk-UA'): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  if (!y || !m || !d) return iso;
-  const date = new Date(Date.UTC(y, m - 1, d));
-  if (Number.isNaN(date.getTime())) return iso;
+  const date = isoToUtcDate(iso);
+  if (!date) return iso;
   return getFormatter(locale).format(date);
 }

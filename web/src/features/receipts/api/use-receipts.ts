@@ -21,9 +21,14 @@ export type ReceiptFilters = {
  * QueryKey includes filters so each filter combo caches independently;
  * mutations invalidate the `receiptsQueryKey` prefix to drop all variants.
  */
-export function useReceipts(filters?: ReceiptFilters, limit = DEFAULT_LIMIT) {
+export function useReceipts(
+  filters?: ReceiptFilters,
+  limit = DEFAULT_LIMIT,
+  options?: { enabled?: boolean },
+) {
   return useQuery<Receipt[]>({
     queryKey: [...receiptsQueryKey, { filters, limit }] as const,
+    enabled: options?.enabled ?? true,
     queryFn: async () => {
       let q = supabase.from('receipts').select('*');
       if (filters?.store) q = q.ilike('store', `%${filters.store}%`);
