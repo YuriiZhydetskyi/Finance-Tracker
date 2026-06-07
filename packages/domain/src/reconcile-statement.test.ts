@@ -35,6 +35,7 @@ function mkTxn(over: Partial<NormalizedStatementTxn> & { index: number }): Norma
     time: null,
     merchant: null,
     raw: null,
+    category: null,
     isRefund: false,
     ...over,
   };
@@ -236,6 +237,44 @@ describe('reconcileStatement', () => {
     const receipts = [mkReceipt({ id: 'r1', date: '2026-05-25' })];
     expect(reconcileStatement(txn, receipts, OWNER).toFix).toHaveLength(0);
     expect(reconcileStatement(txn, receipts, OWNER, { dateWindowDays: 7 }).toFix).toHaveLength(1);
+  });
+
+  it('flags storeMatch=true when the merchant name matches the receipt store', () => {
+    const res = reconcileStatement(
+      [mkTxn({ index: 0, merchant: 'MCDONALDS 123 BERLIN' })],
+      [mkReceipt({ id: 'r1', store: "McDonald's" })],
+      OWNER,
+    );
+    expect(res.toFix).toHaveLength(1);
+    expect(res.toFix[0]?.storeMatch).toBe(true);
+  });
+
+  it('flags storeMatch=false when date+amount match but the store differs', () => {
+    const res = reconcileStatement(
+      [mkTxn({ index: 0, merchant: 'REWE' })],
+      [mkReceipt({ id: 'r1', store: 'Lidl' })],
+      OWNER,
+    );
+    expect(res.toFix).toHaveLength(1);
+    expect(res.toFix[0]?.storeMatch).toBe(false);
+  });
+
+  it('falls back to the raw description when merchant is null', () => {
+    const res = reconcileStatement(
+      [mkTxn({ index: 0, merchant: null, raw: 'LIDL DIENSTLEISTUNG SAGT DANKE' })],
+      [mkReceipt({ id: 'r1', store: 'Lidl' })],
+      OWNER,
+    );
+    expect(res.toFix[0]?.storeMatch).toBe(true);
+  });
+
+  it('carries storeMatch on alreadyCorrect links too', () => {
+    const res = reconcileStatement(
+      [mkTxn({ index: 0, merchant: 'LIDL' })],
+      [mkReceipt({ id: 'r1', store: 'Lidl', paid_by: OWNER })],
+      OWNER,
+    );
+    expect(res.alreadyCorrect[0]?.storeMatch).toBe(true);
   });
 
   it('returns empty buckets for empty inputs', () => {

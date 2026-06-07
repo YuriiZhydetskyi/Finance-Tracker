@@ -4,7 +4,7 @@
 >
 > Канонічні DDL — у [supabase/migrations/](../supabase/migrations/). Згенеровані TS-типи — у [web/src/shared/types/database.types.ts](../web/src/shared/types/database.types.ts) (regenerate через `npx supabase gen types typescript --linked`). Zod-схеми (in-app валідація + factories) — у [packages/domain/src/schemas.ts](../packages/domain/src/schemas.ts).
 
-Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + `pending_parses` (черга невдалих парсингів) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
+Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + `pending_parses` (черга невдалих парсингів) + `statement_transactions` (орфанні транзакції виписки) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
 
 Чому Postgres + Supabase замість Sheets — див. [ADR-0013](decisions/0013-migrate-to-react-supabase.md). Курси валют **не зберігаються** в окремій таблиці — конвертація відбувається on-the-fly при збереженні чеку через NBU API; курс фіксується назавжди на самому Receipt-рядку як audit trail (ADR-0004).
 
@@ -89,7 +89,7 @@ as $$ select exists (select 1 from public.app_users where email = (auth.jwt() ->
 
 Policies:
 
-- `receipts`, `items`, `products`, `pending_parses` — full read+write для allowlisted users.
+- `receipts`, `items`, `products`, `pending_parses`, `statement_transactions` — full read+write для allowlisted users.
 - `categories` — read-only для allowlisted users; mutate тільки через Studio SQL editor.
 - `app_users` — self-read (`email = auth.jwt() ->> 'email'`); mutate тільки через Studio.
 - `storage.objects` для bucket_id `receipts` — full read+write для allowlisted users.
@@ -124,7 +124,7 @@ create table public.receipts (
   total_eur     numeric(12, 2) not null,
   paid_by       text not null check (paid_by like '%@%'),
   photo_url     text,
-  source        public.receipt_source not null,    -- enum: 'photo' | 'manual' | 'edit' | 'manual-json'
+  source        public.receipt_source not null,    -- enum: 'photo' | 'manual' | 'edit' | 'manual-json' | 'statement'
   raw_ocr_json  text check (raw_ocr_json is null or length(raw_ocr_json) <= 45000),
   note          text,
   created_at    timestamptz not null default now(),
@@ -132,22 +132,22 @@ create table public.receipts (
 );
 ```
 
-| Колонка        | Тип           | Nullable | Правила                                                                                                                                                                     | Приклад                                                                                |
-| -------------- | ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `id`           | text (ULID)   | ні       | 26 символів                                                                                                                                                                 | `01HM4N6RXX5K2P9F8DZ7QWERTY`                                                           |
-| `date`         | date          | ні       | ISO 8601 yyyy-mm-dd                                                                                                                                                         | `2026-05-04`                                                                           |
-| `store`        | text          | ні       | вільний текст; рекомендована soft-нормалізація на UI                                                                                                                        | `ALDI Süd`                                                                             |
-| `currency`     | text          | ні       | ISO 4217                                                                                                                                                                    | `EUR` / `UAH`                                                                          |
-| `total_orig`   | numeric(12,2) | ні       | у валюті чеку, 2dp                                                                                                                                                          | `34.78`                                                                                |
-| `fx_rate_eur`  | numeric(14,6) | ні       | курс currency→EUR на дату чеку, 6dp; > 0                                                                                                                                    | `1.000000` (EUR) / `0.024500` (UAH)                                                    |
-| `total_eur`    | numeric(12,2) | ні       | `round(total_orig * fx_rate_eur, 2)`                                                                                                                                        | `34.78`                                                                                |
-| `paid_by`      | text (email)  | ні       | гілд-перевірка `like '%@%'`                                                                                                                                                 | `you@example.com`                                                                      |
-| `photo_url`    | text          | так      | signed URL з Storage; TTL 1 година (re-sign on display)                                                                                                                     | `https://<your-project-ref>.supabase.co/storage/v1/object/sign/receipts/...?token=...` |
-| `source`       | enum          | ні       | `'photo' \| 'manual' \| 'edit' \| 'manual-json'` (`manual-json` — користувач сам прогнав prompt у external AI tool і вставив JSON через діалог "Paste AI JSON" на `/photo`) | `photo`                                                                                |
-| `raw_ocr_json` | text          | так      | JSON-stringify ParsedReceipt; **обмежено 45,000 chars**; null коли source=manual або занадто великий (для source=photo та source=manual-json — збережено)                   | `{"store":"Lidl","items":[...]}`                                                       |
-| `note`         | text          | так      | вільна нотатка                                                                                                                                                              | `Закупка для вечірки`                                                                  |
-| `created_at`   | timestamptz   | ні       | default `now()`                                                                                                                                                             | `2026-05-04T14:30:00+02:00`                                                            |
-| `updated_at`   | timestamptz   | ні       | trigger `set_updated_at()` оновлює на UPDATE                                                                                                                                |                                                                                        |
+| Колонка        | Тип           | Nullable | Правила                                                                                                                                                                                                                                                                        | Приклад                                                                                |
+| -------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `id`           | text (ULID)   | ні       | 26 символів                                                                                                                                                                                                                                                                    | `01HM4N6RXX5K2P9F8DZ7QWERTY`                                                           |
+| `date`         | date          | ні       | ISO 8601 yyyy-mm-dd                                                                                                                                                                                                                                                            | `2026-05-04`                                                                           |
+| `store`        | text          | ні       | вільний текст; рекомендована soft-нормалізація на UI                                                                                                                                                                                                                           | `ALDI Süd`                                                                             |
+| `currency`     | text          | ні       | ISO 4217                                                                                                                                                                                                                                                                       | `EUR` / `UAH`                                                                          |
+| `total_orig`   | numeric(12,2) | ні       | у валюті чеку, 2dp                                                                                                                                                                                                                                                             | `34.78`                                                                                |
+| `fx_rate_eur`  | numeric(14,6) | ні       | курс currency→EUR на дату чеку, 6dp; > 0                                                                                                                                                                                                                                       | `1.000000` (EUR) / `0.024500` (UAH)                                                    |
+| `total_eur`    | numeric(12,2) | ні       | `round(total_orig * fx_rate_eur, 2)`                                                                                                                                                                                                                                           | `34.78`                                                                                |
+| `paid_by`      | text (email)  | ні       | гілд-перевірка `like '%@%'`                                                                                                                                                                                                                                                    | `you@example.com`                                                                      |
+| `photo_url`    | text          | так      | signed URL з Storage; TTL 1 година (re-sign on display)                                                                                                                                                                                                                        | `https://<your-project-ref>.supabase.co/storage/v1/object/sign/receipts/...?token=...` |
+| `source`       | enum          | ні       | `'photo' \| 'manual' \| 'edit' \| 'manual-json' \| 'statement'` (`manual-json` — користувач сам прогнав prompt у external AI tool і вставив JSON через діалог "Paste AI JSON" на `/photo`; `statement` — чек-заглушка з орфанної транзакції виписки, одна позиція без деталей) | `photo`                                                                                |
+| `raw_ocr_json` | text          | так      | JSON-stringify ParsedReceipt; **обмежено 45,000 chars**; null коли source=manual або занадто великий (для source=photo та source=manual-json — збережено)                                                                                                                      | `{"store":"Lidl","items":[...]}`                                                       |
+| `note`         | text          | так      | вільна нотатка                                                                                                                                                                                                                                                                 | `Закупка для вечірки`                                                                  |
+| `created_at`   | timestamptz   | ні       | default `now()`                                                                                                                                                                                                                                                                | `2026-05-04T14:30:00+02:00`                                                            |
+| `updated_at`   | timestamptz   | ні       | trigger `set_updated_at()` оновлює на UPDATE                                                                                                                                                                                                                                   |                                                                                        |
 
 **Інваріанти:**
 
@@ -367,6 +367,63 @@ create table public.pending_parses (
 - «Відкинути» на `/pending` → видаляється і рядок, і blob.
 
 Entry-point — окремий роут [`/pending`](../web/src/routes/pending.tsx) + лічильник на головній. Re-parse переюзовує наявну `BatchReviewCarousel` з передзаповненим `paid_by`.
+
+---
+
+## Таблиця `statement_transactions`
+
+Персистентні **орфанні транзакції з виписки** — рядки банківської виписки, які при звірці (`/reconcile`) не співпали з жодним чеком (`reason: 'no-candidate'`). Зберігаються, щоб: (а) пережити перезавантаження; (б) автоматично зматчитись, коли пізніше введуть відповідний чек; (в) користувач міг створити з них чек-«заглушку» без деталей. **Тільки орфани** — співпалі рядки (toFix/alreadyCorrect) діють напряму на `receipts` і не персистяться; повернення/`receipt-taken` лишаються інформаційними.
+
+Міграції: [`supabase/migrations/20260606000001_add_statement_source.sql`](../supabase/migrations/20260606000001_add_statement_source.sql) (додає `'statement'` у enum `receipt_source`) + [`supabase/migrations/20260606000002_statement_transactions.sql`](../supabase/migrations/20260606000002_statement_transactions.sql).
+
+```sql
+create table public.statement_transactions (
+  id          text primary key,            -- ULID
+  date        date not null,
+  time        time,
+  amount_orig numeric(12, 2) not null,     -- завжди додатна (abs суми списання)
+  currency    text not null check (currency ~ '^[A-Z]{3}$'),
+  merchant    text,
+  raw         text,
+  paid_by     text not null check (paid_by like '%@%'),
+  status      text not null default 'unmatched'
+              check (status in ('unmatched', 'receipt_created', 'dismissed')),
+  receipt_id  text references public.receipts(id) on delete set null,
+  suggested_category text,                 -- AI's category guess at import
+  dedup_key   text not null,               -- date|amount|currency|label|occurrence
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+```
+
+| Колонка              | Тип           | Nullable     | Правила / Примітка                                                                                             |
+| -------------------- | ------------- | ------------ | -------------------------------------------------------------------------------------------------------------- |
+| `id`                 | text (ULID)   | ні           | client-generated                                                                                               |
+| `date`               | date          | ні           | дата проведення (YYYY-MM-DD)                                                                                   |
+| `time`               | time          | так          | HH:MM:SS, якщо виписка показує час транзакції                                                                  |
+| `amount_orig`        | numeric(12,2) | ні           | завжди **додатна** — повернення не зберігаються                                                                |
+| `currency`           | text          | ні           | ISO 4217                                                                                                       |
+| `merchant`           | text          | так          | очищена назва продавця (для показу + м'якого збігу за магазином)                                               |
+| `raw`                | text          | так          | оригінальний рядок опису з виписки                                                                             |
+| `paid_by`            | text(email)   | ні           | власник картки, обраний при імпорті                                                                            |
+| `status`             | text          | ні (default) | `unmatched` → `receipt_created` (створено/зв'язано чек) або `dismissed` (ігноруємо)                            |
+| `receipt_id`         | text (FK)     | так          | заповнюється при resolve; FK → `receipts(id)` ON DELETE SET NULL                                               |
+| `suggested_category` | text          | так          | категорія, яку LLM запропонував для merchant при імпорті; fallback для заглушки, коли в історії збігу ще немає |
+| `dedup_key`          | text          | ні           | `date\|amount\|currency\|label\|occurrence` — **unique**; повторний імпорт не дублює (див. нижче)              |
+| `created_at`         | timestamptz   | ні           | default `now()`                                                                                                |
+| `updated_at`         | timestamptz   | ні           | trigger `set_updated_at()`                                                                                     |
+
+**RLS:** policy `allowlist_all_statement_transactions` (full read+write, gated `is_allowed_user()`). Unique index `uq_statement_txn_dedup` (dedup_key) + index `idx_statement_txn_status`.
+
+**Дедуп vs справжні дублі (`occurrence`):** два однакові рядки в одному імпорті неможливо на рівні даних відрізнити — «справжній дубль» (покупка реально сталася двічі) vs «overlap скріншотів». Тому: (1) **промпт** інструктує AI чистити overlap — кожну транзакцію включати один раз, але справжні повтори лишати; (2) `occurrence` — порядковий номер серед однакових рядків у межах одного імпорту ([`dedupOccurrences`](../packages/domain/src/bank-statement.ts)). Справжні дублі → `occurrence` 0/1 → різні ключі → обидва зберігаються; повторний імпорт тієї ж виписки відтворює ті самі `occurrence` → ті самі ключі → upsert(`ignoreDuplicates`) дедупить. Без подвоєння на re-import.
+
+**Чек-«заглушка» (`source='statement'`):** коли користувач створює чек з орфана (напр. McDonald's без фото), створюється `receipt` із `source='statement'` + **одна** позиція на повну суму (обрана категорія + `consumed_by`, `product_id = null`). Одна позиція потрібна, бо `v_stats_by_category` агрегує `items` — без неї витрата не потрапила б у розбивку по категоріях (хоч і була б у `v_stats_by_month/user/store`, які рахують з `receipts`). Окрема легка [`useCreateStubReceiptMutation`](../web/src/features/reconcile/api/use-create-stub-receipt-mutation.ts) (НЕ важкий save-flow) — **не** створює product і **не** пише `product_prices` снапшот, щоб не плодити псевдо-продукти з назвою магазину. Категорія в діалозі **передобирається** за пріоритетом: (1) з історії — [`useSuggestedCategory`](../web/src/features/reconcile/api/use-suggested-category.ts) шукає попередні чеки, чий `store` fuzzy-збігається з merchant/raw (той самий `storeNamesMatch`), і бере найчастішу `items.category` (напр. McDonald's → Кафе/ресторани); (2) якщо в історії збігу ще немає — `suggested_category`, яку LLM запропонував при імпорті (промпт отримує список наших категорій і повертає одну з них). Самонавчається; користувач може змінити. Після створення орфан resolve-иться (`receipt_id` + `status='receipt_created'`).
+
+**Lifecycle:**
+
+- Імпорт виписки → no-candidate рядки upsert-яться сюди (`onConflict: dedup_key, ignoreDuplicates`) — [`useSaveOrphansMutation`](../web/src/features/reconcile/api/use-save-orphans-mutation.ts).
+- На `/reconcile` **недавні** орфани (≤2 міс.) повторно проганяються через `reconcileStatement` проти чеків того ж вікна; пропонується «Зв'язати» лише для чеків, доданих **після** орфана (`receipt.created_at > orphan.created_at` — старіші вже були перевірені при імпорті). За потреби flip `paid_by` ([`useResolveOrphanMutation`](../web/src/features/reconcile/api/use-resolve-orphan-mutation.ts)).
+- «Створити чек» → stub-receipt + resolve. «Ігнорувати» → `status='dismissed'` ([`useDismissOrphanMutation`](../web/src/features/reconcile/api/use-dismiss-orphan-mutation.ts)).
 
 ---
 

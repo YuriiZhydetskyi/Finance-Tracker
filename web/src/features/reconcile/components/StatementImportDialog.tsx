@@ -15,13 +15,21 @@ import { buildStatementPrompt, STATEMENT_EXAMPLE_JSON } from '../reconcile-promp
 type Props = {
   open: boolean;
   owners: string[];
+  // Category names embedded in the copy-paste prompt so the AI returns one of ours.
+  categories?: string[];
   onClose: () => void;
   onReconcile: (owner: string, txns: NormalizedStatementTxn[]) => void;
 };
 
-export function StatementImportDialog({ open, owners, onClose, onReconcile }: Props) {
+export function StatementImportDialog({
+  open,
+  owners,
+  categories = [],
+  onClose,
+  onReconcile,
+}: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const prompt = useMemo(() => buildStatementPrompt(), []);
+  const prompt = useMemo(() => buildStatementPrompt(categories), [categories]);
   const [owner, setOwner] = useState('');
   const [jsonText, setJsonText] = useState('');
   const [error, setError] = useState<string | null>(null);

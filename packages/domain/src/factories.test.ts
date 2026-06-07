@@ -6,6 +6,7 @@ import {
   makeProduct,
   makeProductPrice,
   makeReceipt,
+  makeStatementTransaction,
 } from './factories';
 
 const RECEIPT_DEFAULTS = {
@@ -266,6 +267,60 @@ describe('makeProductPrice', () => {
     });
     expect(p.price_orig).toBe(-0.25);
     expect(p.price_net).toBe(-0.25);
+  });
+});
+
+describe('makeStatementTransaction', () => {
+  const TXN_DEFAULTS = {
+    date: '2026-05-25',
+    amount_orig: 12.34,
+    currency: 'EUR' as const,
+    paid_by: 'me@example.com',
+  };
+
+  it('generates a ULID, defaults status=unmatched, receipt_id=null', () => {
+    const t = makeStatementTransaction(TXN_DEFAULTS);
+    expect(t.id).toHaveLength(26);
+    expect(t.status).toBe('unmatched');
+    expect(t.receipt_id).toBe(null);
+    expect(t.created_at).toBe(t.updated_at);
+  });
+
+  it('rounds amount to 2dp and normalizes HH:MM time', () => {
+    const t = makeStatementTransaction({ ...TXN_DEFAULTS, amount_orig: 12.345, time: '14:32' });
+    expect(t.amount_orig).toBe(12.35);
+    expect(t.time).toBe('14:32:00');
+  });
+
+  it('defaults merchant/raw/time/suggested_category to null', () => {
+    const t = makeStatementTransaction(TXN_DEFAULTS);
+    expect(t.merchant).toBe(null);
+    expect(t.raw).toBe(null);
+    expect(t.time).toBe(null);
+    expect(t.suggested_category).toBe(null);
+  });
+
+  it('keeps the AI-suggested category when provided', () => {
+    const t = makeStatementTransaction({ ...TXN_DEFAULTS, suggested_category: 'Кафе/ресторани' });
+    expect(t.suggested_category).toBe('Кафе/ресторани');
+  });
+
+  it('builds a stable dedup_key from date|amount|currency|label|occurrence', () => {
+    const t = makeStatementTransaction({ ...TXN_DEFAULTS, merchant: 'Lidl' });
+    expect(t.dedup_key).toBe('2026-05-25|12.34|EUR|lidl|0');
+  });
+
+  it('uses the same dedup_key for the same logical transaction (re-import safe)', () => {
+    const a = makeStatementTransaction({ ...TXN_DEFAULTS, merchant: 'LIDL' });
+    const b = makeStatementTransaction({ ...TXN_DEFAULTS, merchant: 'lidl' });
+    expect(a.dedup_key).toBe(b.dedup_key);
+  });
+
+  it('distinguishes genuine same-import duplicates by occurrence', () => {
+    const first = makeStatementTransaction({ ...TXN_DEFAULTS, merchant: 'Lidl', occurrence: 0 });
+    const second = makeStatementTransaction({ ...TXN_DEFAULTS, merchant: 'Lidl', occurrence: 1 });
+    expect(first.dedup_key).not.toBe(second.dedup_key);
+    expect(second.dedup_key).toBe('2026-05-25|12.34|EUR|lidl|1');
   });
 });
 

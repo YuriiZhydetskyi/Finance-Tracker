@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   BankStatementSchema,
+  dedupOccurrences,
   normalizeStatementTxns,
+  statementDedupKey,
   toStatementTxns,
   type BankStatementTxn,
 } from './bank-statement';
@@ -100,5 +102,41 @@ describe('normalizeStatementTxns', () => {
   it('keeps the original index for mapping results back', () => {
     const out = normalizeStatementTxns(base);
     expect(out.map((t) => t.index)).toEqual([0, 1]);
+  });
+
+  it('carries the AI category through, defaulting to null', () => {
+    const out = normalizeStatementTxns([
+      { date: '2026-05-25', amount: 1, currency: 'EUR', category: 'Кафе/ресторани' },
+      { date: '2026-05-26', amount: 2, currency: 'EUR' },
+    ]);
+    expect(out[0]?.category).toBe('Кафе/ресторани');
+    expect(out[1]?.category).toBe(null);
+  });
+});
+
+describe('dedupOccurrences / statementDedupKey', () => {
+  it('numbers genuine same-import duplicates 0, 1, … and others 0', () => {
+    const items = [
+      { date: '2026-05-25', amount: 2.5, currency: 'EUR', merchant: 'Lidl', raw: null },
+      { date: '2026-05-25', amount: 2.5, currency: 'EUR', merchant: 'Lidl', raw: null }, // dup
+      { date: '2026-05-25', amount: 9.9, currency: 'EUR', merchant: 'Aldi', raw: null }, // distinct
+    ];
+    expect(dedupOccurrences(items)).toEqual([0, 1, 0]);
+  });
+
+  it('produces distinct keys for duplicates and identical keys across re-imports', () => {
+    const a = statementDedupKey('2026-05-25', 2.5, 'EUR', 'Lidl', null, 0);
+    const b = statementDedupKey('2026-05-25', 2.5, 'EUR', 'Lidl', null, 1);
+    expect(a).not.toBe(b);
+    // A re-import reproduces the same identity + occurrence → same key (upsert dedups).
+    expect(statementDedupKey('2026-05-25', 2.5, 'EUR', 'lidl', null, 0)).toBe(a);
+  });
+
+  it('treats merchant case/whitespace as the same identity', () => {
+    const items = [
+      { date: '2026-05-25', amount: 2.5, currency: 'EUR', merchant: 'LIDL', raw: null },
+      { date: '2026-05-25', amount: 2.5, currency: 'EUR', merchant: ' lidl ', raw: null },
+    ];
+    expect(dedupOccurrences(items)).toEqual([0, 1]);
   });
 });

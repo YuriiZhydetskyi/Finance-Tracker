@@ -2,9 +2,9 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Останнє оновлення:** 2026-06-04 (Failed-parse queue — нова таблиця `pending_parses` + роут `/pending`. `paid_by` обирається per-photo при завантаженні (`PhotoUploadAssign`); коли AI-парсинг падає і вичерпано retry, фото + payer + помилка зберігаються в чергу; на `/pending` чек можна розпарсити заново, не вводячи payer. Фото переюзовується при re-parse, без дублікатів у Storage. Деталі — [data-model.md](data-model.md) «Таблиця pending_parses».)
+**Останнє оновлення:** 2026-06-06 (Звірка виписки — розширення `/reconcile`. Збіг чека з транзакцією за датою+ціною тепер ще зважає на назву магазину: збіг → авто-виправлення `paid_by` (передвідмічене, застосовується одним кліком після огляду), розбіжність → окрема секція «підтвердь». Витрати з картки **без чека** персистяться у нову таблицю `statement_transactions` (тільки орфани); їх можна перетворити на чек-«заглушку» (`source='statement'`, одна позиція без деталей — напр. McDonald's без фото), «Ігнорувати», або вони авто-зматчаться, коли пізніше введуть відповідний чек. Деталі — [data-model.md](data-model.md) «Таблиця statement_transactions».)
 
-**Попереднє:** 2026-05-18 (Waste tracking page — окрема сторінка `/waste` для позначення зіпсованого, замість редагування `wasted_qty` всередині форм чеків; `wasted_at` колонка + view `v_stats_waste_by_month`)
+**Попереднє:** 2026-06-04 (Failed-parse queue — нова таблиця `pending_parses` + роут `/pending`. `paid_by` обирається per-photo при завантаженні (`PhotoUploadAssign`); коли AI-парсинг падає і вичерпано retry, фото + payer + помилка зберігаються в чергу; на `/pending` чек можна розпарсити заново, не вводячи payer. Фото переюзовується при re-parse, без дублікатів у Storage. Деталі — [data-model.md](data-model.md) «Таблиця pending_parses».)
 
 **Production URL:** https://<your-app>.pages.dev (stable production alias; `<hash>.<your-app>.pages.dev` — preview-deployment URLs з кожного pushed коміту)
 

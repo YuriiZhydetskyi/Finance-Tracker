@@ -8,6 +8,7 @@
 
 import { daysBetweenIso } from './time';
 import { roundMoney } from './money';
+import { storeNamesMatch } from './store-match';
 import type { Receipt } from './schemas';
 import type { NormalizedStatementTxn } from './bank-statement';
 
@@ -34,6 +35,10 @@ export type MatchLink = {
   dateGap: number;
   score: number;
   confidence: Confidence;
+  // The receipt's store name also matches the statement merchant/raw. Drives the
+  // auto-correct vs manual-confirm split in the UI: a store match is confident
+  // enough to pre-select the paid_by fix; a mismatch is left for the user to OK.
+  storeMatch: boolean;
 };
 
 export type ToFixEntry = MatchLink & { from: string; to: string };
@@ -185,6 +190,7 @@ export function reconcileStatement(
         dateGap: assigned.dateGap,
         score: assigned.score,
         confidence: confidenceFromGap(assigned.dateGap),
+        storeMatch: storeNamesMatch(txn.merchant, txn.raw, receipt.store),
       };
       if (receipt.paid_by === owner) alreadyCorrect.push(link);
       else toFix.push({ ...link, from: receipt.paid_by, to: owner });

@@ -22,6 +22,7 @@ export const BankStatementTxnSchema = z.object({
   time: ISO_TIME_INPUT_SCHEMA.nullable().optional(), // HH:MM(:SS), usually absent on statements
   merchant: z.string().nullable().optional(), // display / soft tiebreak only, never gates a match
   raw: z.string().nullable().optional(), // original statement description, display only
+  category: z.string().nullable().optional(), // AI's guess at our category for the merchant; fallback for stub receipts
 });
 export type BankStatementTxn = z.infer<typeof BankStatementTxnSchema>;
 
@@ -37,6 +38,7 @@ export type NormalizedStatementTxn = {
   time: string | null;
   merchant: string | null;
   raw: string | null;
+  category: string | null; // AI category guess; only used as a stub-receipt fallback, never for matching
   isRefund: boolean;
 };
 
@@ -52,6 +54,59 @@ export function toStatementTxns(value: unknown): unknown[] {
   return [];
 }
 
+// Identity of a statement line, BEFORE disambiguating same-import duplicates:
+// the fields a human uses to recognize "the same transaction" — date, rounded
+// amount, currency, merchant/raw label lowercased.
+function dedupIdentity(
+  date: string,
+  amount: number,
+  currency: string,
+  merchant: string | null,
+  raw: string | null,
+): string {
+  const label = (merchant ?? raw ?? '').trim().toLowerCase();
+  return `${date}|${roundMoney(amount).toFixed(2)}|${currency}|${label}`;
+}
+
+// Stable dedup key for an orphan row. `occurrence` distinguishes genuine same-day
+// duplicates within one import (two real identical charges → occurrence 0 and 1,
+// both kept) while keeping re-import idempotent: the same statement reproduces the
+// same identities in the same order → same occurrences → same keys → the DB's
+// unique index + upsert(ignoreDuplicates) drops the repeats. Screenshot-overlap
+// duplicates are prevented upstream — the extraction prompt emits each real
+// transaction once. The DB has a unique index on this exact string.
+export function statementDedupKey(
+  date: string,
+  amount: number,
+  currency: string,
+  merchant: string | null,
+  raw: string | null,
+  occurrence = 0,
+): string {
+  return `${dedupIdentity(date, amount, currency, merchant, raw)}|${occurrence}`;
+}
+
+// Assigns each item its occurrence ordinal among others sharing the same identity,
+// in input order. Feed the result as `occurrence` to statementDedupKey / the
+// factory so duplicates within one import get distinct keys deterministically.
+export function dedupOccurrences(
+  items: {
+    date: string;
+    amount: number;
+    currency: string;
+    merchant: string | null;
+    raw: string | null;
+  }[],
+): number[] {
+  const seen = new Map<string, number>();
+  return items.map((it) => {
+    const id = dedupIdentity(it.date, it.amount, it.currency, it.merchant, it.raw);
+    const n = seen.get(id) ?? 0;
+    seen.set(id, n + 1);
+    return n;
+  });
+}
+
 export function normalizeStatementTxns(txns: BankStatementTxn[]): NormalizedStatementTxn[] {
   return txns.map((t, index) => ({
     index,
@@ -61,6 +116,7 @@ export function normalizeStatementTxns(txns: BankStatementTxn[]): NormalizedStat
     time: t.time ?? null,
     merchant: t.merchant ?? null,
     raw: t.raw ?? null,
+    category: t.category ?? null,
     isRefund: t.amount < 0,
   }));
 }
