@@ -175,8 +175,14 @@ function Reconcile() {
   };
 
   const handleLinkOrphan = (orphan: StatementTransaction, match: OrphanMatch) => {
-    if (match.needsFlip) reassign.mutate({ ids: [match.receipt.id], paid_by: orphan.paid_by });
-    resolveOrphan.mutate({ id: orphan.id, receipt_id: match.receipt.id });
+    const resolve = () => resolveOrphan.mutate({ id: orphan.id, receipt_id: match.receipt.id });
+    // Only mark the orphan resolved AFTER the payer flip lands — otherwise a failed
+    // reassign would leave the orphan gone but the receipt's paid_by still wrong.
+    if (match.needsFlip) {
+      reassign.mutate({ ids: [match.receipt.id], paid_by: orphan.paid_by }, { onSuccess: resolve });
+    } else {
+      resolve();
+    }
   };
 
   const orphanBusy = dismissOrphan.isPending || resolveOrphan.isPending || reassign.isPending;
@@ -226,6 +232,9 @@ function Reconcile() {
       )}
       {dismissOrphan.isError && (
         <ErrorDetails error={dismissOrphan.error} label="Не вдалося приховати транзакцію" />
+      )}
+      {resolveOrphan.isError && (
+        <ErrorDetails error={resolveOrphan.error} label="Не вдалося зв'язати транзакцію з чеком" />
       )}
 
       {result && (

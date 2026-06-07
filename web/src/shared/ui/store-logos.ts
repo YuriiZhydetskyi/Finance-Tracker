@@ -1,15 +1,17 @@
 // Maps a free-text store name (`receipt.store`) to a known brand logo served
 // from /public/store-logos. Reuses the same name normalizer as statement
 // reconciliation so "McDonald's" / "MCDONALDS BERLIN" / "Café" collapse the
-// same way everywhere. Match is token-based, not substring: "dm" must appear as
-// its own word so it doesn't fire on "Edmundo".
+// same way everywhere. Match is token-based, not substring: a keyword fires only
+// when ALL of its words appear as whole tokens. So "dm" never fires on "Edmundo",
+// and the two-word "burger king" matches "Burger King" but not "Burger House".
 
 import { normalizeStoreName } from '@finance-tracker/domain';
 
 export type StoreLogo = { id: string; src: string; keywords: string[] };
 
-// keywords are normalized tokens (lowercase, no punctuation) — they must match
-// what normalizeStoreName produces, since lookup compares against its output.
+// keywords are normalized tokens / token phrases (lowercase, no punctuation) —
+// they must match what normalizeStoreName produces. A multi-word keyword matches
+// only when every one of its words is present (order-independent).
 const LOGOS: StoreLogo[] = [
   // Supermarkets
   { id: 'lidl', src: '/store-logos/lidl.svg', keywords: ['lidl'] },
@@ -29,11 +31,11 @@ const LOGOS: StoreLogo[] = [
     src: '/store-logos/mcdonalds.svg',
     keywords: ['mcdonalds', 'mcdonald', 'mcd'],
   },
-  { id: 'burgerking', src: '/store-logos/burgerking.svg', keywords: ['burgerking', 'burger'] },
+  { id: 'burgerking', src: '/store-logos/burgerking.svg', keywords: ['burger king', 'burgerking'] },
   { id: 'kfc', src: '/store-logos/kfc.svg', keywords: ['kfc'] },
   { id: 'starbucks', src: '/store-logos/starbucks.svg', keywords: ['starbucks'] },
   { id: 'subway', src: '/store-logos/subway.svg', keywords: ['subway'] },
-  { id: 'dominos', src: '/store-logos/dominos.svg', keywords: ['dominos', 'domino'] },
+  { id: 'dominos', src: '/store-logos/dominos.svg', keywords: ['dominos'] },
   // Electronics
   { id: 'mediamarkt', src: '/store-logos/mediamarkt.svg', keywords: ['mediamarkt'] },
   { id: 'saturn', src: '/store-logos/saturn.svg', keywords: ['saturn'] },
@@ -58,7 +60,9 @@ export function resolveStoreLogo(store: string): StoreLogo | null {
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
   const tokens = new Set(key.split(' '));
-  const hit = LOGOS.find((l) => l.keywords.some((k) => tokens.has(k))) ?? null;
+  const hit =
+    LOGOS.find((l) => l.keywords.some((k) => k.split(' ').every((part) => tokens.has(part)))) ??
+    null;
   cache.set(key, hit);
   return hit;
 }

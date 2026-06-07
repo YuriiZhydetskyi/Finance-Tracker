@@ -64,7 +64,19 @@ export function useCreateStubReceiptMutation() {
 
       const { error: itemError } = await supabase.from('items').insert(item);
       if (itemError) {
-        await supabase.from('receipts').delete().eq('id', receipt.id);
+        // Roll back the receipt so we don't leave an itemless row (it would show in
+        // 3 of 4 stats views but not the per-category one). If even the rollback
+        // fails, surface that — the row needs manual cleanup, don't hide it.
+        const { error: cleanupError } = await supabase
+          .from('receipts')
+          .delete()
+          .eq('id', receipt.id);
+        if (cleanupError) {
+          throw wrapError(
+            'Не вдалося зберегти позицію, а відкат чека не вдався — видали чек вручну',
+            cleanupError,
+          );
+        }
         throw wrapError('Не вдалося зберегти позицію чека', itemError);
       }
 

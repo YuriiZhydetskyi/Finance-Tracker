@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { StatementTransaction } from '@finance-tracker/domain';
 import { useCategories } from '@/features/categories';
 import { Button } from '@/shared/ui/Button';
@@ -40,10 +40,9 @@ export function CreateStubReceiptDialog({ orphan, onClose, onCreated }: Props) {
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  const handleBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
-    if (event.target === dialogRef.current) onClose();
-  };
-
+  // No backdrop-click-to-close: it's a form, so accidental dismissal would lose
+  // input, and a click handler on the <dialog> trips a11y (no keyboard equivalent).
+  // Close via the Close/Скасувати buttons or Esc (onCancel).
   return (
     <dialog
       ref={dialogRef}
@@ -51,7 +50,6 @@ export function CreateStubReceiptDialog({ orphan, onClose, onCreated }: Props) {
         e.preventDefault();
         onClose();
       }}
-      onClick={handleBackdropClick}
       aria-labelledby="stub-receipt-title"
       className="max-h-[92vh] w-[min(96vw,32rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
     >

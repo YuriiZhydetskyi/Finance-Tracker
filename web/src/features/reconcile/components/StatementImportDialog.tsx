@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   BankStatementSchema,
   normalizeStatementTxns,
@@ -81,10 +81,9 @@ export function StatementImportDialog({
     }
   };
 
-  const handleBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
-    if (event.target === dialogRef.current) handleClose();
-  };
-
+  // No backdrop-click-to-close: a click handler on the <dialog> trips a11y (no
+  // keyboard equivalent) and would risk discarding a pasted statement. Close via
+  // the Close/Скасувати buttons or Esc (onCancel). Mirrors CreateStubReceiptDialog.
   return (
     <dialog
       ref={dialogRef}
@@ -92,7 +91,6 @@ export function StatementImportDialog({
         e.preventDefault();
         handleClose();
       }}
-      onClick={handleBackdropClick}
       aria-labelledby="statement-import-title"
       className="max-h-[92vh] w-[min(96vw,64rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
     >

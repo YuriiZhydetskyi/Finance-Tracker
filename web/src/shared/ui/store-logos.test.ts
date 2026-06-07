@@ -23,6 +23,16 @@ describe('resolveStoreLogo', () => {
     expect(resolveStoreLogo('Amazon')?.id).toBe('amazon');
   });
 
+  it('matches the two-word "Burger King" but not an unrelated "Burger ..." store', () => {
+    expect(resolveStoreLogo('Burger King')?.id).toBe('burgerking');
+    expect(resolveStoreLogo('BURGER KING 4711 BERLIN')?.id).toBe('burgerking');
+    expect(resolveStoreLogo('Burger House')).toBeNull();
+  });
+
+  it("matches Domino's via its normalized token", () => {
+    expect(resolveStoreLogo("Domino's Pizza")?.id).toBe('dominos');
+  });
+
   it('returns null for unknown stores', () => {
     expect(resolveStoreLogo('оренда')).toBeNull();
     expect(resolveStoreLogo('Mangal')).toBeNull();
