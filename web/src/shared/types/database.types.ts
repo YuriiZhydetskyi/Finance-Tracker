@@ -327,6 +327,65 @@ export type Database = {
         };
         Relationships: [];
       };
+      statement_transactions: {
+        Row: {
+          amount_orig: number;
+          created_at: string;
+          currency: string;
+          date: string;
+          dedup_key: string;
+          id: string;
+          merchant: string | null;
+          paid_by: string;
+          raw: string | null;
+          receipt_id: string | null;
+          status: string;
+          suggested_category: string | null;
+          time: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          amount_orig: number;
+          created_at?: string;
+          currency: string;
+          date: string;
+          dedup_key: string;
+          id: string;
+          merchant?: string | null;
+          paid_by: string;
+          raw?: string | null;
+          receipt_id?: string | null;
+          status?: string;
+          suggested_category?: string | null;
+          time?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          amount_orig?: number;
+          created_at?: string;
+          currency?: string;
+          date?: string;
+          dedup_key?: string;
+          id?: string;
+          merchant?: string | null;
+          paid_by?: string;
+          raw?: string | null;
+          receipt_id?: string | null;
+          status?: string;
+          suggested_category?: string | null;
+          time?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'statement_transactions_receipt_id_fkey';
+            columns: ['receipt_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       v_stats_by_category: {
@@ -391,7 +450,7 @@ export type Database = {
     };
     Enums: {
       product_unit: 'pcs' | 'g' | 'kg' | 'ml' | 'l';
-      receipt_source: 'photo' | 'manual' | 'edit' | 'manual-json';
+      receipt_source: 'photo' | 'manual' | 'edit' | 'manual-json' | 'statement';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -521,7 +580,7 @@ export const Constants = {
   public: {
     Enums: {
       product_unit: ['pcs', 'g', 'kg', 'ml', 'l'],
-      receipt_source: ['photo', 'manual', 'edit', 'manual-json'],
+      receipt_source: ['photo', 'manual', 'edit', 'manual-json', 'statement'],
     },
   },
 } as const;

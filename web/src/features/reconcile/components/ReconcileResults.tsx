@@ -43,9 +43,15 @@ function txnLine(txn: ToFixEntry['txn']): string {
 export function ReconcileResults({ result, onApply, isApplying }: Props) {
   const { toFix, alreadyCorrect, ambiguous, unmatchedStatementLines } = result;
 
-  // Track de-selections (default = all checked) so a re-run after applying doesn't
-  // need a setState-in-effect to reset — stale indices are filtered out on apply.
-  const [deselected, setDeselected] = useState<Set<number>>(new Set());
+  // A store-name match is confident enough to pre-select; a date+amount-only
+  // match (store differs) is left for the user to confirm. Track de-selections
+  // (keyed by txn index) seeded with the store-mismatch lines, so those start
+  // unchecked while store matches start checked. Initializer-only state — the
+  // page remounts this component per import (key=runId), so stale indices from a
+  // prior statement can't leak in.
+  const [deselected, setDeselected] = useState<Set<number>>(
+    () => new Set(toFix.filter((e) => !e.storeMatch).map((e) => e.txn.index)),
+  );
   const selected = toFix.filter((e) => !deselected.has(e.txn.index));
 
   const toggle = (index: number) =>
@@ -59,6 +65,9 @@ export function ReconcileResults({ result, onApply, isApplying }: Props) {
   const allSelected = selected.length === toFix.length && toFix.length > 0;
   const toggleAll = () =>
     setDeselected(allSelected ? new Set(toFix.map((e) => e.txn.index)) : new Set());
+
+  const storeMatches = toFix.filter((e) => e.storeMatch);
+  const storeMismatches = toFix.filter((e) => !e.storeMatch);
 
   return (
     <div className="space-y-6">
@@ -84,38 +93,25 @@ export function ReconcileResults({ result, onApply, isApplying }: Props) {
           </p>
         ) : (
           <>
-            <ul className="space-y-2">
-              {toFix.map((entry) => (
-                <li
-                  key={entry.txn.index}
-                  className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3"
-                >
-                  <input
-                    type="checkbox"
-                    checked={!deselected.has(entry.txn.index)}
-                    onChange={() => toggle(entry.txn.index)}
-                    aria-label={`Виправити: ${entry.receipt.store}`}
-                    className="mt-1 h-4 w-4 shrink-0"
-                  />
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-slate-900">{entry.receipt.store}</span>
-                      <span
-                        className={`rounded-full border px-2 py-0.5 text-xs ${CONFIDENCE_CLASS[entry.confidence]}`}
-                      >
-                        {CONFIDENCE_LABEL[entry.confidence]}
-                      </span>
-                    </div>
-                    <div className="text-sm text-slate-600">{txnLine(entry.txn)}</div>
-                    <div className="text-sm">
-                      <span className="text-red-700 line-through">{entry.from}</span>
-                      <span className="px-1 text-slate-400">→</span>
-                      <span className="font-medium text-emerald-700">{entry.to}</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {storeMatches.length > 0 && (
+              <FixGroup
+                title={`Магазин збігся (${storeMatches.length})`}
+                hint="Назва магазину збіглася — впевнений збіг, перевір і застосуй."
+                entries={storeMatches}
+                deselected={deselected}
+                onToggle={toggle}
+              />
+            )}
+
+            {storeMismatches.length > 0 && (
+              <FixGroup
+                title={`Магазин інший — підтвердь (${storeMismatches.length})`}
+                hint="Дата й сума збіглися, але назва магазину інша. Познач, якщо це той самий чек."
+                entries={storeMismatches}
+                deselected={deselected}
+                onToggle={toggle}
+              />
+            )}
 
             <div className="flex justify-end">
               <Button
@@ -152,6 +148,61 @@ export function ReconcileResults({ result, onApply, isApplying }: Props) {
           </p>
         </InfoSection>
       )}
+    </div>
+  );
+}
+
+function FixGroup({
+  title,
+  hint,
+  entries,
+  deselected,
+  onToggle,
+}: {
+  title: string;
+  hint: string;
+  entries: ToFixEntry[];
+  deselected: Set<number>;
+  onToggle: (index: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="space-y-0.5">
+        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+        <p className="text-xs text-slate-500">{hint}</p>
+      </div>
+      <ul className="space-y-2">
+        {entries.map((entry) => (
+          <li
+            key={entry.txn.index}
+            className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3"
+          >
+            <input
+              type="checkbox"
+              checked={!deselected.has(entry.txn.index)}
+              onChange={() => onToggle(entry.txn.index)}
+              aria-label={`Виправити: ${entry.receipt.store}`}
+              className="mt-1 h-4 w-4 shrink-0"
+            />
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-slate-900">{entry.receipt.store}</span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs ${CONFIDENCE_CLASS[entry.confidence]}`}
+                >
+                  {CONFIDENCE_LABEL[entry.confidence]}
+                </span>
+              </div>
+              <div className="text-sm text-slate-600">{txnLine(entry.txn)}</div>
+              <div className="text-sm">
+                <span className="text-red-700 line-through">{entry.from}</span>
+                <span className="px-1 text-slate-400">→</span>
+                <span className="font-medium text-emerald-700">{entry.to}</span>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

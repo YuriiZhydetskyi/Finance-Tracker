@@ -3,6 +3,7 @@ import type { Receipt } from '@finance-tracker/domain';
 import { formatDate } from '@/shared/utils/format-date';
 import { formatMoney } from '@/shared/utils/format-money';
 import { cn } from '@/shared/ui/cn';
+import { StoreLogo } from '@/shared/ui/StoreLogo';
 
 type Props = {
   receipt: Receipt;
@@ -16,8 +17,11 @@ export function ReceiptCard({ receipt }: Props) {
       params={{ id: receipt.id }}
       className="block rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="truncate text-sm font-semibold text-slate-900">{receipt.store}</span>
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2">
+          <StoreLogo store={receipt.store} />
+          <span className="truncate text-sm font-semibold text-slate-900">{receipt.store}</span>
+        </span>
         <span
           className={cn(
             'tabular-nums text-sm font-medium',

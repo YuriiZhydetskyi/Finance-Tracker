@@ -15,7 +15,3 @@ reviews:
   tools:
     eslint:
       enabled: false # ESLint runs in CI via pr-checks.yml — no need to duplicate
-
-pre_merge_checks:
-  docstrings:
-    mode: 'off' # project convention: no docstrings in TypeScript code

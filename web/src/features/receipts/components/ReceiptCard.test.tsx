@@ -101,7 +101,22 @@ describe('ReceiptCard', () => {
   });
 
   it('omits the address line when store_address is null', () => {
+    // Default store 'Lidl' renders an <img> logo, so text-slate-400 here would
+    // only come from the address line.
     const { container } = render(<ReceiptCard receipt={makeReceipt({ store_address: null })} />);
     expect(container.querySelector('.text-slate-400')).toBeNull();
+  });
+
+  it('renders a brand logo image for a known store', () => {
+    render(<ReceiptCard receipt={makeReceipt({ store: 'Lidl' })} />);
+    const img = screen.getByAltText('Lidl');
+    expect(img).toBeInTheDocument();
+    expect(img.getAttribute('src')).toContain('/store-logos/lidl.svg');
+  });
+
+  it('falls back to a glyph (no image) for an unknown store', () => {
+    const { container } = render(<ReceiptCard receipt={makeReceipt({ store: 'оренда' })} />);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('svg')).not.toBeNull();
   });
 });

@@ -38,17 +38,25 @@ function mkTxn(index: number): NormalizedStatementTxn {
     time: null,
     merchant: null,
     raw: null,
+    category: null,
     isRefund: false,
   };
 }
 
-function mkToFix(index: number, store: string, from: string, to: string): ToFixEntry {
+function mkToFix(
+  index: number,
+  store: string,
+  from: string,
+  to: string,
+  storeMatch = true,
+): ToFixEntry {
   return {
     txn: mkTxn(index),
     receipt: mkReceipt(`r${index}`, store, from),
     dateGap: 0,
     score: 1000,
     confidence: 'high',
+    storeMatch,
     from,
     to,
   };
@@ -98,6 +106,23 @@ describe('ReconcileResults', () => {
     expect(applied[0]?.receipt.store).toBe('Aldi');
   });
 
+  it('pre-selects store matches but leaves store mismatches unchecked', () => {
+    const result: ReconcileResult = {
+      ...emptyResult,
+      toFix: [
+        mkToFix(0, 'Lidl', 'a@example.com', 'b@example.com', true),
+        mkToFix(1, 'Aldi', 'a@example.com', 'b@example.com', false),
+      ],
+    };
+    render(<ReconcileResults result={result} onApply={vi.fn()} isApplying={false} />);
+    expect(screen.getByText(/Магазин збігся \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Магазин інший — підтвердь \(1\)/)).toBeInTheDocument();
+    // Only the store match is selected by default.
+    expect(screen.getByRole('button', { name: /Застосувати \(1\)/ })).toBeInTheDocument();
+    expect(screen.getByLabelText('Виправити: Lidl')).toBeChecked();
+    expect(screen.getByLabelText('Виправити: Aldi')).not.toBeChecked();
+  });
+
   it('"Зняти всі" clears the selection so apply is disabled', () => {
     const result: ReconcileResult = {
       ...emptyResult,
@@ -118,6 +143,7 @@ describe('ReconcileResults', () => {
           dateGap: 0,
           score: 1000,
           confidence: 'high',
+          storeMatch: true,
         },
       ],
       ambiguous: [

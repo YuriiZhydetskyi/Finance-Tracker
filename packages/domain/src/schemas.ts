@@ -34,7 +34,7 @@ export const EMAIL_LIKE_SCHEMA = z
 export const CONSUMED_BY_SCHEMA = z.string().refine(isValidConsumedBy, {
   message: 'Invalid consumed_by. Expected: his | hers | shared | custom:N/M (N+M=100)',
 });
-export const SOURCE_SCHEMA = z.enum(['photo', 'manual', 'edit', 'manual-json']);
+export const SOURCE_SCHEMA = z.enum(['photo', 'manual', 'edit', 'manual-json', 'statement']);
 export const PRODUCT_UNIT_SCHEMA = z.enum(['pcs', 'g', 'kg', 'ml', 'l']);
 
 // ── Receipt ─────────────────────────────────────────────────────────────────
@@ -174,6 +174,47 @@ export const ParsedReceiptSchema = z.object({
   items: z.array(ParsedItemSchema),
 });
 export type ParsedReceipt = z.infer<typeof ParsedReceiptSchema>;
+
+// ── StatementTransaction (orphan card line) ─────────────────────────────────
+// A statement line that matched no receipt on import. Persisted so it survives
+// reloads, can be re-matched when the real receipt is finally entered, or turned
+// into a stub receipt. `amount_orig` is always positive (refunds aren't stored).
+// See docs/data-model.md "Таблиця statement_transactions".
+
+export const STATEMENT_TXN_STATUS_SCHEMA = z.enum(['unmatched', 'receipt_created', 'dismissed']);
+export type StatementTxnStatus = z.infer<typeof STATEMENT_TXN_STATUS_SCHEMA>;
+
+export const StatementTransactionSchema = z.object({
+  id: ULID_SCHEMA,
+  date: ISO_DATE_SCHEMA,
+  time: ISO_TIME_SCHEMA.nullable(),
+  amount_orig: z.number().finite().positive(),
+  currency: ISO_4217_CURRENCY_SCHEMA,
+  merchant: z.string().nullable(),
+  raw: z.string().nullable(),
+  paid_by: EMAIL_LIKE_SCHEMA,
+  status: STATEMENT_TXN_STATUS_SCHEMA,
+  receipt_id: ULID_SCHEMA.nullable(),
+  suggested_category: z.string().nullable(),
+  dedup_key: z.string().min(1),
+  created_at: ISO_DATETIME_SCHEMA,
+  updated_at: ISO_DATETIME_SCHEMA,
+});
+export type StatementTransaction = z.infer<typeof StatementTransactionSchema>;
+
+export const StatementTransactionInputSchema = z.object({
+  date: ISO_DATE_SCHEMA,
+  time: ISO_TIME_INPUT_SCHEMA.nullable().optional(),
+  amount_orig: z.number().finite().positive(),
+  currency: ISO_4217_CURRENCY_SCHEMA,
+  merchant: z.string().nullable().optional(),
+  raw: z.string().nullable().optional(),
+  paid_by: EMAIL_LIKE_SCHEMA,
+  suggested_category: z.string().nullable().optional(),
+  // Ordinal among same-import duplicates (see dedupOccurrences); folds into dedup_key.
+  occurrence: z.number().int().nonnegative().optional(),
+});
+export type StatementTransactionInput = z.infer<typeof StatementTransactionInputSchema>;
 
 // ── Factory input shapes ────────────────────────────────────────────────────
 // The user-facing inputs to make*() factories. The factory generates id /

@@ -18,11 +18,13 @@ function normalizeTime(input: string | null | undefined): string | null {
   if (input == null || input === '') return null;
   return /^\d{2}:\d{2}$/.test(input) ? `${input}:00` : input;
 }
+import { statementDedupKey } from './bank-statement';
 import {
   ItemSchema,
   ProductPriceSchema,
   ProductSchema,
   ReceiptSchema,
+  StatementTransactionSchema,
   type Item,
   type ItemInput,
   type Product,
@@ -31,6 +33,8 @@ import {
   type ProductPriceInput,
   type Receipt,
   type ReceiptInput,
+  type StatementTransaction,
+  type StatementTransactionInput,
 } from './schemas';
 
 export function makeReceipt(input: ReceiptInput): Receipt {
@@ -123,6 +127,37 @@ export function makeProductPrice(input: ProductPriceInput): ProductPrice {
     created_at: now,
   };
   return ProductPriceSchema.parse(candidate);
+}
+
+export function makeStatementTransaction(input: StatementTransactionInput): StatementTransaction {
+  const amount_orig = roundMoney(input.amount_orig);
+  const merchant = input.merchant ?? null;
+  const raw = input.raw ?? null;
+  const now = nowIso();
+  const candidate: StatementTransaction = {
+    id: ulid(),
+    date: input.date,
+    time: normalizeTime(input.time),
+    amount_orig,
+    currency: input.currency,
+    merchant,
+    raw,
+    paid_by: input.paid_by,
+    status: 'unmatched',
+    receipt_id: null,
+    suggested_category: input.suggested_category ?? null,
+    dedup_key: statementDedupKey(
+      input.date,
+      amount_orig,
+      input.currency,
+      merchant,
+      raw,
+      input.occurrence ?? 0,
+    ),
+    created_at: now,
+    updated_at: now,
+  };
+  return StatementTransactionSchema.parse(candidate);
 }
 
 // ── Patch helpers (UPDATE) ──────────────────────────────────────────────────
