@@ -30,7 +30,7 @@ export function StoreLogo({ store, className }: Props) {
   return <StorefrontGlyph className={className} />;
 }
 
-function StorefrontGlyph({ className }: { className?: string }) {
+function StorefrontGlyph({ className }: { className?: string | undefined }) {
   return (
     <svg
       viewBox="0 0 24 24"
