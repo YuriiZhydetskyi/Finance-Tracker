@@ -49,8 +49,45 @@ const LOGOS: StoreLogo[] = [
   { id: 'hm', src: '/store-logos/hm.svg', keywords: ['hm'] },
   // Bakery
   { id: 'backwerk', src: '/store-logos/backwerk.svg', keywords: ['backwerk'] },
+  { id: 'ditsch', src: '/store-logos/ditsch.svg', keywords: ['ditsch'] },
   // Transport
   { id: 'db', src: '/store-logos/db.svg', keywords: ['bahn', 'db'] },
+  { id: 'lufthansa', src: '/store-logos/lufthansa.svg', keywords: ['lufthansa'] },
+  { id: 'ryanair', src: '/store-logos/ryanair.svg', keywords: ['ryanair'] },
+  { id: 'wizzair', src: '/store-logos/wizzair.svg', keywords: ['wizz', 'wizzair'] },
+  // Telecom
+  { id: 'telekom', src: '/store-logos/telekom.svg', keywords: ['telekom'] },
+  { id: 'vodafone', src: '/store-logos/vodafone.svg', keywords: ['vodafone'] },
+  { id: 'o2', src: '/store-logos/o2.svg', keywords: ['o2'] },
+  // Sportswear
+  { id: 'nike', src: '/store-logos/nike.svg', keywords: ['nike'] },
+  { id: 'adidas', src: '/store-logos/adidas.svg', keywords: ['adidas'] },
+  // Entertainment & subscriptions
+  { id: 'netflix', src: '/store-logos/netflix.svg', keywords: ['netflix'] },
+  { id: 'spotify', src: '/store-logos/spotify.svg', keywords: ['spotify'] },
+  // AI
+  { id: 'openai', src: '/store-logos/openai.svg', keywords: ['openai', 'chatgpt'] },
+  { id: 'anthropic', src: '/store-logos/anthropic.svg', keywords: ['anthropic'] },
+  // Social / Meta
+  { id: 'meta', src: '/store-logos/meta.svg', keywords: ['meta', 'facebook'] },
+  // Payments
+  { id: 'paypal', src: '/store-logos/paypal.svg', keywords: ['paypal'] },
+  // Online shopping
+  { id: 'aliexpress', src: '/store-logos/aliexpress.svg', keywords: ['aliexpress'] },
+  { id: 'ebay', src: '/store-logos/ebay.svg', keywords: ['ebay'] },
+  // Food delivery
+  { id: 'wolt', src: '/store-logos/wolt.svg', keywords: ['wolt'] },
+  {
+    id: 'toogoodtogo',
+    src: '/store-logos/toogoodtogo.svg',
+    keywords: ['too good to go', 'toogoodtogo'],
+  },
+  // Discount fashion
+  {
+    id: 'tkmaxx',
+    src: '/store-logos/tkmaxx.svg',
+    keywords: ['tk maxx', 'tkmaxx', 'tj maxx', 'tjmaxx'],
+  },
 ];
 
 const cache = new Map<string, StoreLogo | null>();
