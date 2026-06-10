@@ -4,7 +4,7 @@
 export { StatementImportDialog } from './components/StatementImportDialog';
 export { ReconcileResults } from './components/ReconcileResults';
 export { OrphanList } from './components/OrphanList';
-export type { OrphanMatch } from './components/OrphanList';
+export type { OrphanMatch, OrphanSelection } from './components/OrphanList';
 export { CreateStubReceiptDialog } from './components/CreateStubReceiptDialog';
 export { buildStatementPrompt, STATEMENT_EXAMPLE_JSON } from './reconcile-prompt';
 
@@ -16,6 +16,9 @@ export { useSaveOrphansMutation } from './api/use-save-orphans-mutation';
 export { useDismissOrphanMutation } from './api/use-dismiss-orphan-mutation';
 export { useResolveOrphanMutation } from './api/use-resolve-orphan-mutation';
 export type { ResolveOrphanVars } from './api/use-resolve-orphan-mutation';
+export { useResolveOrphansMutation } from './api/use-resolve-orphans-mutation';
+export { useStoreAliases } from './api/use-store-aliases';
+export { useSaveStoreAliasesMutation } from './api/use-save-store-aliases-mutation';
 export { useCreateStubReceiptMutation } from './api/use-create-stub-receipt-mutation';
 export type {
   CreateStubReceiptVars,

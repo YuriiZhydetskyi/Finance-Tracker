@@ -29,14 +29,14 @@ function mkReceipt(id: string, store: string, paid_by: string): Receipt {
   };
 }
 
-function mkTxn(index: number): NormalizedStatementTxn {
+function mkTxn(index: number, merchant: string | null = null): NormalizedStatementTxn {
   return {
     index,
     date: '2026-05-25',
     amount: 10,
     currency: 'EUR',
     time: null,
-    merchant: null,
+    merchant,
     raw: null,
     category: null,
     isRefund: false,
@@ -49,9 +49,10 @@ function mkToFix(
   from: string,
   to: string,
   storeMatch = true,
+  merchant: string | null = null,
 ): ToFixEntry {
   return {
-    txn: mkTxn(index),
+    txn: mkTxn(index, merchant),
     receipt: mkReceipt(`r${index}`, store, from),
     dateGap: 0,
     score: 1000,
@@ -70,7 +71,7 @@ const emptyResult: ReconcileResult = {
 };
 
 describe('ReconcileResults', () => {
-  it('renders each proposed fix with from → to and selects all by default', () => {
+  it('renders each proposed fix with from → to and selects store matches by default', () => {
     const result: ReconcileResult = {
       ...emptyResult,
       toFix: [
@@ -81,7 +82,7 @@ describe('ReconcileResults', () => {
     render(<ReconcileResults result={result} onApply={vi.fn()} isApplying={false} />);
     expect(screen.getByText('Lidl')).toBeInTheDocument();
     expect(screen.getByText('Aldi')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Застосувати \(2\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Застосувати вибрані \(2\)/ })).toBeInTheDocument();
   });
 
   it('applies exactly the selected entries', () => {
@@ -97,8 +98,8 @@ describe('ReconcileResults', () => {
 
     // Deselect the Lidl row, then apply.
     fireEvent.click(screen.getByLabelText('Виправити: Lidl'));
-    expect(screen.getByRole('button', { name: /Застосувати \(1\)/ })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Застосувати/ }));
+    expect(screen.getByRole('button', { name: /Застосувати вибрані \(1\)/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Застосувати вибрані/ }));
 
     expect(onApply).toHaveBeenCalledOnce();
     const applied = onApply.mock.calls[0]![0] as ToFixEntry[];
@@ -117,20 +118,58 @@ describe('ReconcileResults', () => {
     render(<ReconcileResults result={result} onApply={vi.fn()} isApplying={false} />);
     expect(screen.getByText(/Магазин збігся \(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/Магазин інший — підтвердь \(1\)/)).toBeInTheDocument();
-    // Only the store match is selected by default.
-    expect(screen.getByRole('button', { name: /Застосувати \(1\)/ })).toBeInTheDocument();
     expect(screen.getByLabelText('Виправити: Lidl')).toBeChecked();
     expect(screen.getByLabelText('Виправити: Aldi')).not.toBeChecked();
+    // Each group has its own apply button counting only its selection.
+    expect(screen.getByRole('button', { name: /Застосувати вибрані \(1\)/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Застосувати вибрані \(0\)/ })).toBeDisabled();
   });
 
-  it('"Зняти всі" clears the selection so apply is disabled', () => {
+  it('each group applies only its own entries', () => {
+    const onApply = vi.fn();
+    const result: ReconcileResult = {
+      ...emptyResult,
+      toFix: [
+        mkToFix(0, 'Lidl', 'a@example.com', 'b@example.com', true),
+        mkToFix(1, 'Aldi', 'a@example.com', 'b@example.com', false),
+      ],
+    };
+    render(<ReconcileResults result={result} onApply={onApply} isApplying={false} />);
+
+    fireEvent.click(screen.getByLabelText('Виправити: Aldi'));
+    // Groups render matches first, mismatches second.
+    const buttons = screen.getAllByRole('button', { name: /Застосувати вибрані \(1\)/ });
+    expect(buttons).toHaveLength(2);
+    fireEvent.click(buttons[1]!);
+
+    expect(onApply).toHaveBeenCalledOnce();
+    const applied = onApply.mock.calls[0]![0] as ToFixEntry[];
+    expect(applied).toHaveLength(1);
+    expect(applied[0]?.receipt.store).toBe('Aldi');
+  });
+
+  it('shows both names for a store mismatch (receipt vs statement)', () => {
+    const result: ReconcileResult = {
+      ...emptyResult,
+      toFix: [mkToFix(0, 'Amazon', 'a@example.com', 'b@example.com', false, 'AMZN MKTP DE')],
+    };
+    render(<ReconcileResults result={result} onApply={vi.fn()} isApplying={false} />);
+    expect(screen.getByText(/у чеку:/)).toBeInTheDocument();
+    expect(screen.getByText(/у виписці:/)).toBeInTheDocument();
+    expect(screen.getByText('AMZN MKTP DE')).toBeInTheDocument();
+  });
+
+  it('"Зняти всі" clears the group selection so its apply is disabled', () => {
     const result: ReconcileResult = {
       ...emptyResult,
       toFix: [mkToFix(0, 'Lidl', 'a@example.com', 'b@example.com')],
     };
     render(<ReconcileResults result={result} onApply={vi.fn()} isApplying={false} />);
     fireEvent.click(screen.getByRole('button', { name: /Зняти всі/ }));
-    expect(screen.getByRole('button', { name: /Застосувати \(0\)/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Застосувати вибрані \(0\)/ })).toBeDisabled();
+    // And back: the link flips to select-all.
+    fireEvent.click(screen.getByRole('button', { name: /Вибрати всі/ }));
+    expect(screen.getByRole('button', { name: /Застосувати вибрані \(1\)/ })).toBeEnabled();
   });
 
   it('shows an empty message and informational buckets when there is nothing to fix', () => {

@@ -56,7 +56,12 @@ export type ReconcileResult = {
   unmatchedStatementLines: UnmatchedEntry[]; // no receipt / receipt taken / refund
 };
 
-export type ReconcileOptions = { dateWindowDays?: number };
+export type ReconcileOptions = {
+  dateWindowDays?: number;
+  // Learned statement↔store name pairs (makeStoreAliasKey format) that count as
+  // a store match even when token fuzzy matching fails.
+  storeAliasKeys?: ReadonlySet<string>;
+};
 
 type Candidate = {
   txnIndex: number;
@@ -190,7 +195,7 @@ export function reconcileStatement(
         dateGap: assigned.dateGap,
         score: assigned.score,
         confidence: confidenceFromGap(assigned.dateGap),
-        storeMatch: storeNamesMatch(txn.merchant, txn.raw, receipt.store),
+        storeMatch: storeNamesMatch(txn.merchant, txn.raw, receipt.store, options.storeAliasKeys),
       };
       if (receipt.paid_by === owner) alreadyCorrect.push(link);
       else toFix.push({ ...link, from: receipt.paid_by, to: owner });

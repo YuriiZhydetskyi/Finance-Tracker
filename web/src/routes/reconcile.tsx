@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   reconcileStatement,
+  storeAliasInputsFromMatch,
   type NormalizedStatementTxn,
   type StatementTransaction,
   type StatementTransactionInput,
@@ -18,10 +19,13 @@ import {
   useDismissOrphanMutation,
   useOrphanTransactions,
   useReassignPayerMutation,
-  useResolveOrphanMutation,
+  useResolveOrphansMutation,
   useSaveOrphansMutation,
+  useSaveStoreAliasesMutation,
   useStatementReceipts,
+  useStoreAliases,
   type OrphanMatch,
+  type OrphanSelection,
 } from '@/features/reconcile';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
@@ -53,6 +57,15 @@ function toOrphanInput(txn: NormalizedStatementTxn, owner: string): StatementTra
     suggested_category: txn.category,
     paid_by: owner,
   };
+}
+
+// A statement line confirmed against a receipt whose name did NOT fuzzy-match
+// teaches the matcher: persist the normalized name pair so the next reconcile
+// puts it in the pre-checked store-match group.
+function aliasInputsFromConfirmed(
+  pairs: { merchant: string | null; raw: string | null; store: string }[],
+) {
+  return pairs.flatMap((p) => storeAliasInputsFromMatch(p.merchant, p.raw, p.store));
 }
 
 // Re-check stored orphans against current receipts, so a receipt entered AFTER the
@@ -94,12 +107,24 @@ function Reconcile() {
   const reassign = useReassignPayerMutation();
   const saveOrphans = useSaveOrphansMutation();
   const dismissOrphan = useDismissOrphanMutation();
-  const resolveOrphan = useResolveOrphanMutation();
+  const resolveOrphans = useResolveOrphansMutation();
+  const saveAliases = useSaveStoreAliasesMutation();
+
+  // Gate matching on the initial alias load so entries don't mount in the
+  // mismatch group and reshuffle a moment later. A fetch ERROR falls back to
+  // no aliases — reconcile must work without the learned pairs.
+  const aliasesQuery = useStoreAliases();
+  const aliasKeys = useMemo<ReadonlySet<string> | null>(() => {
+    if (aliasesQuery.data) return aliasesQuery.data;
+    return aliasesQuery.isPending ? null : new Set<string>();
+  }, [aliasesQuery.data, aliasesQuery.isPending]);
 
   const result = useMemo(() => {
-    if (!session || !receiptsQuery.data) return null;
-    return reconcileStatement(session.txns, receiptsQuery.data, session.owner);
-  }, [session, receiptsQuery.data]);
+    if (!session || !receiptsQuery.data || aliasKeys == null) return null;
+    return reconcileStatement(session.txns, receiptsQuery.data, session.owner, {
+      storeAliasKeys: aliasKeys,
+    });
+  }, [session, receiptsQuery.data, aliasKeys]);
 
   // Persist the no-candidate lines once per import (guard by runId), so they
   // survive reloads and can be re-matched later. Upsert dedups, so this is safe
@@ -147,8 +172,11 @@ function Reconcile() {
 
   const orphanMatches = useMemo<Map<string, OrphanMatch>>(() => {
     const map = new Map<string, OrphanMatch>();
-    if (rematchReceiptsQuery.data == null || orphanTxns.length === 0) return map;
-    const res = reconcileStatement(orphanTxns, rematchReceiptsQuery.data, NO_OWNER);
+    if (rematchReceiptsQuery.data == null || orphanTxns.length === 0 || aliasKeys == null)
+      return map;
+    const res = reconcileStatement(orphanTxns, rematchReceiptsQuery.data, NO_OWNER, {
+      storeAliasKeys: aliasKeys,
+    });
     for (const link of res.toFix) {
       const orphan = recentOrphans[link.txn.index];
       // Only suggest receipts entered AFTER the orphan — anything older was already
@@ -157,11 +185,12 @@ function Reconcile() {
         map.set(orphan.id, {
           receipt: link.receipt,
           needsFlip: link.receipt.paid_by !== orphan.paid_by,
+          storeMatch: link.storeMatch,
         });
       }
     }
     return map;
-  }, [orphanTxns, recentOrphans, rematchReceiptsQuery.data]);
+  }, [orphanTxns, recentOrphans, rematchReceiptsQuery.data, aliasKeys]);
 
   const handleReconcile = (owner: string, txns: NormalizedStatementTxn[]) => {
     setSession({ owner, txns });
@@ -171,21 +200,58 @@ function Reconcile() {
 
   const handleApply = (entries: ToFixEntry[]) => {
     if (!session || entries.length === 0) return;
-    reassign.mutate({ ids: entries.map((e) => e.receipt.id), paid_by: session.owner });
+    const aliasInputs = aliasInputsFromConfirmed(
+      entries
+        .filter((e) => !e.storeMatch)
+        .map((e) => ({ merchant: e.txn.merchant, raw: e.txn.raw, store: e.receipt.store })),
+    );
+    reassign.mutate(
+      { ids: entries.map((e) => e.receipt.id), paid_by: session.owner },
+      {
+        onSuccess: () => {
+          if (aliasInputs.length > 0) saveAliases.mutate(aliasInputs);
+        },
+      },
+    );
   };
 
-  const handleLinkOrphan = (orphan: StatementTransaction, match: OrphanMatch) => {
-    const resolve = () => resolveOrphan.mutate({ id: orphan.id, receipt_id: match.receipt.id });
-    // Only mark the orphan resolved AFTER the payer flip lands — otherwise a failed
-    // reassign would leave the orphan gone but the receipt's paid_by still wrong.
-    if (match.needsFlip) {
-      reassign.mutate({ ids: [match.receipt.id], paid_by: orphan.paid_by }, { onSuccess: resolve });
-    } else {
-      resolve();
+  const handleLinkOrphans = async (selections: OrphanSelection[]) => {
+    if (selections.length === 0) return;
+    const linked = selections.filter((s) => !s.match.needsFlip);
+    const flipsByOwner = new Map<string, OrphanSelection[]>();
+    for (const s of selections) {
+      if (!s.match.needsFlip) continue;
+      const group = flipsByOwner.get(s.orphan.paid_by);
+      if (group) group.push(s);
+      else flipsByOwner.set(s.orphan.paid_by, [s]);
     }
+    // Only mark an orphan resolved AFTER its payer flip lands — otherwise a failed
+    // reassign would leave the orphan gone but the receipt's paid_by still wrong.
+    // A failed group is skipped, not fatal: receipts that DID flip re-match with
+    // needsFlip=false after invalidation, so the next click just resolves them.
+    for (const [paid_by, group] of flipsByOwner) {
+      try {
+        await reassign.mutateAsync({ ids: group.map((s) => s.match.receipt.id), paid_by });
+        linked.push(...group);
+      } catch {
+        // surfaced via reassign.isError below
+      }
+    }
+    if (linked.length === 0) return;
+    resolveOrphans.mutate(linked.map((s) => ({ id: s.orphan.id, receipt_id: s.match.receipt.id })));
+    const aliasInputs = aliasInputsFromConfirmed(
+      linked
+        .filter((s) => !s.match.storeMatch)
+        .map((s) => ({
+          merchant: s.orphan.merchant,
+          raw: s.orphan.raw,
+          store: s.match.receipt.store,
+        })),
+    );
+    if (aliasInputs.length > 0) saveAliases.mutate(aliasInputs);
   };
 
-  const orphanBusy = dismissOrphan.isPending || resolveOrphan.isPending || reassign.isPending;
+  const orphanBusy = dismissOrphan.isPending || resolveOrphans.isPending || reassign.isPending;
 
   return (
     <div className="space-y-4">
@@ -233,8 +299,17 @@ function Reconcile() {
       {dismissOrphan.isError && (
         <ErrorDetails error={dismissOrphan.error} label="Не вдалося приховати транзакцію" />
       )}
-      {resolveOrphan.isError && (
-        <ErrorDetails error={resolveOrphan.error} label="Не вдалося зв'язати транзакцію з чеком" />
+      {resolveOrphans.isError && (
+        <ErrorDetails
+          error={resolveOrphans.error}
+          label="Не вдалося зв'язати транзакції з чеками"
+        />
+      )}
+      {saveAliases.isError && (
+        <ErrorDetails
+          error={saveAliases.error}
+          label="Не вдалося запам'ятати відповідності назв магазинів"
+        />
       )}
 
       {result && (
@@ -251,7 +326,7 @@ function Reconcile() {
         matches={orphanMatches}
         onCreate={(orphan) => setStubOrphan(orphan)}
         onDismiss={(id) => dismissOrphan.mutate(id)}
-        onLink={handleLinkOrphan}
+        onLinkSelected={(selections) => void handleLinkOrphans(selections)}
         busy={orphanBusy}
       />
 

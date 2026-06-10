@@ -386,6 +386,27 @@ export type Database = {
           },
         ];
       };
+      store_aliases: {
+        Row: {
+          created_at: string;
+          id: string;
+          receipt_store: string;
+          statement_name: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          receipt_store: string;
+          statement_name: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          receipt_store?: string;
+          statement_name?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       v_stats_by_category: {

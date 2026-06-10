@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Receipt } from './schemas';
 import type { NormalizedStatementTxn } from './bank-statement';
+import { makeStoreAliasKey } from './store-match';
 import { reconcileStatement } from './reconcile-statement';
 
 const OWNER = 'b@example.com';
@@ -266,6 +267,17 @@ describe('reconcileStatement', () => {
       OWNER,
     );
     expect(res.toFix[0]?.storeMatch).toBe(true);
+  });
+
+  it('flags storeMatch=true via a learned alias when the names share no token', () => {
+    const txns = [mkTxn({ index: 0, merchant: 'AMZN MKTP DE' })];
+    const receipts = [mkReceipt({ id: 'r1', store: 'Amazon' })];
+    const without = reconcileStatement(txns, receipts, OWNER);
+    expect(without.toFix[0]?.storeMatch).toBe(false);
+    const withAliases = reconcileStatement(txns, receipts, OWNER, {
+      storeAliasKeys: new Set([makeStoreAliasKey('AMZN MKTP DE', 'Amazon')]),
+    });
+    expect(withAliases.toFix[0]?.storeMatch).toBe(true);
   });
 
   it('carries storeMatch on alreadyCorrect links too', () => {

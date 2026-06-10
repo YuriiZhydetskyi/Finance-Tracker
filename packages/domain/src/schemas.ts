@@ -216,6 +216,26 @@ export const StatementTransactionInputSchema = z.object({
 });
 export type StatementTransactionInput = z.infer<typeof StatementTransactionInputSchema>;
 
+// ── StoreAlias (learned statement↔receipt store-name pair) ──────────────────
+// Written when the user confirms a reconcile match whose names did not
+// fuzzy-match; read back as a Set of keys for storeNamesMatch. Both columns
+// hold NORMALIZED names (normalizeStoreName) so the DB unique index dedupes
+// case/punctuation variants. See docs/data-model.md "Таблиця store_aliases".
+
+export const StoreAliasSchema = z.object({
+  id: ULID_SCHEMA,
+  statement_name: z.string().min(1),
+  receipt_store: z.string().min(1),
+  created_at: ISO_DATETIME_SCHEMA,
+});
+export type StoreAlias = z.infer<typeof StoreAliasSchema>;
+
+export const StoreAliasInputSchema = z.object({
+  statement_name: z.string().min(1),
+  receipt_store: z.string().min(1),
+});
+export type StoreAliasInput = z.infer<typeof StoreAliasInputSchema>;
+
 // ── Factory input shapes ────────────────────────────────────────────────────
 // The user-facing inputs to make*() factories. The factory generates id /
 // timestamps / derived fields and rounds money. See factories.ts.

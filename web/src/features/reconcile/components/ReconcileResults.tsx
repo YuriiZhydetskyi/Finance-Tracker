@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type {
   AmbiguousEntry,
   Confidence,
@@ -9,6 +9,7 @@ import type {
 import { Button } from '@/shared/ui/Button';
 import { formatMoney } from '@/shared/utils/format-money';
 import { formatDate } from '@/shared/utils/format-date';
+import { useSelectionOverrides, type SelectionOverrides } from '../hooks/use-selection-overrides';
 
 type Props = {
   result: ReconcileResult;
@@ -34,9 +35,9 @@ const UNMATCHED_REASON: Record<UnmatchedEntry['reason'], string> = {
   refund: 'повернення коштів — не звіряємо',
 };
 
-function txnLine(txn: ToFixEntry['txn']): string {
+function txnLine(txn: ToFixEntry['txn'], withMerchant = true): string {
   const amount = formatMoney(txn.amount, txn.currency);
-  const merchant = txn.merchant ? ` · ${txn.merchant}` : '';
+  const merchant = withMerchant && txn.merchant ? ` · ${txn.merchant}` : '';
   return `${amount} · ${formatDate(txn.date)}${merchant}`;
 }
 
@@ -44,27 +45,11 @@ export function ReconcileResults({ result, onApply, isApplying }: Props) {
   const { toFix, alreadyCorrect, ambiguous, unmatchedStatementLines } = result;
 
   // A store-name match is confident enough to pre-select; a date+amount-only
-  // match (store differs) is left for the user to confirm. Track de-selections
-  // (keyed by txn index) seeded with the store-mismatch lines, so those start
-  // unchecked while store matches start checked. Initializer-only state — the
-  // page remounts this component per import (key=runId), so stale indices from a
-  // prior statement can't leak in.
-  const [deselected, setDeselected] = useState<Set<number>>(
-    () => new Set(toFix.filter((e) => !e.storeMatch).map((e) => e.txn.index)),
-  );
-  const selected = toFix.filter((e) => !deselected.has(e.txn.index));
-
-  const toggle = (index: number) =>
-    setDeselected((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-
-  const allSelected = selected.length === toFix.length && toFix.length > 0;
-  const toggleAll = () =>
-    setDeselected(allSelected ? new Set(toFix.map((e) => e.txn.index)) : new Set());
+  // match (store differs) starts unchecked for the user to confirm. Defaults
+  // come from each entry's storeMatch; the hook stores only explicit user
+  // overrides. The page remounts this component per import (key=runId), so
+  // stale overrides from a prior statement can't leak in.
+  const selection = useSelectionOverrides<number>();
 
   const storeMatches = toFix.filter((e) => e.storeMatch);
   const storeMismatches = toFix.filter((e) => !e.storeMatch);
@@ -72,20 +57,9 @@ export function ReconcileResults({ result, onApply, isApplying }: Props) {
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Запропоновані виправлення {toFix.length > 0 && `(${toFix.length})`}
-          </h2>
-          {toFix.length > 0 && (
-            <button
-              type="button"
-              onClick={toggleAll}
-              className="text-sm font-medium text-slate-600 underline-offset-2 hover:underline"
-            >
-              {allSelected ? 'Зняти всі' : 'Прийняти всі'}
-            </button>
-          )}
-        </div>
+        <h2 className="text-lg font-semibold text-slate-900">
+          Запропоновані виправлення {toFix.length > 0 && `(${toFix.length})`}
+        </h2>
 
         {toFix.length === 0 ? (
           <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
@@ -98,30 +72,22 @@ export function ReconcileResults({ result, onApply, isApplying }: Props) {
                 title={`Магазин збігся (${storeMatches.length})`}
                 hint="Назва магазину збіглася — впевнений збіг, перевір і застосуй."
                 entries={storeMatches}
-                deselected={deselected}
-                onToggle={toggle}
+                selection={selection}
+                onApply={onApply}
+                isApplying={isApplying}
               />
             )}
 
             {storeMismatches.length > 0 && (
               <FixGroup
                 title={`Магазин інший — підтвердь (${storeMismatches.length})`}
-                hint="Дата й сума збіглися, але назва магазину інша. Познач, якщо це той самий чек."
+                hint="Дата й сума збіглися, але назва магазину інша. Познач, якщо це той самий чек — пару назв запам'ятаємо на майбутнє."
                 entries={storeMismatches}
-                deselected={deselected}
-                onToggle={toggle}
+                selection={selection}
+                onApply={onApply}
+                isApplying={isApplying}
               />
             )}
-
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                onClick={() => onApply(selected)}
-                disabled={selected.length === 0 || isApplying}
-              >
-                {isApplying ? 'Застосовую…' : `Застосувати (${selected.length})`}
-              </Button>
-            </div>
           </>
         )}
       </section>
@@ -156,20 +122,40 @@ function FixGroup({
   title,
   hint,
   entries,
-  deselected,
-  onToggle,
+  selection,
+  onApply,
+  isApplying,
 }: {
   title: string;
   hint: string;
   entries: ToFixEntry[];
-  deselected: Set<number>;
-  onToggle: (index: number) => void;
+  selection: SelectionOverrides<number>;
+  onApply: (entries: ToFixEntry[]) => void;
+  isApplying: boolean;
 }) {
+  const isChecked = (e: ToFixEntry) => selection.isSelected(e.txn.index, e.storeMatch);
+  const selected = entries.filter(isChecked);
+  const allSelected = selected.length === entries.length;
+
   return (
     <div className="space-y-2">
-      <div className="space-y-0.5">
-        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
-        <p className="text-xs text-slate-500">{hint}</p>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="space-y-0.5">
+          <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+          <p className="text-xs text-slate-500">{hint}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            selection.setAll(
+              entries.map((e) => e.txn.index),
+              !allSelected,
+            )
+          }
+          className="text-sm font-medium text-slate-600 underline-offset-2 hover:underline"
+        >
+          {allSelected ? 'Зняти всі' : 'Вибрати всі'}
+        </button>
       </div>
       <ul className="space-y-2">
         {entries.map((entry) => (
@@ -179,8 +165,8 @@ function FixGroup({
           >
             <input
               type="checkbox"
-              checked={!deselected.has(entry.txn.index)}
-              onChange={() => onToggle(entry.txn.index)}
+              checked={isChecked(entry)}
+              onChange={() => selection.toggle(entry.txn.index, entry.storeMatch)}
               aria-label={`Виправити: ${entry.receipt.store}`}
               className="mt-1 h-4 w-4 shrink-0"
             />
@@ -193,7 +179,14 @@ function FixGroup({
                   {CONFIDENCE_LABEL[entry.confidence]}
                 </span>
               </div>
-              <div className="text-sm text-slate-600">{txnLine(entry.txn)}</div>
+              <div className="text-sm text-slate-600">{txnLine(entry.txn, entry.storeMatch)}</div>
+              {!entry.storeMatch && (
+                <div className="text-sm text-amber-800">
+                  у чеку: <span className="font-medium">{entry.receipt.store}</span>
+                  <span className="px-1 text-amber-400">·</span>у виписці:{' '}
+                  <span className="font-medium">{entry.txn.merchant ?? entry.txn.raw ?? '—'}</span>
+                </div>
+              )}
               <div className="text-sm">
                 <span className="text-red-700 line-through">{entry.from}</span>
                 <span className="px-1 text-slate-400">→</span>
@@ -203,6 +196,15 @@ function FixGroup({
           </li>
         ))}
       </ul>
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          onClick={() => onApply(selected)}
+          disabled={selected.length === 0 || isApplying}
+        >
+          {isApplying ? 'Застосовую…' : `Застосувати вибрані (${selected.length})`}
+        </Button>
+      </div>
     </div>
   );
 }
