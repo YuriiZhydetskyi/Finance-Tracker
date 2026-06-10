@@ -33,6 +33,27 @@ describe('resolveStoreLogo', () => {
     expect(resolveStoreLogo("Domino's Pizza")?.id).toBe('dominos');
   });
 
+  it('matches Wizz Air via the "wizz" token', () => {
+    expect(resolveStoreLogo('Wizz Air')?.id).toBe('wizzair');
+  });
+
+  it('matches Too Good To Go as a multi-word phrase', () => {
+    expect(resolveStoreLogo('Too Good To Go')?.id).toBe('toogoodtogo');
+  });
+
+  it('matches TK Maxx with space', () => {
+    expect(resolveStoreLogo('TK Maxx')?.id).toBe('tkmaxx');
+  });
+
+  it('matches Meta and Facebook to the same logo', () => {
+    expect(resolveStoreLogo('Meta')?.id).toBe('meta');
+    expect(resolveStoreLogo('Facebook')?.id).toBe('meta');
+  });
+
+  it('matches ChatGPT to OpenAI logo', () => {
+    expect(resolveStoreLogo('ChatGPT')?.id).toBe('openai');
+  });
+
   it('returns null for unknown stores', () => {
     expect(resolveStoreLogo('оренда')).toBeNull();
     expect(resolveStoreLogo('Mangal')).toBeNull();
