@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   BankStatementSchema,
+  groupStatementDuplicates,
   normalizeStatementTxns,
   toStatementTxns,
   type NormalizedStatementTxn,
 } from '@finance-tracker/domain';
 import { parseJsonText } from '@/shared/utils/parse-json-text';
 import { formatZodIssues } from '@/shared/utils/format-zod-issues';
+import { formatMoney } from '@/shared/utils/format-money';
+import { formatDate } from '@/shared/utils/format-date';
 import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
 import { Button } from '@/shared/ui/Button';
 import { SELECT_CLASS } from '@/shared/ui/select-classes';
@@ -33,7 +36,26 @@ export function StatementImportDialog({
   const [owner, setOwner] = useState('');
   const [jsonText, setJsonText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Same-identity lines within the pasted import: the extraction prompt tells
+  // the AI to dedup screenshot overlap, but if it slips, the duplicate would
+  // silently persist as a "genuine" repeat purchase. First submit shows the
+  // groups for review; second submit proceeds minus the unchecked lines.
+  const [duplicateGroups, setDuplicateGroups] = useState<NormalizedStatementTxn[][] | null>(null);
+  const [excludedIndexes, setExcludedIndexes] = useState<ReadonlySet<number>>(new Set());
   const { copyState, copy, reset: resetCopy } = useCopyToClipboard(prompt);
+
+  const resetDuplicates = () => {
+    setDuplicateGroups(null);
+    setExcludedIndexes(new Set());
+  };
+
+  const toggleExcluded = (index: number) =>
+    setExcludedIndexes((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -47,6 +69,7 @@ export function StatementImportDialog({
   const handleClose = () => {
     setError(null);
     setOwner('');
+    resetDuplicates();
     resetCopy();
     onClose();
   };
@@ -73,7 +96,19 @@ export function StatementImportDialog({
         return;
       }
 
-      onReconcile(owner, normalizeStatementTxns(result.data));
+      const txns = normalizeStatementTxns(result.data);
+      if (duplicateGroups == null) {
+        const groups = groupStatementDuplicates(txns);
+        if (groups.length > 0) {
+          setDuplicateGroups(groups);
+          return;
+        }
+      }
+
+      onReconcile(
+        owner,
+        txns.filter((t) => !excludedIndexes.has(t.index)),
+      );
       setJsonText('');
       handleClose();
     } catch (e) {
@@ -157,7 +192,10 @@ export function StatementImportDialog({
             <textarea
               id="statement-json"
               value={jsonText}
-              onChange={(event) => setJsonText(event.target.value)}
+              onChange={(event) => {
+                setJsonText(event.target.value);
+                resetDuplicates();
+              }}
               rows={18}
               placeholder={STATEMENT_EXAMPLE_JSON}
               className="min-h-80 w-full resize-y rounded-md border border-slate-300 p-3 font-mono text-xs leading-5 text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
@@ -172,6 +210,45 @@ export function StatementImportDialog({
             ) : null}
           </section>
         </div>
+
+        {duplicateGroups && duplicateGroups.length > 0 && (
+          <div className="space-y-2 border-t border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-medium text-amber-900">
+              В імпорті є однакові транзакції. Якщо це накладання скріншотів — зніми галочку з
+              дубля; якщо покупка справді повторилась — лиши як є і натисни «Звірити» ще раз.
+            </p>
+            <ul className="space-y-2">
+              {duplicateGroups.map((group) => {
+                const first = group[0]!;
+                const label = first.merchant ?? first.raw ?? 'без назви';
+                return (
+                  <li key={first.index} className="space-y-1 text-sm text-amber-900">
+                    <div>
+                      {label} · {formatDate(first.date)} ·{' '}
+                      {formatMoney(first.amount, first.currency)} — зустрічається {group.length}{' '}
+                      разів
+                    </div>
+                    <ul className="space-y-1 pl-4">
+                      {group.slice(1).map((txn) => (
+                        <li key={txn.index}>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={!excludedIndexes.has(txn.index)}
+                              onChange={() => toggleExcluded(txn.index)}
+                              className="h-4 w-4 shrink-0"
+                            />
+                            <span>це окрема покупка — залишити</span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3">
           <Button type="button" variant="ghost" onClick={handleClose}>

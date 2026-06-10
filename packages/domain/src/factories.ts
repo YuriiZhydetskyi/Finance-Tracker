@@ -19,12 +19,14 @@ function normalizeTime(input: string | null | undefined): string | null {
   return /^\d{2}:\d{2}$/.test(input) ? `${input}:00` : input;
 }
 import { statementDedupKey } from './bank-statement';
+import { normalizeStoreName } from './store-match';
 import {
   ItemSchema,
   ProductPriceSchema,
   ProductSchema,
   ReceiptSchema,
   StatementTransactionSchema,
+  StoreAliasSchema,
   type Item,
   type ItemInput,
   type Product,
@@ -35,6 +37,8 @@ import {
   type ReceiptInput,
   type StatementTransaction,
   type StatementTransactionInput,
+  type StoreAlias,
+  type StoreAliasInput,
 } from './schemas';
 
 export function makeReceipt(input: ReceiptInput): Receipt {
@@ -158,6 +162,16 @@ export function makeStatementTransaction(input: StatementTransactionInput): Stat
     updated_at: now,
   };
   return StatementTransactionSchema.parse(candidate);
+}
+
+export function makeStoreAlias(input: StoreAliasInput): StoreAlias {
+  const candidate: StoreAlias = {
+    id: ulid(),
+    statement_name: normalizeStoreName(input.statement_name),
+    receipt_store: normalizeStoreName(input.receipt_store),
+    created_at: nowIso(),
+  };
+  return StoreAliasSchema.parse(candidate);
 }
 
 // ── Patch helpers (UPDATE) ──────────────────────────────────────────────────

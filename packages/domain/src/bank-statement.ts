@@ -107,6 +107,24 @@ export function dedupOccurrences(
   });
 }
 
+// Same-identity lines within one import, for the pre-reconcile duplicate guard:
+// the extraction prompt tells the AI to dedup screenshot overlap, but if it
+// slips, the duplicate would silently persist as a "genuine" repeat purchase.
+// Returns only groups of ≥2, in input order. Purchases and refunds of the same
+// amount/label are NOT each other's duplicates, so the refund flag splits them.
+export function groupStatementDuplicates(
+  txns: NormalizedStatementTxn[],
+): NormalizedStatementTxn[][] {
+  const groups = new Map<string, NormalizedStatementTxn[]>();
+  for (const t of txns) {
+    const id = `${t.isRefund ? 'r' : 'p'}|${dedupIdentity(t.date, t.amount, t.currency, t.merchant, t.raw)}`;
+    const arr = groups.get(id);
+    if (arr) arr.push(t);
+    else groups.set(id, [t]);
+  }
+  return [...groups.values()].filter((g) => g.length >= 2);
+}
+
 export function normalizeStatementTxns(txns: BankStatementTxn[]): NormalizedStatementTxn[] {
   return txns.map((t, index) => ({
     index,

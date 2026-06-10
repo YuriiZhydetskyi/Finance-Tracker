@@ -4,7 +4,7 @@
 >
 > Канонічні DDL — у [supabase/migrations/](../supabase/migrations/). Згенеровані TS-типи — у [web/src/shared/types/database.types.ts](../web/src/shared/types/database.types.ts) (regenerate через `npx supabase gen types typescript --linked`). Zod-схеми (in-app валідація + factories) — у [packages/domain/src/schemas.ts](../packages/domain/src/schemas.ts).
 
-Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + `pending_parses` (черга невдалих парсингів) + `statement_transactions` (орфанні транзакції виписки) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
+Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + `pending_parses` (черга невдалих парсингів) + `statement_transactions` (орфанні транзакції виписки) + `store_aliases` (вивчені пари назв для звірки) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
 
 Чому Postgres + Supabase замість Sheets — див. [ADR-0013](decisions/0013-migrate-to-react-supabase.md). Курси валют **не зберігаються** в окремій таблиці — конвертація відбувається on-the-fly при збереженні чеку через NBU API; курс фіксується назавжди на самому Receipt-рядку як audit trail (ADR-0004).
 
@@ -89,7 +89,7 @@ as $$ select exists (select 1 from public.app_users where email = (auth.jwt() ->
 
 Policies:
 
-- `receipts`, `items`, `products`, `pending_parses`, `statement_transactions` — full read+write для allowlisted users.
+- `receipts`, `items`, `products`, `pending_parses`, `statement_transactions`, `store_aliases` — full read+write для allowlisted users.
 - `categories` — read-only для allowlisted users; mutate тільки через Studio SQL editor.
 - `app_users` — self-read (`email = auth.jwt() ->> 'email'`); mutate тільки через Studio.
 - `storage.objects` для bucket_id `receipts` — full read+write для allowlisted users.
@@ -424,6 +424,34 @@ create table public.statement_transactions (
 - Імпорт виписки → no-candidate рядки upsert-яться сюди (`onConflict: dedup_key, ignoreDuplicates`) — [`useSaveOrphansMutation`](../web/src/features/reconcile/api/use-save-orphans-mutation.ts).
 - На `/reconcile` **недавні** орфани (≤2 міс.) повторно проганяються через `reconcileStatement` проти чеків того ж вікна; пропонується «Зв'язати» лише для чеків, доданих **після** орфана (`receipt.created_at > orphan.created_at` — старіші вже були перевірені при імпорті). За потреби flip `paid_by` ([`useResolveOrphanMutation`](../web/src/features/reconcile/api/use-resolve-orphan-mutation.ts)).
 - «Створити чек» → stub-receipt + resolve. «Ігнорувати» → `status='dismissed'` ([`useDismissOrphanMutation`](../web/src/features/reconcile/api/use-dismiss-orphan-mutation.ts)).
+
+---
+
+## Таблиця `store_aliases`
+
+Вивчені пари назв магазинів для звірки виписки: коли користувач **підтверджує** збіг, у якого назва з виписки НЕ fuzzy-збіглася з назвою магазину чека (`storeMatch: false`), пара запам'ятовується — наступні звірки трактують її як store match (рядок потрапляє в pre-checked групу «Магазин збігся»). Доповнення до token-based fuzzy ([`storeNamesMatch`](../packages/domain/src/store-match.ts)), а не заміна: alias — точний збіг нормалізованої пари.
+
+Міграція: [`supabase/migrations/20260610000001_store_aliases.sql`](../supabase/migrations/20260610000001_store_aliases.sql).
+
+```sql
+create table public.store_aliases (
+  id             text primary key,            -- ULID
+  statement_name text not null,               -- нормалізована назва з виписки (merchant або raw)
+  receipt_store  text not null,               -- нормалізована назва магазину чека
+  created_at     timestamptz not null default now()
+);
+```
+
+| Колонка          | Тип         | Nullable | Правила / Примітка                                                                                                                   |
+| ---------------- | ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`             | text (ULID) | ні       | client-generated                                                                                                                     |
+| `statement_name` | text        | ні       | **нормалізована** (`normalizeStoreName`) назва з виписки; на одне підтвердження пишеться до 2 рядків — окремо для `merchant` і `raw` |
+| `receipt_store`  | text        | ні       | **нормалізована** назва магазину з чека                                                                                              |
+| `created_at`     | timestamptz | ні       | default `now()`                                                                                                                      |
+
+**RLS:** policy `allowlist_all_store_aliases` (full read+write, gated `is_allowed_user()`). Unique index `uq_store_aliases_pair (statement_name, receipt_store)` — повторне підтвердження тієї ж пари no-op (upsert `ignoreDuplicates`).
+
+Обидві колонки зберігаються нормалізованими (нормалізація — у [`makeStoreAlias`](../packages/domain/src/factories.ts)), бо unique-індекс має дедупити "McDonald's" і "MCDONALDS". Матчинг читає таблицю як `Set` ключів `"statement_name|receipt_store"` ([`makeStoreAliasKey`](../packages/domain/src/store-match.ts)) і передає в `reconcileStatement` через `options.storeAliasKeys` — domain лишається vendor-free.
 
 ---
 

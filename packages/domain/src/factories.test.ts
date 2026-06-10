@@ -7,6 +7,7 @@ import {
   makeProductPrice,
   makeReceipt,
   makeStatementTransaction,
+  makeStoreAlias,
 } from './factories';
 
 const RECEIPT_DEFAULTS = {
@@ -321,6 +322,19 @@ describe('makeStatementTransaction', () => {
     const second = makeStatementTransaction({ ...TXN_DEFAULTS, merchant: 'Lidl', occurrence: 1 });
     expect(first.dedup_key).not.toBe(second.dedup_key);
     expect(second.dedup_key).toBe('2026-05-25|12.34|EUR|lidl|1');
+  });
+});
+
+describe('makeStoreAlias', () => {
+  it('generates a ULID and normalizes both names', () => {
+    const a = makeStoreAlias({ statement_name: 'AMZN  MKTP', receipt_store: "Amazon's" });
+    expect(a.id).toHaveLength(26);
+    expect(a.statement_name).toBe('amzn mktp');
+    expect(a.receipt_store).toBe('amazons');
+  });
+
+  it('rejects names that normalize to empty', () => {
+    expect(() => makeStoreAlias({ statement_name: '!!!', receipt_store: 'Amazon' })).toThrow();
   });
 });
 
