@@ -223,6 +223,23 @@ describe('ManualJsonImportDialog', () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
+  it('closes when Escape is pressed', () => {
+    const onClose = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={onClose}
+        onImported={noop}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('auto-resets copyState to idle after the timeout', async () => {
     vi.useFakeTimers();
     try {

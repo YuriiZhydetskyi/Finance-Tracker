@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { ParsedReceiptSchema, type ParsedReceipt } from '@finance-tracker/domain';
 import { parseJsonText } from '@/shared/utils/parse-json-text';
 import { formatZodIssues } from '@/shared/utils/format-zod-issues';
@@ -168,7 +176,13 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
   };
 
   const handleBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
-    if (event.target === dialogRef.current) handleClose();
+    if (event.target === event.currentTarget) handleClose();
+  };
+
+  const handleDialogKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    handleClose();
   };
 
   return (
@@ -179,6 +193,7 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
         handleClose();
       }}
       onClick={handleBackdropClick}
+      onKeyDown={handleDialogKeyDown}
       aria-labelledby="manual-json-title"
       className="max-h-[92vh] w-[min(96vw,64rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
     >
