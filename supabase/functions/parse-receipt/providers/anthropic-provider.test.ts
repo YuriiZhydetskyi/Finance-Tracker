@@ -42,11 +42,13 @@ afterEach(() => {
 
 function lastRequestBody(): {
   messages: Array<{ content: Array<Record<string, unknown>> }>;
+  tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
 } {
   expect(fetchMock).toHaveBeenCalled();
   const init = fetchMock.mock.calls[0]![1] as RequestInit;
   return JSON.parse(init.body as string) as {
     messages: Array<{ content: Array<Record<string, unknown>> }>;
+    tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
   };
 }
 
@@ -91,5 +93,25 @@ describe('AnthropicProvider — content block dispatch', () => {
     await provider.parse('AAA', ctx('application/pdf'));
     const body = lastRequestBody();
     expect(body.messages[0]!.content[1]!.type).toBe('text');
+  });
+
+  it('constrains bulk arithmetic repair to re-read item rows only', async () => {
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+    await provider.repairBulkItems('PDF-BYTES', ctx('application/pdf'), {
+      expectedTotalOrig: 101.18,
+      previousComputedTotal: 91.55,
+      previousItems: [{ product_name: 'CC Li/Ze 6x1.25l', qty: 6, unit_price_orig: 0.25 }],
+    });
+
+    const body = lastRequestBody();
+    expect(Object.keys(body.tools[0]!.input_schema.properties)).toEqual(['items']);
+    expect(body.tools[0]!.input_schema.required).toEqual(['items']);
+    const prompt = String(body.messages[0]!.content[1]!.text);
+    expect(prompt).toContain('trusted printed final total is 101.18');
+    expect(prompt).toContain('Pack-size text such as 6x1.25l');
+    expect(prompt).toContain('does not replace the merchandise price');
+    expect(prompt).toContain('VAT class, not an item quantity');
+    expect(prompt).toContain('Count every separately printed repeated row');
+    expect(prompt).toContain('Never invent an adjustment');
   });
 });

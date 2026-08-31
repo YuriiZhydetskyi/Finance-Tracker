@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { GeminiProvider } from '../parse-receipt/providers/gemini-provider.ts';
 import { AnthropicProvider } from '../parse-receipt/providers/anthropic-provider.ts';
 import type { AiContext, BulkParsedDocument } from '../parse-receipt/types.ts';
+import { repairArithmeticMismatch, type ArithmeticRepairResult } from './arithmetic-repair.ts';
 import { prepareReceipt, validateBulkDocument } from './domain.ts';
 
 const BUCKET = 'receipts';
@@ -70,13 +71,12 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       mimeType: importFile.mime_type,
     };
     const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-    let raw: BulkParsedDocument;
-    try {
-      raw = await primary.parseBulk(base64, ctx, importFile.force_receipt);
-    } catch {
-      raw = await fallback.parseBulk(base64, ctx, importFile.force_receipt);
-    }
-    const parsed = validateBulkDocument(raw);
+    const { raw, allowIndependentRepair } = await parseWithFallback(
+      base64,
+      ctx,
+      importFile.force_receipt,
+    );
+    let parsed = validateBulkDocument(raw);
 
     if (parsed.document_kind !== 'receipt') {
       await completeException(
@@ -88,6 +88,15 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       );
       return { id: importFile.id, status: 'needs_review' };
     }
+
+    const repair = await repairArithmeticMismatch(
+      parsed,
+      base64,
+      ctx,
+      allowIndependentRepair ? fallback : null,
+    );
+    logArithmeticRepair(importFile.id, repair);
+    parsed = repair.parsed;
 
     const fxRate = await getFxRate(parsed.currency, parsed.date);
     const { data: signed } = await db.storage
@@ -127,6 +136,40 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       p_error_message: publicError(error),
     });
     return { id: job.import_file_id, status: job.read_count >= 3 ? 'needs_review' : 'queued' };
+  }
+}
+
+async function parseWithFallback(
+  base64: string,
+  ctx: AiContext,
+  forceReceipt: boolean,
+): Promise<{ raw: BulkParsedDocument; allowIndependentRepair: boolean }> {
+  try {
+    return {
+      raw: await primary.parseBulk(base64, ctx, forceReceipt),
+      allowIndependentRepair: true,
+    };
+  } catch {
+    return {
+      raw: await fallback.parseBulk(base64, ctx, forceReceipt),
+      allowIndependentRepair: false,
+    };
+  }
+}
+
+function logArithmeticRepair(fileId: string, repair: ArithmeticRepairResult): void {
+  if (repair.status === 'not_needed') return;
+  const details = {
+    file_id: fileId,
+    status: repair.status,
+    computed_before: repair.before?.computedTotal ?? null,
+    printed_total: repair.before?.printedTotal ?? null,
+    computed_after: repair.after?.computedTotal ?? null,
+  };
+  if (repair.status === 'accepted') {
+    console.info('[process-receipt-imports] arithmetic repair accepted', details);
+  } else {
+    console.warn('[process-receipt-imports] arithmetic repair not accepted', details);
   }
 }
 
