@@ -10,7 +10,7 @@ const FETCH_LIMIT = 1000;
 // covers card posting lag (a purchase on day D can post up to `window` days later,
 // so the receipt's date is earlier than the statement date).
 function statementRange(txns: NormalizedStatementTxn[]): { from: string; to: string } | null {
-  const dates = txns.map((t) => t.date).sort();
+  const dates = txns.map((t) => t.date).sort((left, right) => left.localeCompare(right));
   const min = dates[0];
   const max = dates[dates.length - 1];
   if (!min || !max) return null;
