@@ -8,6 +8,8 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
 - Gemini класифікує й парсить першим; Anthropic працює як fallback.
 - Детерміновані gates у `domain.ts` вирішують, чи можна auto-save чек.
 - `finalize_receipt_import` зберігає кілька таблиць в одній Postgres-транзакції.
+- Точний збіг date/time/currency/total автоматично прив’язується до наявного чека; ширші
+  duplicate-кандидати лишаються на ручну перевірку.
 - Retryable failure знову стає видимим; третя помилка переходить у exception queue.
 - Кожен provider request має timeout 60 секунд: це залишає час для Anthropic fallback у межах
   Edge Function request limit.
