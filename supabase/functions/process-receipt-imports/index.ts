@@ -15,6 +15,7 @@ function requiredEnv(name: string): string {
 
 const supabaseUrl = requiredEnv('SUPABASE_URL');
 const serviceRoleKey = requiredEnv('SUPABASE_SERVICE_ROLE_KEY');
+const cronToken = requiredEnv('RECEIPT_IMPORT_CRON_TOKEN');
 const db = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -31,7 +32,7 @@ type ImportFile = {
 
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (request.headers.get('Authorization') !== `Bearer ${serviceRoleKey}`) {
+  if (request.headers.get('Authorization') !== `Bearer ${cronToken}`) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
