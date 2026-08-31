@@ -16,7 +16,9 @@
 
 Статус файлу рухається `uploading → queued → processing → saved`; ручної уваги потребують
 `needs_review`, `duplicate` та `upload_failed`. Exact file duplicate визначається SHA-256 до
-upload; можливий semantic duplicate — за store/date/currency/total і близьким time перед insert.
+upload. Semantic duplicate з точним збігом date/time/currency/total автоматично прив’язується до
+наявного receipt; ширший збіг за store/date/currency/total і близьким time перед insert лишається
+на ручну перевірку.
 RLS дає allowlisted користувачам тільки `select`; мутації браузера проходять через вузькі RPC,
 worker RPC відкриті лише ролі `service_role`.
 
