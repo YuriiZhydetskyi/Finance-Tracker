@@ -4,9 +4,13 @@ import { prepareFile } from '@/features/photo';
 import { photoStorage } from '@/shared/lib/dependencies';
 import { supabase } from '@/shared/lib/supabase-client';
 import type { Json, Tables } from '@/shared/types/database.types';
+import { summarizeImportProgress, type ImportProgressSummary } from './import-progress';
 
 export type ImportBatch = Tables<'receipt_import_batches'>;
 export type ImportFile = Tables<'receipt_import_files'>;
+export type ImportBatchSummary = ImportBatch & { progress: ImportProgressSummary };
+
+const FILE_STATUS_PAGE_SIZE = 1_000;
 
 export const importBatchesQueryKey = ['receipt-import-batches'] as const;
 export const importBatchQueryKey = (id: string) => ['receipt-import-batches', id] as const;
@@ -34,16 +38,50 @@ type PreparedUpload = {
 export function useImportBatches() {
   return useQuery({
     queryKey: importBatchesQueryKey,
-    queryFn: async (): Promise<ImportBatch[]> => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<ImportBatchSummary[]> => {
+      const { data: batches, error: batchesError } = await supabase
         .from('receipt_import_batches')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(30);
-      if (error) throw error;
-      return data;
+      if (batchesError) throw batchesError;
+      if (batches.length === 0) return [];
+
+      const files = await fetchImportFileStatuses(batches.map((batch) => batch.id));
+
+      const filesByBatch = new Map<string, { status: string }[]>();
+      for (const file of files) {
+        const batchFiles = filesByBatch.get(file.batch_id) ?? [];
+        batchFiles.push(file);
+        filesByBatch.set(file.batch_id, batchFiles);
+      }
+
+      return batches.map((batch) => ({
+        ...batch,
+        progress: summarizeImportProgress(filesByBatch.get(batch.id) ?? []),
+      }));
     },
+    refetchInterval: (query) =>
+      query.state.data?.some((batch) => batch.progress.active > 0) ? 5_000 : false,
   });
+}
+
+async function fetchImportFileStatuses(
+  batchIds: string[],
+): Promise<{ batch_id: string; status: string }[]> {
+  const files: { batch_id: string; status: string }[] = [];
+
+  for (let from = 0; ; from += FILE_STATUS_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('receipt_import_files')
+      .select('batch_id, status, id')
+      .in('batch_id', batchIds)
+      .order('id')
+      .range(from, from + FILE_STATUS_PAGE_SIZE - 1);
+    if (error) throw error;
+    files.push(...data.map(({ batch_id, status }) => ({ batch_id, status })));
+    if (data.length < FILE_STATUS_PAGE_SIZE) return files;
+  }
 }
 
 export function useImportBatch(id: string) {

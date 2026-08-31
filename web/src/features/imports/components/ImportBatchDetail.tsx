@@ -8,6 +8,7 @@ import {
   useResolveImportFile,
   type ImportFile,
 } from '../api/imports';
+import { summarizeImportProgress } from '../api/import-progress';
 
 const STATUS_LABELS: Record<string, string> = {
   uploading: 'завантаження',
@@ -31,11 +32,7 @@ export function ImportBatchDetail({ id }: { id: string }) {
   if (!query.data) return null;
 
   const { batch, files } = query.data;
-  const counts = files.reduce<Record<string, number>>((acc, file) => {
-    acc[file.status] = (acc[file.status] ?? 0) + 1;
-    return acc;
-  }, {});
-  const active = (counts.uploading ?? 0) + (counts.queued ?? 0) + (counts.processing ?? 0);
+  const progress = summarizeImportProgress(files);
   const exceptions = files.filter((file) =>
     ['needs_review', 'duplicate', 'upload_failed'].includes(file.status),
   );
@@ -49,11 +46,14 @@ export function ImportBatchDetail({ id }: { id: string }) {
         </p>
       </div>
       <div className="rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-700">
-        <p>
-          Збережено: {counts.saved ?? 0} · у роботі: {active} · винятків: {exceptions.length} ·
-          відхилено: {counts.discarded ?? 0}
+        <p role="status" aria-live="polite" className="font-medium text-slate-900">
+          Завершено: {progress.completed} із {progress.total} документів
         </p>
-        {active > 0 ? (
+        <p className="mt-1">
+          Збережено: {progress.saved} · у роботі: {progress.active} · винятків:{' '}
+          {progress.exceptions} · відхилено: {progress.discarded}
+        </p>
+        {progress.active > 0 ? (
           <p className="mt-1 text-slate-500">
             Обробка триває у фоні. Цю вкладку вже можна закрити.
           </p>

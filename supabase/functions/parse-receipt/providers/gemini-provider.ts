@@ -4,8 +4,10 @@ import type { AiContext, BulkParsedDocument, ParsedReceipt } from '../types.ts';
 import type { IAiProvider } from './ai-provider.ts';
 
 const GEMINI_API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const DEFAULT_MODEL = 'gemini-3-flash-preview';
-const TEMPERATURE = 0.1;
+const DEFAULT_MODEL = 'gemini-3.7-flash';
+const THINKING_LEVEL = 'medium';
+const IMAGE_MEDIA_RESOLUTION = 'MEDIA_RESOLUTION_HIGH';
+const PDF_MEDIA_RESOLUTION = 'MEDIA_RESOLUTION_MEDIUM';
 
 type Config = { apiKey: string; model?: string };
 
@@ -39,17 +41,24 @@ export class GeminiProvider implements IAiProvider {
   ): Promise<T> {
     const model = this.cfg.model ?? DEFAULT_MODEL;
     const url = `${GEMINI_API_URL_BASE}/${model}:generateContent`;
+    // Keep the media budget explicit: Gemini recommends High for image analysis
+    // and Medium for ordinary PDF document OCR.
+    const mediaResolution =
+      ctx.mimeType === 'application/pdf' ? PDF_MEDIA_RESOLUTION : IMAGE_MEDIA_RESOLUTION;
     const body = {
       contents: [
         {
           parts: [
             { text: prompt },
-            { inline_data: { mime_type: ctx.mimeType, data: imageBase64 } },
+            {
+              inline_data: { mime_type: ctx.mimeType, data: imageBase64 },
+              media_resolution: { level: mediaResolution },
+            },
           ],
         },
       ],
       generationConfig: {
-        temperature: TEMPERATURE,
+        thinkingConfig: { thinkingLevel: THINKING_LEVEL },
         responseMimeType: 'application/json',
         responseJsonSchema: schema,
       },
@@ -82,8 +91,14 @@ function extractText(wrapper: unknown): string | null {
   if (!first || typeof first !== 'object') return null;
   const content = (first as { content?: { parts?: unknown[] } }).content;
   const parts = content?.parts;
-  const part = parts?.[0];
-  if (!part || typeof part !== 'object') return null;
-  const text = (part as { text?: unknown }).text;
-  return typeof text === 'string' ? text : null;
+  if (!parts) return null;
+  for (const part of parts) {
+    if (!part || typeof part !== 'object') continue;
+    const candidate = part as { text?: unknown; thought?: unknown };
+    // Thinking output is not the structured receipt. Gemini can place it ahead
+    // of the JSON part, so select the first non-thought text part instead.
+    if (candidate.thought === true) continue;
+    if (typeof candidate.text === 'string') return candidate.text;
+  }
+  return null;
 }
