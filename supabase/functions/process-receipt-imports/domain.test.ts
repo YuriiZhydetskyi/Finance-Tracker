@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { prepareReceipt, validateBulkDocument } from './domain.ts';
+import { checkReceiptArithmetic, prepareReceipt, validateBulkDocument } from './domain.ts';
 
 const parsed = validateBulkDocument({
   document_kind: 'receipt',
@@ -71,5 +71,60 @@ describe('bulk import domain gate', () => {
       null,
     );
     expect(result.ok).toBe(false);
+  });
+
+  it('pairs repeated same-name discounts one-to-one without corrupting a correct 16.02 extraction', () => {
+    const repeatedDiscounts = validateBulkDocument({
+      ...parsed,
+      total_orig: 16.02,
+      items: [
+        { product_name: 'Lamm', qty: 1, unit_price_orig: 6.16 },
+        { product_name: 'Lamm', qty: 1, unit_price_orig: -1.85 },
+        { product_name: 'Lamm', qty: 1, unit_price_orig: 5.64 },
+        { product_name: 'Lamm', qty: 1, unit_price_orig: -1.7 },
+        { product_name: 'Käse', qty: 1, unit_price_orig: 1.79 },
+        { product_name: 'Käse', qty: 1, unit_price_orig: -0.54 },
+        { product_name: 'Käse', qty: 1, unit_price_orig: 1.79 },
+        { product_name: 'Käse', qty: 1, unit_price_orig: -0.54 },
+        { product_name: 'Other', qty: 1, unit_price_orig: 5.27 },
+      ],
+    });
+
+    const arithmetic = checkReceiptArithmetic(repeatedDiscounts);
+    expect(arithmetic).toMatchObject({ computedTotal: 16.02, printedTotal: 16.02, matches: true });
+    expect(arithmetic?.normalizedItems).toEqual([
+      expect.objectContaining({ product_name: 'Lamm', unit_price_orig: 6.16, discount_orig: 1.85 }),
+      expect.objectContaining({ product_name: 'Lamm', unit_price_orig: 5.64, discount_orig: 1.7 }),
+      expect.objectContaining({ product_name: 'Käse', unit_price_orig: 1.79, discount_orig: 0.54 }),
+      expect.objectContaining({ product_name: 'Käse', unit_price_orig: 1.79, discount_orig: 0.54 }),
+      expect.objectContaining({ product_name: 'Other', unit_price_orig: 5.27 }),
+    ]);
+
+    const prepared = prepareReceipt(
+      repeatedDiscounts,
+      1,
+      new Set(['Інше']),
+      () => '0'.repeat(26),
+      null,
+    );
+    expect(prepared.ok).toBe(true);
+  });
+
+  it('claims each positive row at most once across repeated exact cancellations', () => {
+    const cancellations = validateBulkDocument({
+      ...parsed,
+      total_orig: 0,
+      items: [
+        { product_name: 'Void\u200B item', qty: 1, unit_price_orig: 5 },
+        { product_name: 'Void item', qty: 1, unit_price_orig: 5 },
+        { product_name: 'Void item', qty: 1, unit_price_orig: -5 },
+        { product_name: 'Void item', qty: 1, unit_price_orig: -5 },
+      ],
+    });
+
+    const arithmetic = checkReceiptArithmetic(cancellations);
+    expect(arithmetic).toMatchObject({ computedTotal: 0, matches: true });
+    expect(arithmetic?.normalizedItems).toHaveLength(2);
+    expect(arithmetic?.normalizedItems.every((item) => item.unit_price_orig === 0)).toBe(true);
   });
 });

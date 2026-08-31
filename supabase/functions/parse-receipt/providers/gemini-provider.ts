@@ -1,6 +1,17 @@
 import { buildPrompt, buildSchema } from '../prompts/receipt-prompt.ts';
-import { buildBulkPrompt, buildBulkSchema } from '../prompts/bulk-import-prompt.ts';
-import type { AiContext, BulkParsedDocument, ParsedReceipt } from '../types.ts';
+import {
+  buildBulkPrompt,
+  buildBulkRepairPrompt,
+  buildBulkRepairSchema,
+  buildBulkSchema,
+} from '../prompts/bulk-import-prompt.ts';
+import type {
+  AiContext,
+  BulkParsedDocument,
+  BulkReceiptItemRepair,
+  BulkReceiptRepairContext,
+  ParsedReceipt,
+} from '../types.ts';
 import type { IAiProvider } from './ai-provider.ts';
 
 const GEMINI_API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -31,6 +42,19 @@ export class GeminiProvider implements IAiProvider {
       ctx,
       buildBulkPrompt(ctx, forceReceipt),
       buildBulkSchema(ctx),
+    );
+  }
+
+  repairBulkItems(
+    imageBase64: string,
+    ctx: AiContext,
+    repair: BulkReceiptRepairContext,
+  ): Promise<BulkReceiptItemRepair> {
+    return this.request<BulkReceiptItemRepair>(
+      imageBase64,
+      ctx,
+      buildBulkRepairPrompt(ctx, repair),
+      buildBulkRepairSchema(ctx),
     );
   }
 

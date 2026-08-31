@@ -9,6 +9,14 @@ export type ValidationResult =
   | { ok: true; value: FinalizedReceipt }
   | { ok: false; reason: string };
 
+export type ReceiptArithmeticCheck = {
+  normalizedItems: ParsedItem[];
+  computedTotal: number;
+  printedTotal: number;
+  tolerance: number;
+  matches: boolean;
+};
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_TIME = /^\d{2}:\d{2}(:\d{2})?$/;
 
@@ -116,7 +124,9 @@ export function prepareReceipt(
   if (parsed.items.length === 0) return { ok: false, reason: 'У документі немає позицій.' };
   if (!Number.isFinite(fxRate) || fxRate <= 0) return { ok: false, reason: 'Не знайдено курс.' };
 
-  const normalized = mergePairs(parsed.items);
+  const arithmetic = checkReceiptArithmetic(parsed);
+  if (!arithmetic) return { ok: false, reason: 'Не вдалося перевірити арифметику чека.' };
+  const normalized = arithmetic.normalizedItems;
   if (normalized.length === 0) return { ok: false, reason: 'Після перевірки не лишилося позицій.' };
   if (normalized.length > 500) return { ok: false, reason: 'У документі забагато позицій.' };
   for (const item of normalized) {
@@ -156,16 +166,11 @@ export function prepareReceipt(
       note: null,
     };
   });
-  const computed = round(
-    items.reduce((sum, item) => sum + Number(item.total_orig), 0),
-    2,
-  );
-  const printed = round(parsed.total_orig, 2);
-  const tolerance = Math.max(0.05, Math.min(Math.abs(printed) * 0.005, 0.5));
-  if (Math.abs(computed - printed) > tolerance) {
+  const computed = arithmetic.computedTotal;
+  if (!arithmetic.matches) {
     return {
       ok: false,
-      reason: `Сума позицій ${computed.toFixed(2)} не збігається з підсумком ${printed.toFixed(2)}.`,
+      reason: `Сума позицій ${computed.toFixed(2)} не збігається з підсумком ${arithmetic.printedTotal.toFixed(2)}.`,
     };
   }
 
@@ -191,30 +196,90 @@ export function prepareReceipt(
   };
 }
 
+export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArithmeticCheck | null {
+  if (
+    parsed.document_kind !== 'receipt' ||
+    parsed.total_orig == null ||
+    !Number.isFinite(parsed.total_orig)
+  ) {
+    return null;
+  }
+  const normalizedItems = mergePairs(parsed.items);
+  const computedTotal = round(
+    normalizedItems.reduce((sum, item) => {
+      const qty = round(item.qty, 3);
+      const unitPrice = round(item.unit_price_orig, 2);
+      const discount = round(item.discount_orig ?? 0, 2);
+      return sum + round(qty * (unitPrice - discount), 2);
+    }, 0),
+    2,
+  );
+  const printedTotal = round(parsed.total_orig, 2);
+  const tolerance = Math.max(0.05, Math.min(Math.abs(printedTotal) * 0.005, 0.5));
+  return {
+    normalizedItems,
+    computedTotal,
+    printedTotal,
+    tolerance,
+    matches: Math.abs(computedTotal - printedTotal) <= tolerance,
+  };
+}
+
 function mergePairs(items: ParsedItem[]): ParsedItem[] {
   const result = items.map((item) => ({ ...item }));
   const removed = new Set<number>();
-  for (let negativeIndex = 0; negativeIndex < result.length; negativeIndex += 1) {
-    const negative = result[negativeIndex];
-    if (!negative || negative.unit_price_orig >= 0) continue;
-    const positiveIndex = result.findIndex(
-      (candidate, index) =>
-        index !== negativeIndex &&
-        !removed.has(index) &&
-        candidate.unit_price_orig > 0 &&
-        normalize(candidate.product_name) === normalize(negative.product_name) &&
-        Math.abs(candidate.qty - negative.qty) <= 0.001,
-    );
-    if (positiveIndex < 0) continue;
-    const positive = result[positiveIndex];
-    if (!positive) continue;
-    const positiveTotal = round(positive.qty * positive.unit_price_orig, 2);
-    const negativeTotal = round(Math.abs(negative.qty * negative.unit_price_orig), 2);
-    if (positiveTotal === negativeTotal) {
+  const groups = new Map<string, number[]>();
+  result.forEach((item, index) => {
+    const key = normalize(item.product_name);
+    if (!key) return;
+    const indices = groups.get(key);
+    if (indices) indices.push(index);
+    else groups.set(key, [index]);
+  });
+
+  for (const indices of groups.values()) {
+    const positives = indices.filter((index) => (result[index]?.unit_price_orig ?? 0) > 0);
+    const negatives = indices.filter((index) => (result[index]?.unit_price_orig ?? 0) < 0);
+    const claimed = new Set<number>();
+
+    // Exact cancellations have priority over partial discounts. Every source
+    // row may participate in at most one pair (ADR-0015).
+    for (const negativeIndex of negatives) {
+      const negative = result[negativeIndex];
+      if (!negative) continue;
+      const negativeTotal = round(Math.abs(negative.qty * negative.unit_price_orig), 2);
+      const positiveIndex = positives.find((candidateIndex) => {
+        if (claimed.has(candidateIndex)) return false;
+        const candidate = result[candidateIndex];
+        if (!candidate || Math.abs(candidate.qty - negative.qty) > 0.001) return false;
+        return round(candidate.qty * candidate.unit_price_orig, 2) === negativeTotal;
+      });
+      if (positiveIndex === undefined) continue;
+      const positive = result[positiveIndex];
+      if (!positive) continue;
+      claimed.add(positiveIndex);
+      claimed.add(negativeIndex);
       positive.unit_price_orig = 0;
       positive.discount_orig = 0;
       removed.add(negativeIndex);
-    } else if (positiveTotal > negativeTotal) {
+    }
+
+    for (const negativeIndex of negatives) {
+      if (claimed.has(negativeIndex)) continue;
+      const negative = result[negativeIndex];
+      if (!negative) continue;
+      const negativeTotal = round(Math.abs(negative.qty * negative.unit_price_orig), 2);
+      const positiveIndex = positives.find((candidateIndex) => {
+        if (claimed.has(candidateIndex)) return false;
+        const candidate = result[candidateIndex];
+        if (!candidate || Math.abs(candidate.qty - negative.qty) > 0.001) return false;
+        return round(candidate.qty * candidate.unit_price_orig, 2) > negativeTotal;
+      });
+      if (positiveIndex === undefined) continue;
+      const positive = result[positiveIndex];
+      if (!positive) continue;
+      claimed.add(positiveIndex);
+      claimed.add(negativeIndex);
       positive.discount_orig = round(Math.abs(negative.unit_price_orig), 2);
       removed.add(negativeIndex);
     }
@@ -222,8 +287,15 @@ function mergePairs(items: ParsedItem[]): ParsedItem[] {
   return result.filter((_, index) => !removed.has(index));
 }
 
+const INVISIBLE_CHARS = /\u200B|\u200C|\u200D|\uFEFF/g;
+
 function normalize(value: string): string {
-  return value.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+  return value
+    .normalize('NFKC')
+    .replace(INVISIBLE_CHARS, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 function round(value: number, decimals: number): number {

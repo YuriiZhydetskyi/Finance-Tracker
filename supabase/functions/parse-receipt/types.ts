@@ -29,6 +29,16 @@ export type BulkParsedDocument = ParsedReceipt & {
   classification_reason: string;
 };
 
+export type BulkReceiptRepairContext = {
+  expectedTotalOrig: number;
+  previousComputedTotal: number;
+  previousItems: ParsedItem[];
+};
+
+export type BulkReceiptItemRepair = {
+  items: ParsedItem[];
+};
+
 export type AiContext = {
   /** Allowed category names. Used to constrain category_suggestion via JSON schema enum. */
   categories: string[];
