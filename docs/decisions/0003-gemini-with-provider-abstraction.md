@@ -56,7 +56,8 @@ function parseReceipt(imageBytes, ctx) {
 - Модель: `gemini-3.7-flash`.
 - API: `generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent`.
 - Auth: API key з AI Studio зберігається як server-only Edge Function secret `GEMINI_API_KEY` (не в коді) та передається як `x-goog-api-key` header.
-- `thinkingLevel`: `medium`; deprecated sampling parameters, зокрема `temperature`, не передаються.
+- `thinkingLevel`: `low` для high-throughput receipt extraction; deprecated sampling parameters,
+  зокрема `temperature`, не передаються.
 - Response MIME: `application/json` через `generationConfig.responseMimeType` + `responseJsonSchema` для structured output.
 - Для receipt-зображень передається рекомендований per-part `MEDIA_RESOLUTION_HIGH` (1120 visual tokens). Для PDF — `MEDIA_RESOLUTION_MEDIUM` (560 visual tokens + native text), рекомендований рівень для стандартного OCR.
 

@@ -9,8 +9,9 @@ const ANTHROPIC_VERSION = '2023-06-01';
 const MAX_TOKENS = 4096;
 const TEMPERATURE = 0.1;
 const TOOL_NAME = 'record_receipt';
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 
-type Config = { apiKey: string; model?: string };
+type Config = { apiKey: string; model?: string; timeoutMs?: number };
 
 export class AnthropicProvider implements IAiProvider {
   readonly name = 'anthropic';
@@ -79,6 +80,7 @@ export class AnthropicProvider implements IAiProvider {
         'anthropic-version': ANTHROPIC_VERSION,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.cfg.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
     });
 
     if (!res.ok) {

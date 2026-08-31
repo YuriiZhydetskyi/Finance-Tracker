@@ -5,11 +5,12 @@ import type { IAiProvider } from './ai-provider.ts';
 
 const GEMINI_API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_MODEL = 'gemini-3.7-flash';
-const THINKING_LEVEL = 'medium';
+const THINKING_LEVEL = 'low';
 const IMAGE_MEDIA_RESOLUTION = 'MEDIA_RESOLUTION_HIGH';
 const PDF_MEDIA_RESOLUTION = 'MEDIA_RESOLUTION_MEDIUM';
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 
-type Config = { apiKey: string; model?: string };
+type Config = { apiKey: string; model?: string; timeoutMs?: number };
 
 export class GeminiProvider implements IAiProvider {
   readonly name = 'gemini';
@@ -68,6 +69,7 @@ export class GeminiProvider implements IAiProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.cfg.apiKey },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.cfg.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
     });
 
     if (!res.ok) {

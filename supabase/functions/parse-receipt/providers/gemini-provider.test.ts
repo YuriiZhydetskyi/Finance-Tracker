@@ -70,10 +70,21 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
       media_resolution: { level: 'MEDIA_RESOLUTION_HIGH' },
     });
     expect(request.body.generationConfig).toMatchObject({
-      thinkingConfig: { thinkingLevel: 'medium' },
+      thinkingConfig: { thinkingLevel: 'low' },
       responseMimeType: 'application/json',
     });
     expect(request.body.generationConfig).not.toHaveProperty('temperature');
+  });
+
+  it('applies a request timeout so the fallback has time within the Edge Function limit', async () => {
+    const provider = new GeminiProvider({ apiKey: 'k', timeoutMs: 5 });
+    await provider.parse('AAA', ctx('image/jpeg'));
+
+    const [, init] = fetchMock.mock.calls[0]!;
+    const signal = (init as RequestInit).signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(signal?.aborted).toBe(true);
   });
 
   it('uses Medium for PDFs because Ultra High is not available for PDF input', async () => {

@@ -37,7 +37,7 @@ Deno.serve(async (request) => {
   }
 
   await db.rpc('expire_stale_receipt_import_uploads');
-  const { data, error } = await db.rpc('claim_receipt_import_jobs', { p_limit: 2 });
+  const { data, error } = await db.rpc('claim_receipt_import_jobs', { p_limit: 1 });
   if (error) return json({ error: 'Queue claim failed' }, 500);
   const jobs = (data ?? []) as Job[];
   const results = await Promise.all(jobs.map(processJob));
