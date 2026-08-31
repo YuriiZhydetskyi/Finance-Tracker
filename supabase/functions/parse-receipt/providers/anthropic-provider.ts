@@ -1,5 +1,6 @@
 import { buildPrompt, buildSchema } from '../prompts/receipt-prompt.ts';
-import type { AiContext, ParsedReceipt } from '../types.ts';
+import { buildBulkPrompt, buildBulkSchema } from '../prompts/bulk-import-prompt.ts';
+import type { AiContext, BulkParsedDocument, ParsedReceipt } from '../types.ts';
 import type { IAiProvider } from './ai-provider.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -16,7 +17,29 @@ export class AnthropicProvider implements IAiProvider {
 
   constructor(private readonly cfg: Config) {}
 
-  async parse(imageBase64: string, ctx: AiContext): Promise<ParsedReceipt> {
+  parse(imageBase64: string, ctx: AiContext): Promise<ParsedReceipt> {
+    return this.request<ParsedReceipt>(imageBase64, ctx, buildPrompt(ctx), buildSchema(ctx));
+  }
+
+  parseBulk(
+    imageBase64: string,
+    ctx: AiContext,
+    forceReceipt = false,
+  ): Promise<BulkParsedDocument> {
+    return this.request<BulkParsedDocument>(
+      imageBase64,
+      ctx,
+      buildBulkPrompt(ctx, forceReceipt),
+      buildBulkSchema(ctx),
+    );
+  }
+
+  private async request<T>(
+    imageBase64: string,
+    ctx: AiContext,
+    prompt: string,
+    schema: Record<string, unknown>,
+  ): Promise<T> {
     const isPdf = ctx.mimeType === 'application/pdf';
     const mediaBlock = isPdf
       ? {
@@ -36,14 +59,14 @@ export class AnthropicProvider implements IAiProvider {
         {
           name: TOOL_NAME,
           description: 'Record the parsed receipt fields and line items.',
-          input_schema: buildSchema(ctx),
+          input_schema: schema,
         },
       ],
       tool_choice: { type: 'tool', name: TOOL_NAME, disable_parallel_tool_use: true },
       messages: [
         {
           role: 'user',
-          content: [mediaBlock, { type: 'text', text: buildPrompt(ctx) }],
+          content: [mediaBlock, { type: 'text', text: prompt }],
         },
       ],
     };
@@ -70,7 +93,7 @@ export class AnthropicProvider implements IAiProvider {
         `Anthropic returned no tool_use block: ${JSON.stringify(wrapper).slice(0, 500)}`,
       );
     }
-    return input as ParsedReceipt;
+    return input as T;
   }
 }
 

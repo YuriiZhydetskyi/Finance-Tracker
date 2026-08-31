@@ -64,6 +64,7 @@ export const ManualFormSchema = z.object({
   source: SOURCE_SCHEMA,
   note: z.string().nullable().optional(),
   photo_url: z.string().nullable().optional(),
+  photo_path: z.string().nullable().optional(),
   raw_ocr_json: z.string().nullable().optional(),
   items: z.array(ItemFormSchema).min(1, 'Додай хоча б один товар'),
 });

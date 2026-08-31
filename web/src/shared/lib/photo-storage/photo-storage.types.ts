@@ -17,6 +17,9 @@ export type IPhotoStorage = {
    */
   upload(blob: Blob): Promise<UploadedPhoto>;
 
+  /** Upload to a caller-owned path; large files use a resumable TUS upload. */
+  uploadToPath(blob: Blob, path: string, onProgress?: (ratio: number) => void): Promise<void>;
+
   /** Re-sign a stored path. Default TTL: 1 hour. */
   getSignedUrl(path: string, ttlSec?: number): Promise<string>;
 

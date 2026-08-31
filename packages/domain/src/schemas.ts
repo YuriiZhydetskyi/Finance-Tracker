@@ -50,6 +50,9 @@ export const ReceiptSchema = z.object({
   total_eur: z.number().finite(),
   paid_by: EMAIL_LIKE_SCHEMA,
   photo_url: z.string().nullable(),
+  // Default keeps runtime compatibility with pre-migration snapshots while
+  // preserving a required, non-undefined Receipt output shape.
+  photo_path: z.string().nullable().default(null),
   source: SOURCE_SCHEMA,
   raw_ocr_json: z.string().max(45_000, 'raw_ocr_json exceeds 45000 chars').nullable(),
   note: z.string().nullable(),
@@ -250,6 +253,7 @@ export const ReceiptInputSchema = z.object({
   paid_by: EMAIL_LIKE_SCHEMA,
   source: SOURCE_SCHEMA,
   photo_url: z.string().nullable().optional(),
+  photo_path: z.string().nullable().optional(),
   raw_ocr_json: z.string().max(45_000).nullable().optional(),
   note: z.string().nullable().optional(),
   time: ISO_TIME_INPUT_SCHEMA.nullable().optional(),

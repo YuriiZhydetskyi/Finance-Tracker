@@ -1,5 +1,6 @@
 import { buildPrompt, buildSchema } from '../prompts/receipt-prompt.ts';
-import type { AiContext, ParsedReceipt } from '../types.ts';
+import { buildBulkPrompt, buildBulkSchema } from '../prompts/bulk-import-prompt.ts';
+import type { AiContext, BulkParsedDocument, ParsedReceipt } from '../types.ts';
 import type { IAiProvider } from './ai-provider.ts';
 
 const GEMINI_API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -13,14 +14,36 @@ export class GeminiProvider implements IAiProvider {
 
   constructor(private readonly cfg: Config) {}
 
-  async parse(imageBase64: string, ctx: AiContext): Promise<ParsedReceipt> {
+  parse(imageBase64: string, ctx: AiContext): Promise<ParsedReceipt> {
+    return this.request<ParsedReceipt>(imageBase64, ctx, buildPrompt(ctx), buildSchema(ctx));
+  }
+
+  parseBulk(
+    imageBase64: string,
+    ctx: AiContext,
+    forceReceipt = false,
+  ): Promise<BulkParsedDocument> {
+    return this.request<BulkParsedDocument>(
+      imageBase64,
+      ctx,
+      buildBulkPrompt(ctx, forceReceipt),
+      buildBulkSchema(ctx),
+    );
+  }
+
+  private async request<T>(
+    imageBase64: string,
+    ctx: AiContext,
+    prompt: string,
+    schema: Record<string, unknown>,
+  ): Promise<T> {
     const model = this.cfg.model ?? DEFAULT_MODEL;
     const url = `${GEMINI_API_URL_BASE}/${model}:generateContent`;
     const body = {
       contents: [
         {
           parts: [
-            { text: buildPrompt(ctx) },
+            { text: prompt },
             { inline_data: { mime_type: ctx.mimeType, data: imageBase64 } },
           ],
         },
@@ -28,7 +51,7 @@ export class GeminiProvider implements IAiProvider {
       generationConfig: {
         temperature: TEMPERATURE,
         responseMimeType: 'application/json',
-        responseJsonSchema: buildSchema(ctx),
+        responseJsonSchema: schema,
       },
     };
 
@@ -48,7 +71,7 @@ export class GeminiProvider implements IAiProvider {
     if (!text) {
       throw new Error(`Gemini returned no text: ${JSON.stringify(wrapper).slice(0, 500)}`);
     }
-    return JSON.parse(text) as ParsedReceipt;
+    return JSON.parse(text) as T;
   }
 }
 

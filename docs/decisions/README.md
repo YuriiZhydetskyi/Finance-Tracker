@@ -33,3 +33,6 @@
 | [0011](0011-claude-fallback.md) | Claude Sonnet 4.6 як автоматичний fallback для Gemini | accepted | AI |
 | [0012](0012-cancellation-discount-grouping.md) | Cancellation/discount pair grouping в UI; `Items.discount_orig` колонка | accepted | UI / Schema |
 | [0013](0013-migrate-to-react-supabase.md) | Міграція з Apps Script + Sheets на React + Supabase + Cloudflare Pages | accepted | Migration |
+| [0014](0014-cancellations-as-zero-rows.md) | Cancellation-пари як нульові UI-рядки | accepted | Domain |
+| [0015](0015-pair-detector-multi-tuple-aggregation.md) | Multi-tuple pair detection та aggregation | accepted | Domain |
+| [0016](0016-durable-background-receipt-imports.md) | Стійкий фоновий імпорт великої кількості документів | accepted | Import / Queue |

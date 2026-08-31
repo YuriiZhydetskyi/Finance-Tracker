@@ -35,6 +35,7 @@ function mkReceipt(id: string, store: string): Receipt {
     total_eur: 10,
     paid_by: 'a@example.com',
     photo_url: null,
+    photo_path: null,
     source: 'photo',
     raw_ocr_json: null,
     note: null,

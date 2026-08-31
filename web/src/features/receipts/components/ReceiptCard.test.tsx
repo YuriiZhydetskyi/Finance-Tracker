@@ -34,6 +34,7 @@ function makeReceipt(overrides: Partial<Receipt> = {}): Receipt {
     total_eur: 12.5,
     paid_by: 'you@example.com',
     photo_url: null,
+    photo_path: null,
     source: 'manual',
     raw_ocr_json: null,
     note: null,

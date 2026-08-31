@@ -6,7 +6,7 @@
   "workspaces": [
     "web",
     "packages/*",
-    "supabase/functions/parse-receipt"
+    "supabase/functions/*"
   ],
   "scripts": {
     "dev": "npm --workspace web run dev",

@@ -20,6 +20,7 @@ function mkReceipt(id: string, store: string, paid_by: string): Receipt {
     total_eur: 10,
     paid_by,
     photo_url: null,
+    photo_path: null,
     source: 'photo',
     raw_ocr_json: null,
     note: null,

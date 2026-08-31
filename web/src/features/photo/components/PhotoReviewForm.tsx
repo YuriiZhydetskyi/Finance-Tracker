@@ -118,6 +118,7 @@ export function PhotoReviewForm({
     source: receiptSource,
     note: null,
     photo_url: null,
+    photo_path: null,
     raw_ocr_json: stringifyForOcr(parsed),
     items: initialItems,
     // Only override when known — an empty preset would clobber the
@@ -179,7 +180,7 @@ export function PhotoReviewForm({
       : photoBlob
         ? await savePhoto.mutateAsync({ receipt, items, photoBlob })
         : await saveReceipt.mutateAsync({
-            receipt: { ...receipt, photo_url: null },
+            receipt: { ...receipt, photo_url: null, photo_path: null },
             items,
           });
 

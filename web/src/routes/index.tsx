@@ -50,6 +50,9 @@ function HomeNav({ savedId }: { savedId?: string | undefined }) {
           <Link to="/photo">
             <Button>Фото чек</Button>
           </Link>
+          <Link to="/imports">
+            <Button variant="secondary">Масовий імпорт</Button>
+          </Link>
           <Link to="/manual">
             <Button variant="secondary">Додати вручну</Button>
           </Link>

@@ -19,6 +19,7 @@ const validReceipt = (overrides: Partial<Receipt> = {}): Receipt => ({
   total_eur: 5.49,
   paid_by: 'me@example.com',
   photo_url: null,
+  photo_path: null,
   source: 'manual',
   raw_ocr_json: null,
   note: null,
