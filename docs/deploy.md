@@ -300,13 +300,17 @@ npx supabase db push
 npx supabase functions deploy process-receipt-imports --no-verify-jwt
 ```
 
-Після цього створи два Vault secrets у SQL editor (значення сюди не копіювати): `project_url` з
-base URL Supabase та `receipt_import_service_role_key` із server-only service-role key. Міграція
-вже створює Cron job; доки обох secrets немає, його SQL навмисно не робить HTTP request.
+Згенеруй окремий випадковий token і задай однакове значення у двох server-only місцях (значення
+сюди не копіювати): Edge Function secret `RECEIPT_IMPORT_CRON_TOKEN` та Vault secret
+`receipt_import_cron_token`. У Vault також потрібен `project_url` із base URL Supabase. Міграція
+створює Cron job; доки `project_url` і `receipt_import_cron_token` відсутні, його SQL навмисно не
+робить HTTP request. Не використовуй service-role key як cron token: він має database privileges,
+які не потрібні планувальнику.
 
 Перевір: job є в `cron.job`, повідомлення рухаються у `pgmq.q_receipt_imports`, а логи функції не
-містять payload або ключів. `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, Gemini й Anthropic keys
-автоматично/явно доступні тільки Edge Function і ніколи не додаються у `VITE_*`.
+містять payload або ключів. `RECEIPT_IMPORT_CRON_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`,
+`SUPABASE_URL`, Gemini й Anthropic keys автоматично/явно доступні тільки Edge Function і ніколи не
+додаються у `VITE_*`.
 
 ## Posthumous: рекавері легасі за 90 днів
 
