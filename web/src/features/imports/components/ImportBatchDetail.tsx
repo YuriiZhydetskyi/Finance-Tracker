@@ -9,6 +9,7 @@ import {
   type ImportFile,
 } from '../api/imports';
 import { summarizeImportProgress } from '../api/import-progress';
+import { ImportFilePreview } from './ImportFilePreview';
 
 const STATUS_LABELS: Record<string, string> = {
   uploading: 'завантаження',
@@ -135,6 +136,7 @@ function ExceptionCard({
         )}
       </div>
       {file.error_message && <p className="text-sm text-slate-700">{file.error_message}</p>}
+      <ImportFilePreview file={file} />
       {file.parsed_json && (
         <details>
           <summary className="cursor-pointer text-xs text-slate-600 underline">
