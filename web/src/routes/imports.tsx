@@ -38,7 +38,10 @@ function ImportsContent() {
                 className="flex justify-between rounded-md border border-slate-200 bg-white p-3 text-sm hover:bg-slate-50"
               >
                 <span>{new Date(batch.created_at).toLocaleString('uk-UA')}</span>
-                <span>{batchStatusLabel(batch.status)}</span>
+                <span className="text-right">
+                  {batchStatusLabel(batch.status)} · завершено {batch.progress.completed}/
+                  {batch.progress.total}
+                </span>
               </Link>
             </li>
           ))}
