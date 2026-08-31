@@ -71,14 +71,11 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       mimeType: importFile.mime_type,
     };
     const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-    let raw: BulkParsedDocument;
-    let parsedByPrimary = true;
-    try {
-      raw = await primary.parseBulk(base64, ctx, importFile.force_receipt);
-    } catch {
-      parsedByPrimary = false;
-      raw = await fallback.parseBulk(base64, ctx, importFile.force_receipt);
-    }
+    const { raw, allowIndependentRepair } = await parseWithFallback(
+      base64,
+      ctx,
+      importFile.force_receipt,
+    );
     let parsed = validateBulkDocument(raw);
 
     if (parsed.document_kind !== 'receipt') {
@@ -96,7 +93,7 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       parsed,
       base64,
       ctx,
-      parsedByPrimary ? fallback : null,
+      allowIndependentRepair ? fallback : null,
     );
     logArithmeticRepair(importFile.id, repair);
     parsed = repair.parsed;
@@ -139,6 +136,24 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       p_error_message: publicError(error),
     });
     return { id: job.import_file_id, status: job.read_count >= 3 ? 'needs_review' : 'queued' };
+  }
+}
+
+async function parseWithFallback(
+  base64: string,
+  ctx: AiContext,
+  forceReceipt: boolean,
+): Promise<{ raw: BulkParsedDocument; allowIndependentRepair: boolean }> {
+  try {
+    return {
+      raw: await primary.parseBulk(base64, ctx, forceReceipt),
+      allowIndependentRepair: true,
+    };
+  } catch {
+    return {
+      raw: await fallback.parseBulk(base64, ctx, forceReceipt),
+      allowIndependentRepair: false,
+    };
   }
 }
 

@@ -58,11 +58,6 @@ function mediaPart(body: Record<string, unknown>): Record<string, unknown> {
   return contents[0]!.parts[1]!;
 }
 
-function promptPart(body: Record<string, unknown>): string {
-  const contents = body.contents as Array<{ parts: Array<Record<string, unknown>> }>;
-  return String(contents[0]!.parts[0]!.text);
-}
-
 describe('GeminiProvider — Gemini 3.7 request configuration', () => {
   it('uses Gemini 3.7, supported thinking configuration, and High for receipt images', async () => {
     const provider = new GeminiProvider({ apiKey: 'k' });
@@ -125,24 +120,5 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
     await expect(provider.parse('AAA', ctx('image/jpeg'))).resolves.toMatchObject({
       store: 'Aldi',
     });
-  });
-
-  it('uses an item-only schema and anchored total for bulk arithmetic repair', async () => {
-    const provider = new GeminiProvider({ apiKey: 'k' });
-    await provider.repairBulkItems('PDF', ctx('application/pdf'), {
-      expectedTotalOrig: 27.5,
-      previousComputedTotal: 37.15,
-      previousItems: [{ product_name: 'Vitamin', qty: 2, unit_price_orig: 2.25 }],
-    });
-
-    const request = lastRequest();
-    const config = request.body.generationConfig as {
-      responseJsonSchema: { properties: Record<string, unknown>; required: string[] };
-    };
-    expect(Object.keys(config.responseJsonSchema.properties)).toEqual(['items']);
-    expect(config.responseJsonSchema.required).toEqual(['items']);
-    expect(promptPart(request.body)).toContain('trusted printed final total is 27.50');
-    expect(promptPart(request.body)).toContain('VAT class, not an item quantity');
-    expect(promptPart(request.body)).toContain('Never invent an adjustment');
   });
 });

@@ -110,5 +110,8 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(prompt).toContain('trusted printed final total is 101.18');
     expect(prompt).toContain('Pack-size text such as 6x1.25l');
     expect(prompt).toContain('does not replace the merchandise price');
+    expect(prompt).toContain('VAT class, not an item quantity');
+    expect(prompt).toContain('Count every separately printed repeated row');
+    expect(prompt).toContain('Never invent an adjustment');
   });
 });

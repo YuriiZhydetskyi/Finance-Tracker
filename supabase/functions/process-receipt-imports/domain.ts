@@ -228,66 +228,87 @@ export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArith
 function mergePairs(items: ParsedItem[]): ParsedItem[] {
   const result = items.map((item) => ({ ...item }));
   const removed = new Set<number>();
+  const groups = groupItemIndices(result);
+
+  for (const indices of groups.values()) {
+    const positives = indices.filter((index) => isSignedPrice(result[index], 1));
+    const negatives = indices.filter((index) => isSignedPrice(result[index], -1));
+    const claimed = new Set<number>();
+
+    // Exact cancellations must claim first; otherwise a cancellation could be
+    // consumed as a partial discount. Both passes share the same claimed set.
+    claimPairPass(result, positives, negatives, claimed, removed, 'cancellation');
+    claimPairPass(result, positives, negatives, claimed, removed, 'discount');
+  }
+  return result.filter((_, index) => !removed.has(index));
+}
+
+function groupItemIndices(items: ParsedItem[]): Map<string, number[]> {
   const groups = new Map<string, number[]>();
-  result.forEach((item, index) => {
+  items.forEach((item, index) => {
     const key = normalize(item.product_name);
     if (!key) return;
     const indices = groups.get(key);
     if (indices) indices.push(index);
     else groups.set(key, [index]);
   });
-
-  for (const indices of groups.values()) {
-    const positives = indices.filter((index) => (result[index]?.unit_price_orig ?? 0) > 0);
-    const negatives = indices.filter((index) => (result[index]?.unit_price_orig ?? 0) < 0);
-    const claimed = new Set<number>();
-
-    // Exact cancellations have priority over partial discounts. Every source
-    // row may participate in at most one pair (ADR-0015).
-    for (const negativeIndex of negatives) {
-      const negative = result[negativeIndex];
-      if (!negative) continue;
-      const negativeTotal = round(Math.abs(negative.qty * negative.unit_price_orig), 2);
-      const positiveIndex = positives.find((candidateIndex) => {
-        if (claimed.has(candidateIndex)) return false;
-        const candidate = result[candidateIndex];
-        if (!candidate || Math.abs(candidate.qty - negative.qty) > 0.001) return false;
-        return round(candidate.qty * candidate.unit_price_orig, 2) === negativeTotal;
-      });
-      if (positiveIndex === undefined) continue;
-      const positive = result[positiveIndex];
-      if (!positive) continue;
-      claimed.add(positiveIndex);
-      claimed.add(negativeIndex);
-      positive.unit_price_orig = 0;
-      positive.discount_orig = 0;
-      removed.add(negativeIndex);
-    }
-
-    for (const negativeIndex of negatives) {
-      if (claimed.has(negativeIndex)) continue;
-      const negative = result[negativeIndex];
-      if (!negative) continue;
-      const negativeTotal = round(Math.abs(negative.qty * negative.unit_price_orig), 2);
-      const positiveIndex = positives.find((candidateIndex) => {
-        if (claimed.has(candidateIndex)) return false;
-        const candidate = result[candidateIndex];
-        if (!candidate || Math.abs(candidate.qty - negative.qty) > 0.001) return false;
-        return round(candidate.qty * candidate.unit_price_orig, 2) > negativeTotal;
-      });
-      if (positiveIndex === undefined) continue;
-      const positive = result[positiveIndex];
-      if (!positive) continue;
-      claimed.add(positiveIndex);
-      claimed.add(negativeIndex);
-      positive.discount_orig = round(Math.abs(negative.unit_price_orig), 2);
-      removed.add(negativeIndex);
-    }
-  }
-  return result.filter((_, index) => !removed.has(index));
+  return groups;
 }
 
-const INVISIBLE_CHARS = /\u200B|\u200C|\u200D|\uFEFF/g;
+type PairPass = 'cancellation' | 'discount';
+
+function claimPairPass(
+  items: ParsedItem[],
+  positiveIndices: number[],
+  negativeIndices: number[],
+  claimed: Set<number>,
+  removed: Set<number>,
+  pass: PairPass,
+): void {
+  for (const negativeIndex of negativeIndices) {
+    if (claimed.has(negativeIndex)) continue;
+    const negative = items[negativeIndex];
+    if (!negative) continue;
+    const positiveIndex = positiveIndices.find((candidateIndex) =>
+      isPairCandidate(items[candidateIndex], negative, claimed.has(candidateIndex), pass),
+    );
+    if (positiveIndex === undefined) continue;
+    const positive = items[positiveIndex];
+    if (!positive) continue;
+
+    claimed.add(positiveIndex);
+    claimed.add(negativeIndex);
+    removed.add(negativeIndex);
+    if (pass === 'cancellation') {
+      positive.unit_price_orig = 0;
+      positive.discount_orig = 0;
+    } else {
+      positive.discount_orig = round(Math.abs(negative.unit_price_orig), 2);
+    }
+  }
+}
+
+function isPairCandidate(
+  positive: ParsedItem | undefined,
+  negative: ParsedItem,
+  alreadyClaimed: boolean,
+  pass: PairPass,
+): boolean {
+  if (!positive || alreadyClaimed || Math.abs(positive.qty - negative.qty) > 0.001) return false;
+  const positiveTotal = grossLineTotal(positive);
+  const negativeTotal = grossLineTotal(negative);
+  return pass === 'cancellation' ? positiveTotal === negativeTotal : positiveTotal > negativeTotal;
+}
+
+function grossLineTotal(item: ParsedItem): number {
+  return round(Math.abs(item.qty * item.unit_price_orig), 2);
+}
+
+function isSignedPrice(item: ParsedItem | undefined, sign: 1 | -1): boolean {
+  return sign * (item?.unit_price_orig ?? 0) > 0;
+}
+
+const INVISIBLE_CHARS = /[\u200B-\u200D\uFEFF]/g;
 
 function normalize(value: string): string {
   return value
