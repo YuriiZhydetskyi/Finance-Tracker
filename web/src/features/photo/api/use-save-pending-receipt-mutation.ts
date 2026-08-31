@@ -10,7 +10,7 @@ import { photoStorage } from '@/shared/lib/dependencies';
 
 export type SavePendingReceiptVars = {
   /** Receipt fields minus the photo URL — this hook re-signs `photoPath`. */
-  receipt: Omit<SaveReceiptInput, 'photo_url'>;
+  receipt: Omit<SaveReceiptInput, 'photo_url' | 'photo_path'>;
   items: SaveItemInput[];
   /** Storage path of the already-uploaded photo from the queue row. */
   photoPath: string;
@@ -36,7 +36,7 @@ export function useSavePendingReceiptMutation() {
       const signedUrl = await photoStorage.getSignedUrl(photoPath);
 
       const result = await saveReceipt.mutateAsync({
-        receipt: { ...receipt, photo_url: signedUrl },
+        receipt: { ...receipt, photo_url: signedUrl, photo_path: photoPath },
         items,
       });
 

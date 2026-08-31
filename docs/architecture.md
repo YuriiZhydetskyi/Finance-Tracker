@@ -2,6 +2,17 @@
 
 > Цей документ описує **структуру** і **потоки даних**. Схема даних — у [data-model.md](data-model.md). Технологічні рішення — у [decisions/](decisions/) (особливо [ADR-0013](decisions/0013-migrate-to-react-supabase.md), що супергедить 5 legacy-ADR-ів). Operational runbook — у [deploy.md](deploy.md).
 
+## Окремий фоновий batch flow
+
+`/imports` не використовує in-memory чергу `/photo`. Браузер готує файли з concurrency 2,
+реєструє batch/file metadata, завантажує в приватний Storage bucket і ставить кожен готовий файл
+у PGMQ. Після цього Cron викликає `process-receipt-imports`; worker обробляє максимум два jobs,
+класифікує документ, застосовує deterministic validation gates та викликає одну транзакційну RPC
+для збереження receipt/items/products/prices. Стани й винятки читаються з Postgres на
+`/imports/$id`, тому закриття браузера не впливає на processing.
+
+Деталі та trade-offs зафіксовано в [ADR-0016](decisions/0016-durable-background-receipt-imports.md).
+
 ## Шари
 
 ```

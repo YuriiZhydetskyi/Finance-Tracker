@@ -45,6 +45,7 @@ export function useReceiptForm(initial?: Partial<ManualFormValues>) {
       source: 'manual',
       note: null,
       photo_url: null,
+      photo_path: null,
       raw_ocr_json: null,
       items: [emptyItemRow()],
       ...initial,

@@ -13,7 +13,7 @@ export type SavePhotoReceiptVars = {
    * the photo is uploaded, so the receipt's `photo_url` is always a fresh
    * signed URL the row never has to lie about.
    */
-  receipt: Omit<SaveReceiptInput, 'photo_url'>;
+  receipt: Omit<SaveReceiptInput, 'photo_url' | 'photo_path'>;
   items: SaveItemInput[];
   photoBlob: Blob;
 };
@@ -41,7 +41,7 @@ export function useSavePhotoReceiptMutation() {
 
       try {
         return await saveReceipt.mutateAsync({
-          receipt: { ...receipt, photo_url: signedUrl },
+          receipt: { ...receipt, photo_url: signedUrl, photo_path: path },
           items,
         });
       } catch (e) {

@@ -48,6 +48,7 @@ export function ManualReceiptForm() {
         source: values.source,
         note: values.note ?? null,
         photo_url: values.photo_url ?? null,
+        photo_path: values.photo_path ?? null,
         raw_ocr_json: values.raw_ocr_json ?? null,
       },
       items: values.items.map((it) => ({

@@ -4,6 +4,22 @@
 >
 > Канонічні DDL — у [supabase/migrations/](../supabase/migrations/). Згенеровані TS-типи — у [web/src/shared/types/database.types.ts](../web/src/shared/types/database.types.ts) (regenerate через `npx supabase gen types typescript --linked`). Zod-схеми (in-app валідація + factories) — у [packages/domain/src/schemas.ts](../packages/domain/src/schemas.ts).
 
+## Фонові імпорти
+
+Міграція `20260831054319_background_receipt_imports.sql` додає:
+
+- `receipts.photo_path` — постійний Storage path поряд із тимчасовим `photo_url`;
+- `receipt_import_batches` — платник і загальний persisted статус batch;
+- `receipt_import_files` — hash, Storage path, attempt/status, AI result, exception та зв’язок зі
+  створеним або можливим duplicate receipt;
+- PGMQ queue `receipt_imports`, browser RPC та service-role-only worker RPC.
+
+Статус файлу рухається `uploading → queued → processing → saved`; ручної уваги потребують
+`needs_review`, `duplicate` та `upload_failed`. Exact file duplicate визначається SHA-256 до
+upload; можливий semantic duplicate — за store/date/currency/total і близьким time перед insert.
+RLS дає allowlisted користувачам тільки `select`; мутації браузера проходять через вузькі RPC,
+worker RPC відкриті лише ролі `service_role`.
+
 Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + `pending_parses` (черга невдалих парсингів) + `statement_transactions` (орфанні транзакції виписки) + `store_aliases` (вивчені пари назв для звірки) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
 
 Чому Postgres + Supabase замість Sheets — див. [ADR-0013](decisions/0013-migrate-to-react-supabase.md). Курси валют **не зберігаються** в окремій таблиці — конвертація відбувається on-the-fly при збереженні чеку через NBU API; курс фіксується назавжди на самому Receipt-рядку як audit trail (ADR-0004).

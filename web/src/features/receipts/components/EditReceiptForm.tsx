@@ -67,6 +67,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
     source: receipt.source,
     note: receipt.note,
     photo_url: receipt.photo_url,
+    photo_path: receipt.photo_path,
     raw_ocr_json: receipt.raw_ocr_json,
     items: items.length > 0 ? items.map(toFormRow) : [emptyItemRow()],
   });
@@ -94,6 +95,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
         source: values.source,
         note: values.note ?? null,
         photo_url: values.photo_url ?? null,
+        photo_path: values.photo_path ?? null,
         raw_ocr_json: values.raw_ocr_json ?? null,
       },
       items: values.items.map((it) => ({

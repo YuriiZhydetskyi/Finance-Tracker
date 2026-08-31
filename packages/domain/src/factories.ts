@@ -57,6 +57,7 @@ export function makeReceipt(input: ReceiptInput): Receipt {
     total_eur,
     paid_by: input.paid_by,
     photo_url: input.photo_url ?? null,
+    photo_path: input.photo_path ?? null,
     source: input.source,
     raw_ocr_json: input.raw_ocr_json ?? null,
     note: input.note ?? null,
@@ -189,6 +190,7 @@ export type ReceiptPatch = Partial<
     | 'fx_rate_eur'
     | 'paid_by'
     | 'photo_url'
+    | 'photo_path'
     | 'source'
     | 'raw_ocr_json'
     | 'note'

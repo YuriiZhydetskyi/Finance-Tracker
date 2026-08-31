@@ -60,6 +60,123 @@ export type Database = {
         };
         Relationships: [];
       };
+      receipt_import_batches: {
+        Row: {
+          completed_at: string | null;
+          created_at: string;
+          id: string;
+          paid_by: string;
+          status: string;
+          updated_at: string;
+          uploaded_by: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          created_at?: string;
+          id: string;
+          paid_by: string;
+          status?: string;
+          updated_at?: string;
+          uploaded_by: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          paid_by?: string;
+          status?: string;
+          updated_at?: string;
+          uploaded_by?: string;
+        };
+        Relationships: [];
+      };
+      receipt_import_files: {
+        Row: {
+          attempts: number;
+          batch_id: string;
+          content_sha256: string;
+          created_at: string;
+          document_kind: string | null;
+          duplicate_of_file_id: string | null;
+          duplicate_receipt_id: string | null;
+          error_message: string | null;
+          exception_kind: string | null;
+          force_receipt: boolean;
+          id: string;
+          mime_type: string;
+          original_filename: string;
+          original_size_bytes: number;
+          parsed_json: Json | null;
+          processed_at: string | null;
+          receipt_id: string | null;
+          skip_duplicate_check: boolean;
+          status: string;
+          storage_path: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          batch_id: string;
+          content_sha256: string;
+          created_at?: string;
+          document_kind?: string | null;
+          duplicate_of_file_id?: string | null;
+          duplicate_receipt_id?: string | null;
+          error_message?: string | null;
+          exception_kind?: string | null;
+          force_receipt?: boolean;
+          id: string;
+          mime_type: string;
+          original_filename: string;
+          original_size_bytes: number;
+          parsed_json?: Json | null;
+          processed_at?: string | null;
+          receipt_id?: string | null;
+          skip_duplicate_check?: boolean;
+          status: string;
+          storage_path?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          batch_id?: string;
+          content_sha256?: string;
+          created_at?: string;
+          document_kind?: string | null;
+          duplicate_of_file_id?: string | null;
+          duplicate_receipt_id?: string | null;
+          error_message?: string | null;
+          exception_kind?: string | null;
+          force_receipt?: boolean;
+          id?: string;
+          mime_type?: string;
+          original_filename?: string;
+          original_size_bytes?: number;
+          parsed_json?: Json | null;
+          processed_at?: string | null;
+          receipt_id?: string | null;
+          skip_duplicate_check?: boolean;
+          status?: string;
+          storage_path?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'receipt_import_files_batch_id_fkey';
+            columns: ['batch_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipt_import_batches';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'receipt_import_files_receipt_id_fkey';
+            columns: ['receipt_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       items: {
         Row: {
           category: string;
@@ -279,6 +396,7 @@ export type Database = {
           id: string;
           note: string | null;
           paid_by: string;
+          photo_path: string | null;
           photo_url: string | null;
           raw_ocr_json: string | null;
           source: Database['public']['Enums']['receipt_source'];
@@ -297,6 +415,7 @@ export type Database = {
           id: string;
           note?: string | null;
           paid_by: string;
+          photo_path?: string | null;
           photo_url?: string | null;
           raw_ocr_json?: string | null;
           source: Database['public']['Enums']['receipt_source'];
@@ -315,6 +434,7 @@ export type Database = {
           id?: string;
           note?: string | null;
           paid_by?: string;
+          photo_path?: string | null;
           photo_url?: string | null;
           raw_ocr_json?: string | null;
           source?: Database['public']['Enums']['receipt_source'];
@@ -467,7 +587,34 @@ export type Database = {
       };
     };
     Functions: {
+      create_receipt_import_batch: {
+        Args: { p_batch_id: string; p_files: Json; p_paid_by: string };
+        Returns: {
+          duplicate_of_file_id: string | null;
+          id: string;
+          status: string;
+          storage_path: string | null;
+        }[];
+      };
+      discard_receipt_import_file: { Args: { p_file_id: string }; Returns: undefined };
       is_allowed_user: { Args: never; Returns: boolean };
+      mark_receipt_import_upload_failed: {
+        Args: { p_error_message: string; p_file_id: string };
+        Returns: undefined;
+      };
+      queue_receipt_import_file: { Args: { p_file_id: string }; Returns: undefined };
+      requeue_receipt_import_file: {
+        Args: {
+          p_file_id: string;
+          p_force_receipt?: boolean;
+          p_skip_duplicate_check?: boolean;
+        };
+        Returns: undefined;
+      };
+      resolve_receipt_import_file: {
+        Args: { p_file_id: string; p_receipt_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       product_unit: 'pcs' | 'g' | 'kg' | 'ml' | 'l';

@@ -24,6 +24,11 @@ export type ParsedReceipt = {
   items: ParsedItem[];
 };
 
+export type BulkParsedDocument = ParsedReceipt & {
+  document_kind: 'receipt' | 'not_receipt' | 'uncertain';
+  classification_reason: string;
+};
+
 export type AiContext = {
   /** Allowed category names. Used to constrain category_suggestion via JSON schema enum. */
   categories: string[];

@@ -20,3 +20,5 @@ export type { BatchItem, BatchItemStatus, BatchState } from './batch/types';
 
 export { resizeImage, blobToBase64 } from './utils/resize-image';
 export type { ResizeOptions } from './utils/resize-image';
+export { prepareFile } from './utils/prepare-file';
+export type { PreparedFile } from './utils/prepare-file';

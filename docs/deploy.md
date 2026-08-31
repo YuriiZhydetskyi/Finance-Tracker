@@ -67,7 +67,7 @@ Workflow живе у [`.github/workflows/deploy.yml`](../.github/workflows/deplo
 | ------------------------ | ------------------------------------------------------------------------------------------------------ | -------------------------- |
 | `CLOUDFLARE_API_TOKEN`   | dash.cloudflare.com/profile/api-tokens → Create Token з permission `Account → Cloudflare Pages → Edit` | wrangler-action для deploy |
 | `CLOUDFLARE_ACCOUNT_ID`  | dash.cloudflare.com → правий sidebar account-сторінки (32-hex chars)                                   | wrangler-action для deploy |
-| `VITE_SUPABASE_URL`      | `https://<your-project-ref>.supabase.co`                                                             | Vite inline'ить у бандл    |
+| `VITE_SUPABASE_URL`      | `https://<your-project-ref>.supabase.co`                                                               | Vite inline'ить у бандл    |
 | `VITE_SUPABASE_ANON_KEY` | `web/.env.local` (починається з `eyJ...`)                                                              | Vite inline'ить у бандл    |
 
 ### Supabase Edge Function secrets
@@ -290,6 +290,23 @@ CF CDN кеш. Cloudflare деплоїть нову версію інстант�
 - [ ] End-to-end smoke: sign in від обох користувачів, save photo receipt, save manual, edit, delete, /stats показує дані
 
 ---
+
+## Увімкнути фоновий імпорт
+
+Застосовувати лише під час окремого production deploy після review міграції:
+
+```powershell
+npx supabase db push
+npx supabase functions deploy process-receipt-imports --no-verify-jwt
+```
+
+Після цього створи два Vault secrets у SQL editor (значення сюди не копіювати): `project_url` з
+base URL Supabase та `receipt_import_service_role_key` із server-only service-role key. Міграція
+вже створює Cron job; доки обох secrets немає, його SQL навмисно не робить HTTP request.
+
+Перевір: job є в `cron.job`, повідомлення рухаються у `pgmq.q_receipt_imports`, а логи функції не
+містять payload або ключів. `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`, Gemini й Anthropic keys
+автоматично/явно доступні тільки Edge Function і ніколи не додаються у `VITE_*`.
 
 ## Posthumous: рекавері легасі за 90 днів
 

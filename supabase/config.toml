@@ -377,6 +377,12 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# Invoked only by pg_cron with the service-role token. JWT gateway validation
+# is disabled because the handler performs an exact token comparison itself;
+# this also supports projects using the newer opaque service-role key format.
+[functions.process-receipt-imports]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
