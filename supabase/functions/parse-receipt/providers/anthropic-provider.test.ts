@@ -44,6 +44,7 @@ afterEach(() => {
 
 function lastRequestBody(): {
   max_tokens: number;
+  temperature?: number;
   messages: Array<{ content: Array<Record<string, unknown>> }>;
   tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
 } {
@@ -51,6 +52,7 @@ function lastRequestBody(): {
   const init = fetchMock.mock.calls[0]![1] as RequestInit;
   return JSON.parse(init.body as string) as {
     max_tokens: number;
+    temperature?: number;
     messages: Array<{ content: Array<Record<string, unknown>> }>;
     tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
   };
@@ -137,6 +139,18 @@ describe('AnthropicProvider — content block dispatch', () => {
     await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
 
     expect(lastRequestBody().max_tokens).toBe(16_384);
+  });
+
+  it('omits custom temperature for Opus 4.7 verification requests', async () => {
+    const provider = new AnthropicProvider({
+      apiKey: 'k',
+      model: 'claude-opus-4-7',
+      temperature: null,
+    });
+
+    await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
+
+    expect(lastRequestBody()).not.toHaveProperty('temperature');
   });
 
   it('rejects max_tokens responses so truncated item arrays cannot be accepted', async () => {

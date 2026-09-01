@@ -24,6 +24,8 @@ type Config = {
   model?: string;
   timeoutMs?: number;
   bulkMaxTokens?: number;
+  /** null omits the sampling parameter for models that reject custom temperature. */
+  temperature?: number | null;
 };
 
 export class AnthropicProvider implements IAiProvider {
@@ -86,11 +88,12 @@ export class AnthropicProvider implements IAiProvider {
           source: { type: 'base64', media_type: ctx.mimeType, data: imageBase64 },
         };
     const model = this.cfg.model ?? DEFAULT_MODEL;
+    const temperature = this.cfg.temperature === undefined ? TEMPERATURE : this.cfg.temperature;
     const baseTrace: AiCallTrace = { provider: 'anthropic', model };
     const body = {
       model,
       max_tokens: maxTokens,
-      temperature: TEMPERATURE,
+      ...(temperature == null ? {} : { temperature }),
       tools: [
         {
           name: TOOL_NAME,
