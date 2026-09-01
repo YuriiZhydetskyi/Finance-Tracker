@@ -5,9 +5,11 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
 - `pg_cron` викликає функцію з окремим випадковим cron token, збереженим у Vault.
 - Один виклик забирає одне PGMQ message з visibility timeout п’ять хвилин, щоб не конкурувати за
   AI latency budget усередині одного Edge Function invocation.
-- Gemini класифікує й парсить першим; Anthropic працює як fallback.
+- Один provider працює на одну доставку queue message: Gemini — перший, Sonnet — fallback на
+  наступній доставці.
 - Bulk parse повертає row-level evidence. Якщо арифметика або evidence gate не проходять,
-  Anthropic один раз незалежно читає оригінал без primary total чи primary items.
+  наступна модель незалежно читає оригінал без primary total чи primary items. Після mismatch
+  Sonnet окрема verification-модель Opus виконує третє blind reading.
 - Детерміновані gates у `domain.ts` та `receipt-reconciliation.ts` вирішують, чи можна auto-save
   чек. Відповідь, обірвана через token limit, завжди вважається помилкою.
 - Кожний worker/provider stage записується в `receipt_import_attempts`; batch detail показує цей
@@ -16,8 +18,9 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
 - Точний збіг date/time/currency/total автоматично прив’язується до наявного чека; ширші
   duplicate-кандидати лишаються на ручну перевірку.
 - Retryable failure знову стає видимим; третя помилка переходить у exception queue.
-- Кожен provider request має timeout 60 секунд: це залишає час для Anthropic fallback у межах
-  Edge Function request limit.
+- Кожен provider request має timeout 130 секунд, але providers не виконуються послідовно в одному
+  invocation. Anthropic bulk response має budget 16384 output tokens; це лишає запас до
+  150-секундного request idle limit для Storage і DB I/O.
 
 Runtime secrets: `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` і `RECEIPT_IMPORT_CRON_TOKEN`. Supabase
 інжектить `SUPABASE_URL` та `SUPABASE_SERVICE_ROLE_KEY` для доступу воркера до БД. Handler точно

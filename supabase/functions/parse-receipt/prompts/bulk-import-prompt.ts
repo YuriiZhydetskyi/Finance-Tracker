@@ -29,6 +29,8 @@ export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
     '- tax_class: copy a separate rightmost VAT class 1 or 2 when present; otherwise null. It never changes qty.',
     '- Verify each printed line total against qty × unit price, but report only what is visibly printed. Never invent a balancing row.',
     '- Count repeated identical rows separately. A missing repeated row is an extraction error even if adjacent text looks duplicated.',
+    '- Before returning, calculate the sum of the emitted financial rows and compare it with total_orig. If they differ, make one more visual sweep from the first financial row to the total: recount identical repeated rows and look specifically for a missed discount/refund, an unsupported quantity, or a row total mistaken for a unit price.',
+    '- The second sweep is a verification pass, not permission to force agreement. Add or change a row only when its raw_text is independently visible in the document. If no visible row explains the difference, preserve the mismatch for review.',
     '',
     buildPrompt(ctx),
   ].join('\n');

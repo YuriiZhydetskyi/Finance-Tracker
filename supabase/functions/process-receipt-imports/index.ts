@@ -16,17 +16,20 @@ import {
 } from './domain.ts';
 import {
   reconcileIndependentReceipt,
-  shouldRetryUnavailableIndependentCheck,
+  selectParseProviderRole,
+  selectVerificationProviderRole,
+  shouldQueueIndependentCheck,
   type ReceiptReconciliation,
 } from './receipt-reconciliation.ts';
 
 const BUCKET = 'receipts';
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-// Keep the combined worst-case provider time below the 150-second Edge budget.
-// Primary gets enough time for High-thinking OCR; the slower long-receipt
-// fallback gets the larger share based on measured production latency.
-const BULK_GEMINI_TIMEOUT_MS = 45_000;
-const BULK_ANTHROPIC_TIMEOUT_MS = 95_000;
+// One provider runs per queue delivery, leaving room below the hosted request
+// idle limit for Storage and DB I/O even on long receipts.
+const BULK_PROVIDER_TIMEOUT_MS = 130_000;
+const BULK_ANTHROPIC_MAX_TOKENS = 16_384;
+const FALLBACK_MODEL = 'claude-sonnet-4-6';
+const VERIFICATION_MODEL = 'claude-opus-4-7';
 
 function requiredEnv(name: string): string {
   const value = Deno.env.get(name);
@@ -42,11 +45,19 @@ const db = createClient(supabaseUrl, serviceRoleKey, {
 });
 const primary = new GeminiProvider({
   apiKey: requiredEnv('GEMINI_API_KEY'),
-  timeoutMs: BULK_GEMINI_TIMEOUT_MS,
+  timeoutMs: BULK_PROVIDER_TIMEOUT_MS,
 });
 const fallback = new AnthropicProvider({
   apiKey: requiredEnv('ANTHROPIC_API_KEY'),
-  timeoutMs: BULK_ANTHROPIC_TIMEOUT_MS,
+  model: FALLBACK_MODEL,
+  timeoutMs: BULK_PROVIDER_TIMEOUT_MS,
+  bulkMaxTokens: BULK_ANTHROPIC_MAX_TOKENS,
+});
+const verifier = new AnthropicProvider({
+  apiKey: requiredEnv('ANTHROPIC_API_KEY'),
+  model: VERIFICATION_MODEL,
+  timeoutMs: BULK_PROVIDER_TIMEOUT_MS,
+  bulkMaxTokens: BULK_ANTHROPIC_MAX_TOKENS,
 });
 
 type Job = { msg_id: number; read_count: number; import_file_id: string };
@@ -71,6 +82,11 @@ type ProviderInvocation = {
   parsed: BulkParsedDocument;
   trace: AiCallTrace;
   attempt: AttemptHandle | null;
+};
+type StoredVerificationSeed = {
+  parsed: BulkParsedDocument;
+  provider: 'gemini' | 'anthropic';
+  model: string | null;
 };
 
 class RetryableImportError extends Error {
@@ -127,9 +143,36 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       mimeType: importFile.mime_type,
     };
     const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-    const first = await parseWithFallback(job, analysisRun, base64, ctx, importFile.force_receipt);
-    let parsed = first.parsed;
+    const seed = await loadStoredVerificationSeed(importFile.id);
+    let parsed: BulkParsedDocument;
     let independentMessage: string | null = null;
+
+    if (seed) {
+      const verificationRole = selectVerificationProviderRole(seed.provider);
+      const independentProvider = verificationRole === 'fallback' ? fallback : verifier;
+      const independent = await independentlyVerify(
+        job,
+        analysisRun,
+        base64,
+        ctx,
+        importFile.force_receipt,
+        seed.parsed,
+        independentProvider,
+        verificationRole === 'fallback'
+          ? anthropicSettings(FALLBACK_MODEL, 'primary_verifier')
+          : anthropicSettings(VERIFICATION_MODEL, 'fallback_verifier'),
+      );
+      parsed = independent.parsed;
+      independentMessage = independent.publicMessage;
+      if (independent.status === 'rejected' && seed.provider === 'gemini' && job.read_count < 3) {
+        throw new RetryableImportError(
+          'independent_check_required',
+          'Резервний результат не пройшов перевірку; наступна доставка звірить документ з окремою verification-моделлю.',
+        );
+      }
+    } else {
+      parsed = await parseForDelivery(job, analysisRun, base64, ctx, importFile.force_receipt);
+    }
 
     if (parsed.document_kind !== 'receipt') {
       const message = parsed.classification_reason || 'Потрібна перевірка документа.';
@@ -149,33 +192,18 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
 
     const firstArithmetic = checkReceiptArithmetic(parsed);
     const firstEvidence = auditReceiptEvidence(parsed);
-    if ((!firstArithmetic?.matches || !firstEvidence.ok) && first.allowIndependentCheck) {
-      const independent = await independentlyVerify(
-        job,
-        analysisRun,
-        base64,
-        ctx,
-        importFile.force_receipt,
-        parsed,
+    if (
+      !seed &&
+      shouldQueueIndependentCheck(
+        job.read_count,
+        firstArithmetic?.matches ?? false,
+        firstEvidence.ok,
+      )
+    ) {
+      throw new RetryableImportError(
+        'independent_check_required',
+        'Результат збережено в журналі; наступна доставка виконає незалежну перевірку іншою моделлю.',
       );
-      parsed = independent.parsed;
-      independentMessage = independent.publicMessage;
-    } else if ((!firstArithmetic?.matches || !firstEvidence.ok) && !first.allowIndependentCheck) {
-      independentMessage =
-        'Незалежна перевірка недоступна, бо резервний provider уже виконав первинний аналіз.';
-      if (
-        shouldRetryUnavailableIndependentCheck(
-          job.read_count,
-          first.allowIndependentCheck,
-          firstArithmetic?.matches ?? false,
-          firstEvidence.ok,
-        )
-      ) {
-        throw new RetryableImportError(
-          'independent_check_unavailable',
-          'Первинний provider недоступний; аналіз буде повторено для незалежної перевірки.',
-        );
-      }
     }
 
     const finalEvidence = auditReceiptEvidence(parsed);
@@ -242,48 +270,53 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       public_message: message,
       ...traceFields(error instanceof AiProviderError ? error.trace : null),
     });
-    await db.rpc('record_receipt_import_failure', {
-      p_file_id: job.import_file_id,
-      p_msg_id: job.msg_id,
-      p_read_count: job.read_count,
-      p_error_message: message,
-    });
+    const schedulesNextStage =
+      error instanceof RetryableImportError ||
+      (error instanceof AiProviderError && job.read_count === 1);
+    const scheduled = schedulesNextStage
+      ? await db.rpc('schedule_receipt_import_retry', {
+          p_file_id: job.import_file_id,
+          p_msg_id: job.msg_id,
+          p_read_count: job.read_count,
+          p_error_message: message,
+          p_delay_seconds: 30,
+        })
+      : null;
+    if (!scheduled || scheduled.error) {
+      await db.rpc('record_receipt_import_failure', {
+        p_file_id: job.import_file_id,
+        p_msg_id: job.msg_id,
+        p_read_count: job.read_count,
+        p_error_message: message,
+      });
+    }
     return { id: job.import_file_id, status: job.read_count >= 3 ? 'needs_review' : 'queued' };
   }
 }
 
-async function parseWithFallback(
+async function parseForDelivery(
   job: Job,
   analysisRun: number,
   base64: string,
   ctx: AiContext,
   forceReceipt: boolean,
-): Promise<{ parsed: BulkParsedDocument; allowIndependentCheck: boolean }> {
-  try {
-    const result = await invokeProvider(
-      job,
-      analysisRun,
-      'primary_parse',
-      primary,
-      base64,
-      ctx,
-      forceReceipt,
-      false,
-    );
-    return { parsed: result.parsed, allowIndependentCheck: true };
-  } catch {
-    const result = await invokeProvider(
-      job,
-      analysisRun,
-      'fallback_parse',
-      fallback,
-      base64,
-      ctx,
-      forceReceipt,
-      false,
-    );
-    return { parsed: result.parsed, allowIndependentCheck: false };
-  }
+): Promise<BulkParsedDocument> {
+  const role = selectParseProviderRole(job.read_count);
+  const usePrimary = role === 'primary';
+  const result = await invokeProvider(
+    job,
+    analysisRun,
+    usePrimary ? 'primary_parse' : 'fallback_parse',
+    usePrimary ? primary : fallback,
+    base64,
+    ctx,
+    forceReceipt,
+    false,
+    usePrimary
+      ? { thinking_level: 'high', media_resolution: 'MEDIA_RESOLUTION_HIGH' }
+      : anthropicSettings(FALLBACK_MODEL, 'fallback'),
+  );
+  return result.parsed;
 }
 
 async function independentlyVerify(
@@ -293,6 +326,8 @@ async function independentlyVerify(
   ctx: AiContext,
   forceReceipt: boolean,
   parsed: BulkParsedDocument,
+  provider: BulkProvider,
+  settings: Record<string, unknown>,
 ): Promise<ReceiptReconciliation> {
   try {
     // This request intentionally receives only the original document and the
@@ -301,11 +336,12 @@ async function independentlyVerify(
       job,
       analysisRun,
       'independent_check',
-      fallback,
+      provider,
       base64,
       ctx,
       forceReceipt,
       true,
+      settings,
     );
     const reconciliation = reconcileIndependentReceipt(parsed, result.parsed);
     await finishAttempt(result.attempt, reconciliation.status, {
@@ -322,6 +358,9 @@ async function independentlyVerify(
       file_id: job.import_file_id,
       code: error instanceof AiProviderError ? error.code : 'invalid_result',
     });
+    if (error instanceof AiProviderError && job.read_count < 3) {
+      throw new RetryableImportError('independent_check_failed', message);
+    }
     return {
       status: 'rejected',
       parsed,
@@ -344,11 +383,8 @@ async function invokeProvider(
   ctx: AiContext,
   forceReceipt: boolean,
   deferOutcome: boolean,
+  settings: Record<string, unknown>,
 ): Promise<ProviderInvocation> {
-  const settings =
-    provider.name === 'gemini'
-      ? { thinking_level: 'high', media_resolution: 'MEDIA_RESOLUTION_HIGH' }
-      : { max_tokens: 8192 };
   const attempt = await startAttempt(job, analysisRun, stage, provider.name, settings);
   try {
     const result = await provider.parseBulkDetailed(base64, ctx, forceReceipt);
@@ -365,6 +401,43 @@ async function invokeProvider(
     });
     throw error;
   }
+}
+
+async function loadStoredVerificationSeed(fileId: string): Promise<StoredVerificationSeed | null> {
+  try {
+    const { data, error } = await db
+      .from('receipt_import_attempts')
+      .select('provider, model, result_json')
+      .in('stage', ['primary_parse', 'fallback_parse', 'independent_check'])
+      .eq('file_id', fileId)
+      .in('status', ['succeeded', 'rejected'])
+      .not('result_json', 'is', null)
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data?.result_json) return null;
+    const parsed = validateBulkDocument(data.result_json);
+    if (parsed.document_kind !== 'receipt') return null;
+    const arithmetic = checkReceiptArithmetic(parsed);
+    const evidence = auditReceiptEvidence(parsed);
+    if (arithmetic?.matches && evidence.ok) return null;
+    return {
+      parsed,
+      provider: data.provider === 'gemini' ? 'gemini' : 'anthropic',
+      model: data.model,
+    };
+  } catch {
+    console.warn('[process-receipt-imports] stored verification seed unavailable', fileId);
+    return null;
+  }
+}
+
+function anthropicSettings(model: string, role: string): Record<string, unknown> {
+  return {
+    model,
+    role,
+    max_tokens: BULK_ANTHROPIC_MAX_TOKENS,
+  };
 }
 
 function providerResultFields(

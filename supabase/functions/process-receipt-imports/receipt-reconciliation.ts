@@ -15,6 +15,7 @@ export type ReceiptDiagnosisCode =
   | 'printed_total_disagreement'
   | 'metadata_disagreement'
   | 'secondary_arithmetic_mismatch'
+  | 'unresolved_repeated_row_candidate'
   | 'secondary_evidence_invalid';
 
 export type ReceiptReconciliation = {
@@ -28,13 +29,24 @@ export type ReceiptReconciliation = {
   details: Record<string, unknown>;
 };
 
-export function shouldRetryUnavailableIndependentCheck(
+export type ReceiptProviderRole = 'primary' | 'fallback' | 'verifier';
+
+export function selectParseProviderRole(deliveryAttempt: number): ReceiptProviderRole {
+  return deliveryAttempt === 1 ? 'primary' : 'fallback';
+}
+
+export function selectVerificationProviderRole(
+  seedProvider: 'gemini' | 'anthropic',
+): ReceiptProviderRole {
+  return seedProvider === 'gemini' ? 'fallback' : 'verifier';
+}
+
+export function shouldQueueIndependentCheck(
   deliveryAttempt: number,
-  allowIndependentCheck: boolean,
   arithmeticMatches: boolean,
   evidenceIsValid: boolean,
 ): boolean {
-  return deliveryAttempt < 3 && !allowIndependentCheck && (!arithmeticMatches || !evidenceIsValid);
+  return deliveryAttempt < 3 && (!arithmeticMatches || !evidenceIsValid);
 }
 
 /**
@@ -81,6 +93,18 @@ export function reconcileIndependentReceipt(
     );
   }
   if (!after?.matches) {
+    const candidate = after ? repeatedRowGapCandidate(secondary.items, after) : null;
+    if (candidate) {
+      return rejected(
+        primary,
+        'unresolved_repeated_row_candidate',
+        `Дві незалежні моделі не підтвердили повну арифметику. Різниця ${candidate.gap.toFixed(2)} дорівнює ще одному рядку «${candidate.productName}» за ${candidate.lineTotal.toFixed(2)}, але автоматично додавати невидимий рядок небезпечно.`,
+        before,
+        after,
+        evidence,
+        { repeated_row_candidate: candidate },
+      );
+    }
     return rejected(
       primary,
       'secondary_arithmetic_mismatch',
@@ -125,6 +149,7 @@ function rejected(
   before: ReceiptArithmeticCheck | null,
   after: ReceiptArithmeticCheck | null,
   evidence: ReceiptEvidenceAudit,
+  extraDetails: Record<string, unknown> = {},
 ): ReceiptReconciliation {
   return {
     status: 'rejected',
@@ -134,7 +159,7 @@ function rejected(
     before,
     after,
     evidence,
-    details: comparisonDetails(parsed, null, before, after, evidence),
+    details: { ...comparisonDetails(parsed, null, before, after, evidence), ...extraDetails },
   };
 }
 
@@ -262,9 +287,29 @@ function diagnosisMessage(code: ReceiptDiagnosisCode): string {
     printed_total_disagreement: '',
     metadata_disagreement: '',
     secondary_arithmetic_mismatch: '',
+    unresolved_repeated_row_candidate: '',
     secondary_evidence_invalid: '',
   };
   return messages[code];
+}
+
+function repeatedRowGapCandidate(
+  items: ParsedItem[],
+  arithmetic: ReceiptArithmeticCheck,
+): { productName: string; occurrences: number; lineTotal: number; gap: number } | null {
+  const gap = round(arithmetic.printedTotal - arithmetic.computedTotal, 2);
+  if (gap <= 0) return null;
+  const counts = countItems(items);
+  for (const [key, occurrences] of counts) {
+    if (occurrences < 2) continue;
+    const item = items.find((candidate) => itemKey(candidate) === key);
+    if (!item) continue;
+    const lineTotal = round(item.qty * (item.unit_price_orig - (item.discount_orig ?? 0)), 2);
+    if (lineTotal > 0 && Math.abs(gap - lineTotal) <= 0.02) {
+      return { productName: item.product_name, occurrences, lineTotal, gap };
+    }
+  }
+  return null;
 }
 
 function normalize(value: string): string {

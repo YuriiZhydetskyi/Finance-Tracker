@@ -19,7 +19,12 @@ const TOOL_NAME = 'record_receipt';
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 const BULK_REQUEST_TIMEOUT_MS = 75_000;
 
-type Config = { apiKey: string; model?: string; timeoutMs?: number };
+type Config = {
+  apiKey: string;
+  model?: string;
+  timeoutMs?: number;
+  bulkMaxTokens?: number;
+};
 
 export class AnthropicProvider implements IAiProvider {
   readonly name = 'anthropic';
@@ -57,7 +62,7 @@ export class AnthropicProvider implements IAiProvider {
       ctx,
       buildBulkPrompt(ctx, forceReceipt),
       buildBulkSchema(ctx),
-      BULK_MAX_TOKENS,
+      this.cfg.bulkMaxTokens ?? BULK_MAX_TOKENS,
       this.cfg.timeoutMs ?? BULK_REQUEST_TIMEOUT_MS,
     );
   }
