@@ -767,6 +767,16 @@ export type Database = {
         Args: { p_file_id: string; p_receipt_id: string };
         Returns: undefined;
       };
+      schedule_receipt_import_retry: {
+        Args: {
+          p_delay_seconds?: number;
+          p_error_message: string;
+          p_file_id: string;
+          p_msg_id: number;
+          p_read_count: number;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       product_unit: 'pcs' | 'g' | 'kg' | 'ml' | 'l';

@@ -1,6 +1,6 @@
 # ADR-0018: Доказове розпізнавання та незалежна перевірка чеків
 
-- Status: accepted
+- Status: superseded by [ADR-0019](0019-staged-receipt-verification.md)
 - Date: 2026-09-01
 - Supersedes: [ADR-0017](0017-bulk-import-arithmetic-repair.md)
 - Extends: [ADR-0016](0016-durable-background-receipt-imports.md)

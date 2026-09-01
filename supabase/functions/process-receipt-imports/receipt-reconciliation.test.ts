@@ -3,7 +3,9 @@ import type { BulkParsedDocument, ParsedItem } from '../parse-receipt/types.ts';
 import { validateBulkDocument } from './domain.ts';
 import {
   reconcileIndependentReceipt,
-  shouldRetryUnavailableIndependentCheck,
+  selectParseProviderRole,
+  selectVerificationProviderRole,
+  shouldQueueIndependentCheck,
 } from './receipt-reconciliation.ts';
 
 function row(
@@ -45,11 +47,17 @@ function receipt(total: number, items: ParsedItem[]): BulkParsedDocument {
 }
 
 describe('independent receipt reconciliation', () => {
-  it('retries a fallback-only mismatch before routing the third delivery to review', () => {
-    expect(shouldRetryUnavailableIndependentCheck(1, false, false, true)).toBe(true);
-    expect(shouldRetryUnavailableIndependentCheck(2, false, true, false)).toBe(true);
-    expect(shouldRetryUnavailableIndependentCheck(3, false, false, true)).toBe(false);
-    expect(shouldRetryUnavailableIndependentCheck(1, true, false, true)).toBe(false);
+  it('uses one provider tier per queue delivery and escalates fallback results to Opus', () => {
+    expect([1, 2, 3].map(selectParseProviderRole)).toEqual(['primary', 'fallback', 'fallback']);
+    expect(selectVerificationProviderRole('gemini')).toBe('fallback');
+    expect(selectVerificationProviderRole('anthropic')).toBe('verifier');
+  });
+
+  it('queues a mismatching parse for an independent model before the third delivery', () => {
+    expect(shouldQueueIndependentCheck(1, false, true)).toBe(true);
+    expect(shouldQueueIndependentCheck(2, true, false)).toBe(true);
+    expect(shouldQueueIndependentCheck(3, false, true)).toBe(false);
+    expect(shouldQueueIndependentCheck(1, true, true)).toBe(false);
   });
 
   it('diagnoses a dm VAT class read as quantity and accepts only the evidenced parse', () => {
@@ -118,6 +126,32 @@ describe('independent receipt reconciliation', () => {
       diagnosisCode: 'secondary_arithmetic_mismatch',
       parsed: primary,
     });
+  });
+
+  it('explains when the unresolved gap equals one more repeated row', () => {
+    const rows = [
+      row(1, 'Other', 1, 39.16),
+      row(2, 'Cashews', 1, 1.99),
+      row(3, 'Cashews', 1, 1.99),
+    ];
+    const primary = receipt(45.13, rows);
+    const secondary = receipt(45.13, rows);
+
+    const result = reconcileIndependentReceipt(primary, secondary);
+
+    expect(result).toMatchObject({
+      status: 'rejected',
+      diagnosisCode: 'unresolved_repeated_row_candidate',
+      details: {
+        repeated_row_candidate: {
+          productName: 'Cashews',
+          occurrences: 2,
+          lineTotal: 1.99,
+          gap: 1.99,
+        },
+      },
+    });
+    expect(result.publicMessage).toContain('автоматично додавати невидимий рядок небезпечно');
   });
 
   it('fails closed when independent metadata identifies a different receipt', () => {

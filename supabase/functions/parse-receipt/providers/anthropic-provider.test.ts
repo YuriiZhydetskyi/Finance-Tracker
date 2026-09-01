@@ -117,6 +117,8 @@ describe('AnthropicProvider — content block dispatch', () => {
     );
     const prompt = String(body.messages[0]!.content[1]!.text);
     expect(prompt).toContain('Count repeated identical rows separately');
+    expect(prompt).toContain('make one more visual sweep');
+    expect(prompt).toContain('not permission to force agreement');
     expect(prompt).toContain('tax_class');
     expect(prompt).not.toContain('trusted printed final total');
     expect(prompt).not.toContain('Previous extraction');
@@ -127,6 +129,14 @@ describe('AnthropicProvider — content block dispatch', () => {
       inputTokens: 140,
       outputTokens: 60,
     });
+  });
+
+  it('allows the worker to expand the bulk output budget without changing interactive parsing', async () => {
+    const provider = new AnthropicProvider({ apiKey: 'k', bulkMaxTokens: 16_384 });
+
+    await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
+
+    expect(lastRequestBody().max_tokens).toBe(16_384);
   });
 
   it('rejects max_tokens responses so truncated item arrays cannot be accepted', async () => {

@@ -37,4 +37,5 @@
 | [0015](0015-pair-detector-multi-tuple-aggregation.md) | Multi-tuple pair detection та aggregation | accepted | Domain |
 | [0016](0016-durable-background-receipt-imports.md) | Стійкий фоновий імпорт великої кількості документів | accepted | Import / Queue |
 | [0017](0017-bulk-import-arithmetic-repair.md) | Детермінована арифметика та cross-provider repair у bulk-import | superseded by 0018 | Import / AI |
-| [0018](0018-evidence-based-receipt-verification.md) | Доказове розпізнавання та незалежна перевірка чеків | accepted | Import / AI / Observability |
+| [0018](0018-evidence-based-receipt-verification.md) | Доказове розпізнавання та незалежна перевірка чеків | superseded by 0019 | Import / AI / Observability |
+| [0019](0019-staged-receipt-verification.md) | Поетапна незалежна перевірка чеків через чергу | accepted | Import / AI / Queue |
