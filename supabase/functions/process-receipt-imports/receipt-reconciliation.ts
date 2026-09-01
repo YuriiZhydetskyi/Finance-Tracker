@@ -29,7 +29,7 @@ export type ReceiptReconciliation = {
   details: Record<string, unknown>;
 };
 
-export type ReceiptProviderRole = 'primary' | 'fallback' | 'verifier';
+export type ReceiptProviderRole = 'primary' | 'fallback';
 
 export function selectParseProviderRole(deliveryAttempt: number): ReceiptProviderRole {
   return deliveryAttempt === 1 ? 'primary' : 'fallback';
@@ -37,8 +37,8 @@ export function selectParseProviderRole(deliveryAttempt: number): ReceiptProvide
 
 export function selectVerificationProviderRole(
   seedProvider: 'gemini' | 'anthropic',
-): ReceiptProviderRole {
-  return seedProvider === 'gemini' ? 'fallback' : 'verifier';
+): Extract<ReceiptProviderRole, 'fallback'> | null {
+  return seedProvider === 'gemini' ? 'fallback' : null;
 }
 
 export function selectSeedStages(previousWorkerDiagnosis: string | null): string[] {
@@ -48,11 +48,14 @@ export function selectSeedStages(previousWorkerDiagnosis: string | null): string
 }
 
 export function shouldQueueIndependentCheck(
+  providerRole: ReceiptProviderRole,
   deliveryAttempt: number,
   arithmeticMatches: boolean,
   evidenceIsValid: boolean,
 ): boolean {
-  return deliveryAttempt < 3 && (!arithmeticMatches || !evidenceIsValid);
+  return (
+    providerRole === 'primary' && deliveryAttempt < 3 && (!arithmeticMatches || !evidenceIsValid)
+  );
 }
 
 /**

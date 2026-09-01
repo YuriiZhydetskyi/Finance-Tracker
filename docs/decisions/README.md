@@ -30,7 +30,7 @@
 | [0008](0008-prices-computed-from-items.md) | Reference prices обчислюються з історії Items; без окремої таблиці | accepted | Analytics |
 | [0009](0009-notes-columns-and-wasted-qty.md) | Notes як прості колонки; spoilage як wasted_qty колонка | accepted | Schema |
 | [0010](0010-web-app-access-mode.md) | Web app access: `ANYONE` (signed-in) + server-side allowlist | superseded by 0013 | Deploy |
-| [0011](0011-claude-fallback.md) | Claude Sonnet 4.6 як автоматичний fallback для Gemini | accepted | AI |
+| [0011](0011-claude-fallback.md) | Claude Sonnet 4.6 як автоматичний fallback для Gemini | superseded by 0020 | AI |
 | [0012](0012-cancellation-discount-grouping.md) | Cancellation/discount pair grouping в UI; `Items.discount_orig` колонка | accepted | UI / Schema |
 | [0013](0013-migrate-to-react-supabase.md) | Міграція з Apps Script + Sheets на React + Supabase + Cloudflare Pages | accepted | Migration |
 | [0014](0014-cancellations-as-zero-rows.md) | Cancellation-пари як нульові UI-рядки | accepted | Domain |
@@ -38,4 +38,5 @@
 | [0016](0016-durable-background-receipt-imports.md) | Стійкий фоновий імпорт великої кількості документів | accepted | Import / Queue |
 | [0017](0017-bulk-import-arithmetic-repair.md) | Детермінована арифметика та cross-provider repair у bulk-import | superseded by 0018 | Import / AI |
 | [0018](0018-evidence-based-receipt-verification.md) | Доказове розпізнавання та незалежна перевірка чеків | superseded by 0019 | Import / AI / Observability |
-| [0019](0019-staged-receipt-verification.md) | Поетапна незалежна перевірка чеків через чергу | accepted | Import / AI / Queue |
+| [0019](0019-staged-receipt-verification.md) | Поетапна незалежна перевірка чеків через чергу | superseded by 0020 | Import / AI / Queue |
+| [0020](0020-two-model-receipt-verification.md) | Gemini 3.7 Flash і Sonnet 5 без третьої verification-моделі | accepted | Import / AI / Queue |

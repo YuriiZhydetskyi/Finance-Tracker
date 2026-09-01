@@ -1,6 +1,6 @@
 # ADR-0019: Поетапна незалежна перевірка чеків через чергу
 
-- Status: accepted
+- Status: superseded by [ADR-0020](0020-two-model-receipt-verification.md)
 - Date: 2026-09-01
 - Supersedes: [ADR-0018](0018-evidence-based-receipt-verification.md)
 - Extends: [ADR-0016](0016-durable-background-receipt-imports.md)
