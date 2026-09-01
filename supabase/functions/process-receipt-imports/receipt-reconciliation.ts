@@ -361,13 +361,15 @@ function repairSingleRepeatedRow(
     if (primaryCount < 1 || secondaryCount !== primaryCount + 1) continue;
     const secondaryRows = secondary.items.filter((item) => itemKey(item) === key);
     const primaryRows = primary.items.filter((item) => itemKey(item) === key);
-    const item = secondaryRows[0];
+    const item = primaryRows[0];
     if (!item) continue;
     const lineTotal = round(item.qty * (item.unit_price_orig - (item.discount_orig ?? 0)), 2);
     if (lineTotal <= 0 || Math.abs(gap - lineTotal) > 0.02) continue;
 
-    const primaryTexts = new Set(primaryRows.map((row) => normalize(row.raw_text ?? '')));
-    const secondaryTexts = new Set(secondaryRows.map((row) => normalize(row.raw_text ?? '')));
+    const primaryTexts = new Set(primaryRows.map((row) => normalizeEvidence(row.raw_text ?? '')));
+    const secondaryTexts = new Set(
+      secondaryRows.map((row) => normalizeEvidence(row.raw_text ?? '')),
+    );
     if (
       primaryTexts.has('') ||
       secondaryTexts.size !== 1 ||
@@ -411,6 +413,14 @@ function repairSingleRepeatedRow(
 function normalize(value: string): string {
   return value
     .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}]+/gu, '')
+    .toLowerCase();
+}
+
+function normalizeEvidence(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
     .replace(/[^\p{L}\p{N}]+/gu, '')
     .toLowerCase();
 }
