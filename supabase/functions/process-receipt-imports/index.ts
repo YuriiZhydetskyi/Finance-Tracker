@@ -6,6 +6,7 @@ import type {
   AiCallResult,
   AiCallTrace,
   AiContext,
+  BulkParseMode,
   BulkParsedDocument,
 } from '../parse-receipt/types.ts';
 import {
@@ -18,7 +19,7 @@ import {
   reconcileIndependentReceipt,
   selectParseProviderRole,
   selectSeedStages,
-  selectVerificationProviderRole,
+  selectVerificationKind,
   shouldLoadStoredVerificationSeed,
   shouldQueueIndependentCheck,
   type ReceiptReconciliation,
@@ -71,6 +72,7 @@ type BulkProvider = {
     imageBase64: string,
     ctx: AiContext,
     forceReceipt?: boolean,
+    mode?: BulkParseMode,
   ): Promise<AiCallResult<BulkParsedDocument>>;
 };
 type ProviderInvocation = {
@@ -81,7 +83,6 @@ type ProviderInvocation = {
 type StoredVerificationSeed = {
   parsed: BulkParsedDocument;
   provider: 'gemini' | 'anthropic';
-  model: string | null;
 };
 
 class RetryableImportError extends Error {
@@ -145,34 +146,19 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     let independentMessage: string | null = null;
 
     if (seed) {
-      const verificationRole = selectVerificationProviderRole(seed.provider);
-      if (verificationRole === null) {
-        // A queued message created by an older deployment may carry an
-        // Anthropic seed intended for an Opus stage. The agreed two-model
-        // policy fails closed instead of making another provider call.
-        const message =
-          'Результат Claude не пройшов автоматичні перевірки; потрібна ручна перевірка.';
-        await completeException(job, 'receipt', 'validation', seed.parsed, message);
-        await finishAttempt(workerAttempt, 'succeeded', {
-          diagnosis_code: 'verification_exhausted',
-          public_message: message,
-          details: { seed_model: seed.model },
-        });
-        return { id: importFile.id, status: 'needs_review' };
-      } else {
-        const independent = await independentlyVerify(
-          job,
-          analysisRun,
-          base64,
-          ctx,
-          importFile.force_receipt,
-          seed.parsed,
-          fallback,
-          anthropicSettings(FALLBACK_MODEL, 'primary_verifier'),
-        );
-        parsed = independent.parsed;
-        independentMessage = independent.publicMessage;
-      }
+      const verificationKind = selectVerificationKind(seed.provider);
+      const independent = await independentlyVerify(
+        job,
+        analysisRun,
+        base64,
+        ctx,
+        importFile.force_receipt,
+        seed.parsed,
+        fallback,
+        anthropicSettings(FALLBACK_MODEL, verificationKind),
+      );
+      parsed = independent.parsed;
+      independentMessage = independent.publicMessage;
     } else {
       parsed = await parseForDelivery(job, analysisRun, base64, ctx, importFile.force_receipt);
     }
@@ -206,7 +192,9 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     ) {
       throw new RetryableImportError(
         'independent_check_required',
-        'Результат збережено в журналі; наступна доставка виконає незалежну перевірку іншою моделлю.',
+        selectParseProviderRole(job.read_count) === 'primary'
+          ? 'Результат збережено в журналі; наступна доставка виконає незалежну перевірку іншою моделлю.'
+          : 'Результат збережено в журналі; наступна доставка виконає окремий аудит усіх фізичних рядків.',
       );
     }
 
@@ -334,8 +322,8 @@ async function independentlyVerify(
   settings: Record<string, unknown>,
 ): Promise<ReceiptReconciliation> {
   try {
-    // This request intentionally receives only the original document and the
-    // normal extraction prompt: no primary rows, totals or mismatch amount.
+    // This request intentionally receives only the original document and a
+    // physical-row audit prompt: no primary rows, totals or mismatch amount.
     const result = await invokeProvider(
       job,
       analysisRun,
@@ -346,6 +334,7 @@ async function independentlyVerify(
       forceReceipt,
       true,
       settings,
+      'verification',
     );
     const reconciliation = reconcileIndependentReceipt(parsed, result.parsed);
     await finishAttempt(result.attempt, reconciliation.status, {
@@ -388,10 +377,11 @@ async function invokeProvider(
   forceReceipt: boolean,
   deferOutcome: boolean,
   settings: Record<string, unknown>,
+  mode: BulkParseMode = 'standard',
 ): Promise<ProviderInvocation> {
   const attempt = await startAttempt(job, analysisRun, stage, provider.name, settings);
   try {
-    const result = await provider.parseBulkDetailed(base64, ctx, forceReceipt);
+    const result = await provider.parseBulkDetailed(base64, ctx, forceReceipt, mode);
     const parsed = validateBulkDocument(result.value);
     if (!deferOutcome) {
       await finishAttempt(attempt, 'succeeded', providerResultFields(parsed, result.trace));
@@ -426,7 +416,7 @@ async function loadStoredVerificationSeed(
     const stages = selectSeedStages(previousWorker?.diagnosis_code ?? null);
     const { data, error } = await db
       .from('receipt_import_attempts')
-      .select('provider, model, result_json')
+      .select('provider, result_json')
       .in('stage', stages)
       .eq('file_id', fileId)
       .eq('queue_message_id', queueMessageId)
@@ -444,7 +434,6 @@ async function loadStoredVerificationSeed(
     return {
       parsed,
       provider: data.provider === 'gemini' ? 'gemini' : 'anthropic',
-      model: data.model,
     };
   } catch {
     console.warn('[process-receipt-imports] stored verification seed unavailable', fileId);

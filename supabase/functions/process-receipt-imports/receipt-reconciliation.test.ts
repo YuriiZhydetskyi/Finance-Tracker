@@ -5,7 +5,7 @@ import {
   reconcileIndependentReceipt,
   selectParseProviderRole,
   selectSeedStages,
-  selectVerificationProviderRole,
+  selectVerificationKind,
   shouldLoadStoredVerificationSeed,
   shouldQueueIndependentCheck,
 } from './receipt-reconciliation.ts';
@@ -49,10 +49,10 @@ function receipt(total: number, items: ParsedItem[]): BulkParsedDocument {
 }
 
 describe('independent receipt reconciliation', () => {
-  it('uses Sonnet only after Gemini and stops after an Anthropic result', () => {
+  it('uses cross-provider verification after Gemini and a focused row audit after Sonnet', () => {
     expect([1, 2, 3].map(selectParseProviderRole)).toEqual(['primary', 'fallback', 'fallback']);
-    expect(selectVerificationProviderRole('gemini')).toBe('fallback');
-    expect(selectVerificationProviderRole('anthropic')).toBeNull();
+    expect(selectVerificationKind('gemini')).toBe('cross_provider');
+    expect(selectVerificationKind('anthropic')).toBe('same_provider_row_audit');
   });
 
   it('starts a manual requeue fresh and reuses seeds only on the same message retry', () => {
@@ -70,9 +70,11 @@ describe('independent receipt reconciliation', () => {
     ]);
   });
 
-  it('queues only a mismatching Gemini parse for independent Sonnet verification', () => {
+  it('queues mismatching Gemini and the first mismatching Sonnet fallback for verification', () => {
     expect(shouldQueueIndependentCheck('primary', 1, false, true)).toBe(true);
-    expect(shouldQueueIndependentCheck('fallback', 2, true, false)).toBe(false);
+    expect(shouldQueueIndependentCheck('fallback', 2, false, true)).toBe(true);
+    expect(shouldQueueIndependentCheck('fallback', 2, true, false)).toBe(true);
+    expect(shouldQueueIndependentCheck('fallback', 3, false, true)).toBe(false);
     expect(shouldQueueIndependentCheck('primary', 3, false, true)).toBe(false);
     expect(shouldQueueIndependentCheck('primary', 1, true, true)).toBe(false);
   });
@@ -128,6 +130,24 @@ describe('independent receipt reconciliation', () => {
       status: 'accepted',
       diagnosisCode: 'missing_repeated_row',
       before: { computedTotal: 41.15, matches: false },
+      after: { computedTotal: 43.14, matches: true },
+    });
+  });
+
+  it('diagnoses multiple independently recovered repeated rows', () => {
+    const primary = receipt(43.14, [
+      row(1, 'Other', 1, 19.26),
+      ...Array.from({ length: 10 }, (_, index) => row(index + 2, 'Cashews', 1, 1.99)),
+    ]);
+    const secondary = receipt(43.14, [
+      row(1, 'Other', 1, 19.26),
+      ...Array.from({ length: 12 }, (_, index) => row(index + 2, 'Cashews', 1, 1.99)),
+    ]);
+
+    expect(reconcileIndependentReceipt(primary, secondary)).toMatchObject({
+      status: 'accepted',
+      diagnosisCode: 'missing_repeated_row',
+      before: { computedTotal: 39.16, matches: false },
       after: { computedTotal: 43.14, matches: true },
     });
   });
@@ -223,7 +243,34 @@ describe('independent receipt reconciliation', () => {
         },
       },
     });
-    expect(result.publicMessage).toContain('автоматично додавати невидимий рядок небезпечно');
+    expect(result.publicMessage).toContain('автоматично додавати непідтверджені рядки небезпечно');
+  });
+
+  it('reports the exact number of suspected missing repeated rows', () => {
+    const rows = [
+      row(1, 'Other', 1, 19.26),
+      ...Array.from({ length: 10 }, (_, index) => row(index + 2, 'Cashews', 1, 1.99)),
+    ];
+    const primary = receipt(43.14, rows);
+    const secondary = receipt(43.14, rows);
+
+    const result = reconcileIndependentReceipt(primary, secondary);
+
+    expect(result).toMatchObject({
+      status: 'rejected',
+      diagnosisCode: 'unresolved_repeated_row_candidate',
+      details: {
+        repeated_row_candidate: {
+          productName: 'Cashews',
+          occurrences: 10,
+          missingOccurrences: 2,
+          expectedOccurrences: 12,
+          lineTotal: 1.99,
+          gap: 3.98,
+        },
+      },
+    });
+    expect(result.publicMessage).toContain('ще 2 рядкам «Cashews»');
   });
 
   it('fails closed when independent metadata identifies a different receipt', () => {

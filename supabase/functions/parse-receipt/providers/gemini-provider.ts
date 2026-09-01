@@ -1,9 +1,10 @@
 import { buildPrompt, buildSchema } from '../prompts/receipt-prompt.ts';
-import { buildBulkPrompt, buildBulkSchema } from '../prompts/bulk-import-prompt.ts';
+import { buildBulkPromptForMode, buildBulkSchema } from '../prompts/bulk-import-prompt.ts';
 import type {
   AiCallResult,
   AiCallTrace,
   AiContext,
+  BulkParseMode,
   BulkParsedDocument,
   ParsedReceipt,
 } from '../types.ts';
@@ -59,11 +60,12 @@ export class GeminiProvider implements IAiProvider {
     imageBase64: string,
     ctx: AiContext,
     forceReceipt = false,
+    mode: BulkParseMode = 'standard',
   ): Promise<AiCallResult<BulkParsedDocument>> {
     return this.request<BulkParsedDocument>(
       imageBase64,
       ctx,
-      buildBulkPrompt(ctx, forceReceipt),
+      buildBulkPromptForMode(ctx, forceReceipt, mode),
       buildBulkSchema(ctx),
       {
         thinkingLevel: BULK_THINKING_LEVEL,

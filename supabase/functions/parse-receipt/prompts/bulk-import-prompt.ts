@@ -1,5 +1,5 @@
 import { buildPrompt, buildSchema } from './receipt-prompt.ts';
-import type { AiContext } from '../types.ts';
+import type { AiContext, BulkParseMode } from '../types.ts';
 
 export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
   const classification = forceReceipt
@@ -29,11 +29,39 @@ export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
     '- tax_class: copy a separate rightmost VAT class 1 or 2 when present; otherwise null. It never changes qty.',
     '- Verify each printed line total against qty × unit price, but report only what is visibly printed. Never invent a balancing row.',
     '- Count repeated identical rows separately. A missing repeated row is an extraction error even if adjacent text looks duplicated.',
+    '- For every product-code + price combination repeated on the receipt, split the occurrences into visual runs separated by other products and sum the run lengths. Example: four X rows, then Y, then four X rows, then Z, then four X rows means twelve separate X items, not ten and not one item with qty=12.',
+    '- Recount every repeated group once top-to-bottom and once bottom-to-top. The counts must agree. Derive the count only from visible physical rows, never from total_orig or an arithmetic gap.',
     '- Before returning, calculate the sum of the emitted financial rows and compare it with total_orig. If they differ, make one more visual sweep from the first financial row to the total: recount identical repeated rows and look specifically for a missed discount/refund, an unsupported quantity, or a row total mistaken for a unit price.',
     '- The second sweep is a verification pass, not permission to force agreement. Add or change a row only when its raw_text is independently visible in the document. If no visible row explains the difference, preserve the mismatch for review.',
     '',
     buildPrompt(ctx),
   ].join('\n');
+}
+
+export function buildBulkVerificationPrompt(ctx: AiContext, forceReceipt = false): string {
+  return [
+    'Perform a fresh verification transcription of the original document.',
+    'You have not been given any previous extraction, mismatch amount or proposed correction.',
+    'Before producing JSON, build a private physical-row ledger in visual order:',
+    '1. Give every separately printed financial row exactly one ledger position. A duplicated-looking row is still a real row when it is visibly printed twice.',
+    '2. For every product-code + price combination that occurs more than once, split its occurrences into visual runs separated by other products and count every run.',
+    '3. Recount those runs once top-to-bottom and once bottom-to-top. The two counts must agree before emitting the items.',
+    '4. Example: four X rows, then Y, then four X rows, then Z, then four X rows means twelve separate X items. Never emit ten, never collapse them, and never encode them as qty=12 unless the receipt itself prints an explicit multiplier.',
+    '5. Derive every count only from visible physical rows. Never use the final total or arithmetic gap to infer a missing occurrence.',
+    'Emit the complete receipt with one item and one consecutive source_ordinal per ledger row.',
+    '',
+    buildBulkPrompt(ctx, forceReceipt),
+  ].join('\n');
+}
+
+export function buildBulkPromptForMode(
+  ctx: AiContext,
+  forceReceipt = false,
+  mode: BulkParseMode = 'standard',
+): string {
+  return mode === 'verification'
+    ? buildBulkVerificationPrompt(ctx, forceReceipt)
+    : buildBulkPrompt(ctx, forceReceipt);
 }
 
 export function buildBulkSchema(ctx: AiContext): Record<string, unknown> {

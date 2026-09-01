@@ -39,4 +39,5 @@
 | [0017](0017-bulk-import-arithmetic-repair.md) | Детермінована арифметика та cross-provider repair у bulk-import | superseded by 0018 | Import / AI |
 | [0018](0018-evidence-based-receipt-verification.md) | Доказове розпізнавання та незалежна перевірка чеків | superseded by 0019 | Import / AI / Observability |
 | [0019](0019-staged-receipt-verification.md) | Поетапна незалежна перевірка чеків через чергу | superseded by 0020 | Import / AI / Queue |
-| [0020](0020-two-model-receipt-verification.md) | Gemini 3.7 Flash і Sonnet 5 без третьої verification-моделі | accepted | Import / AI / Queue |
+| [0020](0020-two-model-receipt-verification.md) | Gemini 3.7 Flash і Sonnet 5 без третьої verification-моделі | superseded by 0021 | Import / AI / Queue |
+| [0021](0021-physical-row-audit-for-repeated-items.md) | Окремий фізичний аудит повторюваних рядків чека | accepted | Import / AI / Queue |
