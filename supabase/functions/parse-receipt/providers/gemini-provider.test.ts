@@ -5,6 +5,7 @@ import type { AiContext } from '../types.ts';
 const sampleResponse = {
   candidates: [
     {
+      finishReason: 'STOP',
       content: {
         parts: [
           {
@@ -20,6 +21,7 @@ const sampleResponse = {
       },
     },
   ],
+  usageMetadata: { promptTokenCount: 120, candidatesTokenCount: 40 },
 };
 
 function ctx(mimeType: string): AiContext {
@@ -87,7 +89,7 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
     expect(signal?.aborted).toBe(true);
   });
 
-  it('uses Medium for PDFs because Ultra High is not available for PDF input', async () => {
+  it('keeps interactive PDFs at Medium resolution', async () => {
     const provider = new GeminiProvider({ apiKey: 'k' });
     await provider.parse('PDF', ctx('application/pdf'));
 
@@ -97,12 +99,33 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
     });
   });
 
+  it('uses High thinking and High media resolution for unattended bulk PDFs', async () => {
+    const provider = new GeminiProvider({ apiKey: 'k' });
+    const result = await provider.parseBulkDetailed('PDF', ctx('application/pdf'));
+
+    const request = lastRequest();
+    expect(mediaPart(request.body)).toMatchObject({
+      media_resolution: { level: 'MEDIA_RESOLUTION_HIGH' },
+    });
+    expect(request.body.generationConfig).toMatchObject({
+      thinkingConfig: { thinkingLevel: 'high' },
+    });
+    expect(result.trace).toMatchObject({
+      provider: 'gemini',
+      model: 'gemini-3.7-flash',
+      stopReason: 'STOP',
+      inputTokens: 120,
+      outputTokens: 40,
+    });
+  });
+
   it('ignores a preceding thought part and parses the structured JSON text part', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
           candidates: [
             {
+              finishReason: 'STOP',
               content: {
                 parts: [
                   { thought: true, text: 'I will inspect the receipt.' },
@@ -119,6 +142,23 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
 
     await expect(provider.parse('AAA', ctx('image/jpeg'))).resolves.toMatchObject({
       store: 'Aldi',
+    });
+  });
+
+  it('rejects a truncated response instead of parsing partial JSON', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{}' }] } }],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const provider = new GeminiProvider({ apiKey: 'k' });
+
+    await expect(provider.parse('AAA', ctx('image/jpeg'))).rejects.toMatchObject({
+      code: 'incomplete_response',
+      trace: expect.objectContaining({ stopReason: 'MAX_TOKENS' }),
     });
   });
 });

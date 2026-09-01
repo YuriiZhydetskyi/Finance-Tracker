@@ -1,9 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
-import { GeminiProvider } from '../parse-receipt/providers/gemini-provider.ts';
 import { AnthropicProvider } from '../parse-receipt/providers/anthropic-provider.ts';
-import type { AiContext, BulkParsedDocument } from '../parse-receipt/types.ts';
-import { repairArithmeticMismatch, type ArithmeticRepairResult } from './arithmetic-repair.ts';
-import { prepareReceipt, validateBulkDocument } from './domain.ts';
+import { AiProviderError } from '../parse-receipt/providers/ai-provider.ts';
+import { GeminiProvider } from '../parse-receipt/providers/gemini-provider.ts';
+import type {
+  AiCallResult,
+  AiCallTrace,
+  AiContext,
+  BulkParsedDocument,
+} from '../parse-receipt/types.ts';
+import {
+  auditReceiptEvidence,
+  checkReceiptArithmetic,
+  prepareReceipt,
+  validateBulkDocument,
+} from './domain.ts';
+import {
+  reconcileIndependentReceipt,
+  type ReceiptReconciliation,
+} from './receipt-reconciliation.ts';
 
 const BUCKET = 'receipts';
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -30,6 +44,22 @@ type ImportFile = {
   mime_type: string;
   force_receipt: boolean;
 };
+type AttemptStage = 'primary_parse' | 'fallback_parse' | 'independent_check' | 'worker';
+type AttemptStatus = 'succeeded' | 'accepted' | 'rejected' | 'failed';
+type AttemptHandle = { id: number; startedAt: number };
+type BulkProvider = {
+  readonly name: 'gemini' | 'anthropic';
+  parseBulkDetailed(
+    imageBase64: string,
+    ctx: AiContext,
+    forceReceipt?: boolean,
+  ): Promise<AiCallResult<BulkParsedDocument>>;
+};
+type ProviderInvocation = {
+  parsed: BulkParsedDocument;
+  trace: AiCallTrace;
+  attempt: AttemptHandle | null;
+};
 
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -46,6 +76,10 @@ Deno.serve(async (request) => {
 });
 
 async function processJob(job: Job): Promise<{ id: string; status: string }> {
+  const analysisRun = await nextAnalysisRun(job.import_file_id);
+  const workerAttempt = await startAttempt(job, analysisRun, 'worker', null, {
+    queue_read_count: job.read_count,
+  });
   try {
     const { data: file, error: fileError } = await db
       .from('receipt_import_files')
@@ -71,32 +105,58 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       mimeType: importFile.mime_type,
     };
     const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-    const { raw, allowIndependentRepair } = await parseWithFallback(
-      base64,
-      ctx,
-      importFile.force_receipt,
-    );
-    let parsed = validateBulkDocument(raw);
+    const first = await parseWithFallback(job, analysisRun, base64, ctx, importFile.force_receipt);
+    let parsed = first.parsed;
+    let independentMessage: string | null = null;
 
     if (parsed.document_kind !== 'receipt') {
+      const message = parsed.classification_reason || 'Потрібна перевірка документа.';
       await completeException(
         job,
         parsed.document_kind,
         parsed.document_kind === 'not_receipt' ? 'not_receipt' : 'uncertain',
         parsed,
-        parsed.classification_reason || 'Потрібна перевірка документа.',
+        message,
       );
+      await finishAttempt(workerAttempt, 'succeeded', {
+        diagnosis_code: parsed.document_kind,
+        public_message: message,
+      });
       return { id: importFile.id, status: 'needs_review' };
     }
 
-    const repair = await repairArithmeticMismatch(
-      parsed,
-      base64,
-      ctx,
-      allowIndependentRepair ? fallback : null,
-    );
-    logArithmeticRepair(importFile.id, repair);
-    parsed = repair.parsed;
+    const firstArithmetic = checkReceiptArithmetic(parsed);
+    const firstEvidence = auditReceiptEvidence(parsed);
+    if ((!firstArithmetic?.matches || !firstEvidence.ok) && first.allowIndependentCheck) {
+      const independent = await independentlyVerify(
+        job,
+        analysisRun,
+        base64,
+        ctx,
+        importFile.force_receipt,
+        parsed,
+      );
+      parsed = independent.parsed;
+      independentMessage = independent.publicMessage;
+    } else if ((!firstArithmetic?.matches || !firstEvidence.ok) && !first.allowIndependentCheck) {
+      independentMessage =
+        'Незалежна перевірка недоступна, бо резервний provider уже виконав первинний аналіз.';
+    }
+
+    const finalEvidence = auditReceiptEvidence(parsed);
+    if (!finalEvidence.ok) {
+      const message = joinReviewMessages(
+        finalEvidence.issues[0]?.message ?? 'Не вдалося підтвердити рядки чека.',
+        independentMessage,
+      );
+      await completeException(job, 'receipt', 'validation', parsed, message);
+      await finishAttempt(workerAttempt, 'succeeded', {
+        diagnosis_code: finalEvidence.issues[0]?.code ?? 'evidence_invalid',
+        public_message: message,
+        details: { evidence_issue_codes: finalEvidence.issues.map((issue) => issue.code) },
+      });
+      return { id: importFile.id, status: 'needs_review' };
+    }
 
     const fxRate = await getFxRate(parsed.currency, parsed.date);
     const { data: signed } = await db.storage
@@ -110,7 +170,12 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       signed?.signedUrl ?? null,
     );
     if (!prepared.ok) {
-      await completeException(job, 'receipt', 'validation', parsed, prepared.reason);
+      const message = joinReviewMessages(prepared.reason, independentMessage);
+      await completeException(job, 'receipt', 'validation', parsed, message);
+      await finishAttempt(workerAttempt, 'succeeded', {
+        diagnosis_code: 'validation',
+        public_message: message,
+      });
       return { id: importFile.id, status: 'needs_review' };
     }
 
@@ -126,50 +191,262 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       finalResult && typeof finalResult === 'object' && 'status' in finalResult
         ? String(finalResult.status)
         : 'saved';
+    await finishAttempt(workerAttempt, 'succeeded', {
+      diagnosis_code: status,
+      public_message: independentMessage,
+    });
     return { id: importFile.id, status };
   } catch (error) {
-    console.error('[process-receipt-imports] job failed', job.import_file_id, publicError(error));
+    const message = publicError(error);
+    console.error('[process-receipt-imports] job failed', job.import_file_id, message);
+    await finishAttempt(workerAttempt, 'failed', {
+      diagnosis_code: error instanceof AiProviderError ? error.code : 'worker_failure',
+      public_message: message,
+      ...traceFields(error instanceof AiProviderError ? error.trace : null),
+    });
     await db.rpc('record_receipt_import_failure', {
       p_file_id: job.import_file_id,
       p_msg_id: job.msg_id,
       p_read_count: job.read_count,
-      p_error_message: publicError(error),
+      p_error_message: message,
     });
     return { id: job.import_file_id, status: job.read_count >= 3 ? 'needs_review' : 'queued' };
   }
 }
 
 async function parseWithFallback(
+  job: Job,
+  analysisRun: number,
   base64: string,
   ctx: AiContext,
   forceReceipt: boolean,
-): Promise<{ raw: BulkParsedDocument; allowIndependentRepair: boolean }> {
+): Promise<{ parsed: BulkParsedDocument; allowIndependentCheck: boolean }> {
   try {
-    return {
-      raw: await primary.parseBulk(base64, ctx, forceReceipt),
-      allowIndependentRepair: true,
-    };
+    const result = await invokeProvider(
+      job,
+      analysisRun,
+      'primary_parse',
+      primary,
+      base64,
+      ctx,
+      forceReceipt,
+      false,
+    );
+    return { parsed: result.parsed, allowIndependentCheck: true };
   } catch {
+    const result = await invokeProvider(
+      job,
+      analysisRun,
+      'fallback_parse',
+      fallback,
+      base64,
+      ctx,
+      forceReceipt,
+      false,
+    );
+    return { parsed: result.parsed, allowIndependentCheck: false };
+  }
+}
+
+async function independentlyVerify(
+  job: Job,
+  analysisRun: number,
+  base64: string,
+  ctx: AiContext,
+  forceReceipt: boolean,
+  parsed: BulkParsedDocument,
+): Promise<ReceiptReconciliation> {
+  try {
+    // This request intentionally receives only the original document and the
+    // normal extraction prompt: no primary rows, totals or mismatch amount.
+    const result = await invokeProvider(
+      job,
+      analysisRun,
+      'independent_check',
+      fallback,
+      base64,
+      ctx,
+      forceReceipt,
+      true,
+    );
+    const reconciliation = reconcileIndependentReceipt(parsed, result.parsed);
+    await finishAttempt(result.attempt, reconciliation.status, {
+      ...providerResultFields(result.parsed, result.trace),
+      diagnosis_code: reconciliation.diagnosisCode,
+      public_message: reconciliation.publicMessage,
+      details: reconciliation.details,
+    });
+    logReconciliation(job.import_file_id, reconciliation);
+    return reconciliation;
+  } catch (error) {
+    const message = providerPublicMessage(error);
+    console.warn('[process-receipt-imports] independent verification failed', {
+      file_id: job.import_file_id,
+      code: error instanceof AiProviderError ? error.code : 'invalid_result',
+    });
     return {
-      raw: await fallback.parseBulk(base64, ctx, forceReceipt),
-      allowIndependentRepair: false,
+      status: 'rejected',
+      parsed,
+      diagnosisCode: 'secondary_evidence_invalid',
+      publicMessage: message,
+      before: checkReceiptArithmetic(parsed),
+      after: null,
+      evidence: { ok: false, issues: [] },
+      details: { failure_code: error instanceof AiProviderError ? error.code : 'invalid_result' },
     };
   }
 }
 
-function logArithmeticRepair(fileId: string, repair: ArithmeticRepairResult): void {
-  if (repair.status === 'not_needed') return;
+async function invokeProvider(
+  job: Job,
+  analysisRun: number,
+  stage: Exclude<AttemptStage, 'worker'>,
+  provider: BulkProvider,
+  base64: string,
+  ctx: AiContext,
+  forceReceipt: boolean,
+  deferOutcome: boolean,
+): Promise<ProviderInvocation> {
+  const settings =
+    provider.name === 'gemini'
+      ? { thinking_level: 'high', media_resolution: 'MEDIA_RESOLUTION_HIGH' }
+      : { max_tokens: 8192 };
+  const attempt = await startAttempt(job, analysisRun, stage, provider.name, settings);
+  try {
+    const result = await provider.parseBulkDetailed(base64, ctx, forceReceipt);
+    const parsed = validateBulkDocument(result.value);
+    if (!deferOutcome) {
+      await finishAttempt(attempt, 'succeeded', providerResultFields(parsed, result.trace));
+    }
+    return { parsed, trace: result.trace, attempt };
+  } catch (error) {
+    await finishAttempt(attempt, 'failed', {
+      diagnosis_code: error instanceof AiProviderError ? error.code : 'invalid_result',
+      public_message: providerPublicMessage(error),
+      ...traceFields(error instanceof AiProviderError ? error.trace : null),
+    });
+    throw error;
+  }
+}
+
+function providerResultFields(
+  parsed: BulkParsedDocument,
+  trace: AiCallTrace,
+): Record<string, unknown> {
+  const arithmetic = checkReceiptArithmetic(parsed);
+  const evidence = parsed.document_kind === 'receipt' ? auditReceiptEvidence(parsed) : null;
+  return {
+    ...traceFields(trace),
+    printed_total: arithmetic?.printedTotal ?? null,
+    computed_total: arithmetic?.computedTotal ?? null,
+    difference: arithmetic
+      ? Math.round((arithmetic.computedTotal - arithmetic.printedTotal) * 100) / 100
+      : null,
+    diagnosis_code: evidence && !evidence.ok ? evidence.issues[0]?.code : null,
+    public_message: evidence && !evidence.ok ? evidence.issues[0]?.message : null,
+    details: evidence ? { evidence_issue_codes: evidence.issues.map((issue) => issue.code) } : null,
+    result_json: parsed,
+  };
+}
+
+function traceFields(trace: AiCallTrace | null): Record<string, unknown> {
+  if (!trace) return {};
+  return {
+    provider: trace.provider,
+    model: trace.model,
+    provider_request_id: trace.requestId ?? null,
+    stop_reason: trace.stopReason ?? null,
+    input_tokens: trace.inputTokens ?? null,
+    output_tokens: trace.outputTokens ?? null,
+  };
+}
+
+async function nextAnalysisRun(fileId: string): Promise<number> {
+  try {
+    const { data, error } = await db
+      .from('receipt_import_attempts')
+      .select('analysis_run')
+      .eq('file_id', fileId)
+      .order('analysis_run', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error('Attempt query failed');
+    return (data?.analysis_run ?? 0) + 1;
+  } catch {
+    console.warn('[process-receipt-imports] attempt history unavailable', fileId);
+    return 1;
+  }
+}
+
+async function startAttempt(
+  job: Job,
+  analysisRun: number,
+  stage: AttemptStage,
+  provider: 'gemini' | 'anthropic' | null,
+  settings: Record<string, unknown>,
+): Promise<AttemptHandle | null> {
+  const startedAt = Date.now();
+  try {
+    const { data, error } = await db
+      .from('receipt_import_attempts')
+      .insert({
+        file_id: job.import_file_id,
+        analysis_run: analysisRun,
+        delivery_attempt: job.read_count,
+        stage,
+        provider,
+        status: 'started',
+        settings,
+      })
+      .select('id')
+      .single();
+    if (error || !data) throw new Error('Attempt insert failed');
+    return { id: Number(data.id), startedAt };
+  } catch {
+    console.warn('[process-receipt-imports] could not start attempt log', {
+      file_id: job.import_file_id,
+      analysis_run: analysisRun,
+      stage,
+    });
+    return null;
+  }
+}
+
+async function finishAttempt(
+  attempt: AttemptHandle | null,
+  status: AttemptStatus,
+  fields: Record<string, unknown>,
+): Promise<void> {
+  if (!attempt) return;
+  try {
+    const { error } = await db
+      .from('receipt_import_attempts')
+      .update({
+        ...fields,
+        status,
+        finished_at: new Date().toISOString(),
+        duration_ms: Math.max(0, Date.now() - attempt.startedAt),
+      })
+      .eq('id', attempt.id);
+    if (error) throw new Error('Attempt update failed');
+  } catch {
+    console.warn('[process-receipt-imports] could not finish attempt log', attempt.id);
+  }
+}
+
+function logReconciliation(fileId: string, result: ReceiptReconciliation): void {
   const details = {
     file_id: fileId,
-    status: repair.status,
-    computed_before: repair.before?.computedTotal ?? null,
-    printed_total: repair.before?.printedTotal ?? null,
-    computed_after: repair.after?.computedTotal ?? null,
+    status: result.status,
+    diagnosis_code: result.diagnosisCode,
+    computed_before: result.before?.computedTotal ?? null,
+    printed_total: result.before?.printedTotal ?? null,
+    computed_after: result.after?.computedTotal ?? null,
   };
-  if (repair.status === 'accepted') {
-    console.info('[process-receipt-imports] arithmetic repair accepted', details);
+  if (result.status === 'accepted') {
+    console.info('[process-receipt-imports] independent verification accepted', details);
   } else {
-    console.warn('[process-receipt-imports] arithmetic repair not accepted', details);
+    console.warn('[process-receipt-imports] independent verification rejected', details);
   }
 }
 
@@ -230,6 +507,23 @@ function ulid(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   for (const byte of bytes) random += ALPHABET[byte % 32];
   return time + random;
+}
+
+function providerPublicMessage(error: unknown): string {
+  if (!(error instanceof AiProviderError)) {
+    return 'Незалежна модель повернула невалідний результат.';
+  }
+  if (error.code === 'incomplete_response') {
+    return `Відповідь ${error.trace.provider} обірвалася (${error.trace.stopReason ?? 'unknown'}).`;
+  }
+  if (error.code === 'missing_output' || error.code === 'invalid_json') {
+    return `Відповідь ${error.trace.provider} не містить повних структурованих даних.`;
+  }
+  return `Provider ${error.trace.provider} не завершив аналіз.`;
+}
+
+function joinReviewMessages(primaryMessage: string, diagnostic: string | null): string {
+  return diagnostic ? `${primaryMessage} ${diagnostic}`.slice(0, 4000) : primaryMessage;
 }
 
 function publicError(error: unknown): string {

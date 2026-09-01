@@ -21,6 +21,8 @@ export function buildPrompt(ctx: AiContext): string {
     '- product_name: copy verbatim as printed on the receipt; do not translate or normalize.',
     '- product_code: numeric/alphanumeric per-line article number printed BEFORE the product name (e.g. Aldi prints "297855 Multivitamin 1l 1,39"; here product_code="297855"). Copy verbatim, no leading zeros stripped. Set null if no per-line code is printed (many smaller stores have none). Do NOT use receipt-level numbers like TA-Nr / Beleg-Nr / barcodes.',
     '- qty: numeric quantity, always POSITIVE (strictly > 0). Three cases: (a) count-based item printed with a multiplier like "x 2" or "2x" — qty equals that count (e.g. "EIFEL Eier Fl. 3,89 € x 2" → qty=2, unit_price_orig=3.89); (b) weight- or volume-based item printed with a "kg × EUR/kg", "g × EUR/kg", "l × EUR/l" line beneath the product — qty equals the printed weight/volume (FRACTIONAL VALUES ARE EXPECTED AND REQUIRED here, e.g. "Bananen 0,956 kg × 1,29 EUR/kg = 1,23" → qty=0.956, unit_price_orig=1.29; "Süßkartoffeln 1,432 kg × 2,29 EUR/kg = 3,28" → qty=1.432, unit_price_orig=2.29); (c) plain line with no count/weight printed — qty=1.0. Do NOT round fractional weight up to 1. Do NOT use the line total as unit_price when a per-kg/per-l price is printed — always pair the printed weight with the printed per-unit price.',
+    '- A standalone rightmost "1" or "2" aligned as a tax column (for example the MwSt-Satz class on dm receipts) is tax metadata, NEVER quantity. qty may exceed 1 only when the same item row has an explicit multiplier such as "2 x", "x 2", "2 Stk" or a weight/volume calculation.',
+    '- Preserve every separately printed financial row in visual top-to-bottom order. Consecutive rows with the same name and price are separate purchases; never collapse or deduplicate them.',
     '- unit_price_orig: numeric price per unit in the receipt currency. For count-based items this is the price for ONE unit (the receipt usually prints this explicitly, e.g. "3,89 € x 2"). For weight/volume items this is the per-kg / per-l price (NOT the total for that weight). CAN BE NEGATIVE for discounts, deposit refunds, and cancellations (see below).',
     '- category_suggestion: one of the listed categories (verbatim) or null if uncertain. Do not invent new categories.',
     '- store: best-effort store/merchant name; null if illegible.',
@@ -42,7 +44,7 @@ export function buildPrompt(ctx: AiContext): string {
     '',
     '  3) Pfand / Leergut (German bottle deposits): "Pfand" with a POSITIVE price is a deposit charge added when you buy a bottled drink. "Leergut", "Leergut Entl.allg.", "Leergut Einw.allg." with a NEGATIVE price are refunds for returned empty bottles. Emit each as a separate item. If the Allowed categories list contains "Pfand", set category_suggestion="Pfand" for all of these; otherwise leave it null.',
     '',
-    'Final reminder: qty stays POSITIVE even on negative-price rows — only the price flips sign. Do not invent items not visible on the receipt; do not net out cancellations.',
+    'Final reminder: qty stays POSITIVE even on negative-price rows — only the price flips sign. Do not invent items not visible on the receipt; do not net out cancellations. Never add a balancing or rounding item merely to match the final total.',
     '',
     `Allowed categories: ${categories}`,
     productHints

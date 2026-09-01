@@ -12,6 +12,16 @@ export type ParsedItem = {
   category_suggestion: string | null;
   discount_orig?: number;
   product_code?: string | null;
+  /** 1-based position of the physical financial row in the document. */
+  source_ordinal?: number;
+  /** Short verbatim transcription of the row(s) used for this item. */
+  raw_text?: string;
+  row_kind?: 'item' | 'discount' | 'deposit' | 'refund' | 'cancellation';
+  qty_evidence?: 'implicit_one' | 'explicit_multiplier' | 'weight_or_volume';
+  /** Printed total for this row, when the receipt shows one separately. */
+  printed_line_total_orig?: number | null;
+  /** VAT class printed in a separate rightmost column; never an item quantity. */
+  tax_class?: '1' | '2' | null;
 };
 
 export type ParsedReceipt = {
@@ -27,16 +37,24 @@ export type ParsedReceipt = {
 export type BulkParsedDocument = ParsedReceipt & {
   document_kind: 'receipt' | 'not_receipt' | 'uncertain';
   classification_reason: string;
+  /** Verbatim label and amount from the final amount-due row. */
+  total_raw_text?: string | null;
 };
 
-export type BulkReceiptRepairContext = {
-  expectedTotalOrig: number;
-  previousComputedTotal: number;
-  previousItems: ParsedItem[];
+export type AiCallTrace = {
+  provider: 'gemini' | 'anthropic';
+  model: string;
+  thinkingLevel?: string;
+  mediaResolution?: string;
+  stopReason?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  requestId?: string;
 };
 
-export type BulkReceiptItemRepair = {
-  items: ParsedItem[];
+export type AiCallResult<T> = {
+  value: T;
+  trace: AiCallTrace;
 };
 
 export type AiContext = {

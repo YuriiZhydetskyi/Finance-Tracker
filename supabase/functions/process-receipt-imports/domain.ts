@@ -17,6 +17,23 @@ export type ReceiptArithmeticCheck = {
   matches: boolean;
 };
 
+export type ReceiptEvidenceIssue = {
+  code:
+    | 'missing_total_evidence'
+    | 'total_evidence_mismatch'
+    | 'missing_row_evidence'
+    | 'invalid_row_order'
+    | 'unsupported_quantity'
+    | 'line_total_mismatch';
+  itemIndex: number | null;
+  message: string;
+};
+
+export type ReceiptEvidenceAudit = {
+  ok: boolean;
+  issues: ReceiptEvidenceIssue[];
+};
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_TIME = /^\d{2}:\d{2}(:\d{2})?$/;
 
@@ -45,6 +62,8 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
         typeof row.total_orig === 'number' && Number.isFinite(row.total_orig)
           ? row.total_orig
           : null,
+      total_raw_text:
+        typeof row.total_raw_text === 'string' ? row.total_raw_text.trim().slice(0, 1000) : null,
       items: [],
     };
   }
@@ -73,6 +92,21 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
         typeof it.category_suggestion === 'string' ? it.category_suggestion : null,
       discount_orig: typeof discount === 'number' ? discount : 0,
       product_code: typeof it.product_code === 'string' ? it.product_code : null,
+      source_ordinal:
+        typeof it.source_ordinal === 'number' && Number.isInteger(it.source_ordinal)
+          ? it.source_ordinal
+          : undefined,
+      raw_text: typeof it.raw_text === 'string' ? it.raw_text.trim().slice(0, 1000) : undefined,
+      row_kind: isRowKind(it.row_kind) ? it.row_kind : undefined,
+      qty_evidence: isQtyEvidence(it.qty_evidence) ? it.qty_evidence : undefined,
+      printed_line_total_orig:
+        it.printed_line_total_orig == null
+          ? null
+          : typeof it.printed_line_total_orig === 'number' &&
+              Number.isFinite(it.printed_line_total_orig)
+            ? it.printed_line_total_orig
+            : undefined,
+      tax_class: it.tax_class === '1' || it.tax_class === '2' ? it.tax_class : null,
     };
   });
 
@@ -87,8 +121,87 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
     currency: typeof row.currency === 'string' ? row.currency.toUpperCase() : '',
     total_orig:
       typeof row.total_orig === 'number' && Number.isFinite(row.total_orig) ? row.total_orig : null,
+    total_raw_text:
+      typeof row.total_raw_text === 'string' ? row.total_raw_text.trim().slice(0, 1000) : null,
     items,
   };
+}
+
+export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenceAudit {
+  const issues: ReceiptEvidenceIssue[] = [];
+  if (!parsed.total_raw_text?.trim()) {
+    issues.push({
+      code: 'missing_total_evidence',
+      itemIndex: null,
+      message: 'Модель не навела текст рядка з підсумком чека.',
+    });
+  } else if (
+    parsed.total_orig != null &&
+    !amountAppearsInText(parsed.total_raw_text, parsed.total_orig)
+  ) {
+    issues.push({
+      code: 'total_evidence_mismatch',
+      itemIndex: null,
+      message: 'Розпізнаний підсумок не знайдено в наведеному тексті підсумкового рядка.',
+    });
+  }
+
+  const ordinals: number[] = [];
+  parsed.items.forEach((item, itemIndex) => {
+    if (
+      item.source_ordinal == null ||
+      !item.raw_text?.trim() ||
+      !item.row_kind ||
+      !item.qty_evidence
+    ) {
+      issues.push({
+        code: 'missing_row_evidence',
+        itemIndex,
+        message: `Для позиції ${String(itemIndex + 1)} бракує посилання на видимий рядок.`,
+      });
+      return;
+    }
+    ordinals.push(item.source_ordinal);
+
+    const quantityIsSupported =
+      item.qty_evidence === 'implicit_one'
+        ? Math.abs(item.qty - 1) <= 0.001
+        : item.qty_evidence === 'explicit_multiplier'
+          ? hasExplicitMultiplier(item.raw_text, item.qty)
+          : hasWeightOrVolume(item.raw_text);
+    if (!quantityIsSupported) {
+      issues.push({
+        code: 'unsupported_quantity',
+        itemIndex,
+        message: `Кількість позиції ${String(itemIndex + 1)} не підтверджена наведеним текстом рядка.`,
+      });
+    }
+
+    if (item.printed_line_total_orig != null) {
+      const computed = round(item.qty * (item.unit_price_orig - (item.discount_orig ?? 0)), 2);
+      if (Math.abs(computed - round(item.printed_line_total_orig, 2)) > 0.02) {
+        issues.push({
+          code: 'line_total_mismatch',
+          itemIndex,
+          message: `Розрахунок позиції ${String(itemIndex + 1)} не збігається з надрукованою сумою рядка.`,
+        });
+      }
+    }
+  });
+
+  const ordered = [...ordinals].sort((left, right) => left - right);
+  if (
+    ordered.length !== parsed.items.length ||
+    ordered.some((ordinal, index) => ordinal !== index + 1)
+  ) {
+    issues.push({
+      code: 'invalid_row_order',
+      itemIndex: null,
+      message: 'Нумерація розпізнаних рядків має пропуски або дублікати.',
+    });
+  }
+
+  return { ok: issues.length === 0, issues };
 }
 
 export function prepareReceipt(
@@ -215,7 +328,9 @@ export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArith
     2,
   );
   const printedTotal = round(parsed.total_orig, 2);
-  const tolerance = Math.max(0.05, Math.min(Math.abs(printedTotal) * 0.005, 0.5));
+  // Receipts are accounting documents rounded per printed row. A percentage
+  // tolerance can hide a genuinely omitted low-value item on a large receipt.
+  const tolerance = 0.02;
   return {
     normalizedItems,
     computedTotal,
@@ -341,4 +456,32 @@ function isRealTime(value: string): boolean {
   const minute = Number(minuteText);
   const second = Number(secondText);
   return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59;
+}
+
+function isRowKind(value: unknown): value is NonNullable<ParsedItem['row_kind']> {
+  return ['item', 'discount', 'deposit', 'refund', 'cancellation'].includes(String(value));
+}
+
+function isQtyEvidence(value: unknown): value is NonNullable<ParsedItem['qty_evidence']> {
+  return ['implicit_one', 'explicit_multiplier', 'weight_or_volume'].includes(String(value));
+}
+
+function amountAppearsInText(text: string, amount: number): boolean {
+  const absolute = Math.abs(round(amount, 2)).toFixed(2);
+  const variants = [absolute, absolute.replace('.', ',')];
+  const compactText = text.replace(/\s/g, '');
+  return variants.some((variant) => compactText.includes(variant));
+}
+
+function hasExplicitMultiplier(text: string, qty: number): boolean {
+  const rawQty = String(round(qty, 3)).replace('.', '[.,]');
+  const quantityPattern = new RegExp(
+    `(?:^|\\s)(?:${rawQty}\\s*(?:x|×|stk\\.?|st\\.?|pcs)|(?:x|×)\\s*${rawQty})(?:\\s|$)`,
+    'iu',
+  );
+  return quantityPattern.test(text);
+}
+
+function hasWeightOrVolume(text: string): boolean {
+  return /(?:^|\s)\d+(?:[.,]\d+)?\s*(?:kg|g|l|ml)(?:\s|$)/iu.test(text);
 }
