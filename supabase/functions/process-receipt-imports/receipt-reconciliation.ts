@@ -382,6 +382,7 @@ function diagnosisMessage(code: ReceiptDiagnosisCode): string {
 function repeatedRowGapCandidate(
   items: ParsedItem[],
   arithmetic: ReceiptArithmeticCheck,
+  requiredMissingOccurrences?: number,
 ): {
   productName: string;
   productCode: string | null;
@@ -415,6 +416,7 @@ function repeatedRowGapCandidate(
     if (
       missingOccurrences < 1 ||
       missingOccurrences > 20 ||
+      (requiredMissingOccurrences != null && missingOccurrences !== requiredMissingOccurrences) ||
       Math.abs(gap - round(missingOccurrences * lineTotal, 2)) > 0.02
     ) {
       continue;
@@ -465,8 +467,16 @@ function repairRepeatedRowsUsingArticleCount(
     return null;
   }
 
-  const primaryCandidate = repeatedRowGapCandidate(primary.items, before);
-  const secondaryCandidate = repeatedRowGapCandidate(secondary.items, secondaryArithmetic);
+  const primaryCandidate = repeatedRowGapCandidate(
+    primary.items,
+    before,
+    primaryArticleCount.missingCount,
+  );
+  const secondaryCandidate = repeatedRowGapCandidate(
+    secondary.items,
+    secondaryArithmetic,
+    secondaryArticleCount.missingCount,
+  );
   if (!primaryCandidate || !secondaryCandidate) return null;
   if (
     primaryCandidate.key !== secondaryCandidate.key ||
