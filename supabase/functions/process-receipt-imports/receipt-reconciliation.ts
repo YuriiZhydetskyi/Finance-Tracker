@@ -60,6 +60,7 @@ export function reconcileIndependentReceipt(
 ): ReceiptReconciliation {
   const before = checkReceiptArithmetic(primary);
   const after = checkReceiptArithmetic(secondary);
+  const primaryEvidence = auditReceiptEvidence(primary);
   const evidence = auditReceiptEvidence(secondary);
 
   if (secondary.document_kind !== 'receipt') {
@@ -92,7 +93,35 @@ export function reconcileIndependentReceipt(
       evidence,
     );
   }
+  if (!evidence.ok) {
+    return rejected(
+      primary,
+      'secondary_evidence_invalid',
+      `Незалежна перевірка має непідтверджені рядки: ${evidence.issues[0]?.message ?? 'бракує доказів.'}`,
+      before,
+      after,
+      evidence,
+    );
+  }
   if (!after?.matches) {
+    const repeatedRowRepair = after
+      ? repairSingleRepeatedRow(primary, secondary, before, after, primaryEvidence)
+      : null;
+    if (repeatedRowRepair) {
+      return {
+        status: 'accepted',
+        parsed: repeatedRowRepair.parsed,
+        diagnosisCode: 'missing_repeated_row',
+        publicMessage: diagnosisMessage('missing_repeated_row'),
+        before,
+        after: repeatedRowRepair.after,
+        evidence: repeatedRowRepair.evidence,
+        details: {
+          ...comparisonDetails(primary, secondary, before, after, evidence),
+          targeted_repair: repeatedRowRepair.details,
+        },
+      };
+    }
     const candidate = after ? repeatedRowGapCandidate(secondary.items, after) : null;
     if (candidate) {
       return rejected(
@@ -114,17 +143,6 @@ export function reconcileIndependentReceipt(
       evidence,
     );
   }
-  if (!evidence.ok) {
-    return rejected(
-      primary,
-      'secondary_evidence_invalid',
-      `Незалежна перевірка має непідтверджені рядки: ${evidence.issues[0]?.message ?? 'бракує доказів.'}`,
-      before,
-      after,
-      evidence,
-    );
-  }
-
   const diagnosisCode = diagnoseChange(primary, secondary, before, after);
   return {
     status: 'accepted',
@@ -246,6 +264,7 @@ function itemKey(item: ParsedItem): string {
     normalize(item.product_code || item.product_name),
     round(item.qty, 3).toFixed(3),
     round(item.unit_price_orig, 2).toFixed(2),
+    round(item.discount_orig ?? 0, 2).toFixed(2),
   ].join('|');
 }
 
@@ -310,6 +329,77 @@ function repeatedRowGapCandidate(
     }
   }
   return null;
+}
+
+function repairSingleRepeatedRow(
+  primary: BulkParsedDocument,
+  secondary: BulkParsedDocument,
+  before: ReceiptArithmeticCheck | null,
+  secondaryArithmetic: ReceiptArithmeticCheck,
+  primaryEvidence: ReceiptEvidenceAudit,
+): {
+  parsed: BulkParsedDocument;
+  after: ReceiptArithmeticCheck;
+  evidence: ReceiptEvidenceAudit;
+  details: Record<string, unknown>;
+} | null {
+  if (!before || before.matches || !primaryEvidence.ok) return null;
+  const gap = round(before.printedTotal - before.computedTotal, 2);
+  if (gap <= 0) return null;
+
+  const primaryCounts = countItems(primary.items);
+  const secondaryCounts = countItems(secondary.items);
+  const candidates: Array<{ key: string; item: ParsedItem; lineTotal: number }> = [];
+  for (const [key, secondaryCount] of secondaryCounts) {
+    const primaryCount = primaryCounts.get(key) ?? 0;
+    if (primaryCount < 1 || secondaryCount !== primaryCount + 1) continue;
+    const secondaryRows = secondary.items.filter((item) => itemKey(item) === key);
+    const primaryRows = primary.items.filter((item) => itemKey(item) === key);
+    const item = secondaryRows[0];
+    if (!item) continue;
+    const lineTotal = round(item.qty * (item.unit_price_orig - (item.discount_orig ?? 0)), 2);
+    if (lineTotal <= 0 || Math.abs(gap - lineTotal) > 0.02) continue;
+
+    const primaryTexts = new Set(primaryRows.map((row) => normalize(row.raw_text ?? '')));
+    const secondaryTexts = new Set(secondaryRows.map((row) => normalize(row.raw_text ?? '')));
+    if (
+      primaryTexts.has('') ||
+      secondaryTexts.size !== 1 ||
+      !primaryTexts.has([...secondaryTexts][0] ?? '')
+    ) {
+      continue;
+    }
+    candidates.push({ key, item, lineTotal });
+  }
+  if (candidates.length !== 1) return null;
+
+  const candidate = candidates[0];
+  if (!candidate) return null;
+  const insertionIndex = primary.items.findLastIndex((item) => itemKey(item) === candidate.key) + 1;
+  const items = primary.items.map((item) => ({ ...item }));
+  items.splice(insertionIndex, 0, { ...candidate.item });
+  const parsed: BulkParsedDocument = {
+    ...primary,
+    items: items.map((item, index) => ({ ...item, source_ordinal: index + 1 })),
+  };
+  const after = checkReceiptArithmetic(parsed);
+  const repairedEvidence = auditReceiptEvidence(parsed);
+  if (!after?.matches || !repairedEvidence.ok) return null;
+
+  return {
+    parsed,
+    after,
+    evidence: repairedEvidence,
+    details: {
+      product_name: candidate.item.product_name,
+      product_code: candidate.item.product_code ?? null,
+      primary_occurrences: primaryCounts.get(candidate.key),
+      secondary_occurrences: secondaryCounts.get(candidate.key),
+      line_total: candidate.lineTotal,
+      primary_gap: gap,
+      secondary_computed_total: secondaryArithmetic.computedTotal,
+    },
+  };
 }
 
 function normalize(value: string): string {
