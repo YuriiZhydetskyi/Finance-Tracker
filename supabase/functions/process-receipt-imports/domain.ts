@@ -1,4 +1,5 @@
 import type { BulkParsedDocument, ParsedItem } from '../parse-receipt/types.ts';
+import { canonicalizeReceiptTime } from '../parse-receipt/time-evidence.ts';
 
 export type FinalizedReceipt = {
   receipt: Record<string, string | number | null>;
@@ -68,7 +69,7 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
       ? row.article_count_raw_text.trim().slice(0, 1000)
       : null;
   if (documentKind !== 'receipt') {
-    return {
+    return canonicalizeReceiptTime({
       document_kind: documentKind,
       classification_reason:
         typeof row.classification_reason === 'string'
@@ -78,6 +79,12 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
       store_address: typeof row.store_address === 'string' ? row.store_address.trim() : null,
       date: typeof row.date === 'string' ? row.date : null,
       time: typeof row.time === 'string' ? row.time : null,
+      fiscal_time: typeof row.fiscal_time === 'string' ? row.fiscal_time : null,
+      fiscal_time_raw_text:
+        typeof row.fiscal_time_raw_text === 'string' ? row.fiscal_time_raw_text : null,
+      payment_time: typeof row.payment_time === 'string' ? row.payment_time : null,
+      payment_time_raw_text:
+        typeof row.payment_time_raw_text === 'string' ? row.payment_time_raw_text : null,
       currency: typeof row.currency === 'string' ? row.currency.toUpperCase() : '',
       total_orig:
         typeof row.total_orig === 'number' && Number.isFinite(row.total_orig)
@@ -88,7 +95,7 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
       article_count: articleCount,
       article_count_raw_text: articleCountRawText,
       items: [],
-    };
+    });
   }
 
   const items: ParsedItem[] = row.items.map((item, index) => {
@@ -133,7 +140,7 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
     };
   });
 
-  return {
+  return canonicalizeReceiptTime({
     document_kind: documentKind,
     classification_reason:
       typeof row.classification_reason === 'string' ? row.classification_reason.slice(0, 500) : '',
@@ -141,6 +148,12 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
     store_address: typeof row.store_address === 'string' ? row.store_address.trim() : null,
     date: typeof row.date === 'string' ? row.date : null,
     time: typeof row.time === 'string' ? row.time : null,
+    fiscal_time: typeof row.fiscal_time === 'string' ? row.fiscal_time : null,
+    fiscal_time_raw_text:
+      typeof row.fiscal_time_raw_text === 'string' ? row.fiscal_time_raw_text : null,
+    payment_time: typeof row.payment_time === 'string' ? row.payment_time : null,
+    payment_time_raw_text:
+      typeof row.payment_time_raw_text === 'string' ? row.payment_time_raw_text : null,
     currency: typeof row.currency === 'string' ? row.currency.toUpperCase() : '',
     total_orig:
       typeof row.total_orig === 'number' && Number.isFinite(row.total_orig) ? row.total_orig : null,
@@ -149,7 +162,7 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
     article_count: articleCount,
     article_count_raw_text: articleCountRawText,
     items,
-  };
+  });
 }
 
 export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenceAudit {

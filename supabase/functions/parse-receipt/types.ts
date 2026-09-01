@@ -29,10 +29,21 @@ export type ParsedReceipt = {
   store_address?: string | null;
   date: string | null;
   time?: string | null;
+  /** Canonical-source metadata, retained in raw OCR audit records. */
+  time_source?: ReceiptTimeSource | null;
+  time_raw_text?: string | null;
+  /** Fiscal-sale timestamp and evidence, preferred over a payment timestamp. */
+  fiscal_time?: string | null;
+  fiscal_time_raw_text?: string | null;
+  /** Card-payment timestamp and evidence, used only when fiscal time is absent. */
+  payment_time?: string | null;
+  payment_time_raw_text?: string | null;
   currency: string;
   total_orig: number | null;
   items: ParsedItem[];
 };
+
+export type ReceiptTimeSource = 'fiscal_receipt' | 'payment_receipt' | 'other';
 
 export type BulkParsedDocument = ParsedReceipt & {
   document_kind: 'receipt' | 'not_receipt' | 'uncertain';
