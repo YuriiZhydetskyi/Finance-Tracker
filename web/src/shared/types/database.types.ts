@@ -60,212 +60,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      receipt_import_batches: {
-        Row: {
-          completed_at: string | null;
-          created_at: string;
-          id: string;
-          paid_by: string;
-          status: string;
-          updated_at: string;
-          uploaded_by: string;
-        };
-        Insert: {
-          completed_at?: string | null;
-          created_at?: string;
-          id: string;
-          paid_by: string;
-          status?: string;
-          updated_at?: string;
-          uploaded_by: string;
-        };
-        Update: {
-          completed_at?: string | null;
-          created_at?: string;
-          id?: string;
-          paid_by?: string;
-          status?: string;
-          updated_at?: string;
-          uploaded_by?: string;
-        };
-        Relationships: [];
-      };
-      receipt_import_files: {
-        Row: {
-          attempts: number;
-          batch_id: string;
-          content_sha256: string;
-          created_at: string;
-          document_kind: string | null;
-          duplicate_of_file_id: string | null;
-          duplicate_receipt_id: string | null;
-          error_message: string | null;
-          exception_kind: string | null;
-          force_receipt: boolean;
-          id: string;
-          mime_type: string;
-          original_filename: string;
-          original_size_bytes: number;
-          parsed_json: Json | null;
-          processed_at: string | null;
-          receipt_id: string | null;
-          skip_duplicate_check: boolean;
-          status: string;
-          storage_path: string | null;
-          updated_at: string;
-        };
-        Insert: {
-          attempts?: number;
-          batch_id: string;
-          content_sha256: string;
-          created_at?: string;
-          document_kind?: string | null;
-          duplicate_of_file_id?: string | null;
-          duplicate_receipt_id?: string | null;
-          error_message?: string | null;
-          exception_kind?: string | null;
-          force_receipt?: boolean;
-          id: string;
-          mime_type: string;
-          original_filename: string;
-          original_size_bytes: number;
-          parsed_json?: Json | null;
-          processed_at?: string | null;
-          receipt_id?: string | null;
-          skip_duplicate_check?: boolean;
-          status: string;
-          storage_path?: string | null;
-          updated_at?: string;
-        };
-        Update: {
-          attempts?: number;
-          batch_id?: string;
-          content_sha256?: string;
-          created_at?: string;
-          document_kind?: string | null;
-          duplicate_of_file_id?: string | null;
-          duplicate_receipt_id?: string | null;
-          error_message?: string | null;
-          exception_kind?: string | null;
-          force_receipt?: boolean;
-          id?: string;
-          mime_type?: string;
-          original_filename?: string;
-          original_size_bytes?: number;
-          parsed_json?: Json | null;
-          processed_at?: string | null;
-          receipt_id?: string | null;
-          skip_duplicate_check?: boolean;
-          status?: string;
-          storage_path?: string | null;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'receipt_import_files_batch_id_fkey';
-            columns: ['batch_id'];
-            isOneToOne: false;
-            referencedRelation: 'receipt_import_batches';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'receipt_import_files_receipt_id_fkey';
-            columns: ['receipt_id'];
-            isOneToOne: false;
-            referencedRelation: 'receipts';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      receipt_import_attempts: {
-        Row: {
-          analysis_run: number;
-          computed_total: number | null;
-          created_at: string;
-          delivery_attempt: number;
-          details: Json | null;
-          diagnosis_code: string | null;
-          difference: number | null;
-          duration_ms: number | null;
-          file_id: string;
-          finished_at: string | null;
-          id: number;
-          input_tokens: number | null;
-          model: string | null;
-          output_tokens: number | null;
-          printed_total: number | null;
-          provider: string | null;
-          provider_request_id: string | null;
-          public_message: string | null;
-          result_json: Json | null;
-          settings: Json;
-          stage: string;
-          started_at: string;
-          status: string;
-          stop_reason: string | null;
-        };
-        Insert: {
-          analysis_run: number;
-          computed_total?: number | null;
-          created_at?: string;
-          delivery_attempt: number;
-          details?: Json | null;
-          diagnosis_code?: string | null;
-          difference?: number | null;
-          duration_ms?: number | null;
-          file_id: string;
-          finished_at?: string | null;
-          id?: never;
-          input_tokens?: number | null;
-          model?: string | null;
-          output_tokens?: number | null;
-          printed_total?: number | null;
-          provider?: string | null;
-          provider_request_id?: string | null;
-          public_message?: string | null;
-          result_json?: Json | null;
-          settings?: Json;
-          stage: string;
-          started_at?: string;
-          status: string;
-          stop_reason?: string | null;
-        };
-        Update: {
-          analysis_run?: number;
-          computed_total?: number | null;
-          created_at?: string;
-          delivery_attempt?: number;
-          details?: Json | null;
-          diagnosis_code?: string | null;
-          difference?: number | null;
-          duration_ms?: number | null;
-          file_id?: string;
-          finished_at?: string | null;
-          id?: never;
-          input_tokens?: number | null;
-          model?: string | null;
-          output_tokens?: number | null;
-          printed_total?: number | null;
-          provider?: string | null;
-          provider_request_id?: string | null;
-          public_message?: string | null;
-          result_json?: Json | null;
-          settings?: Json;
-          stage?: string;
-          started_at?: string;
-          status?: string;
-          stop_reason?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'receipt_import_attempts_file_id_fkey';
-            columns: ['file_id'];
-            isOneToOne: false;
-            referencedRelation: 'receipt_import_files';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       items: {
         Row: {
           category: string;
@@ -476,6 +270,226 @@ export type Database = {
           },
         ];
       };
+      receipt_import_attempts: {
+        Row: {
+          analysis_run: number;
+          computed_total: number | null;
+          created_at: string;
+          delivery_attempt: number;
+          details: Json | null;
+          diagnosis_code: string | null;
+          difference: number | null;
+          duration_ms: number | null;
+          file_id: string;
+          finished_at: string | null;
+          id: number;
+          input_tokens: number | null;
+          model: string | null;
+          output_tokens: number | null;
+          printed_total: number | null;
+          provider: string | null;
+          provider_request_id: string | null;
+          public_message: string | null;
+          result_json: Json | null;
+          settings: Json;
+          stage: string;
+          started_at: string;
+          status: string;
+          stop_reason: string | null;
+        };
+        Insert: {
+          analysis_run: number;
+          computed_total?: number | null;
+          created_at?: string;
+          delivery_attempt: number;
+          details?: Json | null;
+          diagnosis_code?: string | null;
+          difference?: number | null;
+          duration_ms?: number | null;
+          file_id: string;
+          finished_at?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model?: string | null;
+          output_tokens?: number | null;
+          printed_total?: number | null;
+          provider?: string | null;
+          provider_request_id?: string | null;
+          public_message?: string | null;
+          result_json?: Json | null;
+          settings?: Json;
+          stage: string;
+          started_at?: string;
+          status: string;
+          stop_reason?: string | null;
+        };
+        Update: {
+          analysis_run?: number;
+          computed_total?: number | null;
+          created_at?: string;
+          delivery_attempt?: number;
+          details?: Json | null;
+          diagnosis_code?: string | null;
+          difference?: number | null;
+          duration_ms?: number | null;
+          file_id?: string;
+          finished_at?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model?: string | null;
+          output_tokens?: number | null;
+          printed_total?: number | null;
+          provider?: string | null;
+          provider_request_id?: string | null;
+          public_message?: string | null;
+          result_json?: Json | null;
+          settings?: Json;
+          stage?: string;
+          started_at?: string;
+          status?: string;
+          stop_reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'receipt_import_attempts_file_id_fkey';
+            columns: ['file_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipt_import_files';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      receipt_import_batches: {
+        Row: {
+          completed_at: string | null;
+          created_at: string;
+          id: string;
+          paid_by: string;
+          status: string;
+          updated_at: string;
+          uploaded_by: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          created_at?: string;
+          id: string;
+          paid_by: string;
+          status?: string;
+          updated_at?: string;
+          uploaded_by: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          paid_by?: string;
+          status?: string;
+          updated_at?: string;
+          uploaded_by?: string;
+        };
+        Relationships: [];
+      };
+      receipt_import_files: {
+        Row: {
+          attempts: number;
+          batch_id: string;
+          content_sha256: string;
+          created_at: string;
+          document_kind: string | null;
+          duplicate_of_file_id: string | null;
+          duplicate_receipt_id: string | null;
+          error_message: string | null;
+          exception_kind: string | null;
+          force_receipt: boolean;
+          id: string;
+          mime_type: string;
+          original_filename: string;
+          original_size_bytes: number;
+          parsed_json: Json | null;
+          processed_at: string | null;
+          receipt_id: string | null;
+          skip_duplicate_check: boolean;
+          status: string;
+          storage_path: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          batch_id: string;
+          content_sha256: string;
+          created_at?: string;
+          document_kind?: string | null;
+          duplicate_of_file_id?: string | null;
+          duplicate_receipt_id?: string | null;
+          error_message?: string | null;
+          exception_kind?: string | null;
+          force_receipt?: boolean;
+          id: string;
+          mime_type: string;
+          original_filename: string;
+          original_size_bytes: number;
+          parsed_json?: Json | null;
+          processed_at?: string | null;
+          receipt_id?: string | null;
+          skip_duplicate_check?: boolean;
+          status: string;
+          storage_path?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          batch_id?: string;
+          content_sha256?: string;
+          created_at?: string;
+          document_kind?: string | null;
+          duplicate_of_file_id?: string | null;
+          duplicate_receipt_id?: string | null;
+          error_message?: string | null;
+          exception_kind?: string | null;
+          force_receipt?: boolean;
+          id?: string;
+          mime_type?: string;
+          original_filename?: string;
+          original_size_bytes?: number;
+          parsed_json?: Json | null;
+          processed_at?: string | null;
+          receipt_id?: string | null;
+          skip_duplicate_check?: boolean;
+          status?: string;
+          storage_path?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'receipt_import_files_batch_id_fkey';
+            columns: ['batch_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipt_import_batches';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'receipt_import_files_duplicate_of_file_id_fkey';
+            columns: ['duplicate_of_file_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipt_import_files';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'receipt_import_files_duplicate_receipt_id_fkey';
+            columns: ['duplicate_receipt_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'receipt_import_files_receipt_id_fkey';
+            columns: ['receipt_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipts';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       receipts: {
         Row: {
           created_at: string;
@@ -676,22 +690,71 @@ export type Database = {
       };
     };
     Functions: {
+      claim_receipt_import_jobs: {
+        Args: { p_limit?: number };
+        Returns: {
+          import_file_id: string;
+          msg_id: number;
+          read_count: number;
+        }[];
+      };
+      complete_receipt_import_exception: {
+        Args: {
+          p_document_kind: string;
+          p_error_message: string;
+          p_exception_kind: string;
+          p_file_id: string;
+          p_msg_id: number;
+          p_parsed_json: Json;
+        };
+        Returns: undefined;
+      };
       create_receipt_import_batch: {
         Args: { p_batch_id: string; p_files: Json; p_paid_by: string };
         Returns: {
-          duplicate_of_file_id: string | null;
+          duplicate_of_file_id: string;
           id: string;
           status: string;
-          storage_path: string | null;
+          storage_path: string;
         }[];
       };
-      discard_receipt_import_file: { Args: { p_file_id: string }; Returns: undefined };
+      discard_receipt_import_file: {
+        Args: { p_file_id: string };
+        Returns: undefined;
+      };
+      expire_stale_receipt_import_uploads: { Args: never; Returns: number };
+      finalize_receipt_import: {
+        Args: {
+          p_file_id: string;
+          p_items: Json;
+          p_msg_id: number;
+          p_parsed_json: Json;
+          p_receipt: Json;
+        };
+        Returns: Json;
+      };
       is_allowed_user: { Args: never; Returns: boolean };
       mark_receipt_import_upload_failed: {
         Args: { p_error_message: string; p_file_id: string };
         Returns: undefined;
       };
-      queue_receipt_import_file: { Args: { p_file_id: string }; Returns: undefined };
+      queue_receipt_import_file: {
+        Args: { p_file_id: string };
+        Returns: undefined;
+      };
+      record_receipt_import_failure: {
+        Args: {
+          p_error_message: string;
+          p_file_id: string;
+          p_msg_id: number;
+          p_read_count: number;
+        };
+        Returns: undefined;
+      };
+      refresh_receipt_import_batch_status: {
+        Args: { p_batch_id: string };
+        Returns: undefined;
+      };
       requeue_receipt_import_file: {
         Args: {
           p_file_id: string;
