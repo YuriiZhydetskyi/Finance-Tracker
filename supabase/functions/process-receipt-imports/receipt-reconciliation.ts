@@ -530,11 +530,11 @@ function sameNonCandidateRows(
   const primaryKeys = primary
     .filter((item) => itemKey(item) !== candidateKey)
     .map(stableFinancialRowKey)
-    .sort();
+    .sort((left, right) => left.localeCompare(right));
   const secondaryKeys = secondary
     .filter((item) => itemKey(item) !== candidateKey)
     .map(stableFinancialRowKey)
-    .sort();
+    .sort((left, right) => left.localeCompare(right));
   return JSON.stringify(primaryKeys) === JSON.stringify(secondaryKeys);
 }
 

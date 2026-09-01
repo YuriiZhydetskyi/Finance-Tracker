@@ -553,7 +553,7 @@ function amountAppearsInText(text: string, amount: number): boolean {
 }
 
 function integerAppearsInText(text: string, value: number): boolean {
-  return new RegExp(`(?:^|\\D)${String(value)}(?:\\D|$)`, 'u').test(text);
+  return new RegExp(String.raw`(?:^|\D)${String(value)}(?:\D|$)`, 'u').test(text);
 }
 
 function hasExplicitMultiplier(text: string, qty: number): boolean {
