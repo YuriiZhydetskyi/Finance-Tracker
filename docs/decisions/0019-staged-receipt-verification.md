@@ -61,6 +61,11 @@ Comparator може взяти з independent parse не весь список, 
 primary gap, а після вставки та перенумерації primary проходить evidence й exact arithmetic gates.
 Інші відмінності secondary parse при цьому не переносяться.
 
+Після ручного requeue review-файла seed знову береться з останнього primary/fallback parse, а не
+з уже відхиленого independent result. Усередині незавершеної queue escalation, навпаки, останній
+independent result продовжує ланцюжок Sonnet → Opus. Вибір визначається останнім завершеним worker
+diagnosis; поточний `started` attempt не враховується.
+
 ### 3. Верифікаційний self-audit без balancing
 
 Bulk prompt вимагає перед відповіддю ще раз пройти всі фінансові рядки, якщо їхня сума не

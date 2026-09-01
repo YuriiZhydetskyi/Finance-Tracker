@@ -4,6 +4,7 @@ import { validateBulkDocument } from './domain.ts';
 import {
   reconcileIndependentReceipt,
   selectParseProviderRole,
+  selectSeedStages,
   selectVerificationProviderRole,
   shouldQueueIndependentCheck,
 } from './receipt-reconciliation.ts';
@@ -51,6 +52,15 @@ describe('independent receipt reconciliation', () => {
     expect([1, 2, 3].map(selectParseProviderRole)).toEqual(['primary', 'fallback', 'fallback']);
     expect(selectVerificationProviderRole('gemini')).toBe('fallback');
     expect(selectVerificationProviderRole('anthropic')).toBe('verifier');
+  });
+
+  it('replays a reviewed file from its base parse but continues an active escalation', () => {
+    expect(selectSeedStages('validation')).toEqual(['primary_parse', 'fallback_parse']);
+    expect(selectSeedStages('independent_check_required')).toEqual([
+      'primary_parse',
+      'fallback_parse',
+      'independent_check',
+    ]);
   });
 
   it('queues a mismatching parse for an independent model before the third delivery', () => {
