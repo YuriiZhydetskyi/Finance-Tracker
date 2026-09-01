@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   auditReceiptEvidence,
+  checkReceiptArticleCount,
   checkReceiptArithmetic,
   prepareReceipt,
   validateBulkDocument,
@@ -194,5 +195,99 @@ describe('bulk import domain gate', () => {
     );
 
     expect(evidence).toEqual({ ok: true, issues: [] });
+  });
+
+  it('counts printed articles without treating refunds, discounts or weight as quantities', () => {
+    const receipt = validateBulkDocument({
+      ...parsed,
+      total_orig: 3,
+      total_raw_text: 'SUMME EUR 3,00',
+      article_count: 4,
+      article_count_raw_text: '4 Artikel',
+      items: [
+        {
+          product_name: 'Milk',
+          qty: 2,
+          unit_price_orig: 1,
+          source_ordinal: 1,
+          raw_text: 'Milk 2 x 1,00 = 2,00',
+          row_kind: 'item',
+          qty_evidence: 'explicit_multiplier',
+          printed_line_total_orig: 2,
+        },
+        {
+          product_name: 'Apples',
+          qty: 0.4,
+          unit_price_orig: 2.5,
+          source_ordinal: 2,
+          raw_text: 'Apples 0,400 kg 2,50/kg 1,00',
+          row_kind: 'item',
+          qty_evidence: 'weight_or_volume',
+          printed_line_total_orig: 1,
+        },
+        {
+          product_name: 'Pfand',
+          qty: 1,
+          unit_price_orig: 0.25,
+          source_ordinal: 3,
+          raw_text: 'Pfand 0,25',
+          row_kind: 'deposit',
+          qty_evidence: 'implicit_one',
+          printed_line_total_orig: 0.25,
+        },
+        {
+          product_name: 'Pfand refund',
+          qty: 1,
+          unit_price_orig: -0.25,
+          source_ordinal: 4,
+          raw_text: 'Pfand -0,25',
+          row_kind: 'refund',
+          qty_evidence: 'implicit_one',
+          printed_line_total_orig: -0.25,
+        },
+        {
+          product_name: 'Cancelled',
+          qty: 1,
+          unit_price_orig: 2,
+          source_ordinal: 5,
+          raw_text: 'Cancelled 2,00',
+          row_kind: 'item',
+          qty_evidence: 'implicit_one',
+          printed_line_total_orig: 2,
+        },
+        {
+          product_name: 'Cancelled',
+          qty: 1,
+          unit_price_orig: -2,
+          source_ordinal: 6,
+          raw_text: 'Cancelled -2,00',
+          row_kind: 'cancellation',
+          qty_evidence: 'implicit_one',
+          printed_line_total_orig: -2,
+        },
+      ],
+    });
+
+    expect(checkReceiptArticleCount(receipt)).toEqual({
+      printedCount: 4,
+      computedCount: 4,
+      missingCount: 0,
+      matches: true,
+    });
+    expect(auditReceiptEvidence(receipt)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('rejects an article count that is not present in its verbatim evidence', () => {
+    const evidence = auditReceiptEvidence(
+      validateBulkDocument({
+        ...parsed,
+        total_raw_text: 'SUMME EUR 3,00',
+        article_count: 22,
+        article_count_raw_text: '21 Artikel',
+        items: [],
+      }),
+    );
+
+    expect(evidence.issues.map((issue) => issue.code)).toContain('article_count_evidence_mismatch');
   });
 });

@@ -1,6 +1,6 @@
 # ADR-0021: Окремий фізичний аудит повторюваних рядків чека
 
-- Status: accepted
+- Status: superseded by [ADR-0022](0022-printed-article-count-repair.md)
 - Date: 2026-09-01
 - Supersedes: [ADR-0020](0020-two-model-receipt-verification.md)
 - Extends: [ADR-0016](0016-durable-background-receipt-imports.md)

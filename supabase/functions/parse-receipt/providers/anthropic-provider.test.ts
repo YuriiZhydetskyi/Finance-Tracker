@@ -114,7 +114,9 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(body.max_tokens).toBe(8192);
     expect(timeoutSpy).toHaveBeenCalledWith(75_000);
     timeoutSpy.mockRestore();
-    expect(body.tools[0]!.input_schema.required).toContain('total_raw_text');
+    expect(body.tools[0]!.input_schema.required).toEqual(
+      expect.arrayContaining(['total_raw_text', 'article_count', 'article_count_raw_text']),
+    );
     const items = body.tools[0]!.input_schema.properties.items as {
       items: { required: string[] };
     };
@@ -125,6 +127,7 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(prompt).toContain('Count repeated identical rows separately');
     expect(prompt).toContain('means twelve separate X items');
     expect(prompt).toContain('once top-to-bottom and once bottom-to-top');
+    expect(prompt).toContain('Never derive article_count');
     expect(prompt).toContain('make one more visual sweep');
     expect(prompt).toContain('not permission to force agreement');
     expect(prompt).toContain('tax_class');
@@ -150,6 +153,7 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(prompt).toContain('four X rows, then Y');
     expect(prompt).toContain('means twelve separate X items');
     expect(prompt).toContain('Never use the final total or arithmetic gap');
+    expect(prompt).toContain('Separately inspect the receipt summary');
     expect(prompt).not.toContain('Previous extraction');
   });
 

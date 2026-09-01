@@ -17,10 +17,20 @@ export type ReceiptArithmeticCheck = {
   matches: boolean;
 };
 
+export type ReceiptArticleCountCheck = {
+  printedCount: number;
+  computedCount: number;
+  missingCount: number;
+  matches: boolean;
+};
+
 export type ReceiptEvidenceIssue = {
   code:
     | 'missing_total_evidence'
     | 'total_evidence_mismatch'
+    | 'missing_article_count_evidence'
+    | 'article_count_evidence_mismatch'
+    | 'article_count_item_mismatch'
     | 'missing_row_evidence'
     | 'invalid_row_order'
     | 'unsupported_quantity'
@@ -46,6 +56,11 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
   if (!Array.isArray(row.items)) throw new Error('AI result has no items array');
 
   const documentKind = row.document_kind as BulkParsedDocument['document_kind'];
+  const articleCount = parseArticleCount(row.article_count);
+  const articleCountRawText =
+    typeof row.article_count_raw_text === 'string'
+      ? row.article_count_raw_text.trim().slice(0, 1000)
+      : null;
   if (documentKind !== 'receipt') {
     return {
       document_kind: documentKind,
@@ -64,6 +79,8 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
           : null,
       total_raw_text:
         typeof row.total_raw_text === 'string' ? row.total_raw_text.trim().slice(0, 1000) : null,
+      article_count: articleCount,
+      article_count_raw_text: articleCountRawText,
       items: [],
     };
   }
@@ -123,6 +140,8 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
       typeof row.total_orig === 'number' && Number.isFinite(row.total_orig) ? row.total_orig : null,
     total_raw_text:
       typeof row.total_raw_text === 'string' ? row.total_raw_text.trim().slice(0, 1000) : null,
+    article_count: articleCount,
+    article_count_raw_text: articleCountRawText,
     items,
   };
 }
@@ -144,6 +163,22 @@ export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenc
       itemIndex: null,
       message: 'Розпізнаний підсумок не знайдено в наведеному тексті підсумкового рядка.',
     });
+  }
+
+  if (parsed.article_count != null) {
+    if (!parsed.article_count_raw_text?.trim()) {
+      issues.push({
+        code: 'missing_article_count_evidence',
+        itemIndex: null,
+        message: 'Модель не навела текст рядка з надрукованою кількістю товарів.',
+      });
+    } else if (!integerAppearsInText(parsed.article_count_raw_text, parsed.article_count)) {
+      issues.push({
+        code: 'article_count_evidence_mismatch',
+        itemIndex: null,
+        message: 'Розпізнану кількість товарів не знайдено в наведеному тексті чека.',
+      });
+    }
   }
 
   const ordinals: number[] = [];
@@ -198,6 +233,15 @@ export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenc
       code: 'invalid_row_order',
       itemIndex: null,
       message: 'Нумерація розпізнаних рядків має пропуски або дублікати.',
+    });
+  }
+
+  const articleCount = checkReceiptArticleCount(parsed);
+  if (articleCount && !articleCount.matches) {
+    issues.push({
+      code: 'article_count_item_mismatch',
+      itemIndex: null,
+      message: `На чеку надруковано ${String(articleCount.printedCount)} товарів, але розпізнано ${String(articleCount.computedCount)}.`,
     });
   }
 
@@ -340,6 +384,33 @@ export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArith
   };
 }
 
+export function checkReceiptArticleCount(
+  parsed: BulkParsedDocument,
+): ReceiptArticleCountCheck | null {
+  if (
+    parsed.document_kind !== 'receipt' ||
+    parsed.article_count == null ||
+    !Number.isInteger(parsed.article_count) ||
+    parsed.article_count < 0
+  ) {
+    return null;
+  }
+  const normalizedItems = mergePairs(parsed.items);
+  const computedCount = normalizedItems.reduce((sum, item) => {
+    if (item.unit_price_orig <= 0) return sum;
+    if (item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty)) {
+      return sum + item.qty;
+    }
+    return sum + 1;
+  }, 0);
+  return {
+    printedCount: parsed.article_count,
+    computedCount,
+    missingCount: parsed.article_count - computedCount,
+    matches: parsed.article_count === computedCount,
+  };
+}
+
 function mergePairs(items: ParsedItem[]): ParsedItem[] {
   const result = items.map((item) => ({ ...item }));
   const removed = new Set<number>();
@@ -466,11 +537,23 @@ function isQtyEvidence(value: unknown): value is NonNullable<ParsedItem['qty_evi
   return ['implicit_one', 'explicit_multiplier', 'weight_or_volume'].includes(String(value));
 }
 
+function parseArticleCount(value: unknown): number | null {
+  if (value == null) return null;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new Error('AI result has invalid article_count');
+  }
+  return value;
+}
+
 function amountAppearsInText(text: string, amount: number): boolean {
   const absolute = Math.abs(round(amount, 2)).toFixed(2);
   const variants = [absolute, absolute.replace('.', ',')];
   const compactText = text.replace(/\s/g, '');
   return variants.some((variant) => compactText.includes(variant));
+}
+
+function integerAppearsInText(text: string, value: number): boolean {
+  return new RegExp(`(?:^|\\D)${String(value)}(?:\\D|$)`, 'u').test(text);
 }
 
 function hasExplicitMultiplier(text: string, qty: number): boolean {
