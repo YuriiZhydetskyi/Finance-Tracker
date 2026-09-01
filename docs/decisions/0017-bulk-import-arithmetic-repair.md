@@ -1,6 +1,6 @@
 # ADR-0017: Детермінована арифметика та cross-provider repair у bulk-import
 
-- Status: accepted
+- Status: superseded by [ADR-0018](0018-evidence-based-receipt-verification.md)
 - Date: 2026-08-31
 - Extends: [ADR-0015](0015-pair-detector-multi-tuple-aggregation.md), [ADR-0016](0016-durable-background-receipt-imports.md)
 
@@ -98,5 +98,5 @@ Worker пише структурований operational log із file id, ст�
 - [ADR-0015](0015-pair-detector-multi-tuple-aggregation.md)
 - [ADR-0016](0016-durable-background-receipt-imports.md)
 - [process-receipt-imports/domain.ts](../../supabase/functions/process-receipt-imports/domain.ts)
-- [process-receipt-imports/arithmetic-repair.ts](../../supabase/functions/process-receipt-imports/arithmetic-repair.ts)
+- [ADR-0018](0018-evidence-based-receipt-verification.md)
 - [bulk-import-prompt.ts](../../supabase/functions/parse-receipt/prompts/bulk-import-prompt.ts)

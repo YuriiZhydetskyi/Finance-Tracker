@@ -6,7 +6,12 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
 - Один виклик забирає одне PGMQ message з visibility timeout п’ять хвилин, щоб не конкурувати за
   AI latency budget усередині одного Edge Function invocation.
 - Gemini класифікує й парсить першим; Anthropic працює як fallback.
-- Детерміновані gates у `domain.ts` вирішують, чи можна auto-save чек.
+- Bulk parse повертає row-level evidence. Якщо арифметика або evidence gate не проходять,
+  Anthropic один раз незалежно читає оригінал без primary total чи primary items.
+- Детерміновані gates у `domain.ts` та `receipt-reconciliation.ts` вирішують, чи можна auto-save
+  чек. Відповідь, обірвана через token limit, завжди вважається помилкою.
+- Кожний worker/provider stage записується в `receipt_import_attempts`; batch detail показує цей
+  журнал разом з оригіналом файла.
 - `finalize_receipt_import` зберігає кілька таблиць в одній Postgres-транзакції.
 - Точний збіг date/time/currency/total автоматично прив’язується до наявного чека; ширші
   duplicate-кандидати лишаються на ручну перевірку.

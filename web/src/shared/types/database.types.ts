@@ -177,6 +177,95 @@ export type Database = {
           },
         ];
       };
+      receipt_import_attempts: {
+        Row: {
+          analysis_run: number;
+          computed_total: number | null;
+          created_at: string;
+          delivery_attempt: number;
+          details: Json | null;
+          diagnosis_code: string | null;
+          difference: number | null;
+          duration_ms: number | null;
+          file_id: string;
+          finished_at: string | null;
+          id: number;
+          input_tokens: number | null;
+          model: string | null;
+          output_tokens: number | null;
+          printed_total: number | null;
+          provider: string | null;
+          provider_request_id: string | null;
+          public_message: string | null;
+          result_json: Json | null;
+          settings: Json;
+          stage: string;
+          started_at: string;
+          status: string;
+          stop_reason: string | null;
+        };
+        Insert: {
+          analysis_run: number;
+          computed_total?: number | null;
+          created_at?: string;
+          delivery_attempt: number;
+          details?: Json | null;
+          diagnosis_code?: string | null;
+          difference?: number | null;
+          duration_ms?: number | null;
+          file_id: string;
+          finished_at?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model?: string | null;
+          output_tokens?: number | null;
+          printed_total?: number | null;
+          provider?: string | null;
+          provider_request_id?: string | null;
+          public_message?: string | null;
+          result_json?: Json | null;
+          settings?: Json;
+          stage: string;
+          started_at?: string;
+          status: string;
+          stop_reason?: string | null;
+        };
+        Update: {
+          analysis_run?: number;
+          computed_total?: number | null;
+          created_at?: string;
+          delivery_attempt?: number;
+          details?: Json | null;
+          diagnosis_code?: string | null;
+          difference?: number | null;
+          duration_ms?: number | null;
+          file_id?: string;
+          finished_at?: string | null;
+          id?: never;
+          input_tokens?: number | null;
+          model?: string | null;
+          output_tokens?: number | null;
+          printed_total?: number | null;
+          provider?: string | null;
+          provider_request_id?: string | null;
+          public_message?: string | null;
+          result_json?: Json | null;
+          settings?: Json;
+          stage?: string;
+          started_at?: string;
+          status?: string;
+          stop_reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'receipt_import_attempts_file_id_fkey';
+            columns: ['file_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipt_import_files';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       items: {
         Row: {
           category: string;

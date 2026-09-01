@@ -6,6 +6,7 @@ import {
   useImportBatch,
   useRequeueImportFile,
   useResolveImportFile,
+  type ImportAttempt,
   type ImportFile,
 } from '../api/imports';
 import { summarizeImportProgress } from '../api/import-progress';
@@ -32,7 +33,7 @@ export function ImportBatchDetail({ id }: { id: string }) {
     return <ErrorDetails error={query.error} label="Не вдалося завантажити батч" />;
   if (!query.data) return null;
 
-  const { batch, files } = query.data;
+  const { batch, files, attemptsByFile } = query.data;
   const progress = summarizeImportProgress(files);
   const exceptions = files.filter((file) =>
     ['needs_review', 'duplicate', 'upload_failed'].includes(file.status),
@@ -74,6 +75,7 @@ export function ImportBatchDetail({ id }: { id: string }) {
             <ExceptionCard
               key={file.id}
               file={file}
+              attempts={attemptsByFile[file.id] ?? []}
               busy={requeue.isPending || discard.isPending || resolve.isPending}
               onRequeue={(forceReceipt, skipDuplicate) =>
                 requeue.mutate({ id: file.id, forceReceipt, skipDuplicate })
@@ -91,11 +93,19 @@ export function ImportBatchDetail({ id }: { id: string }) {
 
       <details className="rounded-md border border-slate-200 bg-white p-4">
         <summary className="cursor-pointer text-sm font-medium text-slate-800">Усі файли</summary>
-        <ul className="mt-3 space-y-1 text-sm text-slate-600">
+        <ul className="mt-3 space-y-2 text-sm text-slate-600">
           {files.map((file) => (
-            <li key={file.id} className="flex justify-between gap-3">
-              <span className="truncate">{file.original_filename}</span>
-              <span className="shrink-0">{STATUS_LABELS[file.status] ?? file.status}</span>
+            <li key={file.id} className="rounded border border-slate-100 p-2">
+              <details>
+                <summary className="flex cursor-pointer justify-between gap-3">
+                  <span className="truncate">{file.original_filename}</span>
+                  <span className="shrink-0">{STATUS_LABELS[file.status] ?? file.status}</span>
+                </summary>
+                <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
+                  <ImportFilePreview file={file} />
+                  <AttemptHistory attempts={attemptsByFile[file.id] ?? []} />
+                </div>
+              </details>
             </li>
           ))}
         </ul>
@@ -106,12 +116,14 @@ export function ImportBatchDetail({ id }: { id: string }) {
 
 function ExceptionCard({
   file,
+  attempts,
   busy,
   onRequeue,
   onResolve,
   onDiscard,
 }: {
   file: ImportFile;
+  attempts: ImportAttempt[];
   busy: boolean;
   onRequeue: (forceReceipt: boolean, skipDuplicate?: boolean) => void;
   onResolve?: (() => void) | undefined;
@@ -137,6 +149,7 @@ function ExceptionCard({
       </div>
       {file.error_message && <p className="text-sm text-slate-700">{file.error_message}</p>}
       <ImportFilePreview file={file} />
+      <AttemptHistory attempts={attempts} />
       {file.parsed_json && (
         <details>
           <summary className="cursor-pointer text-xs text-slate-600 underline">
@@ -178,4 +191,105 @@ function ExceptionCard({
       </div>
     </article>
   );
+}
+
+const ATTEMPT_STAGE_LABELS: Record<string, string> = {
+  primary_parse: 'Первинне розпізнавання',
+  fallback_parse: 'Резервне розпізнавання',
+  independent_check: 'Незалежна перевірка',
+  worker: 'Обробка та збереження',
+};
+
+const ATTEMPT_STATUS_LABELS: Record<string, string> = {
+  started: 'виконується або обірвалося без завершення',
+  succeeded: 'завершено',
+  accepted: 'результат прийнято',
+  rejected: 'результат відхилено',
+  failed: 'помилка',
+};
+
+const DIAGNOSIS_LABELS: Record<string, string> = {
+  tax_class_as_quantity: 'VAT-клас було прочитано як кількість',
+  missing_repeated_row: 'первинний аналіз пропустив повторний рядок',
+  missing_discount: 'первинний аналіз пропустив знижку або повернення',
+  corrected_items: 'незалежна перевірка уточнила позиції',
+  secondary_not_receipt: 'незалежна модель не підтвердила чек',
+  printed_total_disagreement: 'моделі прочитали різні підсумки',
+  metadata_disagreement: 'моделі не погодилися щодо реквізитів',
+  secondary_arithmetic_mismatch: 'повторна арифметика теж не збіглася',
+  secondary_evidence_invalid: 'незалежному результату бракує доказів',
+  incomplete_response: 'відповідь моделі обірвалася',
+  missing_output: 'модель не повернула структурованих даних',
+  invalid_json: 'модель повернула невалідні дані',
+};
+
+function AttemptHistory({ attempts }: { attempts: ImportAttempt[] }) {
+  if (attempts.length === 0) {
+    return <p className="text-xs text-slate-500">Для цього файла ще немає журналу аналізу.</p>;
+  }
+  const runs = groupAttemptsByRun(attempts);
+  return (
+    <details>
+      <summary className="cursor-pointer text-xs text-slate-600 underline">
+        Історія аналізу ({attempts.length})
+      </summary>
+      <div className="mt-2 space-y-3">
+        {[...runs.entries()].map(([run, runAttempts]) => (
+          <section key={run} className="rounded border border-slate-200 bg-white p-3">
+            <h4 className="text-xs font-semibold text-slate-800">Запуск {run}</h4>
+            <ol className="mt-2 space-y-2">
+              {runAttempts.map((attempt) => (
+                <li key={attempt.id} className="text-xs text-slate-700">
+                  <p className="font-medium text-slate-900">
+                    {ATTEMPT_STAGE_LABELS[attempt.stage] ?? attempt.stage} —{' '}
+                    {ATTEMPT_STATUS_LABELS[attempt.status] ?? attempt.status}
+                  </p>
+                  {(attempt.provider != null || attempt.model != null) && (
+                    <p>
+                      {attempt.provider ?? 'provider'}
+                      {attempt.model ? ` · ${attempt.model}` : ''}
+                      {attempt.stop_reason ? ` · stop: ${attempt.stop_reason}` : ''}
+                    </p>
+                  )}
+                  {attempt.printed_total != null && (
+                    <p>
+                      Надруковано: {formatAmount(attempt.printed_total)} · позиції:{' '}
+                      {formatAmount(attempt.computed_total)} · різниця:{' '}
+                      {formatAmount(attempt.difference)}
+                    </p>
+                  )}
+                  {attempt.diagnosis_code && (
+                    <p>
+                      Причина: {DIAGNOSIS_LABELS[attempt.diagnosis_code] ?? attempt.diagnosis_code}
+                    </p>
+                  )}
+                  {attempt.public_message && <p>{attempt.public_message}</p>}
+                  <p className="text-slate-500">
+                    {new Date(attempt.started_at).toLocaleString('uk-UA')}
+                    {attempt.duration_ms != null
+                      ? ` · ${(attempt.duration_ms / 1000).toFixed(1)} с`
+                      : ''}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function formatAmount(value: number | null): string {
+  return value == null ? '—' : value.toFixed(2);
+}
+
+function groupAttemptsByRun(attempts: ImportAttempt[]): Map<number, ImportAttempt[]> {
+  const runs = new Map<number, ImportAttempt[]>();
+  for (const attempt of attempts) {
+    const entries = runs.get(attempt.analysis_run) ?? [];
+    entries.push(attempt);
+    runs.set(attempt.analysis_run, entries);
+  }
+  return runs;
 }

@@ -3,6 +3,8 @@ import { AnthropicProvider } from './anthropic-provider.ts';
 import type { AiContext } from '../types.ts';
 
 const sampleToolUse = {
+  stop_reason: 'tool_use',
+  usage: { input_tokens: 140, output_tokens: 60 },
   content: [
     {
       type: 'tool_use',
@@ -41,12 +43,14 @@ afterEach(() => {
 });
 
 function lastRequestBody(): {
+  max_tokens: number;
   messages: Array<{ content: Array<Record<string, unknown>> }>;
   tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
 } {
   expect(fetchMock).toHaveBeenCalled();
   const init = fetchMock.mock.calls[0]![1] as RequestInit;
   return JSON.parse(init.body as string) as {
+    max_tokens: number;
     messages: Array<{ content: Array<Record<string, unknown>> }>;
     tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
   };
@@ -95,23 +99,45 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(body.messages[0]!.content[1]!.type).toBe('text');
   });
 
-  it('constrains bulk arithmetic repair to re-read item rows only', async () => {
+  it('performs a blind full-document bulk parse with evidence and a larger output budget', async () => {
     const provider = new AnthropicProvider({ apiKey: 'k' });
-    await provider.repairBulkItems('PDF-BYTES', ctx('application/pdf'), {
-      expectedTotalOrig: 101.18,
-      previousComputedTotal: 91.55,
-      previousItems: [{ product_name: 'CC Li/Ze 6x1.25l', qty: 6, unit_price_orig: 0.25 }],
-    });
+    const result = await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
 
     const body = lastRequestBody();
-    expect(Object.keys(body.tools[0]!.input_schema.properties)).toEqual(['items']);
-    expect(body.tools[0]!.input_schema.required).toEqual(['items']);
+    expect(body.max_tokens).toBe(8192);
+    expect(body.tools[0]!.input_schema.required).toContain('total_raw_text');
+    const items = body.tools[0]!.input_schema.properties.items as {
+      items: { required: string[] };
+    };
+    expect(items.items.required).toEqual(
+      expect.arrayContaining(['source_ordinal', 'raw_text', 'qty_evidence', 'tax_class']),
+    );
     const prompt = String(body.messages[0]!.content[1]!.text);
-    expect(prompt).toContain('trusted printed final total is 101.18');
-    expect(prompt).toContain('Pack-size text such as 6x1.25l');
-    expect(prompt).toContain('does not replace the merchandise price');
-    expect(prompt).toContain('VAT class, not an item quantity');
-    expect(prompt).toContain('Count every separately printed repeated row');
-    expect(prompt).toContain('Never invent an adjustment');
+    expect(prompt).toContain('Count repeated identical rows separately');
+    expect(prompt).toContain('tax_class');
+    expect(prompt).not.toContain('trusted printed final total');
+    expect(prompt).not.toContain('Previous extraction');
+    expect(result.trace).toMatchObject({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-6',
+      stopReason: 'tool_use',
+      inputTokens: 140,
+      outputTokens: 60,
+    });
+  });
+
+  it('rejects max_tokens responses so truncated item arrays cannot be accepted', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ...sampleToolUse, stop_reason: 'max_tokens' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
+      code: 'incomplete_response',
+      trace: expect.objectContaining({ stopReason: 'max_tokens' }),
+    });
   });
 });

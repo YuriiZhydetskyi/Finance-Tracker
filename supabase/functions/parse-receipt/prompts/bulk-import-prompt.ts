@@ -1,5 +1,5 @@
 import { buildPrompt, buildSchema } from './receipt-prompt.ts';
-import type { AiContext, BulkReceiptRepairContext } from '../types.ts';
+import type { AiContext } from '../types.ts';
 
 export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
   const classification = forceReceipt
@@ -19,6 +19,16 @@ export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
     ...classification,
     'Set classification_reason to one short sentence without sensitive details.',
     'For not_receipt or uncertain, return empty items and null store/date/total when not confidently visible.',
+    'For a receipt, perform a row-by-row transcription before interpreting the values:',
+    '- total_raw_text: copy the complete printed amount-due label and amount verbatim.',
+    '- source_ordinal: assign 1, 2, 3, ... to every emitted financial row in visual top-to-bottom order. Never reuse or skip a number.',
+    '- raw_text: copy the shortest complete visible text fragment that proves product, quantity and price. Include a continuation line when it contains a multiplier, weight or line total.',
+    '- row_kind: item, discount, deposit, refund or cancellation.',
+    '- qty_evidence: implicit_one unless the row visibly contains an explicit count multiplier (explicit_multiplier) or weight/volume calculation (weight_or_volume).',
+    '- printed_line_total_orig: copy the row total when separately printed; otherwise null.',
+    '- tax_class: copy a separate rightmost VAT class 1 or 2 when present; otherwise null. It never changes qty.',
+    '- Verify each printed line total against qty × unit price, but report only what is visibly printed. Never invent a balancing row.',
+    '- Count repeated identical rows separately. A missing repeated row is an extraction error even if adjacent text looks duplicated.',
     '',
     buildPrompt(ctx),
   ].join('\n');
@@ -26,8 +36,41 @@ export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
 
 export function buildBulkSchema(ctx: AiContext): Record<string, unknown> {
   const receiptSchema = buildSchema(ctx) as {
-    properties: Record<string, unknown>;
+    properties: Record<string, unknown> & {
+      items: { type: string; items: { properties: Record<string, unknown>; required: string[] } };
+    };
     required: string[];
+  };
+  const baseItem = receiptSchema.properties.items.items;
+  const evidenceItems = {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        ...baseItem.properties,
+        source_ordinal: { type: 'integer', minimum: 1 },
+        raw_text: { type: 'string' },
+        row_kind: {
+          type: 'string',
+          enum: ['item', 'discount', 'deposit', 'refund', 'cancellation'],
+        },
+        qty_evidence: {
+          type: 'string',
+          enum: ['implicit_one', 'explicit_multiplier', 'weight_or_volume'],
+        },
+        printed_line_total_orig: { type: ['number', 'null'] },
+        tax_class: { type: ['string', 'null'], enum: ['1', '2', null] },
+      },
+      required: [
+        ...baseItem.required,
+        'source_ordinal',
+        'raw_text',
+        'row_kind',
+        'qty_evidence',
+        'printed_line_total_orig',
+        'tax_class',
+      ],
+    },
   };
   return {
     type: 'object',
@@ -35,43 +78,14 @@ export function buildBulkSchema(ctx: AiContext): Record<string, unknown> {
       document_kind: { type: 'string', enum: ['receipt', 'not_receipt', 'uncertain'] },
       classification_reason: { type: 'string' },
       ...receiptSchema.properties,
+      total_raw_text: { type: ['string', 'null'] },
+      items: evidenceItems,
     },
-    required: ['document_kind', 'classification_reason', ...receiptSchema.required],
-  };
-}
-
-export function buildBulkRepairPrompt(ctx: AiContext, repair: BulkReceiptRepairContext): string {
-  return [
-    'Re-read the original receipt and repair only its extracted line items.',
-    `The trusted printed final total is ${repair.expectedTotalOrig.toFixed(2)}.`,
-    `The previous extracted items compute to ${repair.previousComputedTotal.toFixed(2)} after deterministic discount/cancellation pairing.`,
-    'Return every physical item, deposit, refund, cancellation and discount row visible on the document.',
-    'Return only the corrected items array required by the response schema.',
-    '',
-    'Safety rules:',
-    '- The printed final total is fixed evidence. You cannot change it and the response schema intentionally does not expose it.',
-    '- Never invent an adjustment, balancing, rounding or difference item to force the arithmetic to match.',
-    '- Never alter a visible quantity or price merely to make the sum match; re-read the actual glyphs and row layout.',
-    '- Count every separately printed repeated row, even when several consecutive rows are identical.',
-    '- Keep negative Rabatt/Aktion/Preisanderung rows separate and copy the discounted product name as in the normal extraction rules.',
-    '- On dm receipts, a rightmost 1 or 2 identified by the MwSt-Satz legend is a VAT class, not an item quantity.',
-    '- Pack-size text such as 6x1.25l belongs to the product description. A separate deposit calculation such as 6 x 0.25 followed by Pfand 1.50 does not replace the merchandise price.',
-    '- If a row cannot be read reliably, reproduce the visible rows conservatively; downstream validation will route unresolved arithmetic to human review.',
-    '',
-    'Previous extraction for comparison only:',
-    JSON.stringify(repair.previousItems),
-    '',
-    buildPrompt(ctx),
-  ].join('\n');
-}
-
-export function buildBulkRepairSchema(ctx: AiContext): Record<string, unknown> {
-  const receiptSchema = buildSchema(ctx) as {
-    properties: { items: unknown };
-  };
-  return {
-    type: 'object',
-    properties: { items: receiptSchema.properties.items },
-    required: ['items'],
+    required: [
+      'document_kind',
+      'classification_reason',
+      'total_raw_text',
+      ...receiptSchema.required,
+    ],
   };
 }

@@ -1,23 +1,19 @@
 import { buildPrompt, buildSchema } from '../prompts/receipt-prompt.ts';
-import {
-  buildBulkPrompt,
-  buildBulkRepairPrompt,
-  buildBulkRepairSchema,
-  buildBulkSchema,
-} from '../prompts/bulk-import-prompt.ts';
+import { buildBulkPrompt, buildBulkSchema } from '../prompts/bulk-import-prompt.ts';
 import type {
+  AiCallResult,
+  AiCallTrace,
   AiContext,
   BulkParsedDocument,
-  BulkReceiptItemRepair,
-  BulkReceiptRepairContext,
   ParsedReceipt,
 } from '../types.ts';
-import type { IAiProvider } from './ai-provider.ts';
+import { AiProviderError, type IAiProvider } from './ai-provider.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_MODEL = 'claude-sonnet-4-6';
 const ANTHROPIC_VERSION = '2023-06-01';
-const MAX_TOKENS = 4096;
+const INTERACTIVE_MAX_TOKENS = 4096;
+const BULK_MAX_TOKENS = 8192;
 const TEMPERATURE = 0.1;
 const TOOL_NAME = 'record_receipt';
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
@@ -29,33 +25,37 @@ export class AnthropicProvider implements IAiProvider {
 
   constructor(private readonly cfg: Config) {}
 
-  parse(imageBase64: string, ctx: AiContext): Promise<ParsedReceipt> {
-    return this.request<ParsedReceipt>(imageBase64, ctx, buildPrompt(ctx), buildSchema(ctx));
+  async parse(imageBase64: string, ctx: AiContext): Promise<ParsedReceipt> {
+    return (
+      await this.request<ParsedReceipt>(
+        imageBase64,
+        ctx,
+        buildPrompt(ctx),
+        buildSchema(ctx),
+        INTERACTIVE_MAX_TOKENS,
+      )
+    ).value;
   }
 
-  parseBulk(
+  async parseBulk(
     imageBase64: string,
     ctx: AiContext,
     forceReceipt = false,
   ): Promise<BulkParsedDocument> {
+    return (await this.parseBulkDetailed(imageBase64, ctx, forceReceipt)).value;
+  }
+
+  parseBulkDetailed(
+    imageBase64: string,
+    ctx: AiContext,
+    forceReceipt = false,
+  ): Promise<AiCallResult<BulkParsedDocument>> {
     return this.request<BulkParsedDocument>(
       imageBase64,
       ctx,
       buildBulkPrompt(ctx, forceReceipt),
       buildBulkSchema(ctx),
-    );
-  }
-
-  repairBulkItems(
-    imageBase64: string,
-    ctx: AiContext,
-    repair: BulkReceiptRepairContext,
-  ): Promise<BulkReceiptItemRepair> {
-    return this.request<BulkReceiptItemRepair>(
-      imageBase64,
-      ctx,
-      buildBulkRepairPrompt(ctx, repair),
-      buildBulkRepairSchema(ctx),
+      BULK_MAX_TOKENS,
     );
   }
 
@@ -64,7 +64,8 @@ export class AnthropicProvider implements IAiProvider {
     ctx: AiContext,
     prompt: string,
     schema: Record<string, unknown>,
-  ): Promise<T> {
+    maxTokens: number,
+  ): Promise<AiCallResult<T>> {
     const isPdf = ctx.mimeType === 'application/pdf';
     const mediaBlock = isPdf
       ? {
@@ -75,15 +76,16 @@ export class AnthropicProvider implements IAiProvider {
           type: 'image',
           source: { type: 'base64', media_type: ctx.mimeType, data: imageBase64 },
         };
-
+    const model = this.cfg.model ?? DEFAULT_MODEL;
+    const baseTrace: AiCallTrace = { provider: 'anthropic', model };
     const body = {
-      model: this.cfg.model ?? DEFAULT_MODEL,
-      max_tokens: MAX_TOKENS,
+      model,
+      max_tokens: maxTokens,
       temperature: TEMPERATURE,
       tools: [
         {
           name: TOOL_NAME,
-          description: 'Record the parsed receipt fields and line items.',
+          description: 'Record the parsed receipt fields, row evidence and line items.',
           input_schema: schema,
         },
       ],
@@ -106,21 +108,50 @@ export class AnthropicProvider implements IAiProvider {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(this.cfg.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
     });
+    const requestId = res.headers.get('request-id') ?? res.headers.get('x-request-id') ?? undefined;
+    const responseTrace = { ...baseTrace, requestId };
 
     if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Anthropic API ${res.status}: ${text.slice(0, 500)}`);
+      throw new AiProviderError(
+        `http_${String(res.status)}`,
+        `Anthropic API request failed with status ${String(res.status)}.`,
+        responseTrace,
+      );
     }
 
     const wrapper: unknown = await res.json();
-    const input = extractToolInput(wrapper);
-    if (!input) {
-      throw new Error(
-        `Anthropic returned no tool_use block: ${JSON.stringify(wrapper).slice(0, 500)}`,
+    const trace = traceFromResponse(wrapper, responseTrace);
+    if (trace.stopReason !== 'tool_use') {
+      throw new AiProviderError(
+        'incomplete_response',
+        `Anthropic response stopped with ${trace.stopReason ?? 'an unknown reason'}.`,
+        trace,
       );
     }
-    return input as T;
+    const input = extractToolInput(wrapper);
+    if (!input) {
+      throw new AiProviderError(
+        'missing_output',
+        'Anthropic returned no receipt tool output.',
+        trace,
+      );
+    }
+    return { value: input as T, trace };
   }
+}
+
+function traceFromResponse(wrapper: unknown, base: AiCallTrace): AiCallTrace {
+  if (!wrapper || typeof wrapper !== 'object') return base;
+  const value = wrapper as {
+    stop_reason?: string;
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+  return {
+    ...base,
+    stopReason: value.stop_reason,
+    inputTokens: value.usage?.input_tokens,
+    outputTokens: value.usage?.output_tokens,
+  };
 }
 
 function extractToolInput(wrapper: unknown): Record<string, unknown> | null {
@@ -129,9 +160,14 @@ function extractToolInput(wrapper: unknown): Record<string, unknown> | null {
   if (!Array.isArray(blocks)) return null;
   for (const block of blocks) {
     if (!block || typeof block !== 'object') continue;
-    const b = block as { type?: unknown; name?: unknown; input?: unknown };
-    if (b.type === 'tool_use' && b.name === TOOL_NAME && b.input && typeof b.input === 'object') {
-      return b.input as Record<string, unknown>;
+    const value = block as { type?: unknown; name?: unknown; input?: unknown };
+    if (
+      value.type === 'tool_use' &&
+      value.name === TOOL_NAME &&
+      value.input &&
+      typeof value.input === 'object'
+    ) {
+      return value.input as Record<string, unknown>;
     }
   }
   return null;

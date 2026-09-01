@@ -8,6 +8,7 @@ import { summarizeImportProgress, type ImportProgressSummary } from './import-pr
 
 export type ImportBatch = Tables<'receipt_import_batches'>;
 export type ImportFile = Tables<'receipt_import_files'>;
+export type ImportAttempt = Tables<'receipt_import_attempts'>;
 export type ImportBatchSummary = ImportBatch & { progress: ImportProgressSummary };
 
 const FILE_STATUS_PAGE_SIZE = 1_000;
@@ -87,14 +88,32 @@ async function fetchImportFileStatuses(
 export function useImportBatch(id: string) {
   return useQuery({
     queryKey: importBatchQueryKey(id),
-    queryFn: async (): Promise<{ batch: ImportBatch; files: ImportFile[] }> => {
+    queryFn: async (): Promise<{
+      batch: ImportBatch;
+      files: ImportFile[];
+      attemptsByFile: Record<string, ImportAttempt[]>;
+    }> => {
       const [batchResult, filesResult] = await Promise.all([
         supabase.from('receipt_import_batches').select('*').eq('id', id).single(),
         supabase.from('receipt_import_files').select('*').eq('batch_id', id).order('created_at'),
       ]);
       if (batchResult.error) throw batchResult.error;
       if (filesResult.error) throw filesResult.error;
-      return { batch: batchResult.data, files: filesResult.data };
+      const attemptsByFile: Record<string, ImportAttempt[]> = {};
+      const fileIds = filesResult.data.map((file) => file.id);
+      if (fileIds.length > 0) {
+        const { data: attempts, error: attemptsError } = await supabase
+          .from('receipt_import_attempts')
+          .select('*')
+          .in('file_id', fileIds)
+          .order('analysis_run', { ascending: false })
+          .order('id', { ascending: true });
+        if (attemptsError) throw attemptsError;
+        for (const attempt of attempts) {
+          (attemptsByFile[attempt.file_id] ??= []).push(attempt);
+        }
+      }
+      return { batch: batchResult.data, files: filesResult.data, attemptsByFile };
     },
     refetchInterval: (query) => {
       const status = query.state.data?.batch.status;

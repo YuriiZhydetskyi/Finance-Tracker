@@ -2,7 +2,18 @@
 // is a new file in this directory + one line in handler.ts to register it as
 // fallback or primary — open/closed.
 
-import type { AiContext, ParsedReceipt } from '../types.ts';
+import type { AiCallTrace, AiContext, ParsedReceipt } from '../types.ts';
+
+export class AiProviderError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly trace: AiCallTrace,
+  ) {
+    super(message);
+    this.name = 'AiProviderError';
+  }
+}
 
 export interface IAiProvider {
   /** Human-readable name for logs ("gemini" / "anthropic"). */

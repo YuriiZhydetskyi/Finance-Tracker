@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { checkReceiptArithmetic, prepareReceipt, validateBulkDocument } from './domain.ts';
+import {
+  auditReceiptEvidence,
+  checkReceiptArithmetic,
+  prepareReceipt,
+  validateBulkDocument,
+} from './domain.ts';
 
 const parsed = validateBulkDocument({
   document_kind: 'receipt',
@@ -126,5 +131,68 @@ describe('bulk import domain gate', () => {
     expect(arithmetic).toMatchObject({ computedTotal: 0, matches: true });
     expect(arithmetic?.normalizedItems).toHaveLength(2);
     expect(arithmetic?.normalizedItems.every((item) => item.unit_price_orig === 0)).toBe(true);
+  });
+
+  it('does not hide a missing low-value row behind a percentage tolerance', () => {
+    const arithmetic = checkReceiptArithmetic(
+      validateBulkDocument({
+        ...parsed,
+        total_orig: 100,
+        items: [{ product_name: 'Basket', qty: 1, unit_price_orig: 99.6 }],
+      }),
+    );
+
+    expect(arithmetic).toMatchObject({ tolerance: 0.02, matches: false });
+  });
+
+  it('requires visible evidence for quantities and exact row ordering', () => {
+    const evidence = auditReceiptEvidence(
+      validateBulkDocument({
+        ...parsed,
+        total_raw_text: 'SUMME EUR 3,00',
+        items: [
+          {
+            product_name: 'Milk',
+            qty: 2,
+            unit_price_orig: 1.5,
+            source_ordinal: 2,
+            raw_text: 'Milk 1,50 2',
+            row_kind: 'item',
+            qty_evidence: 'implicit_one',
+            printed_line_total_orig: 3,
+            tax_class: '2',
+          },
+        ],
+      }),
+    );
+
+    expect(evidence.ok).toBe(false);
+    expect(evidence.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['unsupported_quantity', 'invalid_row_order']),
+    );
+  });
+
+  it('accepts an explicit multiplier whose line total and final total are evidenced', () => {
+    const evidence = auditReceiptEvidence(
+      validateBulkDocument({
+        ...parsed,
+        total_raw_text: 'SUMME EUR 3,00',
+        items: [
+          {
+            product_name: 'Milk',
+            qty: 2,
+            unit_price_orig: 1.5,
+            source_ordinal: 1,
+            raw_text: 'Milk 2 x 1,50 = 3,00',
+            row_kind: 'item',
+            qty_evidence: 'explicit_multiplier',
+            printed_line_total_orig: 3,
+            tax_class: '1',
+          },
+        ],
+      }),
+    );
+
+    expect(evidence).toEqual({ ok: true, issues: [] });
   });
 });
