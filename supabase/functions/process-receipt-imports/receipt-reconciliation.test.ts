@@ -33,7 +33,11 @@ function row(
   };
 }
 
-function receipt(total: number, items: ParsedItem[]): BulkParsedDocument {
+function receipt(
+  total: number,
+  items: ParsedItem[],
+  extras: Partial<BulkParsedDocument> = {},
+): BulkParsedDocument {
   return validateBulkDocument({
     document_kind: 'receipt',
     classification_reason: 'Cash receipt',
@@ -44,8 +48,48 @@ function receipt(total: number, items: ParsedItem[]): BulkParsedDocument {
     currency: 'EUR',
     total_orig: total,
     total_raw_text: `SUMME EUR ${total.toFixed(2).replace('.', ',')}`,
+    ...extras,
     items,
   });
+}
+
+function stableBasketRows(): ParsedItem[] {
+  return Array.from({ length: 10 }, (_, index) =>
+    row(
+      index + 1,
+      `Other ${String(index + 1)}`,
+      1,
+      index === 0 ? 2.51 : 2.5,
+      `CODE${String(index + 1)} Other ${String(index + 1)}`,
+      { product_code: `CODE${String(index + 1)}` },
+    ),
+  );
+}
+
+function articleCountReceipt(
+  cashewCount: number,
+  negative: { name: string; rawText: string; rowKind: NonNullable<ParsedItem['row_kind']> },
+  changeStableProduct = false,
+): BulkParsedDocument {
+  const basketRows = stableBasketRows();
+  if (changeStableProduct) {
+    basketRows[0] = { ...basketRows[0]!, product_code: 'DIFFERENT-CODE' };
+  }
+  return receipt(
+    43.14,
+    [
+      ...basketRows,
+      ...Array.from({ length: cashewCount }, (_, index) =>
+        row(index + 11, 'Cashews', 1, 1.99, '675108 Cashews 1,99 A', {
+          product_code: '675108',
+        }),
+      ),
+      row(11 + cashewCount, negative.name, 1, -5.75, negative.rawText, {
+        row_kind: negative.rowKind,
+      }),
+    ],
+    { article_count: 22, article_count_raw_text: '22 Artikel' },
+  );
 }
 
 describe('independent receipt reconciliation', () => {
@@ -271,6 +315,51 @@ describe('independent receipt reconciliation', () => {
       },
     });
     expect(result.publicMessage).toContain('ще 2 рядкам «Cashews»');
+  });
+
+  it('repairs repeated rows only when printed article count, both gaps and stable rows agree', () => {
+    const primary = articleCountReceipt(9, {
+      name: 'Eigenmarke:',
+      rawText: 'Eigenmarke: -5,75 B',
+      rowKind: 'discount',
+    });
+    const secondary = articleCountReceipt(10, {
+      name: 'Eigenmarke: Pfand',
+      rawText: 'Eigenmarke: Pfand -5,75 B',
+      rowKind: 'refund',
+    });
+
+    const result = reconcileIndependentReceipt(primary, secondary);
+
+    expect(result).toMatchObject({
+      status: 'accepted',
+      diagnosisCode: 'missing_repeated_row',
+      before: { computedTotal: 37.17, matches: false },
+      after: { computedTotal: 43.14, matches: true },
+      details: {
+        article_count_repair: {
+          product_code: '675108',
+          printed_article_count: 22,
+          primary_computed_article_count: 19,
+          secondary_computed_article_count: 20,
+          added_occurrences: 2,
+          expected_occurrences: 12,
+          line_total: 1.99,
+        },
+      },
+    });
+    expect(result.parsed.items.filter((item) => item.product_code === '675108')).toHaveLength(12);
+  });
+
+  it('does not repair from article count when another positive row changed identity', () => {
+    const negative = { name: 'Refund', rawText: 'Refund -5,75', rowKind: 'refund' } as const;
+    const primary = articleCountReceipt(9, negative);
+    const secondary = articleCountReceipt(10, negative, true);
+
+    expect(reconcileIndependentReceipt(primary, secondary)).toMatchObject({
+      status: 'rejected',
+      diagnosisCode: 'unresolved_repeated_row_candidate',
+    });
   });
 
   it('fails closed when independent metadata identifies a different receipt', () => {

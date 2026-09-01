@@ -39,6 +39,10 @@ export type BulkParsedDocument = ParsedReceipt & {
   classification_reason: string;
   /** Verbatim label and amount from the final amount-due row. */
   total_raw_text?: string | null;
+  /** Exact item/article count printed by the register, never derived from emitted rows. */
+  article_count?: number | null;
+  /** Verbatim label and count, for example "22 Artikel". */
+  article_count_raw_text?: string | null;
 };
 
 export type AiCallTrace = {

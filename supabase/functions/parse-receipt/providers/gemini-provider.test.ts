@@ -110,10 +110,17 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
     expect(request.body.generationConfig).toMatchObject({
       thinkingConfig: { thinkingLevel: 'high' },
     });
+    const generationConfig = request.body.generationConfig as {
+      responseJsonSchema: { required: string[] };
+    };
+    expect(generationConfig.responseJsonSchema.required).toEqual(
+      expect.arrayContaining(['article_count', 'article_count_raw_text']),
+    );
     const contents = request.body.contents as Array<{
       parts: Array<Record<string, unknown>>;
     }>;
     expect(String(contents[0]!.parts[0]!.text)).toContain('means twelve separate X items');
+    expect(String(contents[0]!.parts[0]!.text)).toContain('Never derive article_count');
     expect(result.trace).toMatchObject({
       provider: 'gemini',
       model: 'gemini-3.7-flash',

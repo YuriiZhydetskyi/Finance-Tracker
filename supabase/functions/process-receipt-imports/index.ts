@@ -11,6 +11,7 @@ import type {
 } from '../parse-receipt/types.ts';
 import {
   auditReceiptEvidence,
+  checkReceiptArticleCount,
   checkReceiptArithmetic,
   prepareReceipt,
   validateBulkDocument,
@@ -455,6 +456,7 @@ function providerResultFields(
   trace: AiCallTrace,
 ): Record<string, unknown> {
   const arithmetic = checkReceiptArithmetic(parsed);
+  const articleCount = checkReceiptArticleCount(parsed);
   const evidence = parsed.document_kind === 'receipt' ? auditReceiptEvidence(parsed) : null;
   return {
     ...traceFields(trace),
@@ -465,7 +467,14 @@ function providerResultFields(
       : null,
     diagnosis_code: evidence && !evidence.ok ? evidence.issues[0]?.code : null,
     public_message: evidence && !evidence.ok ? evidence.issues[0]?.message : null,
-    details: evidence ? { evidence_issue_codes: evidence.issues.map((issue) => issue.code) } : null,
+    details: evidence
+      ? {
+          evidence_issue_codes: evidence.issues.map((issue) => issue.code),
+          printed_article_count: articleCount?.printedCount ?? null,
+          computed_article_count: articleCount?.computedCount ?? null,
+          article_count_difference: articleCount?.missingCount ?? null,
+        }
+      : null,
     result_json: parsed,
   };
 }
