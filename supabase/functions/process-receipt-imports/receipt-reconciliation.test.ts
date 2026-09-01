@@ -57,11 +57,15 @@ function stableBasketRows(): ParsedItem[] {
   return Array.from({ length: 10 }, (_, index) =>
     row(
       index + 1,
-      `Other ${String(index + 1)}`,
+      index === 6 || index === 8 ? 'Bio Knusperriegel' : `Other ${String(index + 1)}`,
       1,
-      index === 0 ? 2.51 : 2.5,
-      `CODE${String(index + 1)} Other ${String(index + 1)}`,
-      { product_code: `CODE${String(index + 1)}` },
+      index === 0 ? 5.13 : index === 6 || index === 8 ? 1.19 : 2.5,
+      index === 6 || index === 8
+        ? '623805 Bio Knusperriegel 1,19 A'
+        : `CODE${String(index + 1)} Other ${String(index + 1)}`,
+      {
+        product_code: index === 6 || index === 8 ? '623805' : `CODE${String(index + 1)}`,
+      },
     ),
   );
 }
