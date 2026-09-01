@@ -290,6 +290,7 @@ export type Database = {
           provider: string | null;
           provider_request_id: string | null;
           public_message: string | null;
+          queue_message_id: number | null;
           result_json: Json | null;
           settings: Json;
           stage: string;
@@ -316,6 +317,7 @@ export type Database = {
           provider?: string | null;
           provider_request_id?: string | null;
           public_message?: string | null;
+          queue_message_id?: number | null;
           result_json?: Json | null;
           settings?: Json;
           stage: string;
@@ -342,6 +344,7 @@ export type Database = {
           provider?: string | null;
           provider_request_id?: string | null;
           public_message?: string | null;
+          queue_message_id?: number | null;
           result_json?: Json | null;
           settings?: Json;
           stage?: string;

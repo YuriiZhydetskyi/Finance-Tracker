@@ -41,6 +41,10 @@ export function selectVerificationProviderRole(
   return seedProvider === 'gemini' ? 'fallback' : null;
 }
 
+export function shouldLoadStoredVerificationSeed(deliveryAttempt: number): boolean {
+  return deliveryAttempt > 1;
+}
+
 export function selectSeedStages(previousWorkerDiagnosis: string | null): string[] {
   return previousWorkerDiagnosis === 'independent_check_required'
     ? ['primary_parse', 'fallback_parse', 'independent_check']

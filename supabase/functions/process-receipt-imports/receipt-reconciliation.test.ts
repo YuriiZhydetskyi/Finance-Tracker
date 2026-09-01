@@ -6,6 +6,7 @@ import {
   selectParseProviderRole,
   selectSeedStages,
   selectVerificationProviderRole,
+  shouldLoadStoredVerificationSeed,
   shouldQueueIndependentCheck,
 } from './receipt-reconciliation.ts';
 
@@ -52,6 +53,12 @@ describe('independent receipt reconciliation', () => {
     expect([1, 2, 3].map(selectParseProviderRole)).toEqual(['primary', 'fallback', 'fallback']);
     expect(selectVerificationProviderRole('gemini')).toBe('fallback');
     expect(selectVerificationProviderRole('anthropic')).toBeNull();
+  });
+
+  it('starts a manual requeue fresh and reuses seeds only on the same message retry', () => {
+    expect(shouldLoadStoredVerificationSeed(1)).toBe(false);
+    expect(shouldLoadStoredVerificationSeed(2)).toBe(true);
+    expect(shouldLoadStoredVerificationSeed(3)).toBe(true);
   });
 
   it('replays a reviewed file from its base parse but continues an active escalation', () => {

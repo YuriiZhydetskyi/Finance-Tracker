@@ -19,6 +19,7 @@ import {
   selectParseProviderRole,
   selectSeedStages,
   selectVerificationProviderRole,
+  shouldLoadStoredVerificationSeed,
   shouldQueueIndependentCheck,
   type ReceiptReconciliation,
 } from './receipt-reconciliation.ts';
@@ -137,7 +138,9 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       mimeType: importFile.mime_type,
     };
     const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-    const seed = await loadStoredVerificationSeed(importFile.id);
+    const seed = shouldLoadStoredVerificationSeed(job.read_count)
+      ? await loadStoredVerificationSeed(importFile.id, job.msg_id)
+      : null;
     let parsed: BulkParsedDocument;
     let independentMessage: string | null = null;
 
@@ -404,12 +407,16 @@ async function invokeProvider(
   }
 }
 
-async function loadStoredVerificationSeed(fileId: string): Promise<StoredVerificationSeed | null> {
+async function loadStoredVerificationSeed(
+  fileId: string,
+  queueMessageId: number,
+): Promise<StoredVerificationSeed | null> {
   try {
     const { data: previousWorker, error: workerError } = await db
       .from('receipt_import_attempts')
       .select('diagnosis_code')
       .eq('file_id', fileId)
+      .eq('queue_message_id', queueMessageId)
       .eq('stage', 'worker')
       .neq('status', 'started')
       .order('id', { ascending: false })
@@ -422,6 +429,7 @@ async function loadStoredVerificationSeed(fileId: string): Promise<StoredVerific
       .select('provider, model, result_json')
       .in('stage', stages)
       .eq('file_id', fileId)
+      .eq('queue_message_id', queueMessageId)
       .in('status', ['succeeded', 'rejected'])
       .not('result_json', 'is', null)
       .order('id', { ascending: false })
@@ -517,6 +525,7 @@ async function startAttempt(
         file_id: job.import_file_id,
         analysis_run: analysisRun,
         delivery_attempt: job.read_count,
+        queue_message_id: job.msg_id,
         stage,
         provider,
         status: 'started',
