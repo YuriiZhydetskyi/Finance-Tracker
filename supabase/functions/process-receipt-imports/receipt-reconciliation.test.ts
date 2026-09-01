@@ -115,6 +115,51 @@ describe('independent receipt reconciliation', () => {
     });
   });
 
+  it('accepts one independently evidenced repeated row without copying other secondary errors', () => {
+    const primary = receipt(101.18, [row(1, 'Basket', 1, 98), row(2, 'Nuts', 1, 1.59)]);
+    const secondary = receipt(101.18, [
+      row(1, 'Basket', 1, 94.81),
+      row(2, 'Nuts', 1, 1.59),
+      row(3, 'Nuts', 1, 1.59),
+    ]);
+
+    const result = reconcileIndependentReceipt(primary, secondary);
+
+    expect(result).toMatchObject({
+      status: 'accepted',
+      diagnosisCode: 'missing_repeated_row',
+      before: { computedTotal: 99.59, matches: false },
+      after: { computedTotal: 101.18, matches: true },
+      details: {
+        targeted_repair: {
+          product_name: 'Nuts',
+          primary_occurrences: 1,
+          secondary_occurrences: 2,
+          line_total: 1.59,
+          primary_gap: 1.59,
+          secondary_computed_total: 97.99,
+        },
+      },
+    });
+    expect(result.parsed.items.map((item) => item.product_name)).toEqual([
+      'Basket',
+      'Nuts',
+      'Nuts',
+    ]);
+    expect(result.parsed.items[0]!.unit_price_orig).toBe(98);
+  });
+
+  it('does not add a repeated row when the independent model did not see another occurrence', () => {
+    const rows = [row(1, 'Basket', 1, 39.16), row(2, 'Cashews', 1, 1.99)];
+    const primary = receipt(43.14, rows);
+    const secondary = receipt(43.14, rows);
+
+    expect(reconcileIndependentReceipt(primary, secondary)).toMatchObject({
+      status: 'rejected',
+      diagnosisCode: 'secondary_arithmetic_mismatch',
+    });
+  });
+
   it('fails closed when the independent extraction still has wrong arithmetic', () => {
     const primary = receipt(101.18, [row(1, 'Basket', 1, 99.59)]);
     const secondary = receipt(101.18, [row(1, 'Basket', 1, 100)]);

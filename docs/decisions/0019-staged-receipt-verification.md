@@ -55,6 +55,12 @@ fail-closed і не може бути збережена як чек.
 доставці. Provider error verification-call можна повторити до третьої доставки; після цього файл
 лишається у review.
 
+Comparator може взяти з independent parse не весь список, а рівно один додатковий repeated row.
+Це дозволено лише якщо primary evidence уже валідний, secondary має на один ідентичний рядок
+більше, його дослівний `raw_text` збігається з evidence інших повторів, line total дорівнює
+primary gap, а після вставки та перенумерації primary проходить evidence й exact arithmetic gates.
+Інші відмінності secondary parse при цьому не переносяться.
+
 ### 3. Верифікаційний self-audit без balancing
 
 Bulk prompt вимагає перед відповіддю ще раз пройти всі фінансові рядки, якщо їхня сума не
