@@ -5,11 +5,11 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
 - `pg_cron` викликає функцію з окремим випадковим cron token, збереженим у Vault.
 - Один виклик забирає одне PGMQ message з visibility timeout п’ять хвилин, щоб не конкурувати за
   AI latency budget усередині одного Edge Function invocation.
-- Один provider працює на одну доставку queue message: Gemini — перший, Sonnet — fallback на
-  наступній доставці.
-- Bulk parse повертає row-level evidence. Якщо арифметика або evidence gate не проходять,
-  наступна модель незалежно читає оригінал без primary total чи primary items. Після mismatch
-  Sonnet окрема verification-модель Opus виконує третє blind reading.
+- Один provider працює на одну доставку queue message: Gemini 3.7 Flash — перший, Sonnet 5 —
+  fallback на наступній доставці.
+- Bulk parse повертає row-level evidence. Якщо результат Gemini не проходить arithmetic або
+  evidence gate, Sonnet незалежно читає оригінал без primary total чи primary items. Якщо Sonnet
+  також не проходить gates, файл переходить у ручну перевірку; третьої AI-моделі немає.
 - Детерміновані gates у `domain.ts` та `receipt-reconciliation.ts` вирішують, чи можна auto-save
   чек. Відповідь, обірвана через token limit, завжди вважається помилкою.
 - Кожний worker/provider stage записується в `receipt_import_attempts`; batch detail показує цей

@@ -43,16 +43,20 @@ afterEach(() => {
 });
 
 function lastRequestBody(): {
+  model: string;
   max_tokens: number;
   temperature?: number;
+  thinking: { type: string };
   messages: Array<{ content: Array<Record<string, unknown>> }>;
   tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
 } {
   expect(fetchMock).toHaveBeenCalled();
   const init = fetchMock.mock.calls[0]![1] as RequestInit;
   return JSON.parse(init.body as string) as {
+    model: string;
     max_tokens: number;
     temperature?: number;
+    thinking: { type: string };
     messages: Array<{ content: Array<Record<string, unknown>> }>;
     tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
   };
@@ -126,7 +130,7 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(prompt).not.toContain('Previous extraction');
     expect(result.trace).toMatchObject({
       provider: 'anthropic',
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       stopReason: 'tool_use',
       inputTokens: 140,
       outputTokens: 60,
@@ -141,16 +145,15 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(lastRequestBody().max_tokens).toBe(16_384);
   });
 
-  it('omits custom temperature for Opus 4.7 verification requests', async () => {
-    const provider = new AnthropicProvider({
-      apiKey: 'k',
-      model: 'claude-opus-4-7',
-      temperature: null,
-    });
+  it('uses Sonnet 5 without sampling parameters or adaptive thinking', async () => {
+    const provider = new AnthropicProvider({ apiKey: 'k' });
 
     await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
 
-    expect(lastRequestBody()).not.toHaveProperty('temperature');
+    const body = lastRequestBody();
+    expect(body.model).toBe('claude-sonnet-5');
+    expect(body).not.toHaveProperty('temperature');
+    expect(body.thinking).toEqual({ type: 'disabled' });
   });
 
   it('rejects max_tokens responses so truncated item arrays cannot be accepted', async () => {
@@ -175,7 +178,7 @@ describe('AnthropicProvider — content block dispatch', () => {
 
     await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
       code: 'timeout',
-      trace: expect.objectContaining({ provider: 'anthropic', model: 'claude-sonnet-4-6' }),
+      trace: expect.objectContaining({ provider: 'anthropic', model: 'claude-sonnet-5' }),
     });
   });
 });

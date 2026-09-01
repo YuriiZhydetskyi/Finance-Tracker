@@ -47,7 +47,7 @@
                                                             ▼
                                                   ┌──────────────────┐
                                                   │ Gemini 3 Flash   │
-                                                  │ Claude Sonnet 4.6│
+                                                  │ Claude Sonnet 5  │
                                                   └──────────────────┘
 ```
 
@@ -136,7 +136,7 @@ React SPA → Supabase
 | `supabase/functions/parse-receipt/types.ts`                        | Vendored ParsedReceipt + AiContext (~25 LOC) — Deno не резолвить Vite-style workspace packages, тому зберігаємо локально. Client-side Zod валідація покриває runtime safety.                                      |
 | `supabase/functions/parse-receipt/providers/ai-provider.ts`        | `IAiProvider { name, parse(image, ctx): Promise<ParsedReceipt> }` — strategy interface.                                                                                                                           |
 | `supabase/functions/parse-receipt/providers/gemini-provider.ts`    | Gemini 3 Flash через `responseJsonSchema`. Temperature 0.1.                                                                                                                                                       |
-| `supabase/functions/parse-receipt/providers/anthropic-provider.ts` | Claude Sonnet 4.6 через forced `tool_use` (`record_receipt` tool, `disable_parallel_tool_use: true`).                                                                                                             |
+| `supabase/functions/parse-receipt/providers/anthropic-provider.ts` | Claude Sonnet 5 через forced `tool_use` (`record_receipt` tool, `disable_parallel_tool_use: true`), без sampling parameters і з вимкненим adaptive thinking.                                                      |
 | `supabase/functions/parse-receipt/prompts/receipt-prompt.ts`       | `buildPrompt(ctx)` + `buildSchema(ctx)` — verbatim port з legacy `Gemini.js`. Spільні для обох провайдерів.                                                                                                       |
 | `supabase/functions/parse-receipt/handler.test.ts`                 | 7 тестів через Vitest у Node (handler-портабельний).                                                                                                                                                              |
 
@@ -160,7 +160,7 @@ React SPA → Supabase
    │ verify_jwt = true (Supabase platform) → 401 якщо нема JWT
    │ isAllowed(authHeader) → виклик is_allowed_user() RPC під JWT → 403 якщо не allowlisted
    │ primary.parse(image, ctx) → Gemini 3 Flash
-   │   if fail → fallback.parse(image, ctx) → Claude Sonnet 4.6
+   │   if fail → fallback.parse(image, ctx) → Claude Sonnet 5
    │ JSON validated by provider-native schemas (Gemini responseJsonSchema, Claude tool input_schema)
    │ Response.json(parsed)
    ▼

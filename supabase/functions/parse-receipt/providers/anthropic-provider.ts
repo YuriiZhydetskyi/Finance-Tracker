@@ -10,11 +10,10 @@ import type {
 import { AiProviderError, type IAiProvider } from './ai-provider.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-sonnet-4-6';
+const DEFAULT_MODEL = 'claude-sonnet-5';
 const ANTHROPIC_VERSION = '2023-06-01';
 const INTERACTIVE_MAX_TOKENS = 4096;
 const BULK_MAX_TOKENS = 8192;
-const TEMPERATURE = 0.1;
 const TOOL_NAME = 'record_receipt';
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 const BULK_REQUEST_TIMEOUT_MS = 75_000;
@@ -24,8 +23,6 @@ type Config = {
   model?: string;
   timeoutMs?: number;
   bulkMaxTokens?: number;
-  /** null omits the sampling parameter for models that reject custom temperature. */
-  temperature?: number | null;
 };
 
 export class AnthropicProvider implements IAiProvider {
@@ -88,12 +85,15 @@ export class AnthropicProvider implements IAiProvider {
           source: { type: 'base64', media_type: ctx.mimeType, data: imageBase64 },
         };
     const model = this.cfg.model ?? DEFAULT_MODEL;
-    const temperature = this.cfg.temperature === undefined ? TEMPERATURE : this.cfg.temperature;
     const baseTrace: AiCallTrace = { provider: 'anthropic', model };
     const body = {
       model,
       max_tokens: maxTokens,
-      ...(temperature == null ? {} : { temperature }),
+      // Sonnet 5 enables adaptive thinking by default. Receipt extraction needs
+      // the output budget for the forced structured result, so preserve the
+      // previous no-thinking behavior explicitly. Sampling parameters are not
+      // accepted by Sonnet 5 and are intentionally omitted.
+      thinking: { type: 'disabled' },
       tools: [
         {
           name: TOOL_NAME,

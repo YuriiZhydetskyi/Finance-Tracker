@@ -48,10 +48,10 @@ function receipt(total: number, items: ParsedItem[]): BulkParsedDocument {
 }
 
 describe('independent receipt reconciliation', () => {
-  it('uses one provider tier per queue delivery and escalates fallback results to Opus', () => {
+  it('uses Sonnet only after Gemini and stops after an Anthropic result', () => {
     expect([1, 2, 3].map(selectParseProviderRole)).toEqual(['primary', 'fallback', 'fallback']);
     expect(selectVerificationProviderRole('gemini')).toBe('fallback');
-    expect(selectVerificationProviderRole('anthropic')).toBe('verifier');
+    expect(selectVerificationProviderRole('anthropic')).toBeNull();
   });
 
   it('replays a reviewed file from its base parse but continues an active escalation', () => {
@@ -63,11 +63,11 @@ describe('independent receipt reconciliation', () => {
     ]);
   });
 
-  it('queues a mismatching parse for an independent model before the third delivery', () => {
-    expect(shouldQueueIndependentCheck(1, false, true)).toBe(true);
-    expect(shouldQueueIndependentCheck(2, true, false)).toBe(true);
-    expect(shouldQueueIndependentCheck(3, false, true)).toBe(false);
-    expect(shouldQueueIndependentCheck(1, true, true)).toBe(false);
+  it('queues only a mismatching Gemini parse for independent Sonnet verification', () => {
+    expect(shouldQueueIndependentCheck('primary', 1, false, true)).toBe(true);
+    expect(shouldQueueIndependentCheck('fallback', 2, true, false)).toBe(false);
+    expect(shouldQueueIndependentCheck('primary', 3, false, true)).toBe(false);
+    expect(shouldQueueIndependentCheck('primary', 1, true, true)).toBe(false);
   });
 
   it('diagnoses a dm VAT class read as quantity and accepts only the evidenced parse', () => {

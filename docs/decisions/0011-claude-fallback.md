@@ -1,6 +1,6 @@
 # ADR-0011: Claude Sonnet 4.6 як автоматичний fallback для Gemini
 
-- Status: accepted
+- Status: superseded by [ADR-0020](0020-two-model-receipt-verification.md)
 - Date: 2026-05-05
 
 ## Context and Problem Statement

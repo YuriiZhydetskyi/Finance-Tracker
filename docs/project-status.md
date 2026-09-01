@@ -55,7 +55,7 @@ ESLint 9.x (не 10) — `eslint-plugin-react@7.37.5` ще не оновився
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Supabase project | `<your-project-ref>` (eu-west-2 за замовчуванням; перевірити у Settings → Infrastructure)                                            |
 | Supabase CLI     | 2.98.x як devDep, для `db push` / `gen types` / `functions deploy`                                                                   |
-| AI               | Gemini Flash primary + Claude Sonnet 4.6 fallback (порт ADR-0011) — реалізація Phase 7                                               |
+| AI               | Gemini 3.7 Flash primary + Claude Sonnet 5 fallback (ADR-0020)                                                                       |
 | FX               | NBU live rates для UAH — клієнт-сайд (CORS-open public API) — Phase 5                                                                |
 | Hosting          | Cloudflare Pages: `<your-app>.pages.dev`. Edge Function `parse-receipt` задеплоєно у Supabase. CI/CD: `.github/workflows/deploy.yml` |
 
@@ -229,11 +229,11 @@ finance-tracker/
   - `types.ts` — `ParsedReceipt` + `AiContext` (mirror з `@finance-tracker/domain`, vendored-inline, ~25 LOC).
   - `providers/ai-provider.ts` — `IAiProvider { name, parse(image, ctx): Promise<ParsedReceipt> }` strategy interface.
   - `providers/gemini-provider.ts` — `gemini-3-flash-preview` через `responseJsonSchema`. Temperature 0.1.
-  - `providers/anthropic-provider.ts` — `claude-sonnet-4-6` через forced `tool_use` (tool name `record_receipt`, schema той самий що у Gemini).
+  - `providers/anthropic-provider.ts` — `claude-sonnet-5` через forced `tool_use` (tool name `record_receipt`, schema той самий що у Gemini), без sampling parameters і з `thinking: disabled`.
   - `prompts/receipt-prompt.ts` — `buildPrompt(ctx)` + `buildSchema(ctx)`. **Verbatim port** з legacy `Gemini._buildPrompt` / `_buildSchema` — драйф ловиться вручну при майбутніх змінах (документовано у README → "Drift discipline").
   - `deno.json` — imports map (тільки `@supabase/supabase-js` через `npm:`).
   - `README.md` — local serve, deploy, auth model, drift discipline.
-- **AI fallback contract** (mirror ADR-0011): `primary.parse` → catch → log → `fallback.parse` → catch → throw combined message. Fallback rate видно у Supabase function logs через `console.warn`.
+- **AI fallback contract** (ADR-0020): `primary.parse` → catch → log → `fallback.parse` → catch → throw combined message. Fallback rate видно у Supabase function logs через `console.warn`.
 - **Auth model**: `verify_jwt = true` (Supabase platform default) блокує un-authed callers перед нашим кодом. Далі `is_allowed_user()` RPC під JWT користувача → ~10ms перевірка через RLS-protected select. Якщо JWT валідний але email не у `app_users` → 403.
 - **Client port** (`web/src/shared/lib/parse-receipt/`): `IParseReceiptService { parse(input): Promise<ParsedReceipt> }` interface; `edgeFunctionParseReceiptService` адаптер викликає `supabase.functions.invoke('parse-receipt', { body })` і валідує відповідь через `ParsedReceiptSchema` (Zod з `@finance-tracker/domain`). Re-export через `shared/lib/dependencies.ts`.
 - **Архітектурні рішення**:

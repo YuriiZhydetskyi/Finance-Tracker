@@ -29,8 +29,7 @@ const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 // idle limit for Storage and DB I/O even on long receipts.
 const BULK_PROVIDER_TIMEOUT_MS = 130_000;
 const BULK_ANTHROPIC_MAX_TOKENS = 16_384;
-const FALLBACK_MODEL = 'claude-sonnet-4-6';
-const VERIFICATION_MODEL = 'claude-opus-4-7';
+const FALLBACK_MODEL = 'claude-sonnet-5';
 
 function requiredEnv(name: string): string {
   const value = Deno.env.get(name);
@@ -53,13 +52,6 @@ const fallback = new AnthropicProvider({
   model: FALLBACK_MODEL,
   timeoutMs: BULK_PROVIDER_TIMEOUT_MS,
   bulkMaxTokens: BULK_ANTHROPIC_MAX_TOKENS,
-});
-const verifier = new AnthropicProvider({
-  apiKey: requiredEnv('ANTHROPIC_API_KEY'),
-  model: VERIFICATION_MODEL,
-  timeoutMs: BULK_PROVIDER_TIMEOUT_MS,
-  bulkMaxTokens: BULK_ANTHROPIC_MAX_TOKENS,
-  temperature: null,
 });
 
 type Job = { msg_id: number; read_count: number; import_file_id: string };
@@ -151,26 +143,32 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
 
     if (seed) {
       const verificationRole = selectVerificationProviderRole(seed.provider);
-      const independentProvider = verificationRole === 'fallback' ? fallback : verifier;
-      const independent = await independentlyVerify(
-        job,
-        analysisRun,
-        base64,
-        ctx,
-        importFile.force_receipt,
-        seed.parsed,
-        independentProvider,
-        verificationRole === 'fallback'
-          ? anthropicSettings(FALLBACK_MODEL, 'primary_verifier')
-          : anthropicSettings(VERIFICATION_MODEL, 'fallback_verifier'),
-      );
-      parsed = independent.parsed;
-      independentMessage = independent.publicMessage;
-      if (independent.status === 'rejected' && seed.provider === 'gemini' && job.read_count < 3) {
-        throw new RetryableImportError(
-          'independent_check_required',
-          'Резервний результат не пройшов перевірку; наступна доставка звірить документ з окремою verification-моделлю.',
+      if (verificationRole === null) {
+        // A queued message created by an older deployment may carry an
+        // Anthropic seed intended for an Opus stage. The agreed two-model
+        // policy fails closed instead of making another provider call.
+        const message =
+          'Результат Claude не пройшов автоматичні перевірки; потрібна ручна перевірка.';
+        await completeException(job, 'receipt', 'validation', seed.parsed, message);
+        await finishAttempt(workerAttempt, 'succeeded', {
+          diagnosis_code: 'verification_exhausted',
+          public_message: message,
+          details: { seed_model: seed.model },
+        });
+        return { id: importFile.id, status: 'needs_review' };
+      } else {
+        const independent = await independentlyVerify(
+          job,
+          analysisRun,
+          base64,
+          ctx,
+          importFile.force_receipt,
+          seed.parsed,
+          fallback,
+          anthropicSettings(FALLBACK_MODEL, 'primary_verifier'),
         );
+        parsed = independent.parsed;
+        independentMessage = independent.publicMessage;
       }
     } else {
       parsed = await parseForDelivery(job, analysisRun, base64, ctx, importFile.force_receipt);
@@ -197,6 +195,7 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     if (
       !seed &&
       shouldQueueIndependentCheck(
+        selectParseProviderRole(job.read_count),
         job.read_count,
         firstArithmetic?.matches ?? false,
         firstEvidence.ok,
@@ -450,6 +449,7 @@ function anthropicSettings(model: string, role: string): Record<string, unknown>
     model,
     role,
     max_tokens: BULK_ANTHROPIC_MAX_TOKENS,
+    thinking: 'disabled',
   };
 }
 

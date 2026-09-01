@@ -56,7 +56,7 @@ vi.mock('../api/imports', () => ({
             delivery_attempt: 1,
             stage: 'independent_check',
             provider: 'anthropic',
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-5',
             status: 'accepted',
             settings: {},
             started_at: '2026-09-01T10:00:00Z',
