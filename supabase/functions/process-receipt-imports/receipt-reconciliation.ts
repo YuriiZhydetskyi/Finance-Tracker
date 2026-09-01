@@ -30,15 +30,16 @@ export type ReceiptReconciliation = {
 };
 
 export type ReceiptProviderRole = 'primary' | 'fallback';
+export type ReceiptVerificationKind = 'cross_provider' | 'same_provider_row_audit';
 
 export function selectParseProviderRole(deliveryAttempt: number): ReceiptProviderRole {
   return deliveryAttempt === 1 ? 'primary' : 'fallback';
 }
 
-export function selectVerificationProviderRole(
+export function selectVerificationKind(
   seedProvider: 'gemini' | 'anthropic',
-): Extract<ReceiptProviderRole, 'fallback'> | null {
-  return seedProvider === 'gemini' ? 'fallback' : null;
+): ReceiptVerificationKind {
+  return seedProvider === 'gemini' ? 'cross_provider' : 'same_provider_row_audit';
 }
 
 export function shouldLoadStoredVerificationSeed(deliveryAttempt: number): boolean {
@@ -57,15 +58,19 @@ export function shouldQueueIndependentCheck(
   arithmeticMatches: boolean,
   evidenceIsValid: boolean,
 ): boolean {
+  if (arithmeticMatches && evidenceIsValid) return false;
   return (
-    providerRole === 'primary' && deliveryAttempt < 3 && (!arithmeticMatches || !evidenceIsValid)
+    (providerRole === 'primary' && deliveryAttempt === 1) ||
+    (providerRole === 'fallback' && deliveryAttempt === 2)
   );
 }
 
 /**
- * Compares two independent readings of the same document. The secondary model
- * never receives the primary values, so arithmetic agreement is evidence rather
- * than a prompted target. Receipt identity fields remain controlled by primary.
+ * Compares two separately prompted readings of the same document. A Gemini to
+ * Sonnet check is cross-provider; a Sonnet fallback can instead receive the
+ * focused row-audit prompt. Neither path receives the first reading's values,
+ * so arithmetic agreement is evidence rather than a prompted target. Receipt
+ * identity fields remain controlled by the first reading.
  */
 export function reconcileIndependentReceipt(
   primary: BulkParsedDocument,
@@ -80,7 +85,7 @@ export function reconcileIndependentReceipt(
     return rejected(
       primary,
       'secondary_not_receipt',
-      'Незалежна перевірка не підтвердила, що документ є чеком.',
+      'Окрема перевірка не підтвердила, що документ є чеком.',
       before,
       after,
       evidence,
@@ -90,7 +95,7 @@ export function reconcileIndependentReceipt(
     return rejected(
       primary,
       'printed_total_disagreement',
-      'Дві незалежні перевірки прочитали різні підсумкові суми.',
+      'Два окремі читання документа дали різні підсумкові суми.',
       before,
       after,
       evidence,
@@ -100,7 +105,7 @@ export function reconcileIndependentReceipt(
     return rejected(
       primary,
       'metadata_disagreement',
-      'Дві незалежні перевірки не погодилися щодо реквізитів чека.',
+      'Два окремі читання документа не погодилися щодо реквізитів чека.',
       before,
       after,
       evidence,
@@ -110,7 +115,7 @@ export function reconcileIndependentReceipt(
     return rejected(
       primary,
       'secondary_evidence_invalid',
-      `Незалежна перевірка має непідтверджені рядки: ${evidence.issues[0]?.message ?? 'бракує доказів.'}`,
+      `Окрема перевірка має непідтверджені рядки: ${evidence.issues[0]?.message ?? 'бракує доказів.'}`,
       before,
       after,
       evidence,
@@ -137,10 +142,14 @@ export function reconcileIndependentReceipt(
     }
     const candidate = after ? repeatedRowGapCandidate(secondary.items, after) : null;
     if (candidate) {
+      const missingRows =
+        candidate.missingOccurrences === 1
+          ? 'ще одному рядку'
+          : `ще ${String(candidate.missingOccurrences)} рядкам`;
       return rejected(
         primary,
         'unresolved_repeated_row_candidate',
-        `Дві незалежні моделі не підтвердили повну арифметику. Різниця ${candidate.gap.toFixed(2)} дорівнює ще одному рядку «${candidate.productName}» за ${candidate.lineTotal.toFixed(2)}, але автоматично додавати невидимий рядок небезпечно.`,
+        `Окремий аудит не підтвердив повну арифметику. Різниця ${candidate.gap.toFixed(2)} дорівнює ${missingRows} «${candidate.productName}» за ${candidate.lineTotal.toFixed(2)}, але автоматично додавати непідтверджені рядки небезпечно.`,
         before,
         after,
         evidence,
@@ -150,7 +159,7 @@ export function reconcileIndependentReceipt(
     return rejected(
       primary,
       'secondary_arithmetic_mismatch',
-      'Незалежна перевірка також не змогла узгодити позиції з підсумком.',
+      'Окрема перевірка також не змогла узгодити позиції з підсумком.',
       before,
       after,
       evidence,
@@ -254,11 +263,13 @@ function hasMissingRepeatedRow(
   const primaryCounts = countItems(primary);
   const secondaryCounts = countItems(secondary);
   for (const [key, secondaryCount] of secondaryCounts) {
-    if (secondaryCount <= (primaryCounts.get(key) ?? 0)) continue;
+    const primaryCount = primaryCounts.get(key) ?? 0;
+    const additionalRows = secondaryCount - primaryCount;
+    if (additionalRows <= 0) continue;
     const item = secondary.find((candidate) => itemKey(candidate) === key);
     if (!item) continue;
     const lineTotal = round(item.qty * (item.unit_price_orig - (item.discount_orig ?? 0)), 2);
-    if (Math.abs(gap - lineTotal) <= 0.02) return true;
+    if (Math.abs(gap - round(additionalRows * lineTotal, 2)) <= 0.02) return true;
   }
   return false;
 }
@@ -309,12 +320,12 @@ function comparisonDetails(
 function diagnosisMessage(code: ReceiptDiagnosisCode): string {
   const messages: Record<ReceiptDiagnosisCode, string> = {
     tax_class_as_quantity:
-      'Незалежна перевірка підтвердила: VAT-клас у правій колонці було помилково прочитано як кількість.',
+      'Окрема перевірка підтвердила: VAT-клас у правій колонці було помилково прочитано як кількість.',
     missing_repeated_row:
-      'Незалежна перевірка знайшла окремий повторний рядок, пропущений під час першого аналізу.',
-    missing_discount: 'Незалежна перевірка знайшла пропущений рядок знижки або повернення.',
+      'Окрема перевірка знайшла повторні рядки, пропущені під час першого аналізу.',
+    missing_discount: 'Окрема перевірка знайшла пропущений рядок знижки або повернення.',
     corrected_items:
-      'Незалежна перевірка підтвердила інший набір видимих позицій, арифметика якого збігається.',
+      'Окрема перевірка підтвердила інший набір видимих позицій, арифметика якого збігається.',
     secondary_not_receipt: '',
     printed_total_disagreement: '',
     metadata_disagreement: '',
@@ -328,20 +339,49 @@ function diagnosisMessage(code: ReceiptDiagnosisCode): string {
 function repeatedRowGapCandidate(
   items: ParsedItem[],
   arithmetic: ReceiptArithmeticCheck,
-): { productName: string; occurrences: number; lineTotal: number; gap: number } | null {
+): {
+  productName: string;
+  occurrences: number;
+  missingOccurrences: number;
+  expectedOccurrences: number;
+  lineTotal: number;
+  gap: number;
+} | null {
   const gap = round(arithmetic.printedTotal - arithmetic.computedTotal, 2);
   if (gap <= 0) return null;
   const counts = countItems(items);
+  const candidates: Array<{
+    productName: string;
+    occurrences: number;
+    missingOccurrences: number;
+    expectedOccurrences: number;
+    lineTotal: number;
+    gap: number;
+  }> = [];
   for (const [key, occurrences] of counts) {
     if (occurrences < 2) continue;
     const item = items.find((candidate) => itemKey(candidate) === key);
     if (!item) continue;
     const lineTotal = round(item.qty * (item.unit_price_orig - (item.discount_orig ?? 0)), 2);
-    if (lineTotal > 0 && Math.abs(gap - lineTotal) <= 0.02) {
-      return { productName: item.product_name, occurrences, lineTotal, gap };
+    if (lineTotal <= 0) continue;
+    const missingOccurrences = Math.round(gap / lineTotal);
+    if (
+      missingOccurrences < 1 ||
+      missingOccurrences > 20 ||
+      Math.abs(gap - round(missingOccurrences * lineTotal, 2)) > 0.02
+    ) {
+      continue;
     }
+    candidates.push({
+      productName: item.product_name,
+      occurrences,
+      missingOccurrences,
+      expectedOccurrences: occurrences + missingOccurrences,
+      lineTotal,
+      gap,
+    });
   }
-  return null;
+  return candidates.length === 1 ? candidates[0]! : null;
 }
 
 function repairSingleRepeatedRow(

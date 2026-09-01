@@ -57,6 +57,8 @@ export type AiCallResult<T> = {
   trace: AiCallTrace;
 };
 
+export type BulkParseMode = 'standard' | 'verification';
+
 export type AiContext = {
   /** Allowed category names. Used to constrain category_suggestion via JSON schema enum. */
   categories: string[];

@@ -123,6 +123,8 @@ describe('AnthropicProvider — content block dispatch', () => {
     );
     const prompt = String(body.messages[0]!.content[1]!.text);
     expect(prompt).toContain('Count repeated identical rows separately');
+    expect(prompt).toContain('means twelve separate X items');
+    expect(prompt).toContain('once top-to-bottom and once bottom-to-top');
     expect(prompt).toContain('make one more visual sweep');
     expect(prompt).toContain('not permission to force agreement');
     expect(prompt).toContain('tax_class');
@@ -135,6 +137,20 @@ describe('AnthropicProvider — content block dispatch', () => {
       inputTokens: 140,
       outputTokens: 60,
     });
+  });
+
+  it('uses a dedicated bidirectional physical-row audit for verification calls', async () => {
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'), false, 'verification');
+
+    const prompt = String(lastRequestBody().messages[0]!.content[1]!.text);
+    expect(prompt).toContain('private physical-row ledger');
+    expect(prompt).toContain('top-to-bottom and once bottom-to-top');
+    expect(prompt).toContain('four X rows, then Y');
+    expect(prompt).toContain('means twelve separate X items');
+    expect(prompt).toContain('Never use the final total or arithmetic gap');
+    expect(prompt).not.toContain('Previous extraction');
   });
 
   it('allows the worker to expand the bulk output budget without changing interactive parsing', async () => {
