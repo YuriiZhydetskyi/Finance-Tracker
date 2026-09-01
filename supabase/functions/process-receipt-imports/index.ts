@@ -17,6 +17,7 @@ import {
 import {
   reconcileIndependentReceipt,
   selectParseProviderRole,
+  selectSeedStages,
   selectVerificationProviderRole,
   shouldQueueIndependentCheck,
   type ReceiptReconciliation,
@@ -406,10 +407,21 @@ async function invokeProvider(
 
 async function loadStoredVerificationSeed(fileId: string): Promise<StoredVerificationSeed | null> {
   try {
+    const { data: previousWorker, error: workerError } = await db
+      .from('receipt_import_attempts')
+      .select('diagnosis_code')
+      .eq('file_id', fileId)
+      .eq('stage', 'worker')
+      .neq('status', 'started')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (workerError) throw new Error('Previous worker attempt query failed');
+    const stages = selectSeedStages(previousWorker?.diagnosis_code ?? null);
     const { data, error } = await db
       .from('receipt_import_attempts')
       .select('provider, model, result_json')
-      .in('stage', ['primary_parse', 'fallback_parse', 'independent_check'])
+      .in('stage', stages)
       .eq('file_id', fileId)
       .in('status', ['succeeded', 'rejected'])
       .not('result_json', 'is', null)

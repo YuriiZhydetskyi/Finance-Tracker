@@ -41,6 +41,12 @@ export function selectVerificationProviderRole(
   return seedProvider === 'gemini' ? 'fallback' : 'verifier';
 }
 
+export function selectSeedStages(previousWorkerDiagnosis: string | null): string[] {
+  return previousWorkerDiagnosis === 'independent_check_required'
+    ? ['primary_parse', 'fallback_parse', 'independent_check']
+    : ['primary_parse', 'fallback_parse'];
+}
+
 export function shouldQueueIndependentCheck(
   deliveryAttempt: number,
   arithmeticMatches: boolean,
