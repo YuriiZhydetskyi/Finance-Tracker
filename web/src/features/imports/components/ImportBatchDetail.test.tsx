@@ -97,5 +97,6 @@ describe('ImportBatchDetail attempt history', () => {
     expect(screen.getByText(/Надруковано: 27.50 · позиції: 27.50/)).toBeInTheDocument();
     expect(screen.getByText(/VAT-клас було прочитано як кількість/)).toBeInTheDocument();
     expect(screen.getByText('VAT-клас було виправлено.')).toBeInTheDocument();
+    expect(screen.getByText('Токени: вхід 100 · вихід 50')).toBeInTheDocument();
   });
 });

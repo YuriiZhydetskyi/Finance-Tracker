@@ -12,15 +12,22 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
   також не проходить gates, файл переходить у ручну перевірку; третьої AI-моделі немає.
 - Детерміновані gates у `domain.ts` та `receipt-reconciliation.ts` вирішують, чи можна auto-save
   чек. Відповідь, обірвана через token limit, завжди вважається помилкою.
+- Anthropic використовує компактні aliases лише у provider wire format; перед runtime validation
+  вони розгортаються назад у canonical `BulkParsedDocument`.
+- Після `max_tokens` або Anthropic request timeout worker читає довгий чек bounded chunks по 40
+  фінансових рядків із дворядковим overlap. Кожний `chunk_parse` зберігається в attempt journal
+  того самого queue message; merge дозволений лише після exact overlap, metadata, evidence,
+  arithmetic та article-count gates.
 - Кожний worker/provider stage записується в `receipt_import_attempts`; batch detail показує цей
   журнал разом з оригіналом файла.
 - `finalize_receipt_import` зберігає кілька таблиць в одній Postgres-транзакції.
 - Точний збіг date/time/currency/total автоматично прив’язується до наявного чека; ширші
   duplicate-кандидати лишаються на ручну перевірку.
-- Retryable failure знову стає видимим; третя помилка переходить у exception queue.
+- Звичайний retryable failure знову стає видимим; третя звичайна помилка переходить у exception
+  queue. Chunk protocol має окрему safety-межу 12 доставок.
 - Кожен provider request має timeout 130 секунд, але providers не виконуються послідовно в одному
-  invocation. Anthropic bulk response має budget 16384 output tokens; це лишає запас до
-  150-секундного request idle limit для Storage і DB I/O.
+  invocation. Anthropic bulk response має компактний wire format і budget 20000 output tokens;
+  більші результати переходять у кілька bounded queue deliveries замість одного довшого request.
 
 Runtime secrets: `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` і `RECEIPT_IMPORT_CRON_TOKEN`. Supabase
 інжектить `SUPABASE_URL` та `SUPABASE_SERVICE_ROLE_KEY` для доступу воркера до БД. Handler точно

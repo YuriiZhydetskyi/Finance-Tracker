@@ -121,7 +121,7 @@ describe('AnthropicProvider — content block dispatch', () => {
       items: { required: string[] };
     };
     expect(items.items.required).toEqual(
-      expect.arrayContaining(['source_ordinal', 'raw_text', 'qty_evidence', 'tax_class']),
+      expect.arrayContaining(['n', 'q', 'u', 'o', 'r', 'e', 't']),
     );
     const prompt = String(body.messages[0]!.content[1]!.text);
     expect(prompt).toContain('Count repeated identical rows separately');
@@ -131,6 +131,8 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(prompt).toContain('make one more visual sweep');
     expect(prompt).toContain('not permission to force agreement');
     expect(prompt).toContain('tax_class');
+    expect(prompt).toContain('n=product_name');
+    expect(prompt).toContain('standalone multiplier line can be printed BETWEEN two product lines');
     expect(prompt).not.toContain('trusted printed final total');
     expect(prompt).not.toContain('Previous extraction');
     expect(result.trace).toMatchObject({
@@ -140,6 +142,120 @@ describe('AnthropicProvider — content block dispatch', () => {
       inputTokens: 140,
       outputTokens: 60,
     });
+  });
+
+  it('expands compact Anthropic item aliases before returning the canonical bulk result', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...sampleToolUse,
+          content: [
+            {
+              type: 'tool_use',
+              name: 'record_receipt',
+              input: {
+                document_kind: 'receipt',
+                classification_reason: 'Receipt',
+                store: 'EDEKA',
+                date: '2026-07-01',
+                currency: 'EUR',
+                total_orig: 3.58,
+                items: [
+                  {
+                    n: 'Milk',
+                    p: null,
+                    q: 2,
+                    u: 1.79,
+                    c: null,
+                    d: 0,
+                    o: 1,
+                    r: '2 x 1,79 / Milk 3,58',
+                    k: 'item',
+                    e: 'explicit_multiplier',
+                    l: 3.58,
+                    t: '1',
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    const result = await provider.parseBulkDetailed('PDF', ctx('application/pdf'));
+
+    expect(result.value.items).toEqual([
+      expect.objectContaining({
+        product_name: 'Milk',
+        qty: 2,
+        unit_price_orig: 1.79,
+        source_ordinal: 1,
+        qty_evidence: 'explicit_multiplier',
+      }),
+    ]);
+  });
+
+  it('requests and expands a bounded absolute-ordinal chunk', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...sampleToolUse,
+          content: [
+            {
+              type: 'tool_use',
+              name: 'record_receipt',
+              input: {
+                document_kind: 'receipt',
+                classification_reason: 'Receipt',
+                store: 'EDEKA',
+                date: '2026-08-14',
+                currency: 'EUR',
+                total_orig: 100,
+                chunk_start_ordinal: 39,
+                has_more: true,
+                items: [
+                  {
+                    n: 'Milk',
+                    p: null,
+                    q: 1,
+                    u: 1,
+                    c: null,
+                    d: 0,
+                    o: 39,
+                    r: 'Milk 1,00',
+                    k: 'item',
+                    e: 'implicit_one',
+                    l: 1,
+                    t: null,
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    const result = await provider.parseBulkChunkDetailed(
+      'PDF',
+      ctx('application/pdf'),
+      false,
+      39,
+      40,
+    );
+
+    const body = lastRequestBody();
+    expect(body.tools[0]!.input_schema.required).toEqual(
+      expect.arrayContaining(['chunk_start_ordinal', 'has_more']),
+    );
+    expect(String(body.messages[0]!.content[1]!.text)).toContain('source_ordinal 39 through 78');
+    expect(result.value).toMatchObject({ chunk_start_ordinal: 39, has_more: true });
+    expect(result.value.items[0]).toMatchObject({ product_name: 'Milk', source_ordinal: 39 });
   });
 
   it('uses a dedicated bidirectional physical-row audit for verification calls', async () => {
@@ -158,11 +274,11 @@ describe('AnthropicProvider — content block dispatch', () => {
   });
 
   it('allows the worker to expand the bulk output budget without changing interactive parsing', async () => {
-    const provider = new AnthropicProvider({ apiKey: 'k', bulkMaxTokens: 16_384 });
+    const provider = new AnthropicProvider({ apiKey: 'k', bulkMaxTokens: 20_000 });
 
     await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
 
-    expect(lastRequestBody().max_tokens).toBe(16_384);
+    expect(lastRequestBody().max_tokens).toBe(20_000);
   });
 
   it('uses Sonnet 5 without sampling parameters or adaptive thinking', async () => {

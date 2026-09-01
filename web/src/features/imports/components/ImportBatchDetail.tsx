@@ -219,6 +219,10 @@ const DIAGNOSIS_LABELS: Record<string, string> = {
   secondary_arithmetic_mismatch: 'повторна арифметика теж не збіглася',
   unresolved_repeated_row_candidate: 'можливо пропущено ще один повторний рядок',
   secondary_evidence_invalid: 'незалежному результату бракує доказів',
+  misattached_multiplier: 'multiplier було переприв’язано до правильного сусіднього товару',
+  long_receipt_chunk_in_progress: 'довгий чек обробляється частинами',
+  long_receipt_chunk_complete: 'отримано фінальну частину довгого чека',
+  long_receipt_chunk_limit: 'довгий чек не вмістився у дозволену кількість частин',
   independent_check_required: 'результат очікує незалежної перевірки',
   incomplete_response: 'відповідь моделі обірвалася',
   missing_output: 'модель не повернула структурованих даних',
@@ -251,6 +255,12 @@ function AttemptHistory({ attempts }: { attempts: ImportAttempt[] }) {
                       {attempt.provider ?? 'provider'}
                       {attempt.model ? ` · ${attempt.model}` : ''}
                       {attempt.stop_reason ? ` · stop: ${attempt.stop_reason}` : ''}
+                    </p>
+                  )}
+                  {(attempt.input_tokens != null || attempt.output_tokens != null) && (
+                    <p>
+                      Токени: вхід {attempt.input_tokens ?? '—'} · вихід{' '}
+                      {attempt.output_tokens ?? '—'}
                     </p>
                   )}
                   {attempt.printed_total != null && (

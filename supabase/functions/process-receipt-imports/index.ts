@@ -8,14 +8,25 @@ import type {
   AiContext,
   BulkParseMode,
   BulkParsedDocument,
+  BulkReceiptChunk,
 } from '../parse-receipt/types.ts';
 import {
   auditReceiptEvidence,
   checkReceiptArticleCount,
   checkReceiptArithmetic,
   prepareReceipt,
+  reassociateMisattachedMultiplier,
   validateBulkDocument,
 } from './domain.ts';
+import {
+  LONG_RECEIPT_CHUNK_SIZE,
+  MAX_RECEIPT_IMPORT_DELIVERIES,
+  isLongReceiptRetryCode,
+  mergeBulkReceiptChunks,
+  nextChunkStart,
+  shouldStartLongReceiptChunks,
+  validateBulkReceiptChunk,
+} from './long-receipt.ts';
 import {
   reconcileIndependentReceipt,
   selectParseProviderRole,
@@ -31,7 +42,7 @@ const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 // One provider runs per queue delivery, leaving room below the hosted request
 // idle limit for Storage and DB I/O even on long receipts.
 const BULK_PROVIDER_TIMEOUT_MS = 130_000;
-const BULK_ANTHROPIC_MAX_TOKENS = 16_384;
+const BULK_ANTHROPIC_MAX_TOKENS = 20_000;
 const FALLBACK_MODEL = 'claude-sonnet-5';
 
 function requiredEnv(name: string): string {
@@ -64,7 +75,12 @@ type ImportFile = {
   mime_type: string;
   force_receipt: boolean;
 };
-type AttemptStage = 'primary_parse' | 'fallback_parse' | 'independent_check' | 'worker';
+type AttemptStage =
+  | 'primary_parse'
+  | 'fallback_parse'
+  | 'independent_check'
+  | 'chunk_parse'
+  | 'worker';
 type AttemptStatus = 'succeeded' | 'accepted' | 'rejected' | 'failed';
 type AttemptHandle = { id: number; startedAt: number };
 type BulkProvider = {
@@ -76,8 +92,22 @@ type BulkProvider = {
     mode?: BulkParseMode,
   ): Promise<AiCallResult<BulkParsedDocument>>;
 };
+type ChunkedBulkProvider = BulkProvider & {
+  parseBulkChunkDetailed(
+    imageBase64: string,
+    ctx: AiContext,
+    forceReceipt: boolean,
+    startOrdinal: number,
+    maxItems: number,
+  ): Promise<AiCallResult<BulkReceiptChunk>>;
+};
 type ProviderInvocation = {
   parsed: BulkParsedDocument;
+  trace: AiCallTrace;
+  attempt: AttemptHandle | null;
+};
+type ChunkInvocation = {
+  chunk: BulkReceiptChunk;
   trace: AiCallTrace;
   attempt: AttemptHandle | null;
 };
@@ -115,6 +145,7 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
   const workerAttempt = await startAttempt(job, analysisRun, 'worker', null, {
     queue_read_count: job.read_count,
   });
+  let longReceiptMode = false;
   try {
     const { data: file, error: fileError } = await db
       .from('receipt_import_files')
@@ -140,13 +171,25 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       mimeType: importFile.mime_type,
     };
     const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-    const seed = shouldLoadStoredVerificationSeed(job.read_count)
-      ? await loadStoredVerificationSeed(importFile.id, job.msg_id)
-      : null;
+    longReceiptMode = await shouldUseLongReceiptChunks(importFile.id, job.msg_id);
+    const seed =
+      !longReceiptMode && shouldLoadStoredVerificationSeed(job.read_count)
+        ? await loadStoredVerificationSeed(importFile.id, job.msg_id)
+        : null;
     let parsed: BulkParsedDocument;
-    let independentMessage: string | null = null;
+    const diagnosticMessages: string[] = [];
 
-    if (seed) {
+    if (longReceiptMode) {
+      const chunked = await parseLongReceipt(
+        job,
+        analysisRun,
+        base64,
+        ctx,
+        importFile.force_receipt,
+      );
+      parsed = chunked.parsed;
+      diagnosticMessages.push(chunked.message);
+    } else if (seed) {
       const verificationKind = selectVerificationKind(seed.provider);
       const independent = await independentlyVerify(
         job,
@@ -159,10 +202,19 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
         anthropicSettings(FALLBACK_MODEL, verificationKind),
       );
       parsed = independent.parsed;
-      independentMessage = independent.publicMessage;
+      diagnosticMessages.push(independent.publicMessage);
     } else {
       parsed = await parseForDelivery(job, analysisRun, base64, ctx, importFile.force_receipt);
     }
+
+    const multiplierReassociation = reassociateMisattachedMultiplier(parsed);
+    parsed = multiplierReassociation.parsed;
+    if (multiplierReassociation.applied) {
+      diagnosticMessages.push(
+        'Multiplier було доказово переприв’язано до сусідньої позиції; усі рядки й підсумок збіглися.',
+      );
+    }
+    const diagnosticMessage = diagnosticMessages.length > 0 ? diagnosticMessages.join(' ') : null;
 
     if (parsed.document_kind !== 'receipt') {
       const message = parsed.classification_reason || 'Потрібна перевірка документа.';
@@ -203,13 +255,16 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     if (!finalEvidence.ok) {
       const message = joinReviewMessages(
         finalEvidence.issues[0]?.message ?? 'Не вдалося підтвердити рядки чека.',
-        independentMessage,
+        diagnosticMessage,
       );
       await completeException(job, 'receipt', 'validation', parsed, message);
       await finishAttempt(workerAttempt, 'succeeded', {
         diagnosis_code: finalEvidence.issues[0]?.code ?? 'evidence_invalid',
         public_message: message,
-        details: { evidence_issue_codes: finalEvidence.issues.map((issue) => issue.code) },
+        details: {
+          evidence_issue_codes: finalEvidence.issues.map((issue) => issue.code),
+          multiplier_reassociation: multiplierReassociation.details,
+        },
       });
       return { id: importFile.id, status: 'needs_review' };
     }
@@ -226,7 +281,7 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       signed?.signedUrl ?? null,
     );
     if (!prepared.ok) {
-      const message = joinReviewMessages(prepared.reason, independentMessage);
+      const message = joinReviewMessages(prepared.reason, diagnosticMessage);
       await completeException(job, 'receipt', 'validation', parsed, message);
       await finishAttempt(workerAttempt, 'succeeded', {
         diagnosis_code: 'validation',
@@ -248,8 +303,11 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
         ? String(finalResult.status)
         : 'saved';
     await finishAttempt(workerAttempt, 'succeeded', {
-      diagnosis_code: status,
-      public_message: independentMessage,
+      diagnosis_code: multiplierReassociation.applied ? 'misattached_multiplier' : status,
+      public_message: diagnosticMessage,
+      details: multiplierReassociation.details
+        ? { multiplier_reassociation: multiplierReassociation.details }
+        : null,
     });
     return { id: importFile.id, status };
   } catch (error) {
@@ -263,9 +321,22 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       public_message: message,
       ...traceFields(error instanceof AiProviderError ? error.trace : null),
     });
+    const shouldStartLongReceiptFallback =
+      error instanceof AiProviderError &&
+      error.trace.provider === 'anthropic' &&
+      (error.trace.stopReason === 'max_tokens' || error.code === 'timeout');
+    const usesExtendedDeliveryBudget =
+      (error instanceof RetryableImportError && isLongReceiptRetryCode(error.code)) ||
+      shouldStartLongReceiptFallback ||
+      (longReceiptMode && error instanceof AiProviderError);
+    const deliveryLimit = usesExtendedDeliveryBudget ? MAX_RECEIPT_IMPORT_DELIVERIES : 3;
+    const canUseAnotherDelivery = job.read_count < deliveryLimit;
     const schedulesNextStage =
-      error instanceof RetryableImportError ||
-      (error instanceof AiProviderError && job.read_count === 1);
+      canUseAnotherDelivery &&
+      (error instanceof RetryableImportError ||
+        (error instanceof AiProviderError && job.read_count === 1) ||
+        shouldStartLongReceiptFallback ||
+        (longReceiptMode && error instanceof AiProviderError));
     const scheduled = schedulesNextStage
       ? await db.rpc('schedule_receipt_import_retry', {
           p_file_id: job.import_file_id,
@@ -283,7 +354,8 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
         p_error_message: message,
       });
     }
-    return { id: job.import_file_id, status: job.read_count >= 3 ? 'needs_review' : 'queued' };
+    const remainsQueued = (scheduled && !scheduled.error) || job.read_count < 3;
+    return { id: job.import_file_id, status: remainsQueued ? 'queued' : 'needs_review' };
   }
 }
 
@@ -310,6 +382,141 @@ async function parseForDelivery(
       : anthropicSettings(FALLBACK_MODEL, 'fallback'),
   );
   return result.parsed;
+}
+
+async function shouldUseLongReceiptChunks(
+  fileId: string,
+  queueMessageId: number,
+): Promise<boolean> {
+  const { data, error } = await db
+    .from('receipt_import_attempts')
+    .select('stage, diagnosis_code, stop_reason')
+    .eq('file_id', fileId)
+    .eq('queue_message_id', queueMessageId)
+    .in('stage', ['fallback_parse', 'independent_check', 'chunk_parse'])
+    .order('id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error('Attempt query failed');
+  return shouldStartLongReceiptChunks(data?.stage, data?.diagnosis_code, data?.stop_reason);
+}
+
+async function parseLongReceipt(
+  job: Job,
+  analysisRun: number,
+  base64: string,
+  ctx: AiContext,
+  forceReceipt: boolean,
+): Promise<{ parsed: BulkParsedDocument; message: string }> {
+  const storedChunks = await loadStoredReceiptChunks(job.import_file_id, job.msg_id);
+  const startOrdinal = nextChunkStart(storedChunks);
+  const invocation = await invokeChunkProvider(
+    job,
+    analysisRun,
+    base64,
+    ctx,
+    forceReceipt,
+    startOrdinal,
+  );
+  const chunks = [...storedChunks, invocation.chunk];
+  const endOrdinal = invocation.chunk.items.at(-1)?.source_ordinal ?? startOrdinal;
+  if (invocation.chunk.has_more) {
+    if (job.read_count >= MAX_RECEIPT_IMPORT_DELIVERIES) {
+      throw new RetryableImportError(
+        'long_receipt_chunk_limit',
+        `Довгий чек не завершився після ${String(MAX_RECEIPT_IMPORT_DELIVERIES)} фонових доставок; останній підтверджений рядок — ${String(endOrdinal)}. Потрібна ручна перевірка.`,
+      );
+    }
+    throw new RetryableImportError(
+      'long_receipt_chunk_in_progress',
+      `Довгий чек: підтверджено рядки ${String(startOrdinal)}–${String(endOrdinal)}; наступна фонова доставка продовжить із перекриттям.`,
+    );
+  }
+  const parsed = mergeBulkReceiptChunks(chunks);
+  return {
+    parsed,
+    message: `Довгий чек зібрано з ${String(chunks.length)} частин; підтверджено ${String(parsed.items.length)} фінансових рядків.`,
+  };
+}
+
+async function loadStoredReceiptChunks(
+  fileId: string,
+  queueMessageId: number,
+): Promise<BulkReceiptChunk[]> {
+  const { data, error } = await db
+    .from('receipt_import_attempts')
+    .select('settings, result_json')
+    .eq('file_id', fileId)
+    .eq('queue_message_id', queueMessageId)
+    .eq('stage', 'chunk_parse')
+    .eq('status', 'succeeded')
+    .not('result_json', 'is', null)
+    .order('id', { ascending: true });
+  if (error) throw new Error('Attempt query failed');
+  return (data ?? []).map((attempt) => {
+    if (!attempt.settings || typeof attempt.settings !== 'object') {
+      throw new Error('AI result stored chunk metadata is invalid');
+    }
+    const settings = attempt.settings as Record<string, unknown>;
+    const requestedStart = Number(settings.chunk_start_ordinal);
+    const maxItems = Number(settings.chunk_max_items);
+    if (!Number.isInteger(requestedStart) || !Number.isInteger(maxItems)) {
+      throw new Error('AI result stored chunk metadata is invalid');
+    }
+    return validateBulkReceiptChunk(attempt.result_json, requestedStart, maxItems);
+  });
+}
+
+async function invokeChunkProvider(
+  job: Job,
+  analysisRun: number,
+  base64: string,
+  ctx: AiContext,
+  forceReceipt: boolean,
+  startOrdinal: number,
+): Promise<ChunkInvocation> {
+  const settings = {
+    ...anthropicSettings(FALLBACK_MODEL, 'long_receipt_chunk'),
+    chunk_start_ordinal: startOrdinal,
+    chunk_max_items: LONG_RECEIPT_CHUNK_SIZE,
+  };
+  const attempt = await startAttempt(job, analysisRun, 'chunk_parse', fallback.name, settings);
+  try {
+    const result = await (fallback as ChunkedBulkProvider).parseBulkChunkDetailed(
+      base64,
+      ctx,
+      forceReceipt,
+      startOrdinal,
+      LONG_RECEIPT_CHUNK_SIZE,
+    );
+    const chunk = validateBulkReceiptChunk(result.value, startOrdinal, LONG_RECEIPT_CHUNK_SIZE);
+    const endOrdinal = chunk.items.at(-1)?.source_ordinal ?? startOrdinal;
+    const message = chunk.has_more
+      ? `Довгий чек: збережено частину ${String(startOrdinal)}–${String(endOrdinal)}.`
+      : `Довгий чек: збережено фінальну частину ${String(startOrdinal)}–${String(endOrdinal)}.`;
+    await finishAttempt(attempt, 'succeeded', {
+      ...traceFields(result.trace),
+      diagnosis_code: chunk.has_more
+        ? 'long_receipt_chunk_in_progress'
+        : 'long_receipt_chunk_complete',
+      public_message: message,
+      details: {
+        chunk_start_ordinal: startOrdinal,
+        chunk_end_ordinal: endOrdinal,
+        chunk_item_count: chunk.items.length,
+        has_more: chunk.has_more,
+      },
+      result_json: chunk,
+    });
+    return { chunk, trace: result.trace, attempt };
+  } catch (error) {
+    await finishAttempt(attempt, 'failed', {
+      diagnosis_code: error instanceof AiProviderError ? error.code : 'invalid_result',
+      public_message: providerPublicMessage(error),
+      ...traceFields(error instanceof AiProviderError ? error.trace : null),
+    });
+    throw error;
+  }
 }
 
 async function independentlyVerify(
@@ -645,6 +852,9 @@ function providerPublicMessage(error: unknown): string {
     return 'Незалежна модель повернула невалідний результат.';
   }
   if (error.code === 'incomplete_response') {
+    if (error.trace.stopReason === 'max_tokens') {
+      return `Відповідь ${error.trace.provider} досягла ліміту max_tokens; частковий структурований результат не прийнято.`;
+    }
     return `Відповідь ${error.trace.provider} обірвалася (${error.trace.stopReason ?? 'unknown'}).`;
   }
   if (error.code === 'missing_output' || error.code === 'invalid_json') {

@@ -4,6 +4,7 @@ import {
   checkReceiptArticleCount,
   checkReceiptArithmetic,
   prepareReceipt,
+  reassociateMisattachedMultiplier,
   validateBulkDocument,
 } from './domain.ts';
 
@@ -290,4 +291,116 @@ describe('bulk import domain gate', () => {
 
     expect(evidence.issues.map((issue) => issue.code)).toContain('article_count_evidence_mismatch');
   });
+
+  it('reassociates an EDEKA between-row multiplier only when every independent gate becomes exact', () => {
+    const receipt = validateBulkDocument({
+      document_kind: 'receipt',
+      classification_reason: 'EDEKA receipt',
+      store: 'EDEKA Straßfeld',
+      store_address: 'Aachener Str. 537, 50226 Frechen',
+      date: '2026-07-01',
+      time: '21:59',
+      currency: 'EUR',
+      total_orig: 15.27,
+      total_raw_text: 'SUMME € 15,27',
+      article_count: 8,
+      article_count_raw_text: 'Posten: 8',
+      items: [
+        row('EIFEL Eier FLH', 1, 3.89, 1, 'EIFEL Eier FLH 3,89 A', 3.89),
+        row(
+          'Lie.Urk.Prot.Brot',
+          2,
+          1.79,
+          2,
+          'Lie.Urk.Prot.Brot 2,99 A / 2 x 1,79 €',
+          2.99,
+          'explicit_multiplier',
+        ),
+        row('Landl.Frischmilch', 1, 3.58, 3, 'Landl.Frischmilch 3,58 A', 3.58),
+        row('Pfand', 2, 0.15, 4, 'Pfand 0,15 € x 2 0,30*A', 0.3, 'explicit_multiplier', {
+          row_kind: 'deposit',
+        }),
+        row('Landl.Frischmilch', 1, -1.78, 5, 'Preisänderung -1,78', -1.78, 'implicit_one', {
+          row_kind: 'discount',
+        }),
+        row('Lysell Deut.Kaviar', 1, 3.79, 6, 'Lysell Deut.Kaviar 3,79 A', 3.79),
+        row('Marmorini Rose', 1, 4.99, 7, 'Marmorini Rose 4,99 A', 4.99),
+        row('Marmorini Rose', 1, -2.49, 8, 'Preisänderung -2,49', -2.49, 'implicit_one', {
+          row_kind: 'discount',
+        }),
+      ],
+    });
+    expect(auditReceiptEvidence(receipt).issues[0]?.message).toBe(
+      'Позиція 2: 2.00 × 1.79 = 3.58, але в рядку надруковано 2.99.',
+    );
+
+    const repaired = reassociateMisattachedMultiplier(receipt);
+
+    expect(repaired.applied).toBe(true);
+    expect(repaired.parsed.items[1]).toMatchObject({
+      product_name: 'Lie.Urk.Prot.Brot',
+      qty: 1,
+      unit_price_orig: 2.99,
+      qty_evidence: 'implicit_one',
+      raw_text: 'Lie.Urk.Prot.Brot 2,99 A',
+    });
+    expect(repaired.parsed.items[2]).toMatchObject({
+      product_name: 'Landl.Frischmilch',
+      qty: 2,
+      unit_price_orig: 1.79,
+      qty_evidence: 'explicit_multiplier',
+      raw_text: '2 x 1,79 € / Landl.Frischmilch 3,58 A',
+    });
+    expect(checkReceiptArithmetic(repaired.parsed)).toMatchObject({
+      computedTotal: 15.27,
+      printedTotal: 15.27,
+      matches: true,
+    });
+    expect(checkReceiptArticleCount(repaired.parsed)).toMatchObject({ matches: true });
+    expect(auditReceiptEvidence(repaired.parsed)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('does not move a multiplier when the reassociation is not a unique full-receipt solution', () => {
+    const receipt = validateBulkDocument({
+      ...parsed,
+      total_orig: 8,
+      total_raw_text: 'SUMME 8,00',
+      items: [
+        row('Bread', 2, 1.5, 1, 'Bread 2,00 / 2 x 1,50', 2, 'explicit_multiplier'),
+        row('Milk', 1, 3, 2, 'Milk 3,00', 3),
+      ],
+    });
+
+    const repaired = reassociateMisattachedMultiplier(receipt);
+
+    expect(repaired.applied).toBe(false);
+    expect(repaired.parsed).toBe(receipt);
+  });
 });
+
+function row(
+  productName: string,
+  qty: number,
+  unitPrice: number,
+  ordinal: number,
+  rawText: string,
+  printedTotal: number,
+  qtyEvidence: 'implicit_one' | 'explicit_multiplier' = 'implicit_one',
+  extras: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    product_name: productName,
+    product_code: null,
+    qty,
+    unit_price_orig: unitPrice,
+    category_suggestion: null,
+    discount_orig: 0,
+    source_ordinal: ordinal,
+    raw_text: rawText,
+    row_kind: 'item',
+    qty_evidence: qtyEvidence,
+    printed_line_total_orig: printedTotal,
+    tax_class: '1',
+    ...extras,
+  };
+}
