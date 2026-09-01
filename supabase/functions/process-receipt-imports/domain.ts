@@ -44,6 +44,12 @@ export type ReceiptEvidenceAudit = {
   issues: ReceiptEvidenceIssue[];
 };
 
+export type MultiplierReassociation = {
+  parsed: BulkParsedDocument;
+  applied: boolean;
+  details: Record<string, unknown> | null;
+};
+
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_TIME = /^\d{2}:\d{2}(:\d{2})?$/;
 
@@ -218,7 +224,7 @@ export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenc
         issues.push({
           code: 'line_total_mismatch',
           itemIndex,
-          message: `Розрахунок позиції ${String(itemIndex + 1)} не збігається з надрукованою сумою рядка.`,
+          message: `Позиція ${String(itemIndex + 1)}: ${formatEvidenceAmount(item.qty)} × ${formatEvidenceAmount(item.unit_price_orig - (item.discount_orig ?? 0))} = ${formatEvidenceAmount(computed)}, але в рядку надруковано ${formatEvidenceAmount(item.printed_line_total_orig)}.`,
         });
       }
     }
@@ -246,6 +252,129 @@ export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenc
   }
 
   return { ok: issues.length === 0, issues };
+}
+
+/**
+ * Some EDEKA layouts print `N x unit` between the previous product and the
+ * product whose total follows. Repair only the unique adjacent reassociation
+ * that makes both line totals, the full receipt total and all evidence exact.
+ */
+export function reassociateMisattachedMultiplier(
+  parsed: BulkParsedDocument,
+): MultiplierReassociation {
+  if (parsed.document_kind !== 'receipt') return { parsed, applied: false, details: null };
+  const candidates: Array<{
+    parsed: BulkParsedDocument;
+    details: Record<string, unknown>;
+  }> = [];
+  for (let index = 0; index < parsed.items.length - 1; index += 1) {
+    const current = parsed.items[index]!;
+    const next = parsed.items[index + 1]!;
+    const repaired = reassignMultiplierToNextRow(current, next);
+    if (!repaired) continue;
+    const items = [...parsed.items];
+    items[index] = repaired.current;
+    items[index + 1] = repaired.next;
+    const candidate = { ...parsed, items };
+    const arithmetic = checkReceiptArithmetic(candidate);
+    const articleCount = checkReceiptArticleCount(candidate);
+    const evidence = auditReceiptEvidence(candidate);
+    if (!arithmetic?.matches || !evidence.ok || (articleCount && !articleCount.matches)) continue;
+    candidates.push({
+      parsed: candidate,
+      details: {
+        from_source_ordinal: current.source_ordinal ?? index + 1,
+        to_source_ordinal: next.source_ordinal ?? index + 2,
+        previous_product: current.product_name,
+        corrected_product: next.product_name,
+        qty: current.qty,
+        unit_price_orig: current.unit_price_orig,
+        corrected_line_total_orig: next.printed_line_total_orig,
+      },
+    });
+  }
+  if (candidates.length !== 1) return { parsed, applied: false, details: null };
+  return { parsed: candidates[0]!.parsed, applied: true, details: candidates[0]!.details };
+}
+
+function reassignMultiplierToNextRow(
+  current: ParsedItem,
+  next: ParsedItem,
+): { current: ParsedItem; next: ParsedItem } | null {
+  if (
+    current.row_kind !== 'item' ||
+    next.row_kind !== 'item' ||
+    current.qty_evidence !== 'explicit_multiplier' ||
+    next.qty_evidence !== 'implicit_one' ||
+    !Number.isInteger(current.qty) ||
+    current.qty <= 1 ||
+    Math.abs(next.qty - 1) > 0.001 ||
+    (current.discount_orig ?? 0) !== 0 ||
+    (next.discount_orig ?? 0) !== 0 ||
+    current.unit_price_orig <= 0 ||
+    current.printed_line_total_orig == null ||
+    next.printed_line_total_orig == null ||
+    current.printed_line_total_orig <= 0 ||
+    next.printed_line_total_orig <= 0
+  ) {
+    return null;
+  }
+  const multiplierTotal = round(current.qty * current.unit_price_orig, 2);
+  if (
+    Math.abs(multiplierTotal - round(next.printed_line_total_orig, 2)) > 0.02 ||
+    Math.abs(multiplierTotal - round(current.printed_line_total_orig, 2)) <= 0.02 ||
+    Math.abs(round(next.unit_price_orig, 2) - round(next.printed_line_total_orig, 2)) > 0.02
+  ) {
+    return null;
+  }
+  const fragments = splitEvidenceFragments(current.raw_text);
+  const multiplierFragments = fragments.filter((fragment) =>
+    hasExplicitMultiplier(fragment, current.qty),
+  );
+  const productFragments = fragments.filter(
+    (fragment) =>
+      !hasExplicitMultiplier(fragment, current.qty) &&
+      amountAppearsInText(fragment, current.printed_line_total_orig!) &&
+      normalize(fragment).includes(normalize(current.product_name)),
+  );
+  if (multiplierFragments.length !== 1 || productFragments.length !== 1 || !next.raw_text) {
+    return null;
+  }
+  if (
+    !amountAppearsInText(next.raw_text, next.printed_line_total_orig) ||
+    !normalize(next.raw_text).includes(normalize(next.product_name))
+  ) {
+    return null;
+  }
+  const multiplierFragment = multiplierFragments[0]!;
+  if (!amountAppearsInText(multiplierFragment, current.unit_price_orig)) return null;
+  return {
+    current: {
+      ...current,
+      qty: 1,
+      unit_price_orig: current.printed_line_total_orig,
+      qty_evidence: 'implicit_one',
+      raw_text: productFragments[0]!,
+    },
+    next: {
+      ...next,
+      qty: current.qty,
+      unit_price_orig: current.unit_price_orig,
+      qty_evidence: 'explicit_multiplier',
+      raw_text: `${multiplierFragment} / ${next.raw_text}`,
+    },
+  };
+}
+
+function splitEvidenceFragments(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(/\s*(?:\/|\||\r?\n)\s*/u)
+    .map((fragment) => fragment.trim())
+    .filter(Boolean);
+}
+
+function formatEvidenceAmount(value: number): string {
+  return round(value, 2).toFixed(2);
 }
 
 export function prepareReceipt(

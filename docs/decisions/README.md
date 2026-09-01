@@ -42,3 +42,4 @@
 | [0020](0020-two-model-receipt-verification.md) | Gemini 3.7 Flash і Sonnet 5 без третьої verification-моделі | superseded by 0021 | Import / AI / Queue |
 | [0021](0021-physical-row-audit-for-repeated-items.md) | Окремий фізичний аудит повторюваних рядків чека | superseded by 0022 | Import / AI / Queue |
 | [0022](0022-printed-article-count-repair.md) | Доказове відновлення повторів за надрукованою кількістю товарів | accepted | Import / AI / Domain |
+| [0023](0023-compact-chunked-receipt-extraction.md) | Компактне поетапне розпізнавання довгих чеків | accepted | Import / AI / Queue / Domain |

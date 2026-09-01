@@ -45,6 +45,15 @@ export type BulkParsedDocument = ParsedReceipt & {
   article_count_raw_text?: string | null;
 };
 
+/**
+ * A bounded, absolute-ordinal slice of a long receipt. Metadata is repeated on
+ * every slice so the worker can fail closed when separate readings disagree.
+ */
+export type BulkReceiptChunk = BulkParsedDocument & {
+  chunk_start_ordinal: number;
+  has_more: boolean;
+};
+
 export type AiCallTrace = {
   provider: 'gemini' | 'anthropic';
   model: string;

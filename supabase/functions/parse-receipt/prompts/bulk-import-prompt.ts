@@ -26,6 +26,8 @@ export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
     '- total_raw_text: copy the complete printed amount-due label and amount verbatim.',
     '- source_ordinal: assign 1, 2, 3, ... to every emitted financial row in visual top-to-bottom order. Never reuse or skip a number.',
     '- raw_text: copy the shortest complete visible text fragment that proves product, quantity and price. Include a continuation line when it contains a multiplier, weight or line total.',
+    '- A standalone multiplier line can be printed BETWEEN two product lines. Never attach it to the previous product merely because it appears immediately below it. Test both adjacent products: attach the multiplier only to the product whose separately printed line total equals count × unit price. Example: "Bread 2,99", then "2 x 1,79", then "Milk 3,58" means Bread qty=1 at 2,99 and Milk qty=2 at 1,79 because 2 × 1,79 = 3,58.',
+    '- When using such a between-row multiplier, raw_text for the chosen product must contain both the multiplier line and that product line. The other product keeps only its own line and qty=1.',
     '- row_kind: item, discount, deposit, refund or cancellation.',
     '- qty_evidence: implicit_one unless the row visibly contains an explicit count multiplier (explicit_multiplier) or weight/volume calculation (weight_or_volume).',
     '- printed_line_total_orig: copy the row total when separately printed; otherwise null.',
@@ -38,6 +40,25 @@ export function buildBulkPrompt(ctx: AiContext, forceReceipt = false): string {
     '- The second sweep is a verification pass, not permission to force agreement. Add or change a row only when its raw_text is independently visible in the document. If no visible row explains the difference, preserve the mismatch for review.',
     '',
     buildPrompt(ctx),
+  ].join('\n');
+}
+
+export function buildBulkChunkPrompt(
+  ctx: AiContext,
+  forceReceipt: boolean,
+  startOrdinal: number,
+  maxItems: number,
+): string {
+  const endOrdinal = startOrdinal + maxItems - 1;
+  return [
+    'This is a bounded continuation pass for a receipt that cannot fit in one structured response.',
+    `Count every physical financial row from the top of the original document, but emit only absolute source_ordinal ${String(startOrdinal)} through ${String(endOrdinal)}.`,
+    `Emit exactly ${String(maxItems)} rows unless the printed receipt ends first. Do not emit rows before ${String(startOrdinal)} or silently skip a row inside the requested range.`,
+    `Set chunk_start_ordinal=${String(startOrdinal)}. Set has_more=true only when another financial row is visibly printed after the last emitted row.`,
+    'Repeat the same receipt metadata, printed total and printed article count on every chunk. Never derive them from the chunk subtotal.',
+    'The source_ordinal values are absolute positions in the complete receipt, not positions within this chunk.',
+    '',
+    buildBulkPrompt(ctx, forceReceipt),
   ].join('\n');
 }
 

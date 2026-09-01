@@ -1,11 +1,19 @@
 import { buildPrompt, buildSchema } from '../prompts/receipt-prompt.ts';
-import { buildBulkPromptForMode, buildBulkSchema } from '../prompts/bulk-import-prompt.ts';
+import { buildBulkChunkPrompt, buildBulkPromptForMode } from '../prompts/bulk-import-prompt.ts';
+import {
+  buildCompactBulkChunkSchema,
+  buildCompactBulkSchema,
+  COMPACT_ITEM_FIELD_INSTRUCTIONS,
+  expandCompactBulkChunk,
+  expandCompactBulkDocument,
+} from '../prompts/bulk-import-wire.ts';
 import type {
   AiCallResult,
   AiCallTrace,
   AiContext,
   BulkParseMode,
   BulkParsedDocument,
+  BulkReceiptChunk,
   ParsedReceipt,
 } from '../types.ts';
 import { AiProviderError, type IAiProvider } from './ai-provider.ts';
@@ -58,13 +66,32 @@ export class AnthropicProvider implements IAiProvider {
     forceReceipt = false,
     mode: BulkParseMode = 'standard',
   ): Promise<AiCallResult<BulkParsedDocument>> {
-    return this.request<BulkParsedDocument>(
+    return this.request(
       imageBase64,
       ctx,
-      buildBulkPromptForMode(ctx, forceReceipt, mode),
-      buildBulkSchema(ctx),
+      `${buildBulkPromptForMode(ctx, forceReceipt, mode)}\n\n${COMPACT_ITEM_FIELD_INSTRUCTIONS}`,
+      buildCompactBulkSchema(ctx),
       this.cfg.bulkMaxTokens ?? BULK_MAX_TOKENS,
       this.cfg.timeoutMs ?? BULK_REQUEST_TIMEOUT_MS,
+      expandCompactBulkDocument,
+    );
+  }
+
+  parseBulkChunkDetailed(
+    imageBase64: string,
+    ctx: AiContext,
+    forceReceipt: boolean,
+    startOrdinal: number,
+    maxItems: number,
+  ): Promise<AiCallResult<BulkReceiptChunk>> {
+    return this.request(
+      imageBase64,
+      ctx,
+      `${buildBulkChunkPrompt(ctx, forceReceipt, startOrdinal, maxItems)}\n\n${COMPACT_ITEM_FIELD_INSTRUCTIONS}`,
+      buildCompactBulkChunkSchema(ctx),
+      this.cfg.bulkMaxTokens ?? BULK_MAX_TOKENS,
+      this.cfg.timeoutMs ?? BULK_REQUEST_TIMEOUT_MS,
+      expandCompactBulkChunk,
     );
   }
 
@@ -75,6 +102,7 @@ export class AnthropicProvider implements IAiProvider {
     schema: Record<string, unknown>,
     maxTokens: number,
     timeoutMs: number,
+    normalize: (value: unknown) => T = (value) => value as T,
   ): Promise<AiCallResult<T>> {
     const isPdf = ctx.mimeType === 'application/pdf';
     const mediaBlock = isPdf
@@ -160,7 +188,7 @@ export class AnthropicProvider implements IAiProvider {
         trace,
       );
     }
-    return { value: input as T, trace };
+    return { value: normalize(input), trace };
   }
 }
 
