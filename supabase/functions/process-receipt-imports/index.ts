@@ -58,6 +58,7 @@ const verifier = new AnthropicProvider({
   model: VERIFICATION_MODEL,
   timeoutMs: BULK_PROVIDER_TIMEOUT_MS,
   bulkMaxTokens: BULK_ANTHROPIC_MAX_TOKENS,
+  temperature: null,
 });
 
 type Job = { msg_id: number; read_count: number; import_file_id: string };

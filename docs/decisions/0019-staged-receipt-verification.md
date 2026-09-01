@@ -48,6 +48,9 @@ fail-closed і не може бути збережена як чек.
 - comparator читає обидва validated results з нашого коду, але жодна модель не бачить output,
   total difference чи підказку попередньої моделі.
 
+Для Opus 4.7 request не містить custom `temperature`: ця модель приймає лише default sampling
+поведінку. Sonnet 4.6 зберігає низьку temperature для детермінованішого OCR.
+
 Якщо Sonnet після Gemini також не проходить gates, його результат стає seed для Opus на третій
 доставці. Provider error verification-call можна повторити до третьої доставки; після цього файл
 лишається у review.
