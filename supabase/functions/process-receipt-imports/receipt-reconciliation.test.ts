@@ -126,11 +126,20 @@ describe('independent receipt reconciliation', () => {
   });
 
   it('accepts one independently evidenced repeated row without copying other secondary errors', () => {
-    const primary = receipt(101.18, [row(1, 'Basket', 1, 98), row(2, 'Nuts', 1, 1.59)]);
+    const primary = receipt(101.18, [
+      row(1, 'Basket', 1, 98),
+      row(2, 'Ultje Erdnusse', 1, 1.59, '769560 Ultje Erdnusse 1,59 A', {
+        product_code: '769560',
+      }),
+    ]);
     const secondary = receipt(101.18, [
       row(1, 'Basket', 1, 94.81),
-      row(2, 'Nuts', 1, 1.59),
-      row(3, 'Nuts', 1, 1.59),
+      row(2, 'Ültje Erdnüsse', 1, 1.59, '769560 Ültje Erdnüsse 1,59 A', {
+        product_code: '769560',
+      }),
+      row(3, 'Ültje Erdnüsse', 1, 1.59, '769560 Ültje Erdnüsse 1,59 A', {
+        product_code: '769560',
+      }),
     ]);
 
     const result = reconcileIndependentReceipt(primary, secondary);
@@ -142,7 +151,8 @@ describe('independent receipt reconciliation', () => {
       after: { computedTotal: 101.18, matches: true },
       details: {
         targeted_repair: {
-          product_name: 'Nuts',
+          product_name: 'Ultje Erdnusse',
+          product_code: '769560',
           primary_occurrences: 1,
           secondary_occurrences: 2,
           line_total: 1.59,
@@ -153,8 +163,8 @@ describe('independent receipt reconciliation', () => {
     });
     expect(result.parsed.items.map((item) => item.product_name)).toEqual([
       'Basket',
-      'Nuts',
-      'Nuts',
+      'Ultje Erdnusse',
+      'Ultje Erdnusse',
     ]);
     expect(result.parsed.items[0]!.unit_price_orig).toBe(98);
   });
