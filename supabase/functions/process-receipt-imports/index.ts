@@ -22,6 +22,11 @@ import {
 
 const BUCKET = 'receipts';
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+// Keep the combined worst-case provider time below the 150-second Edge budget.
+// Primary gets enough time for High-thinking OCR; the slower long-receipt
+// fallback gets the larger share based on measured production latency.
+const BULK_GEMINI_TIMEOUT_MS = 45_000;
+const BULK_ANTHROPIC_TIMEOUT_MS = 95_000;
 
 function requiredEnv(name: string): string {
   const value = Deno.env.get(name);
@@ -35,8 +40,14 @@ const cronToken = requiredEnv('RECEIPT_IMPORT_CRON_TOKEN');
 const db = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
-const primary = new GeminiProvider({ apiKey: requiredEnv('GEMINI_API_KEY') });
-const fallback = new AnthropicProvider({ apiKey: requiredEnv('ANTHROPIC_API_KEY') });
+const primary = new GeminiProvider({
+  apiKey: requiredEnv('GEMINI_API_KEY'),
+  timeoutMs: BULK_GEMINI_TIMEOUT_MS,
+});
+const fallback = new AnthropicProvider({
+  apiKey: requiredEnv('ANTHROPIC_API_KEY'),
+  timeoutMs: BULK_ANTHROPIC_TIMEOUT_MS,
+});
 
 type Job = { msg_id: number; read_count: number; import_file_id: string };
 type ImportFile = {
@@ -558,6 +569,7 @@ function joinReviewMessages(primaryMessage: string, diagnostic: string | null): 
 
 function publicError(error: unknown): string {
   if (error instanceof RetryableImportError) return error.message;
+  if (error instanceof AiProviderError) return providerPublicMessage(error);
   const message = error instanceof Error ? error.message : 'Unknown processing failure';
   const safePrefixes = [
     'Import file metadata unavailable',
