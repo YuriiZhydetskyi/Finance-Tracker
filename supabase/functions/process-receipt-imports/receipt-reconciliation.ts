@@ -28,6 +28,15 @@ export type ReceiptReconciliation = {
   details: Record<string, unknown>;
 };
 
+export function shouldRetryUnavailableIndependentCheck(
+  deliveryAttempt: number,
+  allowIndependentCheck: boolean,
+  arithmeticMatches: boolean,
+  evidenceIsValid: boolean,
+): boolean {
+  return deliveryAttempt < 3 && !allowIndependentCheck && (!arithmeticMatches || !evidenceIsValid);
+}
+
 /**
  * Compares two independent readings of the same document. The secondary model
  * never receives the primary values, so arithmetic agreement is evidence rather

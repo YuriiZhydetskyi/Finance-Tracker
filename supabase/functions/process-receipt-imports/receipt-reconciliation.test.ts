@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { BulkParsedDocument, ParsedItem } from '../parse-receipt/types.ts';
 import { validateBulkDocument } from './domain.ts';
-import { reconcileIndependentReceipt } from './receipt-reconciliation.ts';
+import {
+  reconcileIndependentReceipt,
+  shouldRetryUnavailableIndependentCheck,
+} from './receipt-reconciliation.ts';
 
 function row(
   ordinal: number,
@@ -42,6 +45,13 @@ function receipt(total: number, items: ParsedItem[]): BulkParsedDocument {
 }
 
 describe('independent receipt reconciliation', () => {
+  it('retries a fallback-only mismatch before routing the third delivery to review', () => {
+    expect(shouldRetryUnavailableIndependentCheck(1, false, false, true)).toBe(true);
+    expect(shouldRetryUnavailableIndependentCheck(2, false, true, false)).toBe(true);
+    expect(shouldRetryUnavailableIndependentCheck(3, false, false, true)).toBe(false);
+    expect(shouldRetryUnavailableIndependentCheck(1, true, false, true)).toBe(false);
+  });
+
   it('diagnoses a dm VAT class read as quantity and accepts only the evidenced parse', () => {
     const primary = receipt(27.5, [
       row(1, 'A', 2, 2.25, 'A 2,25 2', {

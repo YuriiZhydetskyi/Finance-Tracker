@@ -16,6 +16,7 @@ import {
 } from './domain.ts';
 import {
   reconcileIndependentReceipt,
+  shouldRetryUnavailableIndependentCheck,
   type ReceiptReconciliation,
 } from './receipt-reconciliation.ts';
 
@@ -60,6 +61,16 @@ type ProviderInvocation = {
   trace: AiCallTrace;
   attempt: AttemptHandle | null;
 };
+
+class RetryableImportError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'RetryableImportError';
+  }
+}
 
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -141,6 +152,19 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     } else if ((!firstArithmetic?.matches || !firstEvidence.ok) && !first.allowIndependentCheck) {
       independentMessage =
         'Незалежна перевірка недоступна, бо резервний provider уже виконав первинний аналіз.';
+      if (
+        shouldRetryUnavailableIndependentCheck(
+          job.read_count,
+          first.allowIndependentCheck,
+          firstArithmetic?.matches ?? false,
+          firstEvidence.ok,
+        )
+      ) {
+        throw new RetryableImportError(
+          'independent_check_unavailable',
+          'Первинний provider недоступний; аналіз буде повторено для незалежної перевірки.',
+        );
+      }
     }
 
     const finalEvidence = auditReceiptEvidence(parsed);
@@ -200,7 +224,10 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     const message = publicError(error);
     console.error('[process-receipt-imports] job failed', job.import_file_id, message);
     await finishAttempt(workerAttempt, 'failed', {
-      diagnosis_code: error instanceof AiProviderError ? error.code : 'worker_failure',
+      diagnosis_code:
+        error instanceof AiProviderError || error instanceof RetryableImportError
+          ? error.code
+          : 'worker_failure',
       public_message: message,
       ...traceFields(error instanceof AiProviderError ? error.trace : null),
     });
@@ -519,6 +546,9 @@ function providerPublicMessage(error: unknown): string {
   if (error.code === 'missing_output' || error.code === 'invalid_json') {
     return `Відповідь ${error.trace.provider} не містить повних структурованих даних.`;
   }
+  if (error.code === 'timeout') {
+    return `Час очікування відповіді ${error.trace.provider} вичерпано.`;
+  }
   return `Provider ${error.trace.provider} не завершив аналіз.`;
 }
 
@@ -527,6 +557,7 @@ function joinReviewMessages(primaryMessage: string, diagnostic: string | null): 
 }
 
 function publicError(error: unknown): string {
+  if (error instanceof RetryableImportError) return error.message;
   const message = error instanceof Error ? error.message : 'Unknown processing failure';
   const safePrefixes = [
     'Import file metadata unavailable',

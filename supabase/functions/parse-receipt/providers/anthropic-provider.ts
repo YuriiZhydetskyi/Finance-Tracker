@@ -17,6 +17,7 @@ const BULK_MAX_TOKENS = 8192;
 const TEMPERATURE = 0.1;
 const TOOL_NAME = 'record_receipt';
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+const BULK_REQUEST_TIMEOUT_MS = 75_000;
 
 type Config = { apiKey: string; model?: string; timeoutMs?: number };
 
@@ -33,6 +34,7 @@ export class AnthropicProvider implements IAiProvider {
         buildPrompt(ctx),
         buildSchema(ctx),
         INTERACTIVE_MAX_TOKENS,
+        this.cfg.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS,
       )
     ).value;
   }
@@ -56,6 +58,7 @@ export class AnthropicProvider implements IAiProvider {
       buildBulkPrompt(ctx, forceReceipt),
       buildBulkSchema(ctx),
       BULK_MAX_TOKENS,
+      this.cfg.timeoutMs ?? BULK_REQUEST_TIMEOUT_MS,
     );
   }
 
@@ -65,6 +68,7 @@ export class AnthropicProvider implements IAiProvider {
     prompt: string,
     schema: Record<string, unknown>,
     maxTokens: number,
+    timeoutMs: number,
   ): Promise<AiCallResult<T>> {
     const isPdf = ctx.mimeType === 'application/pdf';
     const mediaBlock = isPdf
@@ -98,16 +102,26 @@ export class AnthropicProvider implements IAiProvider {
       ],
     };
 
-    const res = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.cfg.apiKey,
-        'anthropic-version': ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(this.cfg.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
-    });
+    let res: Response;
+    try {
+      res = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.cfg.apiKey,
+          'anthropic-version': ANTHROPIC_VERSION,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (error) {
+      const timedOut = isTimeoutError(error);
+      throw new AiProviderError(
+        timedOut ? 'timeout' : 'network_error',
+        timedOut ? 'Anthropic API request timed out.' : 'Anthropic API network request failed.',
+        baseTrace,
+      );
+    }
     const requestId = res.headers.get('request-id') ?? res.headers.get('x-request-id') ?? undefined;
     const responseTrace = { ...baseTrace, requestId };
 
@@ -171,4 +185,8 @@ function extractToolInput(wrapper: unknown): Record<string, unknown> | null {
     }
   }
   return null;
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name);
 }
