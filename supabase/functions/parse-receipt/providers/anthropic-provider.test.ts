@@ -100,11 +100,14 @@ describe('AnthropicProvider — content block dispatch', () => {
   });
 
   it('performs a blind full-document bulk parse with evidence and a larger output budget', async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
     const provider = new AnthropicProvider({ apiKey: 'k' });
     const result = await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
 
     const body = lastRequestBody();
     expect(body.max_tokens).toBe(8192);
+    expect(timeoutSpy).toHaveBeenCalledWith(75_000);
+    timeoutSpy.mockRestore();
     expect(body.tools[0]!.input_schema.required).toContain('total_raw_text');
     const items = body.tools[0]!.input_schema.properties.items as {
       items: { required: string[] };
@@ -138,6 +141,17 @@ describe('AnthropicProvider — content block dispatch', () => {
     await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
       code: 'incomplete_response',
       trace: expect.objectContaining({ stopReason: 'max_tokens' }),
+    });
+  });
+
+  it('records provider and model when the bulk request times out', async () => {
+    const timeout = Object.assign(new Error('request aborted'), { name: 'TimeoutError' });
+    fetchMock.mockRejectedValueOnce(timeout);
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
+      code: 'timeout',
+      trace: expect.objectContaining({ provider: 'anthropic', model: 'claude-sonnet-4-6' }),
     });
   });
 });

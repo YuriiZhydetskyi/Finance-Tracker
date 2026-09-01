@@ -519,6 +519,9 @@ function providerPublicMessage(error: unknown): string {
   if (error.code === 'missing_output' || error.code === 'invalid_json') {
     return `Відповідь ${error.trace.provider} не містить повних структурованих даних.`;
   }
+  if (error.code === 'timeout') {
+    return `Час очікування відповіді ${error.trace.provider} вичерпано.`;
+  }
   return `Provider ${error.trace.provider} не завершив аналіз.`;
 }
 

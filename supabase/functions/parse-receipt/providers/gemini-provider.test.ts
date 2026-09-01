@@ -161,4 +161,15 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
       trace: expect.objectContaining({ stopReason: 'MAX_TOKENS' }),
     });
   });
+
+  it('records provider and model when the network request times out', async () => {
+    const timeout = Object.assign(new Error('request aborted'), { name: 'TimeoutError' });
+    fetchMock.mockRejectedValueOnce(timeout);
+    const provider = new GeminiProvider({ apiKey: 'k' });
+
+    await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
+      code: 'timeout',
+      trace: expect.objectContaining({ provider: 'gemini', model: 'gemini-3.7-flash' }),
+    });
+  });
 });

@@ -107,12 +107,22 @@ export class GeminiProvider implements IAiProvider {
       },
     };
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.cfg.apiKey },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(this.cfg.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.cfg.apiKey },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(this.cfg.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
+      });
+    } catch (error) {
+      const timedOut = isTimeoutError(error);
+      throw new AiProviderError(
+        timedOut ? 'timeout' : 'network_error',
+        timedOut ? 'Gemini API request timed out.' : 'Gemini API network request failed.',
+        baseTrace,
+      );
+    }
     const requestId =
       res.headers.get('x-request-id') ?? res.headers.get('x-goog-request-id') ?? undefined;
     const responseTrace = { ...baseTrace, requestId };
@@ -190,4 +200,8 @@ function extractText(candidate: GeminiCandidate): string | null {
     if (typeof value.text === 'string') return value.text;
   }
   return null;
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name);
 }
