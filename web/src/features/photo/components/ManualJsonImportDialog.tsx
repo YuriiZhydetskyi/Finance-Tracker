@@ -199,9 +199,14 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
     >
       <form onSubmit={handleSubmit} className="flex max-h-[92vh] flex-col overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-          <h2 id="manual-json-title" className="text-base font-semibold text-slate-900">
-            Вставити AI JSON
-          </h2>
+          <div>
+            <h2 id="manual-json-title" className="text-base font-semibold text-slate-900">
+              Вставити JSON від AI
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-600">
+              Підходить один чек, масив чеків або обʼєкт із полем receipts.
+            </p>
+          </div>
           <Button type="button" variant="ghost" onClick={handleClose} className="px-3">
             Закрити
           </Button>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useAppUsers, useCurrentUser } from '@/features/auth';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
@@ -39,6 +39,18 @@ export function BulkImportForm() {
           До 200 зображень або PDF. Один PDF вважається одним документом; після завершення
           завантаження вкладку можна закрити.
         </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-sm">
+        <p className="text-slate-700">
+          Вже маєш JSON від Claude або Claude Code? Встав його без повторного розпізнавання.
+        </p>
+        <Link
+          to="/photo"
+          search={{ pasteJson: '1' }}
+          className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-600"
+        >
+          Вставити готовий JSON
+        </Link>
       </div>
       <label className="block space-y-1 text-sm font-medium text-slate-700">
         Файли

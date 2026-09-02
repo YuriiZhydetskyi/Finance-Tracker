@@ -50,7 +50,7 @@ describe('ManualJsonImportDialog', () => {
         onImported={noop}
       />,
     );
-    expect(screen.getByRole('heading', { name: /Вставити AI JSON/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Вставити JSON від AI/i })).toBeInTheDocument();
     expect(screen.getByLabelText('JSON')).toBeInTheDocument();
     expect(screen.getByLabelText('Prompt')).toBeInTheDocument();
   });
