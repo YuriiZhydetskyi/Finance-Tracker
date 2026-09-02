@@ -28,7 +28,10 @@ export function buildPrompt(ctx: AiContext): string {
     '- store: best-effort store/merchant name; null if illegible.',
     '- store_address: street address printed on receipt header (street, number, city); null if not printed or illegible. Copy as a single line, comma-separated.',
     '- date: receipt date as YYYY-MM-DD; null if illegible.',
-    '- time: time of purchase as HH:MM (24-hour, no seconds); null if illegible.',
+    '- A receipt can show two legitimate times: a fiscal cash-register sale time and a later/earlier card-payment authorization time. Extract BOTH separately whenever they are printed. Never use a filename, PDF creation metadata, phone status bar, or an inferred time.',
+    '- fiscal_time: the time of the fiscal cash-register sale as HH:MM (24-hour, no seconds), or null. Prefer fields such as a register/fiscal receipt timestamp, "Datum Uhrzeit Filiale Pos Bed Bon", TSE transaction time, or an "Einkauf vom" purchase header. fiscal_time_raw_text must copy the shortest complete visible text that proves it.',
+    '- payment_time: the card/payment-terminal time as HH:MM (24-hour, no seconds), or null. Examples include a "Kundenbeleg", "Bezahlung", "AS-Zeit", terminal or card-authorization timestamp. payment_time_raw_text must copy the shortest complete visible text that proves it.',
+    '- time: canonical purchase time as HH:MM. It MUST equal fiscal_time when fiscal_time is present; otherwise it may equal payment_time. Set time to null only when neither printed timestamp is readable.',
     '- currency: ISO 4217 (e.g. EUR, UAH); default to "EUR" if not visible.',
     '- total_orig: numeric total as printed (the "to pay" / "Zu bezahlen" / "Сума до сплати" line); null if illegible.',
     '',
@@ -62,6 +65,22 @@ export function buildSchema(ctx: AiContext): Record<string, unknown> {
       store_address: { type: ['string', 'null'] },
       date: { type: ['string', 'null'], description: 'YYYY-MM-DD' },
       time: { type: ['string', 'null'], description: 'HH:MM (24-hour)' },
+      fiscal_time: {
+        type: ['string', 'null'],
+        description: 'Fiscal cash-register sale time, HH:MM (24-hour), or null.',
+      },
+      fiscal_time_raw_text: {
+        type: ['string', 'null'],
+        description: 'Visible text proving fiscal_time, or null.',
+      },
+      payment_time: {
+        type: ['string', 'null'],
+        description: 'Card/payment-terminal time, HH:MM (24-hour), or null.',
+      },
+      payment_time_raw_text: {
+        type: ['string', 'null'],
+        description: 'Visible text proving payment_time, or null.',
+      },
       currency: { type: 'string', description: 'ISO 4217 (default EUR)' },
       total_orig: { type: ['number', 'null'] },
       items: {
@@ -79,6 +98,13 @@ export function buildSchema(ctx: AiContext): Record<string, unknown> {
         },
       },
     },
-    required: ['currency', 'items'],
+    required: [
+      'currency',
+      'items',
+      'fiscal_time',
+      'fiscal_time_raw_text',
+      'payment_time',
+      'payment_time_raw_text',
+    ],
   };
 }

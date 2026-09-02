@@ -189,6 +189,31 @@ describe('handler — AI orchestration', () => {
     expect(deps.fallbackParse).not.toHaveBeenCalled();
   });
 
+  it('returns fiscal time when the provider also supplies a card-payment time', async () => {
+    const deps = makeDeps({
+      primary: provider(
+        'gemini',
+        vi.fn(() =>
+          Promise.resolve({
+            ...sampleResult,
+            time: '14:06',
+            fiscal_time: '14:05',
+            fiscal_time_raw_text: 'Datum Uhrzeit Filiale Pos Bed Bon 02.05.26 14:05',
+            payment_time: '14:06',
+            payment_time_raw_text: 'Kundenbeleg Uhrzeit: 14:06:46 Uhr',
+          }),
+        ),
+      ),
+    });
+    const handler = createHandler(deps);
+    const res = await handler(authedReq({ imageBase64: 'AAA' }));
+
+    expect((await res.json()) as ParsedReceipt).toMatchObject({
+      time: '14:05',
+      time_source: 'fiscal_receipt',
+    });
+  });
+
   it('primary fails, fallback succeeds → 200 + warn log naming both providers', async () => {
     const deps = makeDeps({
       primary: provider(

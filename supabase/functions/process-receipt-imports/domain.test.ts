@@ -69,6 +69,37 @@ describe('bulk import domain gate', () => {
     expect(result.items).toEqual([]);
   });
 
+  it('uses the evidenced fiscal time instead of a separate payment time', () => {
+    const result = validateBulkDocument({
+      ...parsed,
+      time: '14:06',
+      fiscal_time: '14:05',
+      fiscal_time_raw_text: 'Datum Uhrzeit Filiale Pos Bed Bon 02.05.26 14:05',
+      payment_time: '14:06',
+      payment_time_raw_text: 'Kundenbeleg Uhrzeit: 14:06:46 Uhr',
+    });
+
+    expect(result).toMatchObject({
+      time: '14:05',
+      time_source: 'fiscal_receipt',
+      fiscal_time: '14:05',
+      payment_time: '14:06',
+    });
+  });
+
+  it('clears a structured time that has no matching printed evidence', () => {
+    const result = validateBulkDocument({
+      ...parsed,
+      time: '14:06',
+      fiscal_time: '14:05',
+      fiscal_time_raw_text: 'Datum Uhrzeit Filiale Pos Bed Bon 02.05.26 14:04',
+      payment_time: null,
+      payment_time_raw_text: null,
+    });
+
+    expect(result.time).toBeNull();
+  });
+
   it('rejects impossible dates before the database transaction', () => {
     const result = prepareReceipt(
       { ...parsed, date: '2026-02-31' },

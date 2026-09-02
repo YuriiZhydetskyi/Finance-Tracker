@@ -14,7 +14,11 @@ import {
 } from '@/features/photo';
 import { Button } from '@/shared/ui/Button';
 
-const PhotoSearchSchema = z.object({}).optional();
+const PhotoSearchSchema = z
+  .object({
+    pasteJson: z.literal('1').optional(),
+  })
+  .optional();
 
 export const Route = createFileRoute('/photo')({
   component: PhotoPage,
@@ -32,7 +36,8 @@ function PhotoPage() {
 function PhotoFlow() {
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
-  const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
+  const { pasteJson } = Route.useSearch() ?? {};
+  const [jsonDialogOpen, setJsonDialogOpen] = useState(pasteJson === '1');
   // Files picked but not yet assigned a payer. While set, the assignment step
   // is shown; both the initial picker and the carousel's "+ Додати ще" feed it.
   const [filesToAssign, setFilesToAssign] = useState<File[] | null>(null);
@@ -66,7 +71,7 @@ function PhotoFlow() {
 
       <div className="flex justify-end">
         <Button type="button" variant="secondary" onClick={() => setJsonDialogOpen(true)}>
-          Paste AI JSON
+          Вставити готовий JSON
         </Button>
       </div>
 

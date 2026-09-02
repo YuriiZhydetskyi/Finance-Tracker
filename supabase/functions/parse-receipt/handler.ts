@@ -13,6 +13,7 @@
 
 import type { IAiProvider } from './providers/ai-provider.ts';
 import type { AiContext, ParsedReceipt } from './types.ts';
+import { canonicalizeReceiptTime } from './time-evidence.ts';
 
 export type ParseRequestBody = {
   imageBase64: string;
@@ -102,7 +103,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
       }
     }
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(canonicalizeReceiptTime(result)), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
     });
