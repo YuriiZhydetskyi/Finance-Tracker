@@ -164,6 +164,12 @@ export const ParsedItemSchema = z.object({
   // many corner shops no). Optional preserves backward compat for raw_ocr_json
   // snapshots written before this field existed.
   product_code: z.string().nullable().optional(),
+  source_ordinal: z.number().int().positive().optional(),
+  raw_text: z.string().optional(),
+  row_kind: z.enum(['item', 'discount', 'deposit', 'refund', 'cancellation']).optional(),
+  qty_evidence: z.enum(['implicit_one', 'explicit_multiplier', 'weight_or_volume']).optional(),
+  printed_line_total_orig: z.number().finite().nullable().optional(),
+  tax_class: z.enum(['1', '2']).nullable().optional(),
 });
 export type ParsedItem = z.infer<typeof ParsedItemSchema>;
 
@@ -180,6 +186,9 @@ export const ParsedReceiptSchema = z.object({
   payment_time_raw_text: z.string().nullable().optional(),
   currency: ISO_4217_CURRENCY_SCHEMA,
   total_orig: z.number().finite().nullable(),
+  total_raw_text: z.string().nullable().optional(),
+  article_count: z.number().int().nonnegative().nullable().optional(),
+  article_count_raw_text: z.string().nullable().optional(),
   items: z.array(ParsedItemSchema),
 });
 export type ParsedReceipt = z.infer<typeof ParsedReceiptSchema>;

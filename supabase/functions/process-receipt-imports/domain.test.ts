@@ -6,6 +6,7 @@ import {
   prepareReceipt,
   reassociateMisattachedMultiplier,
   validateBulkDocument,
+  validateManualReceiptSubmission,
 } from './domain.ts';
 
 const parsed = validateBulkDocument({
@@ -67,6 +68,88 @@ describe('bulk import domain gate', () => {
     });
     expect(result.document_kind).toBe('not_receipt');
     expect(result.items).toEqual([]);
+  });
+
+  it('normalizes a complete manual JSON submission as a receipt', () => {
+    const result = validateManualReceiptSubmission(
+      {
+        store: 'Lidl',
+        store_address: null,
+        date: '2026-08-01',
+        time: '12:30',
+        currency: 'EUR',
+        total_orig: 3,
+        total_raw_text: 'SUMME EUR 3,00',
+        article_count: 2,
+        article_count_raw_text: '2 Artikel',
+        items: [
+          {
+            product_name: 'Milk',
+            qty: 2,
+            unit_price_orig: 1.5,
+            category_suggestion: null,
+            source_ordinal: 1,
+            raw_text: '2 x 1,50 Milk 3,00',
+            row_kind: 'item',
+            qty_evidence: 'explicit_multiplier',
+            printed_line_total_orig: 3,
+          },
+        ],
+      },
+      { total_orig: 3, article_count: 2 },
+    );
+
+    expect(result).toMatchObject({
+      document_kind: 'receipt',
+      total_orig: 3,
+      article_count: 2,
+    });
+    expect(auditReceiptEvidence(result)).toEqual({ ok: true, issues: [] });
+  });
+
+  it('rejects a manual JSON submission that changes the printed baseline', () => {
+    const candidate = {
+      store: 'Lidl',
+      date: '2026-08-01',
+      currency: 'EUR',
+      total_orig: 3.05,
+      total_raw_text: 'SUMME EUR 3,05',
+      article_count: 1,
+      article_count_raw_text: '1 Artikel',
+      items: [
+        {
+          product_name: 'Milk',
+          qty: 1,
+          unit_price_orig: 3.05,
+          source_ordinal: 1,
+          raw_text: 'Milk 3,05',
+          row_kind: 'item',
+          qty_evidence: 'implicit_one',
+          printed_line_total_orig: 3.05,
+        },
+      ],
+    };
+
+    expect(() =>
+      validateManualReceiptSubmission(candidate, { total_orig: 3, article_count: 2 }),
+    ).toThrow(/total_orig/);
+  });
+
+  it('rejects manual JSON without per-line totals before queue finalization', () => {
+    expect(() =>
+      validateManualReceiptSubmission(
+        {
+          store: 'Lidl',
+          date: '2026-08-01',
+          currency: 'EUR',
+          total_orig: 3,
+          total_raw_text: 'SUMME EUR 3,00',
+          article_count: null,
+          items: [{ product_name: 'Milk', qty: 1, unit_price_orig: 3 }],
+        },
+        null,
+      ),
+    ).toThrow(/printed_line_total_orig/);
   });
 
   it('uses the evidenced fiscal time instead of a separate payment time', () => {

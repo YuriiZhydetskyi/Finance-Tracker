@@ -20,6 +20,9 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
   arithmetic та article-count gates.
 - Кожний worker/provider stage записується в `receipt_import_attempts`; batch detail показує цей
   журнал разом з оригіналом файла.
+- Виправлений користувачем JSON з `needs_review` повертається в ту саму PGMQ-чергу без нового
+  provider call. Worker порівнює його з попереднім total/article-count baseline, повторює
+  evidence та arithmetic gates і записує окремий `manual_json` attempt.
 - `finalize_receipt_import` зберігає кілька таблиць в одній Postgres-транзакції.
 - Точний збіг date/time/currency/total автоматично прив’язується до наявного чека; ширші
   duplicate-кандидати лишаються на ручну перевірку.

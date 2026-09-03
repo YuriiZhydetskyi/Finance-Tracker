@@ -405,6 +405,7 @@ export type Database = {
           exception_kind: string | null;
           force_receipt: boolean;
           id: string;
+          manual_json: Json | null;
           mime_type: string;
           original_filename: string;
           original_size_bytes: number;
@@ -428,6 +429,7 @@ export type Database = {
           exception_kind?: string | null;
           force_receipt?: boolean;
           id: string;
+          manual_json?: Json | null;
           mime_type: string;
           original_filename: string;
           original_size_bytes: number;
@@ -451,6 +453,7 @@ export type Database = {
           exception_kind?: string | null;
           force_receipt?: boolean;
           id?: string;
+          manual_json?: Json | null;
           mime_type?: string;
           original_filename?: string;
           original_size_bytes?: number;
@@ -712,6 +715,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      complete_manual_receipt_import_exception: {
+        Args: {
+          p_error_message: string;
+          p_file_id: string;
+          p_msg_id: number;
+        };
+        Returns: undefined;
+      };
       create_receipt_import_batch: {
         Args: { p_batch_id: string; p_files: Json; p_paid_by: string };
         Returns: {
@@ -768,6 +779,10 @@ export type Database = {
       };
       resolve_receipt_import_file: {
         Args: { p_file_id: string; p_receipt_id: string };
+        Returns: undefined;
+      };
+      submit_receipt_import_json: {
+        Args: { p_file_id: string; p_manual_json: Json };
         Returns: undefined;
       };
       schedule_receipt_import_retry: {

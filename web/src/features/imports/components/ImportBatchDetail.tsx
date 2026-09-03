@@ -1,4 +1,8 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useCategories } from '@/features/categories';
+import { ManualJsonImportDialog } from '@/features/photo';
+import { useProducts } from '@/features/products';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import {
@@ -6,6 +10,7 @@ import {
   useImportBatch,
   useRequeueImportFile,
   useResolveImportFile,
+  useSubmitImportFileJson,
   type ImportAttempt,
   type ImportFile,
 } from '../api/imports';
@@ -28,6 +33,9 @@ export function ImportBatchDetail({ id }: { id: string }) {
   const requeue = useRequeueImportFile(id);
   const discard = useDiscardImportFile(id);
   const resolve = useResolveImportFile(id);
+  const submitJson = useSubmitImportFileJson(id);
+  const categories = useCategories();
+  const products = useProducts();
   if (query.isLoading) return <p className="text-sm text-slate-500">Завантажую батч…</p>;
   if (query.isError)
     return <ErrorDetails error={query.error} label="Не вдалося завантажити батч" />;
@@ -76,7 +84,11 @@ export function ImportBatchDetail({ id }: { id: string }) {
               key={file.id}
               file={file}
               attempts={attemptsByFile[file.id] ?? []}
-              busy={requeue.isPending || discard.isPending || resolve.isPending}
+              categories={categories.data?.map((category) => category.name) ?? []}
+              products={products.data ?? []}
+              busy={
+                requeue.isPending || discard.isPending || resolve.isPending || submitJson.isPending
+              }
               onRequeue={(forceReceipt, skipDuplicate) =>
                 requeue.mutate({ id: file.id, forceReceipt, skipDuplicate })
               }
@@ -85,6 +97,7 @@ export function ImportBatchDetail({ id }: { id: string }) {
                   ? () => resolve.mutate({ id: file.id, receiptId: file.duplicate_receipt_id! })
                   : undefined
               }
+              onSubmitJson={(json) => submitJson.mutateAsync({ id: file.id, json })}
               onDiscard={() => discard.mutate(file)}
             />
           ))}
@@ -117,19 +130,34 @@ export function ImportBatchDetail({ id }: { id: string }) {
 function ExceptionCard({
   file,
   attempts,
+  categories,
+  products,
   busy,
   onRequeue,
   onResolve,
+  onSubmitJson,
   onDiscard,
 }: {
   file: ImportFile;
   attempts: ImportAttempt[];
+  categories: string[];
+  products: { name: string }[];
   busy: boolean;
   onRequeue: (forceReceipt: boolean, skipDuplicate?: boolean) => void;
   onResolve?: (() => void) | undefined;
+  onSubmitJson: (json: unknown) => Promise<unknown>;
   onDiscard: () => void;
 }) {
+  const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
   const canRetry = file.status === 'needs_review' && file.exception_kind !== 'possible_duplicate';
+  const expectedTotalOrig = readJsonNumber(file.parsed_json, 'total_orig');
+  const expectedArticleCount = readJsonInteger(file.parsed_json, 'article_count');
+  const referenceSummary = [
+    expectedTotalOrig == null ? null : 'підсумок ' + expectedTotalOrig.toFixed(2),
+    expectedArticleCount == null ? null : 'article_count ' + String(expectedArticleCount),
+  ]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <article className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -172,13 +200,18 @@ function ExceptionCard({
           </>
         )}
         {canRetry && (
-          <Button
-            variant="secondary"
-            disabled={busy}
-            onClick={() => onRequeue(file.document_kind !== 'receipt')}
-          >
-            {file.document_kind !== 'receipt' ? 'Це чек — повторити' : 'Повторити аналіз'}
-          </Button>
+          <>
+            <Button variant="secondary" disabled={busy} onClick={() => setJsonDialogOpen(true)}>
+              Вставити виправлений JSON
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => onRequeue(file.document_kind !== 'receipt')}
+            >
+              {file.document_kind !== 'receipt' ? 'Це чек — повторити' : 'Повторити аналіз'}
+            </Button>
+          </>
         )}
         {file.status === 'upload_failed' && (
           <Link to="/imports" className="self-center text-sm text-slate-700 underline">
@@ -189,14 +222,52 @@ function ExceptionCard({
           Відхилити
         </Button>
       </div>
+      <ManualJsonImportDialog
+        open={jsonDialogOpen}
+        categories={categories}
+        products={products}
+        title={'Виправлений JSON · ' + file.original_filename}
+        description={
+          referenceSummary
+            ? 'Звір із PDF кожний рядок. Попередній аналіз: ' + referenceSummary + '.'
+            : 'Звір із PDF кожний рядок. Після надсилання воркер повторить усі перевірки.'
+        }
+        submitLabel="Перевірити й надіслати"
+        singleReceipt
+        initialJson={file.manual_json}
+        validationOptions={{
+          requireEvidence: true,
+          requireSavableReceipt: true,
+          expectedTotalOrig,
+          expectedArticleCount,
+        }}
+        onClose={() => setJsonDialogOpen(false)}
+        onImported={async (_receipts, candidates) => {
+          const candidate = candidates[0];
+          if (candidate === undefined) throw new Error('JSON не містить чека.');
+          await onSubmitJson(candidate);
+        }}
+      />
     </article>
   );
+}
+
+function readJsonNumber(value: unknown, key: string): number | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const candidate = (value as Record<string, unknown>)[key];
+  return typeof candidate === 'number' && Number.isFinite(candidate) ? candidate : null;
+}
+
+function readJsonInteger(value: unknown, key: string): number | null {
+  const candidate = readJsonNumber(value, key);
+  return candidate != null && Number.isInteger(candidate) && candidate >= 0 ? candidate : null;
 }
 
 const ATTEMPT_STAGE_LABELS: Record<string, string> = {
   primary_parse: 'Первинне розпізнавання',
   fallback_parse: 'Резервне розпізнавання',
   independent_check: 'Незалежна перевірка',
+  manual_json: 'Вставлений JSON',
   worker: 'Обробка та збереження',
 };
 

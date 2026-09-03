@@ -165,6 +165,77 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
   });
 }
 
+export function validateManualReceiptSubmission(
+  value: unknown,
+  referenceValue: unknown,
+): BulkParsedDocument {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Ручний JSON має бути обʼєктом одного чека.');
+  }
+  const row = value as Record<string, unknown>;
+  if (row.document_kind != null && row.document_kind !== 'receipt') {
+    throw new Error('Ручний JSON має описувати чек, а не інший тип документа.');
+  }
+  if (!Object.hasOwn(row, 'article_count')) {
+    throw new Error(
+      'Додай article_count або null, якщо на чеку немає надрукованого лічильника товарів.',
+    );
+  }
+  if (typeof row.total_raw_text !== 'string' || !row.total_raw_text.trim()) {
+    throw new Error('Додай total_raw_text із дослівним рядком фінального підсумку.');
+  }
+  const rawItems = Array.isArray(row.items) ? row.items : [];
+  rawItems.forEach((item, index) => {
+    const raw =
+      item && typeof item === 'object' && !Array.isArray(item)
+        ? (item as Record<string, unknown>)
+        : null;
+    if (
+      !raw ||
+      typeof raw.printed_line_total_orig !== 'number' ||
+      !Number.isFinite(raw.printed_line_total_orig)
+    ) {
+      throw new Error('Рядок ' + String(index + 1) + ': додай числовий printed_line_total_orig.');
+    }
+  });
+
+  const parsed = validateBulkDocument({
+    ...row,
+    document_kind: 'receipt',
+    classification_reason: 'Користувач надіслав виправлений JSON.',
+  });
+  const reference =
+    referenceValue && typeof referenceValue === 'object' && !Array.isArray(referenceValue)
+      ? (referenceValue as Record<string, unknown>)
+      : null;
+  const expectedTotal =
+    typeof reference?.total_orig === 'number' && Number.isFinite(reference.total_orig)
+      ? round(reference.total_orig, 2)
+      : null;
+  if (
+    expectedTotal != null &&
+    (parsed.total_orig == null || Math.abs(round(parsed.total_orig, 2) - expectedTotal) > 0.02)
+  ) {
+    throw new Error(
+      'total_orig не збігається з раніше прочитаним підсумком ' + expectedTotal.toFixed(2) + '.',
+    );
+  }
+  const expectedArticleCount =
+    typeof reference?.article_count === 'number' &&
+    Number.isInteger(reference.article_count) &&
+    reference.article_count >= 0
+      ? reference.article_count
+      : null;
+  if (expectedArticleCount != null && parsed.article_count !== expectedArticleCount) {
+    throw new Error(
+      'article_count не збігається з раніше прочитаним значенням ' +
+        String(expectedArticleCount) +
+        '.',
+    );
+  }
+  return parsed;
+}
+
 export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenceAudit {
   const issues: ReceiptEvidenceIssue[] = [];
   if (!parsed.total_raw_text?.trim()) {

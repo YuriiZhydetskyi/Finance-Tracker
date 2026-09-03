@@ -231,6 +231,48 @@ describe('ParsedReceiptSchema', () => {
     expect(parsed.items[0]?.product_name).toBe('Bread');
   });
 
+  it('retains row and receipt evidence used by durable manual imports', () => {
+    const parsed = ParsedReceiptSchema.parse({
+      store: 'EDEKA',
+      date: '2026-05-04',
+      currency: 'EUR',
+      total_orig: 1.99,
+      total_raw_text: 'SUMME EUR 1,99',
+      article_count: 1,
+      article_count_raw_text: '1 Artikel',
+      items: [
+        {
+          product_name: 'Bread',
+          qty: 1,
+          unit_price_orig: 1.99,
+          category_suggestion: null,
+          source_ordinal: 1,
+          raw_text: 'Bread 1,99',
+          row_kind: 'refund',
+          qty_evidence: 'implicit_one',
+          printed_line_total_orig: 1.99,
+          tax_class: '1',
+        },
+      ],
+    });
+
+    expect(parsed).toMatchObject({
+      total_raw_text: 'SUMME EUR 1,99',
+      article_count: 1,
+      article_count_raw_text: '1 Artikel',
+      items: [
+        {
+          source_ordinal: 1,
+          raw_text: 'Bread 1,99',
+          row_kind: 'refund',
+          qty_evidence: 'implicit_one',
+          printed_line_total_orig: 1.99,
+          tax_class: '1',
+        },
+      ],
+    });
+  });
+
   it('rejects bad currency', () => {
     expect(() =>
       ParsedReceiptSchema.parse({

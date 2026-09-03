@@ -246,6 +246,21 @@ export function useResolveImportFile(batchId: string) {
   });
 }
 
+export function useSubmitImportFileJson(batchId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, json }: { id: string; json: unknown }) => {
+      const { error } = await supabase.rpc('submit_receipt_import_json', {
+        p_file_id: id,
+        p_manual_json: json as Json,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () =>
+      queryClient.invalidateQueries({ queryKey: importBatchQueryKey(batchId) }),
+  });
+}
+
 async function hashBlob(blob: Blob): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');

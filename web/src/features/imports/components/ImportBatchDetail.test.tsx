@@ -8,6 +8,14 @@ vi.mock('@/shared/lib/dependencies', () => ({
   photoStorage: { getSignedUrl: vi.fn() },
 }));
 
+vi.mock('@/features/categories', () => ({
+  useCategories: () => ({ data: [] }),
+}));
+
+vi.mock('@/features/products', () => ({
+  useProducts: () => ({ data: [] }),
+}));
+
 vi.mock('../api/imports', () => ({
   useImportBatch: () => ({
     isLoading: false,
@@ -40,6 +48,7 @@ vi.mock('../api/imports', () => ({
           error_message: null,
           exception_kind: null,
           force_receipt: false,
+          manual_json: null,
           original_size_bytes: 100,
           parsed_json: null,
           processed_at: '2026-09-01T10:01:00Z',
@@ -82,6 +91,7 @@ vi.mock('../api/imports', () => ({
   useRequeueImportFile: () => ({ isPending: false, mutate: mutateMock }),
   useDiscardImportFile: () => ({ isPending: false, mutate: mutateMock }),
   useResolveImportFile: () => ({ isPending: false, mutate: mutateMock }),
+  useSubmitImportFileJson: () => ({ isPending: false, mutateAsync: mutateMock }),
 }));
 
 describe('ImportBatchDetail attempt history', () => {
