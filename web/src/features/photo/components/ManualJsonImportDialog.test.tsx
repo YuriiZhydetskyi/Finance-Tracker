@@ -27,7 +27,7 @@ const validReceiptJson = JSON.stringify({
   date: '2026-05-25',
   time: '14:32',
   currency: 'EUR',
-  total_orig: 12.34,
+  total_orig: 1.49,
   items: [
     {
       product_name: 'Bread',
@@ -52,7 +52,12 @@ describe('ManualJsonImportDialog', () => {
     );
     expect(screen.getByRole('heading', { name: /Вставити JSON від AI/i })).toBeInTheDocument();
     expect(screen.getByLabelText('JSON')).toBeInTheDocument();
-    expect(screen.getByLabelText('Prompt')).toBeInTheDocument();
+    const prompt = screen.getByLabelText('Prompt');
+    const promptValue = (prompt as HTMLTextAreaElement).value;
+    expect(promptValue).toContain('"total_orig": 1.49');
+    expect(promptValue).toContain('refund for returned Pfand/Leergut');
+    expect(promptValue).toContain('cancellation for a reversed item');
+    expect(promptValue).toContain('total_raw_text');
   });
 
   it('shows a parseable error when JSON is invalid', () => {
@@ -67,8 +72,24 @@ describe('ManualJsonImportDialog', () => {
     );
     const textarea = screen.getByLabelText('JSON');
     fireEvent.change(textarea, { target: { value: 'not json' } });
-    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
     expect(screen.getByRole('alert')).toHaveTextContent(/Не вдалося розпарсити JSON/);
+  });
+
+  it('restores the last durable submission for correction', () => {
+    const initialJson = JSON.parse(validReceiptJson) as unknown;
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        initialJson={initialJson}
+        onClose={noop}
+        onImported={noop}
+      />,
+    );
+
+    expect(screen.getByLabelText('JSON')).toHaveValue(JSON.stringify(initialJson, null, 2));
   });
 
   it('shows a Zod path-prefixed error when JSON fails schema validation', () => {
@@ -90,7 +111,7 @@ describe('ManualJsonImportDialog', () => {
       items: [],
     });
     fireEvent.change(screen.getByLabelText('JSON'), { target: { value: bad } });
-    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
     const alert = screen.getByRole('alert');
     expect(alert.textContent).toMatch(/currency/);
     // Path-prefix format: "currency: ..."
@@ -110,7 +131,7 @@ describe('ManualJsonImportDialog', () => {
       />,
     );
     fireEvent.change(screen.getByLabelText('JSON'), { target: { value: validReceiptJson } });
-    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
     expect(onImported).toHaveBeenCalledOnce();
     const importedSingle = onImported.mock.calls[0]![0] as unknown[];
     expect(importedSingle).toHaveLength(1);
@@ -141,7 +162,7 @@ describe('ManualJsonImportDialog', () => {
       { ...JSON.parse(validReceiptJson), store: 'Aldi', date: '2026-05-26' },
     ]);
     fireEvent.change(screen.getByLabelText('JSON'), { target: { value: arrayJson } });
-    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
     expect(onImported).toHaveBeenCalledOnce();
     const imported = onImported.mock.calls[0]![0] as { store: string }[];
     expect(imported).toHaveLength(2);
@@ -165,10 +186,54 @@ describe('ManualJsonImportDialog', () => {
       { ...JSON.parse(validReceiptJson), currency: undefined },
     ]);
     fireEvent.change(screen.getByLabelText('JSON'), { target: { value: arrayJson } });
-    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
     expect(onImported).not.toHaveBeenCalled();
     expect(screen.getByRole('alert')).toHaveTextContent(/Чек #2/);
     expect(screen.getByRole('alert')).toHaveTextContent(/currency/);
+  });
+
+  it('blocks JSON whose item sum does not match total_orig', () => {
+    const onImported = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={noop}
+        onImported={onImported}
+      />,
+    );
+    const mismatchedTotal = JSON.stringify({
+      ...JSON.parse(validReceiptJson),
+      total_orig: 2,
+    });
+    fireEvent.change(screen.getByLabelText('JSON'), { target: { value: mismatchedTotal } });
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
+
+    expect(onImported).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/Сума позицій/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/total_orig/);
+  });
+
+  it('keeps the dialog open and reports a failed durable submission', async () => {
+    const onImported = vi.fn().mockRejectedValue(new Error('Не вдалося поставити JSON у чергу.'));
+    const onClose = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={onClose}
+        onImported={onImported}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('JSON'), { target: { value: validReceiptJson } });
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Не вдалося поставити JSON у чергу.',
+    );
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('resets error and copyState on close but preserves jsonText', () => {
@@ -189,7 +254,7 @@ describe('ManualJsonImportDialog', () => {
     const { rerender } = render(renderDialog());
 
     fireEvent.change(screen.getByLabelText('JSON'), { target: { value: 'invalid' } });
-    fireEvent.click(screen.getByRole('button', { name: /Переглянути чек/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByDisplayValue('invalid')).toBeInTheDocument();
 

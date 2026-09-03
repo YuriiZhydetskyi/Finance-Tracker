@@ -17,6 +17,7 @@ import {
   prepareReceipt,
   reassociateMisattachedMultiplier,
   validateBulkDocument,
+  validateManualReceiptSubmission,
 } from './domain.ts';
 import {
   LONG_RECEIPT_CHUNK_SIZE,
@@ -74,12 +75,15 @@ type ImportFile = {
   storage_path: string;
   mime_type: string;
   force_receipt: boolean;
+  manual_json: unknown | null;
+  parsed_json: unknown | null;
 };
 type AttemptStage =
   | 'primary_parse'
   | 'fallback_parse'
   | 'independent_check'
   | 'chunk_parse'
+  | 'manual_json'
   | 'worker';
 type AttemptStatus = 'succeeded' | 'accepted' | 'rejected' | 'failed';
 type AttemptHandle = { id: number; startedAt: number };
@@ -146,22 +150,28 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     queue_read_count: job.read_count,
   });
   let longReceiptMode = false;
+  let manualAttempt: AttemptHandle | null = null;
+  let manualAttemptFinished = false;
   try {
     const { data: file, error: fileError } = await db
       .from('receipt_import_files')
-      .select('id, storage_path, mime_type, force_receipt')
+      .select('id, storage_path, mime_type, force_receipt, manual_json, parsed_json')
       .eq('id', job.import_file_id)
       .single();
     if (fileError || !file?.storage_path) throw new Error('Import file metadata unavailable');
     const importFile = file as ImportFile;
+    const manualSubmission = importFile.manual_json != null;
 
-    const [{ data: blob, error: downloadError }, categoriesResult, productsResult] =
-      await Promise.all([
-        db.storage.from(BUCKET).download(importFile.storage_path),
-        db.from('categories').select('name'),
-        db.from('products').select('name').limit(50),
-      ]);
-    if (downloadError || !blob) throw new Error('Stored document download failed');
+    const [documentResult, categoriesResult, productsResult] = await Promise.all([
+      manualSubmission
+        ? Promise.resolve({ data: null, error: null })
+        : db.storage.from(BUCKET).download(importFile.storage_path),
+      db.from('categories').select('name'),
+      db.from('products').select('name').limit(50),
+    ]);
+    if (!manualSubmission && (documentResult.error || !documentResult.data)) {
+      throw new Error('Stored document download failed');
+    }
     if (categoriesResult.error) throw new Error('Category lookup failed');
 
     const categories = (categoriesResult.data ?? []).map((row) => row.name);
@@ -170,16 +180,41 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       products: productsResult.error ? [] : (productsResult.data ?? []),
       mimeType: importFile.mime_type,
     };
-    const base64 = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-    longReceiptMode = await shouldUseLongReceiptChunks(importFile.id, job.msg_id);
+    const base64 = documentResult.data
+      ? bytesToBase64(new Uint8Array(await documentResult.data.arrayBuffer()))
+      : '';
+    longReceiptMode =
+      !manualSubmission && (await shouldUseLongReceiptChunks(importFile.id, job.msg_id));
     const seed =
-      !longReceiptMode && shouldLoadStoredVerificationSeed(job.read_count)
+      !manualSubmission && !longReceiptMode && shouldLoadStoredVerificationSeed(job.read_count)
         ? await loadStoredVerificationSeed(importFile.id, job.msg_id)
         : null;
     let parsed: BulkParsedDocument;
     const diagnosticMessages: string[] = [];
 
-    if (longReceiptMode) {
+    if (manualSubmission) {
+      manualAttempt = await startAttempt(job, analysisRun, 'manual_json', null, {
+        source: 'user_submission',
+      });
+      try {
+        parsed = validateManualReceiptSubmission(importFile.manual_json, importFile.parsed_json);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message.slice(0, 1000) : 'Ручний JSON невалідний.';
+        await completeManualException(job, message);
+        await finishAttempt(manualAttempt, 'rejected', {
+          diagnosis_code: 'invalid_manual_json',
+          public_message: message,
+          result_json: importFile.manual_json,
+        });
+        manualAttemptFinished = true;
+        await finishAttempt(workerAttempt, 'succeeded', {
+          diagnosis_code: 'invalid_manual_json',
+          public_message: message,
+        });
+        return { id: importFile.id, status: 'needs_review' };
+      }
+    } else if (longReceiptMode) {
       const chunked = await parseLongReceipt(
         job,
         analysisRun,
@@ -235,6 +270,7 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     const firstArithmetic = checkReceiptArithmetic(parsed);
     const firstEvidence = auditReceiptEvidence(parsed);
     if (
+      !manualSubmission &&
       !seed &&
       shouldQueueIndependentCheck(
         selectParseProviderRole(job.read_count),
@@ -257,7 +293,21 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
         finalEvidence.issues[0]?.message ?? 'Не вдалося підтвердити рядки чека.',
         diagnosticMessage,
       );
-      await completeException(job, 'receipt', 'validation', parsed, message);
+      if (manualSubmission) {
+        await completeManualException(job, message);
+        await finishAttempt(manualAttempt, 'rejected', {
+          ...providerResultFields(parsed, null),
+          diagnosis_code: finalEvidence.issues[0]?.code ?? 'evidence_invalid',
+          public_message: message,
+          details: {
+            evidence_issue_codes: finalEvidence.issues.map((issue) => issue.code),
+            multiplier_reassociation: multiplierReassociation.details,
+          },
+        });
+        manualAttemptFinished = true;
+      } else {
+        await completeException(job, 'receipt', 'validation', parsed, message);
+      }
       await finishAttempt(workerAttempt, 'succeeded', {
         diagnosis_code: finalEvidence.issues[0]?.code ?? 'evidence_invalid',
         public_message: message,
@@ -282,7 +332,17 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     );
     if (!prepared.ok) {
       const message = joinReviewMessages(prepared.reason, diagnosticMessage);
-      await completeException(job, 'receipt', 'validation', parsed, message);
+      if (manualSubmission) {
+        await completeManualException(job, message);
+        await finishAttempt(manualAttempt, 'rejected', {
+          ...providerResultFields(parsed, null),
+          diagnosis_code: 'validation',
+          public_message: message,
+        });
+        manualAttemptFinished = true;
+      } else {
+        await completeException(job, 'receipt', 'validation', parsed, message);
+      }
       await finishAttempt(workerAttempt, 'succeeded', {
         diagnosis_code: 'validation',
         public_message: message,
@@ -302,6 +362,14 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       finalResult && typeof finalResult === 'object' && 'status' in finalResult
         ? String(finalResult.status)
         : 'saved';
+    if (manualSubmission) {
+      await finishAttempt(manualAttempt, 'accepted', {
+        ...providerResultFields(parsed, null),
+        diagnosis_code: status,
+        public_message: diagnosticMessage,
+      });
+      manualAttemptFinished = true;
+    }
     await finishAttempt(workerAttempt, 'succeeded', {
       diagnosis_code: multiplierReassociation.applied ? 'misattached_multiplier' : status,
       public_message: diagnosticMessage,
@@ -313,6 +381,13 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
   } catch (error) {
     const message = publicError(error);
     console.error('[process-receipt-imports] job failed', job.import_file_id, message);
+    if (manualAttempt && !manualAttemptFinished) {
+      await finishAttempt(manualAttempt, 'failed', {
+        diagnosis_code: 'manual_json_processing_failed',
+        public_message: message,
+      });
+      manualAttemptFinished = true;
+    }
     await finishAttempt(workerAttempt, 'failed', {
       diagnosis_code:
         error instanceof AiProviderError || error instanceof RetryableImportError
@@ -660,7 +735,7 @@ function anthropicSettings(model: string, role: string): Record<string, unknown>
 
 function providerResultFields(
   parsed: BulkParsedDocument,
-  trace: AiCallTrace,
+  trace: AiCallTrace | null,
 ): Record<string, unknown> {
   const arithmetic = checkReceiptArithmetic(parsed);
   const articleCount = checkReceiptArticleCount(parsed);
@@ -804,6 +879,15 @@ async function completeException(
     p_error_message: message.slice(0, 4000),
   });
   if (error) throw new Error('Exception result could not be persisted');
+}
+
+async function completeManualException(job: Job, message: string): Promise<void> {
+  const { error } = await db.rpc('complete_manual_receipt_import_exception', {
+    p_file_id: job.import_file_id,
+    p_msg_id: job.msg_id,
+    p_error_message: message.slice(0, 4000),
+  });
+  if (error) throw new Error('Manual JSON validation result could not be persisted');
 }
 
 async function getFxRate(currency: string, dateIso: string | null): Promise<number> {

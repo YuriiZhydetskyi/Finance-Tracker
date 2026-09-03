@@ -12,13 +12,23 @@ import { parseJsonText } from '@/shared/utils/parse-json-text';
 import { formatZodIssues } from '@/shared/utils/format-zod-issues';
 import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
 import { Button } from '@/shared/ui/Button';
+import {
+  validateManualJsonReceipt,
+  type ManualJsonValidationOptions,
+} from '../utils/validate-manual-json';
 
 type Props = {
   open: boolean;
   categories: string[];
   products: { name: string }[];
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+  singleReceipt?: boolean;
+  initialJson?: unknown;
+  validationOptions?: ManualJsonValidationOptions;
   onClose: () => void;
-  onImported: (parsed: ParsedReceipt[]) => void;
+  onImported: (parsed: ParsedReceipt[], source: unknown[]) => void | Promise<void>;
 };
 
 const EXAMPLE_JSON = `{
@@ -27,7 +37,10 @@ const EXAMPLE_JSON = `{
   "date": "2026-05-25",
   "time": "14:32",
   "currency": "EUR",
-  "total_orig": 12.34,
+  "total_orig": 1.49,
+  "total_raw_text": "SUMME EUR 1,49",
+  "article_count": 1,
+  "article_count_raw_text": "1 Artikel",
   "items": [
     {
       "product_name": "Bread",
@@ -35,7 +48,12 @@ const EXAMPLE_JSON = `{
       "qty": 1,
       "unit_price_orig": 1.49,
       "discount_orig": 0,
-      "category_suggestion": null
+      "category_suggestion": null,
+      "row_kind": "item",
+      "qty_evidence": "implicit_one",
+      "source_ordinal": 1,
+      "raw_text": "Bread 1,49",
+      "printed_line_total_orig": 1.49
     }
   ]
 }`;
@@ -44,12 +62,24 @@ const EXAMPLE_JSON = `{
 // for external AI tools (ChatGPT/Claude desktop) when the product catalog grows.
 const PRODUCT_HINT_LIMIT = 50;
 
-function buildPrompt(categories: string[], products: { name: string }[]): string {
+function buildPrompt(
+  categories: string[],
+  products: { name: string }[],
+  validationOptions?: ManualJsonValidationOptions,
+): string {
   const categoryList = categories.length > 0 ? categories.join(', ') : 'No categories supplied';
   const productHints = products
     .slice(0, PRODUCT_HINT_LIMIT)
     .map((p) => p.name)
     .join(', ');
+  const referenceParts = [
+    validationOptions?.expectedTotalOrig == null
+      ? null
+      : 'total_orig ' + validationOptions.expectedTotalOrig.toFixed(2),
+    validationOptions?.expectedArticleCount == null
+      ? null
+      : 'article_count ' + String(validationOptions.expectedArticleCount),
+  ].filter(Boolean);
 
   return [
     'Analyze the attached receipt image(s) and return only valid JSON. Do not include markdown, comments, or explanatory text.',
@@ -66,13 +96,29 @@ function buildPrompt(categories: string[], products: { name: string }[]): string
     '- time: HH:MM in 24-hour time, or null.',
     '- currency: ISO 4217 code, default to EUR if not visible.',
     '- total_orig: the final amount to pay, or null.',
+    '- total_raw_text: copy the complete printed line that contains total_orig.',
+    '- article_count: the printed count of articles/Posten, or null when the receipt has none.',
+    '- article_count_raw_text: copy the complete printed line that contains article_count, or null.',
     '- product_name: copy the receipt text verbatim; do not translate or normalize.',
     '- product_code: per-line article/product code printed before the product name, or null.',
     '- qty: always positive. Use printed count, kg/l amount, or 1 when no quantity is shown.',
     '- unit_price_orig: price per unit in receipt currency. It may be negative for refunds, discounts, or cancellations.',
-    '- discount_orig: positive discount amount for that line when printed separately; otherwise 0 or omit it.',
+    '- discount_orig: positive per-unit discount only when it belongs to the same item row. For a separate coupon/discount row, use discount_orig 0 and a negative unit_price_orig.',
     '- category_suggestion: one of the allowed categories exactly, or null if uncertain. Do not invent categories.',
     '- Include negative receipt lines. Do not net out cancellations, discounts, Pfand, or Leergut refunds.',
+    '- row_kind: use item for purchases, deposit for positive Pfand, discount for a negative coupon, refund for returned Pfand/Leergut, or cancellation for a reversed item.',
+    '- qty_evidence: use implicit_one, explicit_multiplier, or weight_or_volume for every row.',
+    '- source_ordinal: number every row consecutively, starting from 1.',
+    '- raw_text: copy the complete visible receipt text used for this financial row, including its amount and any quantity multiplier.',
+    '- printed_line_total_orig: signed final printed amount for that exact row, after quantity and any per-unit discount.',
+    '- The app checks every line total, quantity evidence, row order, final total, and article count. Fix any mismatch before returning JSON.',
+    ...(referenceParts.length > 0
+      ? [
+          '- A previous pass read ' +
+            referenceParts.join(' and ') +
+            '. Verify these values independently against the PDF; do not change them merely to make the arithmetic pass.',
+        ]
+      : []),
     '',
     `Allowed categories: ${categoryList}`,
     productHints
@@ -114,11 +160,29 @@ export function toReceiptCandidates(value: unknown): unknown[] {
 // implementation now lives in shared/utils so the statement-import dialog reuses it.
 export { parseJsonText };
 
-export function ManualJsonImportDialog({ open, categories, products, onClose, onImported }: Props) {
+export function ManualJsonImportDialog({
+  open,
+  categories,
+  products,
+  title = 'Вставити JSON від AI',
+  description = 'Підходить один чек, масив чеків або обʼєкт із полем receipts.',
+  submitLabel = 'Перевірити та переглянути',
+  singleReceipt = false,
+  initialJson,
+  validationOptions,
+  onClose,
+  onImported,
+}: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const prompt = useMemo(() => buildPrompt(categories, products), [categories, products]);
-  const [jsonText, setJsonText] = useState('');
+  const prompt = useMemo(
+    () => buildPrompt(categories, products, validationOptions),
+    [categories, products, validationOptions],
+  );
+  const [jsonText, setJsonText] = useState(() =>
+    initialJson == null ? '' : JSON.stringify(initialJson, null, 2),
+  );
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const { copyState, copy, reset: resetCopy } = useCopyToClipboard(prompt);
 
   useEffect(() => {
@@ -136,7 +200,7 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
     onClose();
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
@@ -146,18 +210,34 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
         setError('JSON не містить жодного чека.');
         return;
       }
+      if (singleReceipt && candidates.length !== 1) {
+        setError('Для файла імпорту встав рівно один чек.');
+        return;
+      }
 
       const receipts: ParsedReceipt[] = [];
       const errors: string[] = [];
       candidates.forEach((candidate, index) => {
         const result = ParsedReceiptSchema.safeParse(candidate);
-        if (result.success) {
-          receipts.push(result.data);
+        if (!result.success) {
+          const detail = formatZodIssues(result.error);
+          // Number the receipt only when there's more than one to disambiguate.
+          errors.push(candidates.length > 1 ? `Чек #${index + 1} — ${detail}` : detail);
           return;
         }
-        const detail = formatZodIssues(result.error);
-        // Number the receipt only when there's more than one to disambiguate.
-        errors.push(candidates.length > 1 ? `Чек #${index + 1} — ${detail}` : detail);
+
+        const validationIssues = validateManualJsonReceipt(
+          candidate,
+          result.data,
+          validationOptions,
+        );
+        if (validationIssues.length > 0) {
+          const detail = validationIssues.join('\n');
+          errors.push(candidates.length > 1 ? `Чек #${index + 1} — ${detail}` : detail);
+          return;
+        }
+
+        receipts.push(result.data);
       });
 
       // All-or-nothing: one bad receipt blocks the whole paste so the user fixes
@@ -167,11 +247,15 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
         return;
       }
 
-      onImported(receipts);
+      setSubmitting(true);
+      const submission = onImported(receipts, candidates);
+      if (submission) await submission;
       setJsonText('');
       handleClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не вдалося розпарсити JSON.');
+      setError(e instanceof Error ? e.message : 'Не вдалося перевірити JSON.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -197,17 +281,24 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
       aria-labelledby="manual-json-title"
       className="max-h-[92vh] w-[min(96vw,64rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
     >
-      <form onSubmit={handleSubmit} className="flex max-h-[92vh] flex-col overflow-hidden">
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        className="flex max-h-[92vh] flex-col overflow-hidden"
+      >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <div>
             <h2 id="manual-json-title" className="text-base font-semibold text-slate-900">
-              Вставити JSON від AI
+              {title}
             </h2>
-            <p className="mt-0.5 text-xs text-slate-600">
-              Підходить один чек, масив чеків або обʼєкт із полем receipts.
-            </p>
+            <p className="mt-0.5 text-xs text-slate-600">{description}</p>
           </div>
-          <Button type="button" variant="ghost" onClick={handleClose} className="px-3">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={submitting}
+            onClick={handleClose}
+            className="px-3"
+          >
             Закрити
           </Button>
         </div>
@@ -259,10 +350,12 @@ export function ManualJsonImportDialog({ open, categories, products, onClose, on
         </div>
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3">
-          <Button type="button" variant="ghost" onClick={handleClose}>
+          <Button type="button" variant="ghost" disabled={submitting} onClick={handleClose}>
             Скасувати
           </Button>
-          <Button type="submit">Переглянути чек</Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? 'Надсилаю…' : submitLabel}
+          </Button>
         </div>
       </form>
     </dialog>

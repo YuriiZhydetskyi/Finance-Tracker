@@ -42,14 +42,15 @@ export function BulkImportForm() {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-sm">
         <p className="text-slate-700">
-          Вже маєш JSON від Claude або Claude Code? Встав його без повторного розпізнавання.
+          Для окремого нового чека вже маєш JSON від Claude? Імпортуй його тут. JSON для файла з
+          помилкою вставляється безпосередньо в картці цього файла.
         </p>
         <Link
           to="/photo"
           search={{ pasteJson: '1' }}
           className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-600"
         >
-          Вставити готовий JSON
+          Імпортувати окремий чек
         </Link>
       </div>
       <label className="block space-y-1 text-sm font-medium text-slate-700">
