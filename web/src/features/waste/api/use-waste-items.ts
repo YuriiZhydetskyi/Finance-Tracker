@@ -39,20 +39,18 @@ export type WasteItemRow = {
   };
 };
 
-const DEFAULT_LIMIT = 200;
-
 export const wasteItemsQueryKey = ['waste-items'] as const;
 
 /**
- * Items eligible to be marked as spoilage, sorted by purchase date desc.
+ * All items eligible to be marked as spoilage, sorted by purchase date desc.
  * Cancellation/Pfand-refund rows (total_orig <= 0) are excluded server-side.
  * The PostgREST `!inner` join makes receipt filters (date/store) NOT NULL —
  * items orphaned from their receipt would be filtered out, but that should
  * never happen with our FK.
  */
-export function useWasteItems(filters: WasteFilters, limit = DEFAULT_LIMIT) {
+export function useWasteItems(filters: WasteFilters) {
   return useQuery<WasteItemRow[]>({
-    queryKey: [...wasteItemsQueryKey, { filters, limit }] as const,
+    queryKey: [...wasteItemsQueryKey, { filters }] as const,
     queryFn: async () => {
       let q = supabase
         .from('items')
@@ -74,9 +72,10 @@ export function useWasteItems(filters: WasteFilters, limit = DEFAULT_LIMIT) {
       if (filters.priceMax != null) q = q.lte('total_orig', filters.priceMax);
 
       const { data, error } = await q
-        .order('date', { referencedTable: 'receipts', ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(limit);
+        // `referencedTable` orders only the embedded receipt object. Ordering
+        // the root item rows needs PostgREST's relation(column) syntax.
+        .order('receipt(date)', { ascending: false })
+        .order('created_at', { ascending: false });
       if (error) throw error;
 
       const rows = (data ?? []) as unknown as WasteItemRow[];
