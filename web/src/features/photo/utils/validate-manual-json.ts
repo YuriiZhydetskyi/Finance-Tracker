@@ -8,6 +8,12 @@ type JsonRecord = Record<string, unknown>;
 
 export type ManualJsonValidationOptions = {
   requireEvidence?: boolean;
+  /**
+   * Structured sources such as Amazon emails carry product data, not a
+   * verbatim receipt/OCR transcript. Their totals remain validated, while
+   * text-evidence assertions are deliberately skipped.
+   */
+  validateTextEvidence?: boolean;
   requireSavableReceipt?: boolean;
   expectedTotalOrig?: number | null;
   expectedArticleCount?: number | null;
@@ -57,16 +63,18 @@ export function validateManualJsonReceipt(
   }
 
   validateReceiptTotal(record, receipt, accountingItems, options, issues);
-  validateReceiptEvidence(record, receipt, options, issues);
+  if (options.validateTextEvidence !== false) {
+    validateReceiptEvidence(record, receipt, options, issues);
 
-  rawItems.forEach((rawItem, index) => {
-    const raw = asRecord(rawItem);
-    const parsedItem = receipt.items[index];
-    if (!raw || !parsedItem) return;
-    validateRowEvidence(raw, parsedItem, index, receipt.currency, options, issues);
-  });
+    rawItems.forEach((rawItem, index) => {
+      const raw = asRecord(rawItem);
+      const parsedItem = receipt.items[index];
+      if (!raw || !parsedItem) return;
+      validateRowEvidence(raw, parsedItem, index, receipt.currency, options, issues);
+    });
 
-  validateArticleCount(record, accountingItems, receipt, options, issues);
+    validateArticleCount(record, accountingItems, receipt, options, issues);
+  }
   validateSourceOrdinals(rawItems, options.requireEvidence === true, issues);
   return issues;
 }
