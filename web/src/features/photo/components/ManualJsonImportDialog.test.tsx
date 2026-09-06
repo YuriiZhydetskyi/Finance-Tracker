@@ -58,6 +58,27 @@ const amazonEmailJson = JSON.stringify([
   },
 ]);
 
+const reconciledAmazonEmailJson = JSON.stringify([
+  {
+    order_number: '302-7654321-7654321',
+    date: '2026-09-01T12:34:56Z',
+    total: '25.00 EUR',
+    gmail_total: '20.00 EUR',
+    return_info: null,
+    items: [
+      {
+        title: 'Two Amazon products',
+        quantity: 2,
+        price: '12.50 EUR',
+        gmail_price: '10.00 EUR',
+        asin: 'B076543210',
+        product_link: 'https://www.amazon.de/dp/B076543210',
+        image: 'https://m.media-amazon.com/images/I/example-two.jpg',
+      },
+    ],
+  },
+]);
+
 describe('ManualJsonImportDialog', () => {
   it('renders prompt and JSON textarea when open', () => {
     render(
@@ -210,6 +231,27 @@ describe('ManualJsonImportDialog', () => {
       expect.any(Array),
       expect.stringMatching(/Amazon: підготовлено 1 замовлень/),
     );
+  });
+
+  it('imports reconciled Amazon values without treating Gmail audit fields as receipt evidence', () => {
+    const onImported = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={noop}
+        onImported={onImported}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('JSON'), {
+      target: { value: reconciledAmazonEmailJson },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
+
+    expect(onImported).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('blocks the whole array when one receipt is invalid and labels the bad index', () => {

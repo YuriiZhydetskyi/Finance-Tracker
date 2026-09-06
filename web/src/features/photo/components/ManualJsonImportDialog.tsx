@@ -248,7 +248,7 @@ export function ManualJsonImportDialog({
         const validationIssues = validateManualJsonReceipt(
           candidate,
           result.data,
-          validationOptions,
+          amazonImport ? { ...validationOptions, validateTextEvidence: false } : validationOptions,
         );
         if (validationIssues.length > 0) {
           const detail = validationIssues.join('\n');
