@@ -19,6 +19,7 @@ function mkReceipt(over: Partial<Receipt> & Pick<Receipt, 'id'>): Receipt {
     paid_by: OTHER,
     photo_url: null,
     photo_path: null,
+    merchant_order_id: null,
     source: 'photo',
     raw_ocr_json: null,
     note: null,

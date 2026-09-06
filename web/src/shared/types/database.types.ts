@@ -69,7 +69,9 @@ export type Database = {
           id: string;
           note: string | null;
           product_id: string | null;
+          product_image_url: string | null;
           product_name: string;
+          product_url: string | null;
           qty: number;
           receipt_id: string;
           store_product_code: string | null;
@@ -88,7 +90,9 @@ export type Database = {
           id: string;
           note?: string | null;
           product_id?: string | null;
+          product_image_url?: string | null;
           product_name: string;
+          product_url?: string | null;
           qty: number;
           receipt_id: string;
           store_product_code?: string | null;
@@ -107,7 +111,9 @@ export type Database = {
           id?: string;
           note?: string | null;
           product_id?: string | null;
+          product_image_url?: string | null;
           product_name?: string;
+          product_url?: string | null;
           qty?: number;
           receipt_id?: string;
           store_product_code?: string | null;
@@ -503,6 +509,7 @@ export type Database = {
           date: string;
           fx_rate_eur: number;
           id: string;
+          merchant_order_id: string | null;
           note: string | null;
           paid_by: string;
           photo_path: string | null;
@@ -522,6 +529,7 @@ export type Database = {
           date: string;
           fx_rate_eur: number;
           id: string;
+          merchant_order_id?: string | null;
           note?: string | null;
           paid_by: string;
           photo_path?: string | null;
@@ -541,6 +549,7 @@ export type Database = {
           date?: string;
           fx_rate_eur?: number;
           id?: string;
+          merchant_order_id?: string | null;
           note?: string | null;
           paid_by?: string;
           photo_path?: string | null;
@@ -704,6 +713,10 @@ export type Database = {
           read_count: number;
         }[];
       };
+      complete_manual_receipt_import_exception: {
+        Args: { p_error_message: string; p_file_id: string; p_msg_id: number };
+        Returns: undefined;
+      };
       complete_receipt_import_exception: {
         Args: {
           p_document_kind: string;
@@ -712,14 +725,6 @@ export type Database = {
           p_file_id: string;
           p_msg_id: number;
           p_parsed_json: Json;
-        };
-        Returns: undefined;
-      };
-      complete_manual_receipt_import_exception: {
-        Args: {
-          p_error_message: string;
-          p_file_id: string;
-          p_msg_id: number;
         };
         Returns: undefined;
       };
@@ -781,10 +786,6 @@ export type Database = {
         Args: { p_file_id: string; p_receipt_id: string };
         Returns: undefined;
       };
-      submit_receipt_import_json: {
-        Args: { p_file_id: string; p_manual_json: Json };
-        Returns: undefined;
-      };
       schedule_receipt_import_retry: {
         Args: {
           p_delay_seconds?: number;
@@ -793,6 +794,10 @@ export type Database = {
           p_msg_id: number;
           p_read_count: number;
         };
+        Returns: undefined;
+      };
+      submit_receipt_import_json: {
+        Args: { p_file_id: string; p_manual_json: Json };
         Returns: undefined;
       };
     };

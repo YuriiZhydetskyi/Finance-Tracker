@@ -58,6 +58,7 @@ export function makeReceipt(input: ReceiptInput): Receipt {
     paid_by: input.paid_by,
     photo_url: input.photo_url ?? null,
     photo_path: input.photo_path ?? null,
+    merchant_order_id: input.merchant_order_id ?? null,
     source: input.source,
     raw_ocr_json: input.raw_ocr_json ?? null,
     note: input.note ?? null,
@@ -86,6 +87,8 @@ export function makeItem(input: ItemInput): Item {
     product_id: input.product_id ?? null,
     product_name: input.product_name,
     store_product_code: input.store_product_code ?? null,
+    product_url: input.product_url ?? null,
+    product_image_url: input.product_image_url ?? null,
     category: input.category,
     qty,
     unit_price_orig,
@@ -191,6 +194,7 @@ export type ReceiptPatch = Partial<
     | 'paid_by'
     | 'photo_url'
     | 'photo_path'
+    | 'merchant_order_id'
     | 'source'
     | 'raw_ocr_json'
     | 'note'
@@ -214,6 +218,8 @@ export type ItemPatch = Partial<
     | 'product_id'
     | 'product_name'
     | 'store_product_code'
+    | 'product_url'
+    | 'product_image_url'
     | 'category'
     | 'qty'
     | 'unit_price_orig'
