@@ -142,6 +142,7 @@ create table public.receipts (
   total_eur     numeric(12, 2) not null,
   paid_by       text not null check (paid_by like '%@%'),
   photo_url     text,
+  merchant_order_id text,
   source        public.receipt_source not null,    -- enum: 'photo' | 'manual' | 'edit' | 'manual-json' | 'statement'
   raw_ocr_json  text check (raw_ocr_json is null or length(raw_ocr_json) <= 45000),
   note          text,
@@ -150,34 +151,36 @@ create table public.receipts (
 );
 ```
 
-| Колонка        | Тип           | Nullable | Правила                                                                                                                                                                                                                                                                        | Приклад                                                                                |
-| -------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `id`           | text (ULID)   | ні       | 26 символів                                                                                                                                                                                                                                                                    | `01HM4N6RXX5K2P9F8DZ7QWERTY`                                                           |
-| `date`         | date          | ні       | ISO 8601 yyyy-mm-dd                                                                                                                                                                                                                                                            | `2026-05-04`                                                                           |
-| `store`        | text          | ні       | вільний текст; рекомендована soft-нормалізація на UI                                                                                                                                                                                                                           | `ALDI Süd`                                                                             |
-| `currency`     | text          | ні       | ISO 4217                                                                                                                                                                                                                                                                       | `EUR` / `UAH`                                                                          |
-| `total_orig`   | numeric(12,2) | ні       | у валюті чеку, 2dp                                                                                                                                                                                                                                                             | `34.78`                                                                                |
-| `fx_rate_eur`  | numeric(14,6) | ні       | курс currency→EUR на дату чеку, 6dp; > 0                                                                                                                                                                                                                                       | `1.000000` (EUR) / `0.024500` (UAH)                                                    |
-| `total_eur`    | numeric(12,2) | ні       | `round(total_orig * fx_rate_eur, 2)`                                                                                                                                                                                                                                           | `34.78`                                                                                |
-| `paid_by`      | text (email)  | ні       | гілд-перевірка `like '%@%'`                                                                                                                                                                                                                                                    | `you@example.com`                                                                      |
-| `photo_url`    | text          | так      | signed URL з Storage; TTL 1 година (re-sign on display)                                                                                                                                                                                                                        | `https://<your-project-ref>.supabase.co/storage/v1/object/sign/receipts/...?token=...` |
-| `source`       | enum          | ні       | `'photo' \| 'manual' \| 'edit' \| 'manual-json' \| 'statement'` (`manual-json` — користувач сам прогнав prompt у external AI tool і вставив JSON через діалог "Paste AI JSON" на `/photo`; `statement` — чек-заглушка з орфанної транзакції виписки, одна позиція без деталей) | `photo`                                                                                |
-| `raw_ocr_json` | text          | так      | JSON-stringify ParsedReceipt; **обмежено 45,000 chars**; null коли source=manual або занадто великий (для source=photo та source=manual-json — збережено)                                                                                                                      | `{"store":"Lidl","items":[...]}`                                                       |
-| `note`         | text          | так      | вільна нотатка                                                                                                                                                                                                                                                                 | `Закупка для вечірки`                                                                  |
-| `created_at`   | timestamptz   | ні       | default `now()`                                                                                                                                                                                                                                                                | `2026-05-04T14:30:00+02:00`                                                            |
-| `updated_at`   | timestamptz   | ні       | trigger `set_updated_at()` оновлює на UPDATE                                                                                                                                                                                                                                   |                                                                                        |
+| Колонка             | Тип           | Nullable | Правила                                                                                                                                                                                                                                                                        | Приклад                                                                                |
+| ------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `id`                | text (ULID)   | ні       | 26 символів                                                                                                                                                                                                                                                                    | `01HM4N6RXX5K2P9F8DZ7QWERTY`                                                           |
+| `date`              | date          | ні       | ISO 8601 yyyy-mm-dd                                                                                                                                                                                                                                                            | `2026-05-04`                                                                           |
+| `store`             | text          | ні       | вільний текст; рекомендована soft-нормалізація на UI                                                                                                                                                                                                                           | `ALDI Süd`                                                                             |
+| `currency`          | text          | ні       | ISO 4217                                                                                                                                                                                                                                                                       | `EUR` / `UAH`                                                                          |
+| `total_orig`        | numeric(12,2) | ні       | у валюті чеку, 2dp                                                                                                                                                                                                                                                             | `34.78`                                                                                |
+| `fx_rate_eur`       | numeric(14,6) | ні       | курс currency→EUR на дату чеку, 6dp; > 0                                                                                                                                                                                                                                       | `1.000000` (EUR) / `0.024500` (UAH)                                                    |
+| `total_eur`         | numeric(12,2) | ні       | `round(total_orig * fx_rate_eur, 2)`                                                                                                                                                                                                                                           | `34.78`                                                                                |
+| `paid_by`           | text (email)  | ні       | гілд-перевірка `like '%@%'`                                                                                                                                                                                                                                                    | `you@example.com`                                                                      |
+| `photo_url`         | text          | так      | signed URL з Storage; TTL 1 година (re-sign on display)                                                                                                                                                                                                                        | `https://<your-project-ref>.supabase.co/storage/v1/object/sign/receipts/...?token=...` |
+| `merchant_order_id` | text          | так      | Стабільний номер замовлення продавця. Для Amazon запобігає повторному імпорту того самого order; не є номером банківської транзакції.                                                                                                                                          | `302-1234567-1234567`                                                                  |
+| `source`            | enum          | ні       | `'photo' \| 'manual' \| 'edit' \| 'manual-json' \| 'statement'` (`manual-json` — користувач сам прогнав prompt у external AI tool і вставив JSON через діалог "Paste AI JSON" на `/photo`; `statement` — чек-заглушка з орфанної транзакції виписки, одна позиція без деталей) | `photo`                                                                                |
+| `raw_ocr_json`      | text          | так      | JSON-stringify ParsedReceipt; **обмежено 45,000 chars**; null коли source=manual або занадто великий (для source=photo та source=manual-json — збережено)                                                                                                                      | `{"store":"Lidl","items":[...]}`                                                       |
+| `note`              | text          | так      | вільна нотатка                                                                                                                                                                                                                                                                 | `Закупка для вечірки`                                                                  |
+| `created_at`        | timestamptz   | ні       | default `now()`                                                                                                                                                                                                                                                                | `2026-05-04T14:30:00+02:00`                                                            |
+| `updated_at`        | timestamptz   | ні       | trigger `set_updated_at()` оновлює на UPDATE                                                                                                                                                                                                                                   |                                                                                        |
 
 **Інваріанти:**
 
 - `total_eur = round(total_orig * fx_rate_eur, 2)` — обчислюється у `makeReceipt` factory.
 - `fx_rate_eur` для EUR-чеку = `1.000000` (явно записуємо).
-- `raw_ocr_json` зберігається тільки для `source='photo'`; для інших — `null`.
+- `raw_ocr_json` зберігається для `source='photo'` та `source='manual-json'`, якщо вміщується у ліміт.
 - `photo_url` зберігає **signed URL**, не path. Re-sign — через `photoStorage.getSignedUrl(path)`; path можна екстрактнути з URL regex-ом, або (опційно у майбутньому) додати `photo_path` колонку.
 
 **Індекси:**
 
 - `idx_receipts_date` (date desc)
 - `idx_receipts_paid_by_date` (paid_by, date desc)
+- `idx_receipts_store_merchant_order_id` (unique, partial) — тільки для receipt з merchant order ID
 
 ---
 
@@ -191,6 +194,8 @@ create table public.items (
   receipt_id      text not null references public.receipts(id) on delete cascade,
   product_id      text references public.products(id) on delete set null,
   product_name    text not null,
+  product_url     text,
+  product_image_url text,
   category        text not null references public.categories(name) on update cascade,
   qty             numeric(10, 3) not null check (qty > 0),
   unit_price_orig numeric(12, 2) not null,
@@ -211,24 +216,26 @@ create table public.items (
 );
 ```
 
-| Колонка           | Тип           | Nullable       | Правила                                                                     | Приклад                       |
-| ----------------- | ------------- | -------------- | --------------------------------------------------------------------------- | ----------------------------- |
-| `id`              | text (ULID)   | ні             |                                                                             | `01HM4N6RZZ7K2P9F8DZ7QWERAA`  |
-| `receipt_id`      | text (ULID)   | ні             | FK → `receipts.id`, CASCADE on delete                                       |                               |
-| `product_id`      | text (ULID)   | так            | FK → `products.id`, SET NULL on delete                                      |                               |
-| `product_name`    | text          | ні             | snapshot на момент покупки (ADR snapshot rule)                              | `Pesto Barilla Genovese 190g` |
-| `category`        | text          | ні             | FK → `categories.name`, CASCADE on update                                   | `Бакалія`                     |
-| `qty`             | numeric(10,3) | ні             | > 0                                                                         | `2.000` / `0.350`             |
-| `unit_price_orig` | numeric(12,2) | ні             | у валюті чеку. **Може бути від'ємним** (cancellation, Pfand-refund, Rabatt) | `3.49` / `-2.99`              |
-| `total_orig`      | numeric(12,2) | ні             | `round(qty * (unit_price_orig - discount_orig), 2)`                         | `6.98` / `-2.99`              |
-| `total_eur`       | numeric(12,2) | ні             | `round(total_orig * receipt.fx_rate_eur, 2)`                                | `6.98`                        |
-| `consumed_by`     | text          | ні             | `'his' \| 'hers' \| 'shared' \| 'custom:N/M'`                               | `shared` / `custom:30/70`     |
-| `note`            | text          | так            |                                                                             | `Купили на знижці -50%`       |
-| `wasted_qty`      | numeric(10,3) | ні (default 0) | ≤ `qty`                                                                     | `0.000`                       |
-| `wasted_at`       | timestamptz   | так            | non-null iff `wasted_qty > 0` (Zod-level); перезаписується на останню дату  | `2026-05-18T12:00:00Z`        |
-| `discount_orig`   | numeric(12,2) | ні (default 0) | ≥ 0; ≤ `unit_price_orig` коли positive                                      | `0.00` / `1.00`               |
-| `created_at`      | timestamptz   | ні             | default `now()`                                                             |                               |
-| `updated_at`      | timestamptz   | ні             | trigger                                                                     |                               |
+| Колонка             | Тип           | Nullable       | Правила                                                                                                   | Приклад                                           |
+| ------------------- | ------------- | -------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `id`                | text (ULID)   | ні             |                                                                                                           | `01HM4N6RZZ7K2P9F8DZ7QWERAA`                      |
+| `receipt_id`        | text (ULID)   | ні             | FK → `receipts.id`, CASCADE on delete                                                                     |                                                   |
+| `product_id`        | text (ULID)   | так            | FK → `products.id`, SET NULL on delete                                                                    |                                                   |
+| `product_name`      | text          | ні             | snapshot на момент покупки (ADR snapshot rule)                                                            | `Pesto Barilla Genovese 190g`                     |
+| `product_url`       | text          | так            | Зовнішня URL товару з structured import; UI відкриває тільки allowlisted Amazon HTTPS URL.                | `https://www.amazon.de/dp/B07W6JPVP3`             |
+| `product_image_url` | text          | так            | Thumbnail товару з structured import; UI завантажує тільки `m.media-amazon.com` через HTTPS без referrer. | `https://m.media-amazon.com/images/I/example.jpg` |
+| `category`          | text          | ні             | FK → `categories.name`, CASCADE on update                                                                 | `Бакалія`                                         |
+| `qty`               | numeric(10,3) | ні             | > 0                                                                                                       | `2.000` / `0.350`                                 |
+| `unit_price_orig`   | numeric(12,2) | ні             | у валюті чеку. **Може бути від'ємним** (cancellation, Pfand-refund, Rabatt)                               | `3.49` / `-2.99`                                  |
+| `total_orig`        | numeric(12,2) | ні             | `round(qty * (unit_price_orig - discount_orig), 2)`                                                       | `6.98` / `-2.99`                                  |
+| `total_eur`         | numeric(12,2) | ні             | `round(total_orig * receipt.fx_rate_eur, 2)`                                                              | `6.98`                                            |
+| `consumed_by`       | text          | ні             | `'his' \| 'hers' \| 'shared' \| 'custom:N/M'`                                                             | `shared` / `custom:30/70`                         |
+| `note`              | text          | так            |                                                                                                           | `Купили на знижці -50%`                           |
+| `wasted_qty`        | numeric(10,3) | ні (default 0) | ≤ `qty`                                                                                                   | `0.000`                                           |
+| `wasted_at`         | timestamptz   | так            | non-null iff `wasted_qty > 0` (Zod-level); перезаписується на останню дату                                | `2026-05-18T12:00:00Z`                            |
+| `discount_orig`     | numeric(12,2) | ні (default 0) | ≥ 0; ≤ `unit_price_orig` коли positive                                                                    | `0.00` / `1.00`                                   |
+| `created_at`        | timestamptz   | ні             | default `now()`                                                                                           |                                                   |
+| `updated_at`        | timestamptz   | ні             | trigger                                                                                                   |                                                   |
 
 **Інваріанти:**
 

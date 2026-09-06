@@ -39,6 +39,25 @@ const validReceiptJson = JSON.stringify({
   ],
 });
 
+const amazonEmailJson = JSON.stringify([
+  {
+    order_number: '302-1234567-1234567',
+    date: '2026-09-01T12:34:56Z',
+    total: '12.50 EUR',
+    return_info: null,
+    items: [
+      {
+        title: 'Amazon product',
+        quantity: 1,
+        price: '12.50 EUR',
+        asin: 'B012345678',
+        product_link: 'https://www.amazon.de/dp/B012345678',
+        image: 'https://m.media-amazon.com/images/I/example.jpg',
+      },
+    ],
+  },
+]);
+
 describe('ManualJsonImportDialog', () => {
   it('renders prompt and JSON textarea when open', () => {
     render(
@@ -168,6 +187,29 @@ describe('ManualJsonImportDialog', () => {
     expect(imported).toHaveLength(2);
     expect(imported.map((r) => r.store)).toEqual(['Lidl', 'Aldi']);
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('adapts a balanced Gmail Amazon export and reports its import summary', () => {
+    const onImported = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={noop}
+        onImported={onImported}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('JSON'), { target: { value: amazonEmailJson } });
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
+
+    expect(onImported).toHaveBeenCalledOnce();
+    expect(onImported).toHaveBeenCalledWith(
+      [expect.objectContaining({ store: 'Amazon', merchant_order_id: '302-1234567-1234567' })],
+      expect.any(Array),
+      expect.stringMatching(/Amazon: підготовлено 1 замовлень/),
+    );
   });
 
   it('blocks the whole array when one receipt is invalid and labels the bad index', () => {

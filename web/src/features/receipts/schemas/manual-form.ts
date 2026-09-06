@@ -32,6 +32,8 @@ const ItemFormSchema = z.object({
   product_id: ULID_SCHEMA.nullable().optional(),
   product_name: z.string().min(1, "Назва товару обов'язкова"),
   store_product_code: z.string().nullable().optional(),
+  product_url: z.string().nullable().optional(),
+  product_image_url: z.string().nullable().optional(),
   category: z.string().min(1, "Категорія обов'язкова"),
   qty: z.number().finite().positive('Кількість має бути більша 0'),
   unit_price_orig: z.number().finite(),
@@ -65,6 +67,7 @@ export const ManualFormSchema = z.object({
   note: z.string().nullable().optional(),
   photo_url: z.string().nullable().optional(),
   photo_path: z.string().nullable().optional(),
+  merchant_order_id: z.string().nullable().optional(),
   raw_ocr_json: z.string().nullable().optional(),
   items: z.array(ItemFormSchema).min(1, 'Додай хоча б один товар'),
 });

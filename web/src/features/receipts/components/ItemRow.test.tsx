@@ -58,6 +58,24 @@ describe('ItemRow — pair_marker visual treatment', () => {
       expect(screen.getByText(/Рядок:/)).toBeInTheDocument();
     });
 
+    it('shows safe Amazon thumbnail and product link from structured metadata', () => {
+      render(
+        <Wrapper
+          item={makeItem({
+            product_url: 'https://www.amazon.de/dp/B012345678',
+            product_image_url: 'https://m.media-amazon.com/images/I/example.jpg',
+          })}
+        />,
+      );
+
+      const image = document.querySelector('img');
+      expect(image).toHaveAttribute('src', 'https://m.media-amazon.com/images/I/example.jpg');
+      expect(screen.getByRole('link', { name: 'Відкрити товар' })).toHaveAttribute(
+        'href',
+        'https://www.amazon.de/dp/B012345678',
+      );
+    });
+
     it('does not disable input fields', () => {
       const { container } = render(<Wrapper item={makeItem()} />);
       expect(getInput(container, 'qty').disabled).toBe(false);

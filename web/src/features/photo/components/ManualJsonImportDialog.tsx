@@ -16,6 +16,10 @@ import {
   validateManualJsonReceipt,
   type ManualJsonValidationOptions,
 } from '../utils/validate-manual-json';
+import {
+  looksLikeAmazonEmailOrders,
+  parseAmazonEmailOrders,
+} from '../utils/parse-amazon-email-orders';
 
 type Props = {
   open: boolean;
@@ -28,7 +32,11 @@ type Props = {
   initialJson?: unknown;
   validationOptions?: ManualJsonValidationOptions;
   onClose: () => void;
-  onImported: (parsed: ParsedReceipt[], source: unknown[]) => void | Promise<void>;
+  onImported: (
+    parsed: ParsedReceipt[],
+    source: unknown[],
+    importNotice?: string,
+  ) => void | Promise<void>;
 };
 
 const EXAMPLE_JSON = `{
@@ -205,9 +213,20 @@ export function ManualJsonImportDialog({
     setError(null);
 
     try {
-      const candidates = toReceiptCandidates(parseJsonText(jsonText));
+      const pasted = parseJsonText(jsonText);
+      const amazonImport = looksLikeAmazonEmailOrders(pasted)
+        ? parseAmazonEmailOrders(pasted)
+        : null;
+      const candidates = amazonImport ? amazonImport.receipts : toReceiptCandidates(pasted);
       if (candidates.length === 0) {
-        setError('JSON не містить жодного чека.');
+        const skipped = amazonImport?.skipped;
+        setError(
+          skipped && skipped.length > 0
+            ? `Amazon-експорт не має готових до імпорту замовлень:\n${skipped
+                .map((entry) => `${entry.order_number} — ${entry.reason}`)
+                .join('\n')}`
+            : 'JSON не містить жодного чека.',
+        );
         return;
       }
       if (singleReceipt && candidates.length !== 1) {
@@ -248,7 +267,13 @@ export function ManualJsonImportDialog({
       }
 
       setSubmitting(true);
-      const submission = onImported(receipts, candidates);
+      const importNotice = amazonImport
+        ? `Amazon: підготовлено ${String(receipts.length)} замовлень; пропущено ${String(amazonImport.skipped.length)}. ${amazonImport.skipped
+            .slice(0, 3)
+            .map((entry) => `${entry.order_number}: ${entry.reason}`)
+            .join(' · ')}`
+        : undefined;
+      const submission = onImported(receipts, candidates, importNotice);
       if (submission) await submission;
       setJsonText('');
       handleClose();

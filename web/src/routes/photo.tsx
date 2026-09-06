@@ -38,6 +38,7 @@ function PhotoFlow() {
   const productsQuery = useProducts();
   const { pasteJson } = Route.useSearch() ?? {};
   const [jsonDialogOpen, setJsonDialogOpen] = useState(pasteJson === '1');
+  const [importNotice, setImportNotice] = useState<string | null>(null);
   // Files picked but not yet assigned a payer. While set, the assignment step
   // is shown; both the initial picker and the carousel's "+ Додати ще" feed it.
   const [filesToAssign, setFilesToAssign] = useState<File[] | null>(null);
@@ -75,6 +76,15 @@ function PhotoFlow() {
         </Button>
       </div>
 
+      {importNotice && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+        >
+          {importNotice}
+        </div>
+      )}
+
       {filesToAssign ? (
         <PhotoUploadAssign
           files={filesToAssign}
@@ -91,7 +101,10 @@ function PhotoFlow() {
         categories={categoryNames}
         products={productList}
         onClose={() => setJsonDialogOpen(false)}
-        onImported={(parsed) => batch.addParsedReceipts(parsed)}
+        onImported={(parsed, _source, notice) => {
+          setImportNotice(notice ?? null);
+          batch.addParsedReceipts(parsed);
+        }}
       />
     </div>
   );

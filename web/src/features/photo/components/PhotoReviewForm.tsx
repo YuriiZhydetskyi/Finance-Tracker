@@ -54,6 +54,8 @@ function detectedItemToFormRow(it: DetectedItem): ItemFormValues {
     product_id: null,
     product_name: it.product_name,
     store_product_code: it.product_code ?? null,
+    product_url: it.product_url ?? null,
+    product_image_url: it.product_image_url ?? null,
     category: it.category_suggestion ?? '',
     qty: it.qty,
     unit_price_orig: it.unit_price_orig,
@@ -119,6 +121,7 @@ export function PhotoReviewForm({
     note: null,
     photo_url: null,
     photo_path: null,
+    merchant_order_id: parsed.merchant_order_id ?? null,
     raw_ocr_json: stringifyForOcr(parsed),
     items: initialItems,
     // Only override when known — an empty preset would clobber the
@@ -155,11 +158,14 @@ export function PhotoReviewForm({
       source: receiptSource,
       note: values.note ?? null,
       raw_ocr_json: values.raw_ocr_json ?? null,
+      merchant_order_id: values.merchant_order_id ?? null,
     };
     const items = values.items.map((it) => ({
       product_id: it.product_id ?? null,
       product_name: it.product_name,
       store_product_code: it.store_product_code ?? null,
+      product_url: it.product_url ?? null,
+      product_image_url: it.product_image_url ?? null,
       category: it.category,
       qty: it.qty,
       unit_price_orig: it.unit_price_orig,

@@ -19,6 +19,19 @@ const SELECT_CLASS =
 
 const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
 
+function isTrustedAmazonUrl(value: string | null | undefined, image: boolean): value is string {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return false;
+    return image
+      ? url.hostname === 'm.media-amazon.com'
+      : url.hostname === 'amazon.de' || url.hostname.endsWith('.amazon.de');
+  } catch {
+    return false;
+  }
+}
+
 export function ItemRow({ index, categories, onRemove }: Props) {
   const {
     register,
@@ -49,6 +62,10 @@ export function ItemRow({ index, categories, onRemove }: Props) {
   // regardless of how it got there. pair_marker is UI-only (lost on save), so
   // saved discounted items would otherwise lose the breakdown on /edit.
   const hasDiscount = discount > 0;
+  const productUrl = isTrustedAmazonUrl(item?.product_url, false) ? item.product_url : null;
+  const productImageUrl = isTrustedAmazonUrl(item?.product_image_url, true)
+    ? item.product_image_url
+    : null;
 
   const cancelledLabel =
     markerCount > 1
@@ -107,6 +124,32 @@ export function ItemRow({ index, categories, onRemove }: Props) {
           </div>
           {itemErrors?.product_name && (
             <span className="text-xs text-red-600">{itemErrors.product_name.message}</span>
+          )}
+          {(productImageUrl ?? productUrl) && (
+            <div className="mt-2 flex items-center gap-2 rounded border border-amber-100 bg-amber-50 px-2 py-1.5 text-xs text-amber-950">
+              {productImageUrl && (
+                <img
+                  src={productImageUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="h-10 w-10 rounded object-contain"
+                />
+              )}
+              <div className="min-w-0">
+                <div className="font-medium">Amazon</div>
+                {productUrl && (
+                  <a
+                    href={productUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    Відкрити товар
+                  </a>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
