@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import type { StatsFilterOptions, StatsFilters } from '../api/stats.types';
-import { loadStatsPreferences, saveStatsPreferences } from '../stats-preferences';
+import { loadStatsFilters, saveStatsPreferences } from '../stats-preferences';
 
 type Selection = {
   categories: string[];
@@ -16,15 +16,6 @@ type Props = {
 
 function sameValues(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((value) => right.includes(value));
-}
-
-function selectionToFilters(selection: Selection, options: StatsFilterOptions): StatsFilters {
-  return {
-    ...(sameValues(selection.categories, options.categories)
-      ? {}
-      : { categories: selection.categories }),
-    ...(sameValues(selection.stores, options.stores) ? {} : { stores: selection.stores }),
-  };
 }
 
 function FilterDropdown({
@@ -83,13 +74,7 @@ function FilterDropdown({
 }
 
 export function StatsFiltersPicker({ options, isLoading, onChange }: Props) {
-  const [storedSelection, setStoredSelection] = useState<StatsFilters>(() => {
-    const saved = loadStatsPreferences();
-    return {
-      ...(saved.categories ? { categories: saved.categories } : {}),
-      ...(saved.stores ? { stores: saved.stores } : {}),
-    };
-  });
+  const [storedSelection, setStoredSelection] = useState<StatsFilters>(loadStatsFilters);
 
   const selection = useMemo<Selection>(
     () => ({
@@ -102,19 +87,19 @@ export function StatsFiltersPicker({ options, isLoading, onChange }: Props) {
     [options, storedSelection],
   );
 
-  const filters = useMemo(() => selectionToFilters(selection, options), [options, selection]);
-
   useEffect(() => {
-    onChange(filters);
-  }, [filters, onChange]);
+    onChange(storedSelection);
+  }, [storedSelection, onChange]);
 
-  const updateSelection = (next: Selection) => {
+  const updateValues = (key: keyof Selection, values: string[] | undefined) => {
+    const next = { ...storedSelection };
+    if (values === undefined || (values.length > 0 && sameValues(values, options[key]))) {
+      delete next[key];
+    } else {
+      next[key] = values;
+    }
     setStoredSelection(next);
-    saveStatsPreferences(next);
-  };
-
-  const updateValues = (key: keyof Selection, values: string[]) => {
-    updateSelection({ ...selection, [key]: values });
+    saveStatsPreferences({ [key]: next[key] });
   };
 
   const toggle = (key: keyof Selection, value: string) => {
@@ -144,7 +129,7 @@ export function StatsFiltersPicker({ options, isLoading, onChange }: Props) {
             label="Категорії"
             values={options.categories}
             selected={selection.categories}
-            onSelectAll={() => updateValues('categories', options.categories)}
+            onSelectAll={() => updateValues('categories', undefined)}
             onClearAll={() => updateValues('categories', [])}
             onToggle={(value) => toggle('categories', value)}
           />
@@ -152,7 +137,7 @@ export function StatsFiltersPicker({ options, isLoading, onChange }: Props) {
             label="Магазини"
             values={options.stores}
             selected={selection.stores}
-            onSelectAll={() => updateValues('stores', options.stores)}
+            onSelectAll={() => updateValues('stores', undefined)}
             onClearAll={() => updateValues('stores', [])}
             onToggle={(value) => toggle('stores', value)}
           />

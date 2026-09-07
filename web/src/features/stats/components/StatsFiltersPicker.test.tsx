@@ -40,4 +40,40 @@ describe('StatsFiltersPicker', () => {
 
     await waitFor(() => expect(restoredOnChange).toHaveBeenLastCalledWith({ stores: [] }));
   });
+
+  it('keeps saved filters active while options are loading', () => {
+    window.localStorage.setItem(
+      'finance-tracker.stats-preferences.v1',
+      JSON.stringify({ categories: ['Хліб'], stores: [] }),
+    );
+    const onChange = vi.fn();
+    const view = render(
+      <StatsFiltersPicker options={{ categories: [], stores: [] }} isLoading onChange={onChange} />,
+    );
+    expect(onChange).toHaveBeenLastCalledWith({ categories: ['Хліб'], stores: [] });
+    view.rerender(<StatsFiltersPicker options={options} isLoading={false} onChange={onChange} />);
+    expect(onChange).toHaveBeenLastCalledWith({ categories: ['Хліб'], stores: [] });
+  });
+
+  it('remembers select-all for new options without changing the other filter', () => {
+    const onChange = vi.fn();
+    const first = render(
+      <StatsFiltersPicker options={options} isLoading={false} onChange={onChange} />,
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Зняти всі' })[0]!);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Хліб' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Зняти всі' })[1]!);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Вибрати всі' })[1]!);
+    first.unmount();
+
+    render(
+      <StatsFiltersPicker
+        options={{ ...options, stores: [...options.stores, 'Rewe'] }}
+        isLoading={false}
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByRole('checkbox', { name: 'Rewe' })).toBeChecked();
+    expect(onChange).toHaveBeenLastCalledWith({ categories: ['Хліб'] });
+  });
 });

@@ -50,4 +50,22 @@ describe('StatsPeriodPicker', () => {
 
     await waitFor(() => expect(restoredOnChange).toHaveBeenLastCalledWith({}));
   });
+
+  it('restores both custom dates and the active period after reopening', () => {
+    const first = render(<StatsPeriodPicker onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Свій період' }));
+    fireEvent.change(screen.getByLabelText('З дати'), { target: { value: '2026-08-01' } });
+    fireEvent.change(screen.getByLabelText('По дату'), { target: { value: '2026-08-31' } });
+    first.unmount();
+
+    const onChange = vi.fn();
+    render(<StatsPeriodPicker onChange={onChange} />);
+    expect(screen.getByRole('button', { name: 'Свій період' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByLabelText('З дати')).toHaveValue('2026-08-01');
+    expect(screen.getByLabelText('По дату')).toHaveValue('2026-08-31');
+    expect(onChange).toHaveBeenLastCalledWith({ dateFrom: '2026-08-01', dateTo: '2026-08-31' });
+  });
 });
