@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ulid } from '@finance-tracker/domain';
+import { ulid, type ParsedReceipt } from '@finance-tracker/domain';
 import { prepareFile } from '@/features/photo';
 import { photoStorage } from '@/shared/lib/dependencies';
 import { supabase } from '@/shared/lib/supabase-client';
@@ -27,6 +27,13 @@ type CreateInput = {
   paidBy: string;
   onProgress?: (progress: ImportProgress) => void;
 };
+
+type CreateManualJsonInput = {
+  receipts: ParsedReceipt[];
+  paidBy: string;
+};
+
+export const MAX_MANUAL_JSON_BATCH_BYTES = 10 * 1024 * 1024;
 
 type PreparedUpload = {
   id: string;
@@ -184,6 +191,40 @@ export function useCreateImportBatch() {
         }
       });
 
+      return batchId;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: importBatchesQueryKey });
+    },
+  });
+}
+
+/**
+ * Starts a durable batch directly from already-structured receipts. There is
+ * no Storage upload and no provider call; the worker still applies its final
+ * arithmetic, currency, category and duplicate gates before persistence.
+ */
+export function useCreateManualJsonImportBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ receipts, paidBy }: CreateManualJsonInput): Promise<string> => {
+      if (receipts.length < 1 || receipts.length > 200) {
+        throw new Error('JSON має містити від 1 до 200 чеків.');
+      }
+      if (
+        new TextEncoder().encode(JSON.stringify(receipts)).byteLength > MAX_MANUAL_JSON_BATCH_BYTES
+      ) {
+        throw new Error('JSON-батч не може перевищувати 10 МіБ.');
+      }
+      if (!paidBy) throw new Error('Вибери платника.');
+
+      const batchId = ulid();
+      const { error } = await supabase.rpc('create_manual_receipt_import_batch', {
+        p_batch_id: batchId,
+        p_paid_by: paidBy,
+        p_receipts: receipts as unknown as Json,
+      });
+      if (error) throw error;
       return batchId;
     },
     onSuccess: async () => {

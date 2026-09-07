@@ -28,6 +28,7 @@ type Props = {
   title?: string;
   description?: string;
   submitLabel?: string;
+  showPrompt?: boolean;
   singleReceipt?: boolean;
   initialJson?: unknown;
   validationOptions?: ManualJsonValidationOptions;
@@ -175,6 +176,7 @@ export function ManualJsonImportDialog({
   title = 'Вставити JSON від AI',
   description = 'Підходить один чек, масив чеків або обʼєкт із полем receipts.',
   submitLabel = 'Перевірити та переглянути',
+  showPrompt = true,
   singleReceipt = false,
   initialJson,
   validationOptions,
@@ -328,28 +330,30 @@ export function ManualJsonImportDialog({
           </Button>
         </div>
 
-        <div className="grid gap-4 overflow-y-auto p-4 md:grid-cols-2">
-          <section className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <label htmlFor="manual-json-prompt" className="text-sm font-medium text-slate-800">
-                Prompt
-              </label>
-              <Button type="button" variant="secondary" onClick={() => void copy()}>
-                {copyState === 'copied'
-                  ? 'Скопійовано'
-                  : copyState === 'failed'
-                    ? 'Не вдалося скопіювати'
-                    : 'Скопіювати prompt'}
-              </Button>
-            </div>
-            <textarea
-              id="manual-json-prompt"
-              readOnly
-              value={prompt}
-              rows={18}
-              className="min-h-80 w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-xs leading-5 text-slate-800"
-            />
-          </section>
+        <div className={`grid gap-4 overflow-y-auto p-4 ${showPrompt ? 'md:grid-cols-2' : ''}`}>
+          {showPrompt ? (
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="manual-json-prompt" className="text-sm font-medium text-slate-800">
+                  Prompt
+                </label>
+                <Button type="button" variant="secondary" onClick={() => void copy()}>
+                  {copyState === 'copied'
+                    ? 'Скопійовано'
+                    : copyState === 'failed'
+                      ? 'Не вдалося скопіювати'
+                      : 'Скопіювати prompt'}
+                </Button>
+              </div>
+              <textarea
+                id="manual-json-prompt"
+                readOnly
+                value={prompt}
+                rows={18}
+                className="min-h-80 w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-xs leading-5 text-slate-800"
+              />
+            </section>
+          ) : null}
 
           <section className="space-y-2">
             <label htmlFor="manual-json-input" className="text-sm font-medium text-slate-800">

@@ -1,19 +1,31 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
+import type { ParsedReceipt } from '@finance-tracker/domain';
 import { useAppUsers, useCurrentUser } from '@/features/auth';
+import { useCategories } from '@/features/categories';
+import { useProducts } from '@/features/products';
+import { ManualJsonImportDialog } from '@/features/photo';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { SELECT_CLASS } from '@/shared/ui/select-classes';
-import { useCreateImportBatch, type ImportProgress } from '../api/imports';
+import {
+  useCreateImportBatch,
+  useCreateManualJsonImportBatch,
+  type ImportProgress,
+} from '../api/imports';
 
 export function BulkImportForm() {
   const navigate = useNavigate();
   const users = useAppUsers();
   const currentUser = useCurrentUser();
   const createBatch = useCreateImportBatch();
+  const createManualJsonBatch = useCreateManualJsonImportBatch();
+  const categories = useCategories();
+  const products = useProducts();
   const [files, setFiles] = useState<File[]>([]);
   const [payerOverride, setPayerOverride] = useState('');
   const [progress, setProgress] = useState<ImportProgress | null>(null);
+  const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
   const options = users.data ?? [];
   const paidBy =
     payerOverride ||
@@ -21,6 +33,15 @@ export function BulkImportForm() {
       ? currentUser.data.email
       : (options[0] ?? ''));
   const totalBytes = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files]);
+  const categoryNames = useMemo(
+    () => categories.data?.map((category) => category.name) ?? [],
+    [categories.data],
+  );
+  const productList = useMemo(
+    () => products.data?.map((product) => ({ name: product.name })) ?? [],
+    [products.data],
+  );
+  const isBusy = createBatch.isPending || createManualJsonBatch.isPending;
 
   const start = async () => {
     try {
@@ -29,6 +50,11 @@ export function BulkImportForm() {
     } catch {
       // React Query exposes the error below; avoid an unhandled event-promise rejection.
     }
+  };
+
+  const startManualJsonBatch = async (receipts: ParsedReceipt[]) => {
+    const batchId = await createManualJsonBatch.mutateAsync({ receipts, paidBy });
+    await navigate({ to: '/imports/$id', params: { id: batchId } });
   };
 
   return (
@@ -42,16 +68,17 @@ export function BulkImportForm() {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-sm">
         <p className="text-slate-700">
-          Для окремого нового чека вже маєш JSON від Claude? Імпортуй його тут. JSON для файла з
-          помилкою вставляється безпосередньо в картці цього файла.
+          Маєш готовий JSON — зокрема експорт Amazon? Встав його тут: кожне замовлення піде в
+          окремий запис цього durable-батчу без повторного OCR.
         </p>
-        <Link
-          to="/photo"
-          search={{ pasteJson: '1' }}
-          className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-600"
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!paidBy || isBusy}
+          onClick={() => setJsonDialogOpen(true)}
         >
-          Імпортувати окремий чек
-        </Link>
+          Вставити JSON у батч
+        </Button>
       </div>
       <label className="block space-y-1 text-sm font-medium text-slate-700">
         Файли
@@ -59,7 +86,7 @@ export function BulkImportForm() {
           type="file"
           multiple
           accept="image/*,application/pdf,.heic,.heif"
-          disabled={createBatch.isPending}
+          disabled={isBusy}
           onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
           className="block w-full rounded-md border border-slate-300 bg-white p-2 text-sm"
         />
@@ -79,7 +106,7 @@ export function BulkImportForm() {
         <select
           className={SELECT_CLASS}
           value={paidBy}
-          disabled={createBatch.isPending}
+          disabled={isBusy}
           onChange={(event) => setPayerOverride(event.target.value)}
         >
           {options.map((email) => (
@@ -98,13 +125,27 @@ export function BulkImportForm() {
       {createBatch.isError && (
         <ErrorDetails error={createBatch.error} label="Не вдалося створити батч" />
       )}
+      {createManualJsonBatch.isError && (
+        <ErrorDetails error={createManualJsonBatch.error} label="Не вдалося створити JSON-батч" />
+      )}
       <Button
         type="button"
-        disabled={files.length === 0 || files.length > 200 || !paidBy || createBatch.isPending}
+        disabled={files.length === 0 || files.length > 200 || !paidBy || isBusy}
         onClick={() => void start()}
       >
         {createBatch.isPending ? 'Завантажую…' : 'Завантажити й залишити у фоні'}
       </Button>
+      <ManualJsonImportDialog
+        open={jsonDialogOpen}
+        categories={categoryNames}
+        products={productList}
+        title="Вставити JSON у фоновий батч"
+        description="Перевіримо всі чеки, а потім надішлемо їх у durable-чергу без повторного OCR."
+        submitLabel="Перевірити й запустити батч"
+        showPrompt={false}
+        onClose={() => setJsonDialogOpen(false)}
+        onImported={(receipts) => startManualJsonBatch(receipts)}
+      />
     </section>
   );
 }

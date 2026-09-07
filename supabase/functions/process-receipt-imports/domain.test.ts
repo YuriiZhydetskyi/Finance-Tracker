@@ -107,6 +107,64 @@ describe('bulk import domain gate', () => {
     expect(auditReceiptEvidence(result)).toEqual({ ok: true, issues: [] });
   });
 
+  it('accepts a structured Amazon order without invented receipt-text evidence', () => {
+    const result = validateManualReceiptSubmission(
+      {
+        store: 'Amazon',
+        date: '2026-01-16',
+        time: '22:07',
+        currency: 'EUR',
+        total_orig: 21.59,
+        total_raw_text: '21.59 EUR',
+        article_count: 1,
+        article_count_raw_text: null,
+        merchant_order_id: '303-9913583-9160360',
+        items: [
+          {
+            product_name: 'Lubido',
+            product_code: 'B012345678',
+            product_url: 'https://www.amazon.de/dp/B012345678',
+            product_image_url: 'https://m.media-amazon.com/images/I/example.jpg',
+            qty: 1,
+            unit_price_orig: 21.59,
+            category_suggestion: 'Інтимні товари',
+            source_ordinal: 1,
+            raw_text: '21.59 EUR',
+            row_kind: 'item',
+            qty_evidence: 'implicit_one',
+            printed_line_total_orig: 21.59,
+          },
+        ],
+      },
+      null,
+    );
+
+    expect(auditReceiptEvidence(result).ok).toBe(false);
+    expect(auditReceiptEvidence(result, { allowStructuredAmazonOrder: true })).toEqual({
+      ok: true,
+      issues: [],
+    });
+    const prepared = prepareReceipt(
+      result,
+      1,
+      new Set(['Інтимні товари']),
+      () => '0'.repeat(26),
+      null,
+    );
+    expect(prepared).toMatchObject({
+      ok: true,
+      value: {
+        receipt: { merchant_order_id: '303-9913583-9160360' },
+        items: [
+          {
+            product_url: 'https://www.amazon.de/dp/B012345678',
+            product_image_url: 'https://m.media-amazon.com/images/I/example.jpg',
+          },
+        ],
+      },
+    });
+  });
+
   it('rejects a manual JSON submission that changes the printed baseline', () => {
     const candidate = {
       store: 'Lidl',

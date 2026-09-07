@@ -7,8 +7,7 @@ export type FinalizedReceipt = {
 };
 
 export type ValidationResult =
-  | { ok: true; value: FinalizedReceipt }
-  | { ok: false; reason: string };
+  { ok: true; value: FinalizedReceipt } | { ok: false; reason: string };
 
 export type ReceiptArithmeticCheck = {
   normalizedItems: ParsedItem[];
@@ -122,6 +121,8 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
         typeof it.category_suggestion === 'string' ? it.category_suggestion : null,
       discount_orig: typeof discount === 'number' ? discount : 0,
       product_code: typeof it.product_code === 'string' ? it.product_code : null,
+      product_url: trustedAmazonUrl(it.product_url, false),
+      product_image_url: trustedAmazonUrl(it.product_image_url, true),
       source_ordinal:
         typeof it.source_ordinal === 'number' && Number.isInteger(it.source_ordinal)
           ? it.source_ordinal
@@ -157,6 +158,10 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
     currency: typeof row.currency === 'string' ? row.currency.toUpperCase() : '',
     total_orig:
       typeof row.total_orig === 'number' && Number.isFinite(row.total_orig) ? row.total_orig : null,
+    merchant_order_id:
+      typeof row.merchant_order_id === 'string' && row.merchant_order_id.trim()
+        ? row.merchant_order_id.trim().slice(0, 100)
+        : null,
     total_raw_text:
       typeof row.total_raw_text === 'string' ? row.total_raw_text.trim().slice(0, 1000) : null,
     article_count: articleCount,
@@ -236,7 +241,16 @@ export function validateManualReceiptSubmission(
   return parsed;
 }
 
-export function auditReceiptEvidence(parsed: BulkParsedDocument): ReceiptEvidenceAudit {
+export function auditReceiptEvidence(
+  parsed: BulkParsedDocument,
+  options: { allowStructuredAmazonOrder?: boolean } = {},
+): ReceiptEvidenceAudit {
+  // This exception is intentionally available only to the server-owned
+  // pasted-JSON path. File-backed manual corrections still need evidence for
+  // every printed field, even if their store happens to be Amazon.
+  if (options.allowStructuredAmazonOrder && isAmazonEmailOrder(parsed)) {
+    return { ok: true, issues: [] };
+  }
   const issues: ReceiptEvidenceIssue[] = [];
   if (!parsed.total_raw_text?.trim()) {
     issues.push({
@@ -523,6 +537,8 @@ export function prepareReceipt(
       product_candidate_id: makeId(),
       product_name: item.product_name,
       store_product_code: item.product_code?.trim() || null,
+      product_url: item.product_url ?? null,
+      product_image_url: item.product_image_url ?? null,
       category:
         item.category_suggestion && categories.has(item.category_suggestion)
           ? item.category_suggestion
@@ -555,6 +571,7 @@ export function prepareReceipt(
         store: parsed.store.trim(),
         store_address: parsed.store_address?.trim() || null,
         currency: parsed.currency,
+        merchant_order_id: parsed.merchant_order_id?.trim() || null,
         total_orig: computed,
         fx_rate_eur: round(fxRate, 6),
         total_eur: round(computed * fxRate, 2),
@@ -564,6 +581,27 @@ export function prepareReceipt(
       items,
     },
   };
+}
+
+function isAmazonEmailOrder(parsed: BulkParsedDocument): boolean {
+  return (
+    parsed.store?.trim().toLowerCase() === 'amazon' &&
+    /^\d{3}-\d{7}-\d{7}$/.test(parsed.merchant_order_id ?? '')
+  );
+}
+
+function trustedAmazonUrl(value: unknown, image: boolean): string | null {
+  if (typeof value !== 'string' || !value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return null;
+    const trusted = image
+      ? url.hostname === 'm.media-amazon.com'
+      : url.hostname === 'amazon.de' || url.hostname.endsWith('.amazon.de');
+    return trusted ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArithmeticCheck | null {

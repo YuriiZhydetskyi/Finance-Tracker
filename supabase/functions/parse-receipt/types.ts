@@ -12,6 +12,8 @@ export type ParsedItem = {
   category_suggestion: string | null;
   discount_orig?: number;
   product_code?: string | null;
+  product_url?: string | null;
+  product_image_url?: string | null;
   /** 1-based position of the physical financial row in the document. */
   source_ordinal?: number;
   /** Short verbatim transcription of the row(s) used for this item. */
@@ -40,6 +42,7 @@ export type ParsedReceipt = {
   payment_time_raw_text?: string | null;
   currency: string;
   total_orig: number | null;
+  merchant_order_id?: string | null;
   items: ParsedItem[];
 };
 
