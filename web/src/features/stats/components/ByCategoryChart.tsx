@@ -5,9 +5,10 @@ import type { StatsByCategoryRow } from '../api/stats.types';
 
 type Props = {
   rows: StatsByCategoryRow[];
+  onSelect?: (category: string) => void;
 };
 
-export function ByCategoryChart({ rows }: Props) {
+export function ByCategoryChart({ rows, onSelect }: Props) {
   const data = useMemo(
     () => ({
       labels: rows.map((r) => r.category),
@@ -27,6 +28,14 @@ export function ByCategoryChart({ rows }: Props) {
     <Bar
       data={data}
       options={{
+        onClick: (_event, elements) => {
+          const index = elements[0]?.index;
+          const row = index === undefined ? undefined : rows[index];
+          if (row) onSelect?.(row.category);
+        },
+        onHover: (_event, elements, chart) => {
+          chart.canvas.style.cursor = onSelect && elements.length > 0 ? 'pointer' : 'default';
+        },
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
