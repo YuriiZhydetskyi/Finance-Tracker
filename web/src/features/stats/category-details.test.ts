@@ -9,6 +9,7 @@ function item(overrides: Partial<StatsDetailItem> = {}): StatsDetailItem {
     id: '1',
     receipt_id: 'r1',
     category: 'Овочі/фрукти',
+    product_name: 'Помідори',
     total_eur: 10,
     product_family_id: 'tomato',
     family: { name_uk: 'Помідори' },
@@ -36,6 +37,7 @@ describe('category detail totals', () => {
       { key: 'tomato', name: 'Помідори', total_eur: 30 },
       { key: 'unclassified', name: 'Без визначеного сімейства', total_eur: 5 },
     ]);
+    expect(result.products).toEqual([{ key: 'Помідори', name: 'Помідори', total_eur: 35 }]);
     expect(result.stores.map((row) => row.total_eur)).toEqual([20, 15]);
     expect(
       result.months.map(({ month, total_eur, receipts_count }) => ({
@@ -68,10 +70,24 @@ describe('category detail totals', () => {
       items_count: 0,
       receipts_count: 0,
       stores: [],
+      products: [],
       categories: [],
       families: [],
       months: [],
     });
+  });
+
+  it('groups purchases by their historical product name independently of the family', () => {
+    const result = summarizeCategoryDetails([
+      item({ product_name: 'Лохина', product_family_id: null, family: null, total_eur: 3.5 }),
+      item({ id: '2', product_name: 'Лохина', total_eur: 1.5 }),
+      item({ id: '3', product_name: 'Персики', total_eur: 4 }),
+    ]);
+
+    expect(result.products).toEqual([
+      { key: 'Лохина', name: 'Лохина', total_eur: 5 },
+      { key: 'Персики', name: 'Персики', total_eur: 4 },
+    ]);
   });
 
   it('groups only the supplied filtered category totals', () => {

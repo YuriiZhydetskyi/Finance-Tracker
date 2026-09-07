@@ -112,6 +112,13 @@ function DetailsBody({ range, query, title, selection, onSelect }: DetailsBodyPr
           total={data.total_eur}
           label="Магазин"
         />
+        <BreakdownSection
+          title="По товарах"
+          subtitle="Однакові назви з чеків об’єднано незалежно від магазину."
+          rows={data.products}
+          total={data.total_eur}
+          label="Товар"
+        />
         {selection.category === undefined ? (
           <BreakdownSection
             title="По категоріях"

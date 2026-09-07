@@ -7,6 +7,7 @@ export type StatsDetailItem = {
   id: string;
   receipt_id: string;
   category: string;
+  product_name: string;
   total_eur: number;
   product_family_id: string | null;
   family: { name_uk: string } | null;
@@ -46,6 +47,7 @@ export function groupCategoryStats(
 
 export function summarizeCategoryDetails(items: StatsDetailItem[]) {
   const stores = new Map<string, StatsBreakdownRow>();
+  const products = new Map<string, StatsBreakdownRow>();
   const families = new Map<string, StatsBreakdownRow>();
   const categories = new Map<string, StatsBreakdownRow>();
   const months = new Map<string, StatsByMonthRow & { receipts: Set<string> }>();
@@ -55,6 +57,7 @@ export function summarizeCategoryDetails(items: StatsDetailItem[]) {
     total_eur = roundMoney(total_eur + item.total_eur);
     receipts.add(item.receipt_id);
     addAmount(stores, item.receipt.store, item.receipt.store, item.total_eur);
+    addAmount(products, item.product_name, item.product_name, item.total_eur);
     addAmount(categories, item.category, item.category, item.total_eur);
     addAmount(
       families,
@@ -79,6 +82,7 @@ export function summarizeCategoryDetails(items: StatsDetailItem[]) {
     items_count: items.length,
     receipts_count: receipts.size,
     stores: sorted(stores),
+    products: sorted(products),
     families: sorted(families),
     categories: sorted(categories),
     months: [...months.values()].sort((a, b) => b.month.localeCompare(a.month)),

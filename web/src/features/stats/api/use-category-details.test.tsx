@@ -56,6 +56,7 @@ const item: StatsDetailItem = {
   receipt_id: 'r',
   total_eur: 10,
   category: 'Овочі/фрукти',
+  product_name: 'Помідори',
   product_family_id: 'tomato',
   family: { name_uk: 'Помідори' },
   receipt: { date: '2026-08-01', store: 'Lidl' },
@@ -90,6 +91,7 @@ describe('category detail queries', () => {
     expect(callMock).toHaveBeenCalledWith('lte', 'receipt.date', '2026-08-31');
     expect(callMock).toHaveBeenCalledWith('in', 'category', ['Овочі/фрукти']);
     expect(callMock).toHaveBeenCalledWith('in', 'receipt.store', ['Lidl']);
+    expect(callMock).toHaveBeenCalledWith('select', expect.stringContaining('product_name'));
     expect(callMock).toHaveBeenCalledWith('select', expect.stringContaining('receipts!inner'));
   });
 
