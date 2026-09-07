@@ -814,6 +814,65 @@ export type Database = {
         Args: { p_file_id: string; p_manual_json: Json };
         Returns: undefined;
       };
+      stats_by_category: {
+        Args: {
+          p_categories?: string[];
+          p_date_from?: string;
+          p_date_to?: string;
+          p_stores?: string[];
+        };
+        Returns: { category: string; items_count: number; total_eur: number }[];
+      };
+      stats_by_month: {
+        Args: {
+          p_categories?: string[];
+          p_date_from?: string;
+          p_date_to?: string;
+          p_stores?: string[];
+        };
+        Returns: { month: string; receipts_count: number; total_eur: number }[];
+      };
+      stats_by_store: {
+        Args: {
+          p_categories?: string[];
+          p_date_from?: string;
+          p_date_to?: string;
+          p_limit?: number;
+          p_stores?: string[];
+        };
+        Returns: { receipts_count: number; store: string; total_eur: number }[];
+      };
+      stats_by_user: {
+        Args: {
+          p_categories?: string[];
+          p_date_from?: string;
+          p_date_to?: string;
+          p_stores?: string[];
+        };
+        Returns: { paid_by: string; receipts_count: number; total_eur: number }[];
+      };
+      stats_savings_by_month: {
+        Args: {
+          p_categories?: string[];
+          p_date_from?: string;
+          p_date_to?: string;
+          p_stores?: string[];
+        };
+        Returns: { discounted_items_count: number; month: string; savings_eur: number }[];
+      };
+      stats_waste_by_month: {
+        Args: {
+          p_categories?: string[];
+          p_date_from?: string;
+          p_date_to?: string;
+          p_stores?: string[];
+        };
+        Returns: { month: string; wasted_items_count: number; wasted_value_eur: number }[];
+      };
+      stats_filter_options: {
+        Args: never;
+        Returns: { categories: string[]; stores: string[] }[];
+      };
     };
     Enums: {
       product_unit: 'pcs' | 'g' | 'kg' | 'ml' | 'l';
