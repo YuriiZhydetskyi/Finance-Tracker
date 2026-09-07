@@ -14,43 +14,30 @@ const categories = [
   { name: 'Овочі/фрукти', group_name: 'Продукти' },
   { name: 'Молочка', group_name: 'Продукти' },
 ];
+function detailItem(
+  id: string,
+  receipt_id: string,
+  category: string,
+  product_family_id: string | null,
+  familyName: string | null,
+  date: string,
+  store: string,
+): StatsDetailItem {
+  return {
+    id,
+    receipt_id,
+    total_eur: 10,
+    category,
+    product_family_id,
+    family: familyName ? { name_uk: familyName } : null,
+    receipt: { date, store },
+  };
+}
 const detailItems: StatsDetailItem[] = [
-  {
-    id: 'a',
-    receipt_id: 'r1',
-    total_eur: 10,
-    category: 'Овочі/фрукти',
-    product_family_id: 'tomato',
-    family: { name_uk: 'Помідори' },
-    receipt: { date: '2026-08-01', store: 'Lidl' },
-  },
-  {
-    id: 'b',
-    receipt_id: 'r2',
-    total_eur: 10,
-    category: 'Овочі/фрукти',
-    product_family_id: 'tomato',
-    family: { name_uk: 'Помідори' },
-    receipt: { date: '2026-08-02', store: 'REWE' },
-  },
-  {
-    id: 'c',
-    receipt_id: 'r2',
-    total_eur: 10,
-    category: 'Овочі/фрукти',
-    product_family_id: 'cucumber',
-    family: { name_uk: 'Огірки' },
-    receipt: { date: '2026-08-02', store: 'REWE' },
-  },
-  {
-    id: 'd',
-    receipt_id: 'r1',
-    total_eur: 10,
-    category: 'Молочка',
-    product_family_id: null,
-    family: null,
-    receipt: { date: '2026-08-01', store: 'Lidl' },
-  },
+  detailItem('a', 'r1', 'Овочі/фрукти', 'tomato', 'Помідори', '2026-08-01', 'Lidl'),
+  detailItem('b', 'r2', 'Овочі/фрукти', 'tomato', 'Помідори', '2026-08-02', 'REWE'),
+  detailItem('c', 'r2', 'Овочі/фрукти', 'cucumber', 'Огірки', '2026-08-02', 'REWE'),
+  detailItem('d', 'r1', 'Молочка', null, null, '2026-08-01', 'Lidl'),
 ];
 
 vi.mock('@/features/categories', async (importOriginal) => ({

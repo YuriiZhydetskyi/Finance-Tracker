@@ -5,7 +5,7 @@ type Props = Readonly<{
   rows: StatsBreakdownRow[];
   total: number;
   label: string;
-  onSelect?: (key: string) => void;
+  onSelect?: ((key: string) => void) | undefined;
 }>;
 
 const percent = new Intl.NumberFormat('uk-UA', { style: 'percent', maximumFractionDigits: 1 });

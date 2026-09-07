@@ -22,7 +22,7 @@ type BreakdownSectionProps = Readonly<{
   total: number;
   label: string;
   subtitle?: string;
-  onSelect?: (key: string) => void;
+  onSelect?: ((key: string) => void) | undefined;
 }>;
 
 function BreakdownSection({
