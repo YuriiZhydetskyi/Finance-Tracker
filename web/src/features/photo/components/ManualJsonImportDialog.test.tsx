@@ -79,6 +79,49 @@ const reconciledAmazonEmailJson = JSON.stringify([
   },
 ]);
 
+const amazonOrdersWithNonLiteralTotalsJson = JSON.stringify([
+  {
+    order_number: '303-7246678-2405158',
+    date: '2026-01-13T12:00:00Z',
+    total: '71.89 EUR',
+    return_info: { refund_amount: '62.90 EUR' },
+    items: [
+      {
+        title: 'Returned Amazon product',
+        quantity: 1,
+        price: '62.90 EUR',
+        asin: null,
+        product_link: null,
+        image: null,
+      },
+      {
+        title: 'Kept Amazon product',
+        quantity: 1,
+        price: '8.99 EUR',
+        asin: null,
+        product_link: null,
+        image: null,
+      },
+    ],
+  },
+  {
+    order_number: '302-7831452-1615565',
+    date: '2026-08-17T12:00:00Z',
+    total: '5.1 EUR',
+    return_info: null,
+    items: [
+      {
+        title: 'Amazon product with one-decimal price',
+        quantity: 1,
+        price: '5.1 EUR',
+        asin: null,
+        product_link: null,
+        image: null,
+      },
+    ],
+  },
+]);
+
 describe('ManualJsonImportDialog', () => {
   it('renders prompt and JSON textarea when open', () => {
     render(
@@ -247,6 +290,27 @@ describe('ManualJsonImportDialog', () => {
 
     fireEvent.change(screen.getByLabelText('JSON'), {
       target: { value: reconciledAmazonEmailJson },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
+
+    expect(onImported).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('imports Amazon returns and one-decimal prices without requiring a literal final total', () => {
+    const onImported = vi.fn();
+    render(
+      <ManualJsonImportDialog
+        open
+        categories={[]}
+        products={[]}
+        onClose={noop}
+        onImported={onImported}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('JSON'), {
+      target: { value: amazonOrdersWithNonLiteralTotalsJson },
     });
     fireEvent.click(screen.getByRole('button', { name: /Перевірити та переглянути/i }));
 
