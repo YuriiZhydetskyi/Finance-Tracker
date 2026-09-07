@@ -28,8 +28,9 @@ export function useCategoryDetails(range: StatsDateRange, filters: StatsFilters,
         if (range.dateTo) query = query.lte('receipt.date', range.dateTo);
         if (filters.categories) query = query.in('category', filters.categories);
         if (filters.stores) query = query.in('receipt.store', filters.stores);
-        const { data, error } = await query.abortSignal(signal);
+        const { data: rawData, error } = await query.abortSignal(signal);
         if (error) throw error;
+        const data = (rawData ?? []) as unknown as StatsDetailItem[];
         if (data.length === 0) break;
         items.push(...data);
         afterId = data[data.length - 1]?.id;
