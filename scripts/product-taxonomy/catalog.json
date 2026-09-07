@@ -1,0 +1,3613 @@
+{
+  "families": [
+    {
+      "id": "apples",
+      "name_uk": "Яблука",
+      "name_en": "Apples",
+      "name_de": "Äpfel",
+      "aliases": ["яблуко", "apple", "apfel", "aepfel"]
+    },
+    {
+      "id": "tomatoes",
+      "name_uk": "Помідори",
+      "name_en": "Tomatoes",
+      "name_de": "Tomaten",
+      "aliases": ["помідор", "томат", "томати", "tomato", "tomate"]
+    },
+    {
+      "id": "peaches",
+      "name_uk": "Персики",
+      "name_en": "Peaches",
+      "name_de": "Pfirsiche",
+      "aliases": ["персик", "peach", "pfirsich"]
+    },
+    {
+      "id": "nectarines",
+      "name_uk": "Нектарини",
+      "name_en": "Nectarines",
+      "name_de": "Nektarinen",
+      "aliases": ["нектарин", "nectarine", "nektarine"]
+    },
+    {
+      "id": "pears",
+      "name_uk": "Груші",
+      "name_en": "Pears",
+      "name_de": "Birnen",
+      "aliases": ["груша", "pear", "birne"]
+    },
+    {
+      "id": "potatoes",
+      "name_uk": "Картопля",
+      "name_en": "Potatoes",
+      "name_de": "Kartoffeln",
+      "aliases": ["картоплина", "potato", "kartoffel"]
+    },
+    {
+      "id": "kiwifruit",
+      "name_uk": "Ківі",
+      "name_en": "Kiwifruit",
+      "name_de": "Kiwis",
+      "aliases": ["kiwi"]
+    },
+    {
+      "id": "pineapple",
+      "name_uk": "Ананаси",
+      "name_en": "Pineapples",
+      "name_de": "Ananas",
+      "aliases": ["ананас", "pineapple"]
+    },
+    {
+      "id": "apricots",
+      "name_uk": "Абрикоси",
+      "name_en": "Apricots",
+      "name_de": "Aprikosen",
+      "aliases": ["абрикос", "apricot", "aprikose"]
+    },
+    {
+      "id": "avocados",
+      "name_uk": "Авокадо",
+      "name_en": "Avocados",
+      "name_de": "Avocados",
+      "aliases": ["avocado"]
+    },
+    {
+      "id": "bananas",
+      "name_uk": "Банани",
+      "name_en": "Bananas",
+      "name_de": "Bananen",
+      "aliases": ["банан", "banana", "banane"]
+    },
+    {
+      "id": "basil",
+      "name_uk": "Базилік",
+      "name_en": "Basil",
+      "name_de": "Basilikum",
+      "aliases": []
+    },
+    {
+      "id": "aubergines",
+      "name_uk": "Баклажани",
+      "name_en": "Aubergines",
+      "name_de": "Auberginen",
+      "aliases": ["баклажан", "eggplant", "aubergine"]
+    },
+    {
+      "id": "vegetable_mix",
+      "name_uk": "Овочеві суміші",
+      "name_en": "Vegetable mixes",
+      "name_de": "Gemüsemischungen",
+      "aliases": ["овочева суміш", "vegetable mix", "gemüsemix"]
+    },
+    {
+      "id": "cress",
+      "name_uk": "Крес-салат",
+      "name_en": "Cress",
+      "name_de": "Gartenkresse",
+      "aliases": ["крес", "kresse"]
+    },
+    {
+      "id": "citrus_fruit",
+      "name_uk": "Цитрусові",
+      "name_en": "Citrus fruit",
+      "name_de": "Zitrusfrüchte",
+      "aliases": ["цитрус", "citrus"]
+    },
+    {
+      "id": "courgettes",
+      "name_uk": "Кабачки",
+      "name_en": "Courgettes",
+      "name_de": "Zucchini",
+      "aliases": ["кабачок", "цукіні", "courgette", "zucchinis"]
+    },
+    {
+      "id": "onions",
+      "name_uk": "Цибуля",
+      "name_en": "Onions",
+      "name_de": "Zwiebeln",
+      "aliases": ["onion", "zwiebel"]
+    },
+    {
+      "id": "salad_leaves",
+      "name_uk": "Листовий салат",
+      "name_en": "Salad leaves",
+      "name_de": "Blattsalat",
+      "aliases": ["салат", "lettuce", "salat"]
+    },
+    {
+      "id": "broccoli",
+      "name_uk": "Броколі",
+      "name_en": "Broccoli",
+      "name_de": "Brokkoli",
+      "aliases": ["broccoli"]
+    },
+    {
+      "id": "blackberries",
+      "name_uk": "Ожина",
+      "name_en": "Blackberries",
+      "name_de": "Brombeeren",
+      "aliases": ["blackberry", "brombeere"]
+    },
+    {
+      "id": "carrots",
+      "name_uk": "Морква",
+      "name_en": "Carrots",
+      "name_de": "Karotten",
+      "aliases": ["морквина", "carrot", "karotte", "möhre", "möhren"]
+    },
+    {
+      "id": "cucumbers",
+      "name_uk": "Огірки",
+      "name_en": "Cucumbers",
+      "name_de": "Gurken",
+      "aliases": ["огірок", "cucumber", "gurke"]
+    },
+    {
+      "id": "strawberries",
+      "name_uk": "Полуниця",
+      "name_en": "Strawberries",
+      "name_de": "Erdbeeren",
+      "aliases": ["полуниці", "strawberry", "erdbeere"]
+    },
+    {
+      "id": "figs",
+      "name_uk": "Інжир",
+      "name_en": "Figs",
+      "name_de": "Feigen",
+      "aliases": ["fig", "feige"]
+    },
+    {
+      "id": "rocket",
+      "name_uk": "Рукола",
+      "name_en": "Rocket",
+      "name_de": "Rucola",
+      "aliases": ["руккола", "arugula", "rauke"]
+    },
+    {
+      "id": "button_mushrooms",
+      "name_uk": "Печериці",
+      "name_en": "Button mushrooms",
+      "name_de": "Champignons",
+      "aliases": ["печериця", "шампіньйони", "шампіньйон", "button mushroom", "champignon"]
+    },
+    {
+      "id": "garlic",
+      "name_uk": "Часник",
+      "name_en": "Garlic",
+      "name_de": "Knoblauch",
+      "aliases": []
+    },
+    {
+      "id": "grapes",
+      "name_uk": "Виноград",
+      "name_en": "Grapes",
+      "name_de": "Trauben",
+      "aliases": ["grape", "traube", "weintrauben"]
+    },
+    {
+      "id": "blueberries",
+      "name_uk": "Лохина",
+      "name_en": "Blueberries",
+      "name_de": "Heidelbeeren",
+      "aliases": ["чорниця", "blueberry", "heidelbeere", "blaubeere", "blaubeeren"]
+    },
+    {
+      "id": "guacamole",
+      "name_uk": "Гуакамоле",
+      "name_en": "Guacamole",
+      "name_de": "Guacamole",
+      "aliases": []
+    },
+    {
+      "id": "spinach",
+      "name_uk": "Шпинат",
+      "name_en": "Spinach",
+      "name_de": "Spinat",
+      "aliases": []
+    },
+    {
+      "id": "peppers",
+      "name_uk": "Перець",
+      "name_en": "Peppers",
+      "name_de": "Paprika",
+      "aliases": ["болгарський перець", "pepper", "paprikaschote"]
+    },
+    {
+      "id": "cherries",
+      "name_uk": "Черешні та вишні",
+      "name_en": "Cherries",
+      "name_de": "Kirschen",
+      "aliases": ["черешня", "вишня", "вишні", "cherry", "kirsche"]
+    },
+    {
+      "id": "coconuts",
+      "name_uk": "Кокоси",
+      "name_en": "Coconuts",
+      "name_de": "Kokosnüsse",
+      "aliases": ["кокос", "coconut", "kokosnuss"]
+    },
+    {
+      "id": "mangoes",
+      "name_uk": "Манго",
+      "name_en": "Mangoes",
+      "name_de": "Mangos",
+      "aliases": ["mango"]
+    },
+    {
+      "id": "melons",
+      "name_uk": "Дині",
+      "name_en": "Melons",
+      "name_de": "Melonen",
+      "aliases": ["диня", "melon", "melone"]
+    },
+    {
+      "id": "fruit_mix",
+      "name_uk": "Фруктові суміші",
+      "name_en": "Fruit mixes",
+      "name_de": "Obstmischungen",
+      "aliases": ["фруктова суміш", "fruit mix", "obstmix"]
+    },
+    {
+      "id": "radishes",
+      "name_uk": "Редиска",
+      "name_en": "Radishes",
+      "name_de": "Radieschen",
+      "aliases": ["редис", "radish"]
+    },
+    {
+      "id": "herbs",
+      "name_uk": "Зелень і трави",
+      "name_en": "Herbs",
+      "name_de": "Kräuter",
+      "aliases": ["зелень", "herb", "kraut"]
+    },
+    {
+      "id": "asparagus",
+      "name_uk": "Спаржа",
+      "name_en": "Asparagus",
+      "name_de": "Spargel",
+      "aliases": []
+    },
+    {
+      "id": "sweet_potatoes",
+      "name_uk": "Батат",
+      "name_en": "Sweet potatoes",
+      "name_de": "Süßkartoffeln",
+      "aliases": ["солодка картопля", "sweet potato", "süsskartoffel", "suesskartoffel"]
+    },
+    {
+      "id": "watermelon",
+      "name_uk": "Кавуни",
+      "name_en": "Watermelons",
+      "name_de": "Wassermelonen",
+      "aliases": ["кавун", "watermelon", "wassermelone"]
+    },
+    {
+      "id": "lemons",
+      "name_uk": "Лимони",
+      "name_en": "Lemons",
+      "name_de": "Zitronen",
+      "aliases": ["лимон", "lemon", "zitrone"]
+    },
+    {
+      "id": "sweetcorn",
+      "name_uk": "Кукурудза",
+      "name_en": "Sweetcorn",
+      "name_de": "Zuckermais",
+      "aliases": ["кукурудза солодка", "corn", "mais"]
+    },
+    {
+      "id": "plums",
+      "name_uk": "Сливи",
+      "name_en": "Plums",
+      "name_de": "Pflaumen",
+      "aliases": ["слива", "plum", "pflaume", "zwetschge", "zwetschgen"]
+    },
+    {
+      "id": "milk",
+      "name_uk": "Молоко",
+      "name_en": "Milk",
+      "name_de": "Milch",
+      "aliases": []
+    },
+    {
+      "id": "plant_drinks",
+      "name_uk": "Рослинні напої",
+      "name_en": "Plant-based drinks",
+      "name_de": "Pflanzendrinks",
+      "aliases": ["рослинне молоко", "plant milk", "pflanzenmilch"]
+    },
+    {
+      "id": "cheese",
+      "name_uk": "Сири",
+      "name_en": "Cheese",
+      "name_de": "Käse",
+      "aliases": ["сир", "cheeses", "kaese"]
+    },
+    {
+      "id": "quark",
+      "name_uk": "Кисломолочний сир",
+      "name_en": "Quark",
+      "name_de": "Quark",
+      "aliases": ["творог", "сир кисломолочний", "speisequark"]
+    },
+    {
+      "id": "eggs",
+      "name_uk": "Яйця",
+      "name_en": "Eggs",
+      "name_de": "Eier",
+      "aliases": ["яйце", "egg", "ei"]
+    },
+    {
+      "id": "butter",
+      "name_uk": "Вершкове масло",
+      "name_en": "Butter",
+      "name_de": "Butter",
+      "aliases": ["масло вершкове"]
+    },
+    {
+      "id": "kefir",
+      "name_uk": "Кефір",
+      "name_en": "Kefir",
+      "name_de": "Kefir",
+      "aliases": []
+    },
+    {
+      "id": "yogurt",
+      "name_uk": "Йогурт",
+      "name_en": "Yogurt",
+      "name_de": "Joghurt",
+      "aliases": ["йогурти", "yoghurt", "jogurt"]
+    },
+    {
+      "id": "cream",
+      "name_uk": "Вершки та сметана",
+      "name_en": "Cream and sour cream",
+      "name_de": "Sahne und Sauerrahm",
+      "aliases": ["вершки", "сметана", "cream", "sahne"]
+    },
+    {
+      "id": "dairy_dessert",
+      "name_uk": "Молочні десерти",
+      "name_en": "Dairy desserts",
+      "name_de": "Milchdesserts",
+      "aliases": ["молочний десерт", "dairy dessert", "milchdessert"]
+    },
+    {
+      "id": "chicken",
+      "name_uk": "Курятина",
+      "name_en": "Chicken",
+      "name_de": "Hähnchen",
+      "aliases": ["курка", "куряче", "huhn", "hähnchenfleisch", "haehnchen"]
+    },
+    {
+      "id": "pork",
+      "name_uk": "Свинина",
+      "name_en": "Pork",
+      "name_de": "Schweinefleisch",
+      "aliases": ["свиняче", "schwein"]
+    },
+    {
+      "id": "beef",
+      "name_uk": "Яловичина",
+      "name_en": "Beef",
+      "name_de": "Rindfleisch",
+      "aliases": ["яловиче", "rind"]
+    },
+    {
+      "id": "lamb",
+      "name_uk": "Баранина",
+      "name_en": "Lamb",
+      "name_de": "Lammfleisch",
+      "aliases": ["ягнятина", "lamm"]
+    },
+    {
+      "id": "meat_unspecified",
+      "name_uk": "М’ясо без визначеного виду",
+      "name_en": "Unspecified meat",
+      "name_de": "Fleisch ohne Tierart",
+      "aliases": ["м'ясо", "meat", "fleisch"]
+    },
+    {
+      "id": "minced_meat",
+      "name_uk": "М’ясний фарш",
+      "name_en": "Minced meat",
+      "name_de": "Hackfleisch",
+      "aliases": ["фарш", "ground meat", "hack"]
+    },
+    {
+      "id": "ham",
+      "name_uk": "Шинка",
+      "name_en": "Ham",
+      "name_de": "Schinken",
+      "aliases": []
+    },
+    {
+      "id": "sausage",
+      "name_uk": "Ковбаса",
+      "name_en": "Sausage",
+      "name_de": "Wurst",
+      "aliases": ["ковбаси", "sausages", "würste"]
+    },
+    {
+      "id": "trout",
+      "name_uk": "Форель",
+      "name_en": "Trout",
+      "name_de": "Forelle",
+      "aliases": ["forellen"]
+    },
+    {
+      "id": "salmon",
+      "name_uk": "Лосось",
+      "name_en": "Salmon",
+      "name_de": "Lachs",
+      "aliases": []
+    },
+    {
+      "id": "seabream",
+      "name_uk": "Дорада",
+      "name_en": "Sea bream",
+      "name_de": "Dorade",
+      "aliases": []
+    },
+    {
+      "id": "tuna",
+      "name_uk": "Тунець",
+      "name_en": "Tuna",
+      "name_de": "Thunfisch",
+      "aliases": []
+    },
+    {
+      "id": "shrimp",
+      "name_uk": "Креветки",
+      "name_en": "Shrimp",
+      "name_de": "Garnelen",
+      "aliases": ["креветка", "prawns", "prawn", "garnele"]
+    },
+    {
+      "id": "herring",
+      "name_uk": "Оселедець",
+      "name_en": "Herring",
+      "name_de": "Hering",
+      "aliases": []
+    },
+    {
+      "id": "fish_roe",
+      "name_uk": "Рибна ікра",
+      "name_en": "Fish roe",
+      "name_de": "Fischrogen",
+      "aliases": ["ікра", "caviar", "kaviar"]
+    },
+    {
+      "id": "anchovies",
+      "name_uk": "Анчоуси",
+      "name_en": "Anchovies",
+      "name_de": "Sardellen",
+      "aliases": ["анчоус", "anchovy", "sardelle"]
+    },
+    {
+      "id": "pollock",
+      "name_uk": "Сайда",
+      "name_en": "Pollock",
+      "name_de": "Seelachs",
+      "aliases": ["coalfish"]
+    },
+    {
+      "id": "surimi",
+      "name_uk": "Сурімі",
+      "name_en": "Surimi",
+      "name_de": "Surimi",
+      "aliases": ["крабові палички"]
+    },
+    {
+      "id": "butterfish",
+      "name_uk": "Масляна риба",
+      "name_en": "Butterfish",
+      "name_de": "Butterfisch",
+      "aliases": []
+    },
+    {
+      "id": "seafood_snacks",
+      "name_uk": "Закуски з морепродуктів",
+      "name_en": "Seafood snacks",
+      "name_de": "Meeresfrüchte-Snacks",
+      "aliases": []
+    },
+    {
+      "id": "beer",
+      "name_uk": "Пиво",
+      "name_en": "Beer",
+      "name_de": "Bier",
+      "aliases": ["пива", "beers"]
+    },
+    {
+      "id": "wine",
+      "name_uk": "Вино",
+      "name_en": "Wine",
+      "name_de": "Wein",
+      "aliases": ["вина", "wines"]
+    },
+    {
+      "id": "sparkling_wine",
+      "name_uk": "Ігристе вино",
+      "name_en": "Sparkling wine",
+      "name_de": "Schaumwein",
+      "aliases": ["шампанське", "sekt"]
+    },
+    {
+      "id": "soft_drinks",
+      "name_uk": "Лимонади та газовані напої",
+      "name_en": "Soft drinks",
+      "name_de": "Erfrischungsgetränke",
+      "aliases": ["газовані напої", "лимонад", "soda", "limonade"]
+    },
+    {
+      "id": "fruit_juice",
+      "name_uk": "Фруктові соки та нектари",
+      "name_en": "Fruit juices and nectars",
+      "name_de": "Fruchtsäfte und Nektare",
+      "aliases": ["сік", "соки", "juice", "saft", "säfte"]
+    },
+    {
+      "id": "water",
+      "name_uk": "Вода",
+      "name_en": "Water",
+      "name_de": "Wasser",
+      "aliases": ["мінеральна вода", "mineral water", "mineralwasser"]
+    },
+    {
+      "id": "energy_drinks",
+      "name_uk": "Енергетичні напої",
+      "name_en": "Energy drinks",
+      "name_de": "Energiegetränke",
+      "aliases": ["енергетик", "energy drink"]
+    },
+    {
+      "id": "malt_drinks",
+      "name_uk": "Солодові напої",
+      "name_en": "Malt drinks",
+      "name_de": "Malzgetränke",
+      "aliases": ["malzbier"]
+    },
+    {
+      "id": "pasta",
+      "name_uk": "Макарони",
+      "name_en": "Pasta",
+      "name_de": "Nudeln",
+      "aliases": ["макаронні вироби", "макарони", "pastas", "nudel"]
+    },
+    {
+      "id": "rice",
+      "name_uk": "Рис",
+      "name_en": "Rice",
+      "name_de": "Reis",
+      "aliases": []
+    },
+    {
+      "id": "oats",
+      "name_uk": "Вівсяні пластівці",
+      "name_en": "Oats",
+      "name_de": "Haferflocken",
+      "aliases": ["вівсянка", "oat", "porridge"]
+    },
+    {
+      "id": "honey",
+      "name_uk": "Мед",
+      "name_en": "Honey",
+      "name_de": "Honig",
+      "aliases": []
+    },
+    {
+      "id": "hummus",
+      "name_uk": "Хумус",
+      "name_en": "Hummus",
+      "name_de": "Hummus",
+      "aliases": []
+    },
+    {
+      "id": "peanut_butter",
+      "name_uk": "Арахісова паста",
+      "name_en": "Peanut butter",
+      "name_de": "Erdnussbutter",
+      "aliases": ["арахісове масло", "peanut spread", "erdnussmus"]
+    },
+    {
+      "id": "coffee",
+      "name_uk": "Кава",
+      "name_en": "Coffee",
+      "name_de": "Kaffee",
+      "aliases": []
+    },
+    {
+      "id": "nuts",
+      "name_uk": "Горіхи",
+      "name_en": "Nuts",
+      "name_de": "Nüsse",
+      "aliases": ["горіх", "nut", "nuss", "nuesse"]
+    },
+    {
+      "id": "sweeteners",
+      "name_uk": "Підсолоджувачі",
+      "name_en": "Sweeteners",
+      "name_de": "Süßungsmittel",
+      "aliases": ["підсолоджувач", "sweetener", "süssungsmittel"]
+    },
+    {
+      "id": "pastry_dough",
+      "name_uk": "Тісто",
+      "name_en": "Pastry dough",
+      "name_de": "Teig",
+      "aliases": ["dough"]
+    },
+    {
+      "id": "chips",
+      "name_uk": "Чипси",
+      "name_en": "Crisps",
+      "name_de": "Chips",
+      "aliases": ["чіпси", "potato chips"]
+    },
+    {
+      "id": "dried_fruit",
+      "name_uk": "Сухофрукти",
+      "name_en": "Dried fruit",
+      "name_de": "Trockenfrüchte",
+      "aliases": []
+    },
+    {
+      "id": "bread",
+      "name_uk": "Хліб",
+      "name_en": "Bread",
+      "name_de": "Brot",
+      "aliases": ["хлібобулочні вироби"]
+    },
+    {
+      "id": "sauces",
+      "name_uk": "Соуси",
+      "name_en": "Sauces",
+      "name_de": "Saucen",
+      "aliases": ["соус", "sauce", "soße", "soßen"]
+    },
+    {
+      "id": "dips",
+      "name_uk": "Дипи та намазки",
+      "name_en": "Dips and spreads",
+      "name_de": "Dips und Aufstriche",
+      "aliases": ["намазка", "dip", "aufstrich"]
+    },
+    {
+      "id": "bulgur",
+      "name_uk": "Булгур",
+      "name_en": "Bulgur",
+      "name_de": "Bulgur",
+      "aliases": []
+    },
+    {
+      "id": "protein_powder",
+      "name_uk": "Протеїнові порошки",
+      "name_en": "Protein powders",
+      "name_de": "Proteinpulver",
+      "aliases": ["протеїн", "protein", "eiweißpulver"]
+    },
+    {
+      "id": "spice_blends",
+      "name_uk": "Суміші спецій",
+      "name_en": "Spice blends",
+      "name_de": "Gewürzmischungen",
+      "aliases": ["приправи", "seasoning", "gewürze"]
+    },
+    {
+      "id": "antipasti",
+      "name_uk": "Антипасті",
+      "name_en": "Antipasti",
+      "name_de": "Antipasti",
+      "aliases": []
+    },
+    {
+      "id": "breakfast_cereal",
+      "name_uk": "Сухі сніданки",
+      "name_en": "Breakfast cereal",
+      "name_de": "Frühstückscerealien",
+      "aliases": ["пластівці", "cereals", "cerealien"]
+    },
+    {
+      "id": "mushroom_seasoning",
+      "name_uk": "Грибні приправи",
+      "name_en": "Mushroom seasonings",
+      "name_de": "Pilzgewürze",
+      "aliases": []
+    },
+    {
+      "id": "potato_pancakes",
+      "name_uk": "Картопляні оладки",
+      "name_en": "Potato pancakes",
+      "name_de": "Reibekuchen",
+      "aliases": ["деруни", "kartoffelpuffer"]
+    },
+    {
+      "id": "cooking_oil",
+      "name_uk": "Рослинна олія",
+      "name_en": "Cooking oil",
+      "name_de": "Pflanzenöl",
+      "aliases": ["олія", "oil", "öl"]
+    },
+    {
+      "id": "olives",
+      "name_uk": "Оливки",
+      "name_en": "Olives",
+      "name_de": "Oliven",
+      "aliases": ["оливка", "olive"]
+    },
+    {
+      "id": "lingonberries",
+      "name_uk": "Брусниця",
+      "name_en": "Lingonberries",
+      "name_de": "Preiselbeeren",
+      "aliases": ["lingonberry", "preiselbeere"]
+    },
+    {
+      "id": "citrus_zest",
+      "name_uk": "Цедра цитрусових",
+      "name_en": "Citrus zest",
+      "name_de": "Zitrusschale",
+      "aliases": ["цедра", "zest"]
+    },
+    {
+      "id": "sugar",
+      "name_uk": "Цукор",
+      "name_en": "Sugar",
+      "name_de": "Zucker",
+      "aliases": []
+    },
+    {
+      "id": "food_additives",
+      "name_uk": "Харчові добавки для приготування",
+      "name_en": "Cooking additives",
+      "name_de": "Lebensmittelzusatzstoffe",
+      "aliases": ["підсилювач смаку", "msg"]
+    },
+    {
+      "id": "fries",
+      "name_uk": "Картопля фрі",
+      "name_en": "French fries",
+      "name_de": "Pommes frites",
+      "aliases": ["фрі", "fries", "pommes"]
+    },
+    {
+      "id": "burgers",
+      "name_uk": "Бургери",
+      "name_en": "Burgers",
+      "name_de": "Burger",
+      "aliases": ["бургер", "burger"]
+    },
+    {
+      "id": "restaurant_meals",
+      "name_uk": "Страви та набори в закладах",
+      "name_en": "Restaurant meals and sets",
+      "name_de": "Restaurantgerichte und Menüs",
+      "aliases": []
+    },
+    {
+      "id": "car_sunshades",
+      "name_uk": "Автомобільні сонцезахисні екрани",
+      "name_en": "Car sunshades",
+      "name_de": "Auto-Sonnenschutz",
+      "aliases": ["сонцезахист авто"]
+    },
+    {
+      "id": "car_fluids",
+      "name_uk": "Автомобільні рідини",
+      "name_en": "Automotive fluids",
+      "name_de": "Autoflüssigkeiten",
+      "aliases": []
+    },
+    {
+      "id": "fuel",
+      "name_uk": "Пальне",
+      "name_en": "Fuel",
+      "name_de": "Kraftstoff",
+      "aliases": ["бензин", "petrol", "benzin"]
+    },
+    {
+      "id": "skin_cream",
+      "name_uk": "Креми для шкіри",
+      "name_en": "Skin creams",
+      "name_de": "Hautcremes",
+      "aliases": ["крем", "cream", "creme"]
+    },
+    {
+      "id": "medicine",
+      "name_uk": "Лікарські засоби",
+      "name_en": "Medicines",
+      "name_de": "Arzneimittel",
+      "aliases": ["ліки", "medication", "medikamente"]
+    },
+    {
+      "id": "supplements",
+      "name_uk": "Харчові добавки",
+      "name_en": "Dietary supplements",
+      "name_de": "Nahrungsergänzungsmittel",
+      "aliases": ["вітаміни", "vitamins", "vitamine"]
+    },
+    {
+      "id": "dressings",
+      "name_uk": "Перев’язувальні матеріали",
+      "name_en": "Medical dressings",
+      "name_de": "Verbandmaterial",
+      "aliases": ["бинт", "пластир", "bandage", "pflaster"]
+    },
+    {
+      "id": "wire_mesh",
+      "name_uk": "Металева сітка",
+      "name_en": "Wire mesh",
+      "name_de": "Drahtgitter",
+      "aliases": []
+    },
+    {
+      "id": "water_filters",
+      "name_uk": "Фільтри для води",
+      "name_en": "Water filters",
+      "name_de": "Wasserfilter",
+      "aliases": ["картридж", "filter cartridge"]
+    },
+    {
+      "id": "kitchen_utensils",
+      "name_uk": "Кухонне приладдя",
+      "name_en": "Kitchen utensils",
+      "name_de": "Küchenutensilien",
+      "aliases": []
+    },
+    {
+      "id": "irons",
+      "name_uk": "Праски",
+      "name_en": "Irons",
+      "name_de": "Bügeleisen",
+      "aliases": ["праска", "iron"]
+    },
+    {
+      "id": "window_blinds",
+      "name_uk": "Віконні жалюзі",
+      "name_en": "Window blinds",
+      "name_de": "Fensterrollos",
+      "aliases": ["жалюзі", "blind", "plissee"]
+    },
+    {
+      "id": "desk_mats",
+      "name_uk": "Настільні килимки",
+      "name_en": "Desk mats",
+      "name_de": "Schreibtischunterlagen",
+      "aliases": []
+    },
+    {
+      "id": "spice_storage",
+      "name_uk": "Органайзери для спецій",
+      "name_en": "Spice storage",
+      "name_de": "Gewürzaufbewahrung",
+      "aliases": []
+    },
+    {
+      "id": "kitchen_thermometers",
+      "name_uk": "Кухонні термометри",
+      "name_en": "Kitchen thermometers",
+      "name_de": "Küchenthermometer",
+      "aliases": ["термометр", "thermometer"]
+    },
+    {
+      "id": "pillowcases",
+      "name_uk": "Наволочки",
+      "name_en": "Pillowcases",
+      "name_de": "Kissenbezüge",
+      "aliases": ["наволочка", "pillowcase", "kissenbezug"]
+    },
+    {
+      "id": "firelighters",
+      "name_uk": "Засоби для розпалювання",
+      "name_en": "Firelighters",
+      "name_de": "Grillanzünder",
+      "aliases": ["розпалювач", "anzünder"]
+    },
+    {
+      "id": "barbecue_equipment",
+      "name_uk": "Обладнання для гриля",
+      "name_en": "Barbecue equipment",
+      "name_de": "Grillzubehör",
+      "aliases": []
+    },
+    {
+      "id": "bag_clips",
+      "name_uk": "Затискачі для пакетів",
+      "name_en": "Bag clips",
+      "name_de": "Verschlussclips",
+      "aliases": ["зажими", "bag clip"]
+    },
+    {
+      "id": "chargers",
+      "name_uk": "Зарядні пристрої",
+      "name_en": "Chargers",
+      "name_de": "Ladegeräte",
+      "aliases": ["зарядка", "charger", "ladegerät"]
+    },
+    {
+      "id": "power_banks",
+      "name_uk": "Павербанки",
+      "name_en": "Power banks",
+      "name_de": "Powerbanks",
+      "aliases": ["павербанк", "powerbank"]
+    },
+    {
+      "id": "laptops",
+      "name_uk": "Ноутбуки",
+      "name_en": "Laptops",
+      "name_de": "Laptops",
+      "aliases": ["ноутбук", "laptop", "notebook"]
+    },
+    {
+      "id": "computer_cables",
+      "name_uk": "Комп’ютерні кабелі",
+      "name_en": "Computer cables",
+      "name_de": "Computerkabel",
+      "aliases": []
+    },
+    {
+      "id": "power_supplies",
+      "name_uk": "Блоки живлення",
+      "name_en": "Power supplies",
+      "name_de": "Netzteile",
+      "aliases": ["блок живлення", "power supply", "netzteil"]
+    },
+    {
+      "id": "batteries",
+      "name_uk": "Батарейки",
+      "name_en": "Batteries",
+      "name_de": "Batterien",
+      "aliases": ["батарейка", "battery", "batterie"]
+    },
+    {
+      "id": "socket_adapters",
+      "name_uk": "Розгалужувачі розеток",
+      "name_en": "Socket adapters",
+      "name_de": "Steckdosenadapter",
+      "aliases": []
+    },
+    {
+      "id": "lens_adapters",
+      "name_uk": "Адаптери об’єктивів",
+      "name_en": "Lens adapters",
+      "name_de": "Objektivadapter",
+      "aliases": []
+    },
+    {
+      "id": "keyboards",
+      "name_uk": "Клавіатури",
+      "name_en": "Keyboards",
+      "name_de": "Tastaturen",
+      "aliases": ["клавіатура", "keyboard", "tastatur"]
+    },
+    {
+      "id": "computer_mice",
+      "name_uk": "Комп’ютерні миші",
+      "name_en": "Computer mice",
+      "name_de": "Computermäuse",
+      "aliases": ["миша", "mouse", "maus"]
+    },
+    {
+      "id": "computer_fans",
+      "name_uk": "Комп’ютерні вентилятори",
+      "name_en": "Computer fans",
+      "name_de": "Computerlüfter",
+      "aliases": ["вентилятор", "fan", "lüfter"]
+    },
+    {
+      "id": "graphics_cards",
+      "name_uk": "Відеокарти",
+      "name_en": "Graphics cards",
+      "name_de": "Grafikkarten",
+      "aliases": ["відеокарта", "gpu", "grafikkarte"]
+    },
+    {
+      "id": "condoms",
+      "name_uk": "Презервативи",
+      "name_en": "Condoms",
+      "name_de": "Kondome",
+      "aliases": ["презерватив", "condom", "kondom"]
+    },
+    {
+      "id": "lubricants",
+      "name_uk": "Інтимні лубриканти",
+      "name_en": "Personal lubricants",
+      "name_de": "Gleitmittel",
+      "aliases": ["лубрикант", "lubricant"]
+    },
+    {
+      "id": "napkins",
+      "name_uk": "Серветки",
+      "name_en": "Napkins",
+      "name_de": "Servietten",
+      "aliases": ["серветка", "napkin", "serviette"]
+    },
+    {
+      "id": "flowers_plants",
+      "name_uk": "Квіти та рослини",
+      "name_en": "Flowers and plants",
+      "name_de": "Blumen und Pflanzen",
+      "aliases": ["квіти", "рослини", "flower", "plant"]
+    },
+    {
+      "id": "hair_accessories",
+      "name_uk": "Аксесуари для волосся",
+      "name_en": "Hair accessories",
+      "name_de": "Haarschmuck",
+      "aliases": []
+    },
+    {
+      "id": "charcoal",
+      "name_uk": "Деревне вугілля",
+      "name_en": "Charcoal",
+      "name_de": "Holzkohle",
+      "aliases": []
+    },
+    {
+      "id": "party_decorations",
+      "name_uk": "Святкові прикраси",
+      "name_en": "Party decorations",
+      "name_de": "Partydekoration",
+      "aliases": []
+    },
+    {
+      "id": "bags",
+      "name_uk": "Пакети та сумки для покупок",
+      "name_en": "Shopping and storage bags",
+      "name_de": "Einkaufs- und Aufbewahrungsbeutel",
+      "aliases": ["пакет", "bag", "tüte", "beutel"]
+    },
+    {
+      "id": "copy_paper",
+      "name_uk": "Папір для друку",
+      "name_en": "Copy paper",
+      "name_de": "Kopierpapier",
+      "aliases": []
+    },
+    {
+      "id": "cigarettes",
+      "name_uk": "Сигарети",
+      "name_en": "Cigarettes",
+      "name_de": "Zigaretten",
+      "aliases": ["сигарета", "cigarette", "zigarette"]
+    },
+    {
+      "id": "magazines",
+      "name_uk": "Журнали",
+      "name_en": "Magazines",
+      "name_de": "Zeitschriften",
+      "aliases": ["журнал", "magazine", "zeitschrift"]
+    },
+    {
+      "id": "tights",
+      "name_uk": "Колготки",
+      "name_en": "Tights",
+      "name_de": "Strumpfhosen",
+      "aliases": ["колготки", "pantyhose", "strumpfhose"]
+    },
+    {
+      "id": "caps",
+      "name_uk": "Кепки",
+      "name_en": "Caps",
+      "name_de": "Mützen",
+      "aliases": ["кепка", "cap", "mütze"]
+    },
+    {
+      "id": "socks",
+      "name_uk": "Шкарпетки",
+      "name_en": "Socks",
+      "name_de": "Socken",
+      "aliases": ["шкарпетка", "sock", "socke"]
+    },
+    {
+      "id": "sportswear",
+      "name_uk": "Спортивний одяг",
+      "name_en": "Sportswear",
+      "name_de": "Sportbekleidung",
+      "aliases": []
+    },
+    {
+      "id": "handbags",
+      "name_uk": "Жіночі сумки",
+      "name_en": "Handbags",
+      "name_de": "Handtaschen",
+      "aliases": ["сумка", "handbag", "handtasche"]
+    },
+    {
+      "id": "clothing_accessories",
+      "name_uk": "Аксесуари до одягу",
+      "name_en": "Clothing accessories",
+      "name_de": "Bekleidungsaccessoires",
+      "aliases": []
+    },
+    {
+      "id": "clothing",
+      "name_uk": "Одяг",
+      "name_en": "Clothing",
+      "name_de": "Bekleidung",
+      "aliases": []
+    },
+    {
+      "id": "dresses",
+      "name_uk": "Сукні",
+      "name_en": "Dresses",
+      "name_de": "Kleider",
+      "aliases": ["сукня", "dress", "kleid"]
+    },
+    {
+      "id": "shoes",
+      "name_uk": "Взуття",
+      "name_en": "Shoes",
+      "name_de": "Schuhe",
+      "aliases": ["туфлі", "кросівки", "shoe", "schuh"]
+    },
+    {
+      "id": "shoelaces",
+      "name_uk": "Шнурки",
+      "name_en": "Shoelaces",
+      "name_de": "Schnürsenkel",
+      "aliases": ["шнурок", "shoelace"]
+    },
+    {
+      "id": "device_protection",
+      "name_uk": "Захист та гарантія техніки",
+      "name_en": "Device protection and warranties",
+      "name_de": "Geräteschutz und Garantien",
+      "aliases": []
+    },
+    {
+      "id": "delivery",
+      "name_uk": "Доставка",
+      "name_en": "Delivery",
+      "name_de": "Lieferung",
+      "aliases": ["shipping", "versand"]
+    },
+    {
+      "id": "puzzles",
+      "name_uk": "Пазли",
+      "name_en": "Puzzles",
+      "name_de": "Puzzles",
+      "aliases": ["пазл", "puzzle"]
+    },
+    {
+      "id": "children_kitchen_tools",
+      "name_uk": "Дитяче кухонне приладдя",
+      "name_en": "Children’s kitchen tools",
+      "name_de": "Kinderküchenwerkzeuge",
+      "aliases": []
+    },
+    {
+      "id": "exercise_equipment",
+      "name_uk": "Тренувальне обладнання",
+      "name_en": "Exercise equipment",
+      "name_de": "Trainingsgeräte",
+      "aliases": []
+    },
+    {
+      "id": "activity_boards",
+      "name_uk": "Бізіборди",
+      "name_en": "Activity boards",
+      "name_de": "Motoriktafeln",
+      "aliases": ["бізіборд", "busy board"]
+    },
+    {
+      "id": "water_toys",
+      "name_uk": "Водяні іграшки",
+      "name_en": "Water toys",
+      "name_de": "Wasserspielzeug",
+      "aliases": []
+    },
+    {
+      "id": "drink_bottles",
+      "name_uk": "Пляшки для напоїв",
+      "name_en": "Drink bottles",
+      "name_de": "Trinkflaschen",
+      "aliases": ["пляшка", "bottle", "trinkflasche"]
+    },
+    {
+      "id": "cleaning_accessories",
+      "name_uk": "Приладдя для прибирання",
+      "name_en": "Cleaning accessories",
+      "name_de": "Reinigungszubehör",
+      "aliases": []
+    },
+    {
+      "id": "shampoo",
+      "name_uk": "Шампуні",
+      "name_en": "Shampoo",
+      "name_de": "Shampoo",
+      "aliases": ["шампунь", "shampoos"]
+    },
+    {
+      "id": "perfume",
+      "name_uk": "Парфуми",
+      "name_en": "Perfume",
+      "name_de": "Parfüm",
+      "aliases": ["парфум", "fragrance", "parfum"]
+    },
+    {
+      "id": "dental_floss",
+      "name_uk": "Зубна нитка",
+      "name_en": "Dental floss",
+      "name_de": "Zahnseide",
+      "aliases": []
+    },
+    {
+      "id": "hair_styling",
+      "name_uk": "Засоби для укладання волосся",
+      "name_en": "Hair styling products",
+      "name_de": "Haarstylingprodukte",
+      "aliases": []
+    },
+    {
+      "id": "dishwasher_detergent",
+      "name_uk": "Засоби для посудомийки",
+      "name_en": "Dishwasher detergent",
+      "name_de": "Geschirrspülmittel für Maschinen",
+      "aliases": ["таблетки для посудомийки", "spülmaschinentabs"]
+    },
+    {
+      "id": "cleaning_agents",
+      "name_uk": "Засоби для очищення",
+      "name_en": "Cleaning agents",
+      "name_de": "Reinigungsmittel",
+      "aliases": []
+    },
+    {
+      "id": "paper_towels",
+      "name_uk": "Паперові рушники",
+      "name_en": "Paper towels",
+      "name_de": "Küchenpapier",
+      "aliases": ["паперовий рушник", "küchenrolle"]
+    },
+    {
+      "id": "mascara",
+      "name_uk": "Туш для вій",
+      "name_en": "Mascara",
+      "name_de": "Wimperntusche",
+      "aliases": []
+    },
+    {
+      "id": "deodorant",
+      "name_uk": "Дезодоранти",
+      "name_en": "Deodorants",
+      "name_de": "Deodorants",
+      "aliases": ["дезодорант", "deodorant", "deo"]
+    },
+    {
+      "id": "laundry_detergent",
+      "name_uk": "Засоби для прання",
+      "name_en": "Laundry detergent",
+      "name_de": "Waschmittel",
+      "aliases": []
+    },
+    {
+      "id": "toilet_paper",
+      "name_uk": "Туалетний папір",
+      "name_en": "Toilet paper",
+      "name_de": "Toilettenpapier",
+      "aliases": ["toilettenrolle"]
+    },
+    {
+      "id": "ice_cream",
+      "name_uk": "Морозиво",
+      "name_en": "Ice cream",
+      "name_de": "Eiscreme",
+      "aliases": ["морозиво", "icecream", "eis", "speiseeis"]
+    },
+    {
+      "id": "chocolate",
+      "name_uk": "Шоколад",
+      "name_en": "Chocolate",
+      "name_de": "Schokolade",
+      "aliases": ["шоколадка", "chocolates"]
+    },
+    {
+      "id": "pralines",
+      "name_uk": "Шоколадні цукерки",
+      "name_en": "Chocolate pralines",
+      "name_de": "Pralinen",
+      "aliases": ["цукерки", "praline"]
+    },
+    {
+      "id": "sweet_bars",
+      "name_uk": "Солодкі батончики",
+      "name_en": "Sweet snack bars",
+      "name_de": "Süße Riegel",
+      "aliases": ["батончик", "bar", "riegel"]
+    },
+    {
+      "id": "croissants",
+      "name_uk": "Круасани",
+      "name_en": "Croissants",
+      "name_de": "Croissants",
+      "aliases": ["круасан", "croissant"]
+    },
+    {
+      "id": "waffles",
+      "name_uk": "Вафлі",
+      "name_en": "Waffles and wafers",
+      "name_de": "Waffeln",
+      "aliases": ["вафля", "waffle", "wafer", "waffel"]
+    },
+    {
+      "id": "cakes",
+      "name_uk": "Торти та тістечка",
+      "name_en": "Cakes",
+      "name_de": "Kuchen und Torten",
+      "aliases": ["торт", "тістечко", "cake", "kuchen", "torte"]
+    },
+    {
+      "id": "biscuits",
+      "name_uk": "Печиво",
+      "name_en": "Biscuits",
+      "name_de": "Kekse",
+      "aliases": ["cookie", "cookies", "biscuit", "keks"]
+    },
+    {
+      "id": "desserts",
+      "name_uk": "Десерти",
+      "name_en": "Desserts",
+      "name_de": "Desserts",
+      "aliases": ["десерт", "dessert", "nachtisch"]
+    },
+    {
+      "id": "marshmallows",
+      "name_uk": "Маршмелоу",
+      "name_en": "Marshmallows",
+      "name_de": "Marshmallows",
+      "aliases": ["marshmallow"]
+    },
+    {
+      "id": "dishwasher_salt",
+      "name_uk": "Сіль для посудомийки",
+      "name_en": "Dishwasher salt",
+      "name_de": "Spülmaschinensalz",
+      "aliases": ["спеціальна сіль", "spezialsalz"]
+    },
+    {
+      "id": "cold_cut_platters",
+      "name_uk": "М’ясні закусочні асорті",
+      "name_en": "Cold-cut platters",
+      "name_de": "Aufschnittplatten",
+      "aliases": ["м'ясна нарізка", "bretteljause"]
+    }
+  ],
+  "variants": [
+    {
+      "id": "apples_pink_lady",
+      "family_id": "apples",
+      "name_uk": "Пінк Леді",
+      "name_en": "Pink Lady",
+      "name_de": "Pink Lady",
+      "aliases": []
+    },
+    {
+      "id": "apples_red",
+      "family_id": "apples",
+      "name_uk": "Червоні яблука",
+      "name_en": "Red apples",
+      "name_de": "Rote Äpfel",
+      "aliases": []
+    },
+    {
+      "id": "tomatoes_cherry_vine",
+      "family_id": "tomatoes",
+      "name_uk": "Черрі на гілці",
+      "name_en": "Cherry vine tomatoes",
+      "name_de": "Cherry-Rispentomaten",
+      "aliases": ["черрі", "чері", "cherry", "cherrytomaten"]
+    },
+    {
+      "id": "tomatoes_cherry_roma",
+      "family_id": "tomatoes",
+      "name_uk": "Черрі Рома",
+      "name_en": "Cherry Roma tomatoes",
+      "name_de": "Cherry-Romatomaten",
+      "aliases": ["черрі", "чері", "cherry", "cherrytomaten"]
+    },
+    {
+      "id": "tomatoes_cocktail",
+      "family_id": "tomatoes",
+      "name_uk": "Коктейльні помідори",
+      "name_en": "Cocktail tomatoes",
+      "name_de": "Cocktailtomaten",
+      "aliases": ["коктейльні", "cocktail"]
+    },
+    {
+      "id": "tomatoes_date",
+      "family_id": "tomatoes",
+      "name_uk": "Фінікові помідори",
+      "name_en": "Date tomatoes",
+      "name_de": "Datteltomaten",
+      "aliases": []
+    },
+    {
+      "id": "tomatoes_vine",
+      "family_id": "tomatoes",
+      "name_uk": "Помідори на гілці",
+      "name_en": "Vine tomatoes",
+      "name_de": "Rispentomaten",
+      "aliases": []
+    },
+    {
+      "id": "tomatoes_mini_vine",
+      "family_id": "tomatoes",
+      "name_uk": "Мініпомідори на гілці",
+      "name_en": "Mini vine tomatoes",
+      "name_de": "Mini-Rispentomaten",
+      "aliases": []
+    },
+    {
+      "id": "tomatoes_mini_roma_vine",
+      "family_id": "tomatoes",
+      "name_uk": "Міні Рома на гілці",
+      "name_en": "Mini Roma vine tomatoes",
+      "name_de": "Mini-Roma-Rispentomaten",
+      "aliases": []
+    },
+    {
+      "id": "peaches_yellow",
+      "family_id": "peaches",
+      "name_uk": "Жовті персики",
+      "name_en": "Yellow peaches",
+      "name_de": "Gelbe Pfirsiche",
+      "aliases": []
+    },
+    {
+      "id": "peaches_flat",
+      "family_id": "peaches",
+      "name_uk": "Пласкі персики",
+      "name_en": "Flat peaches",
+      "name_de": "Plattpfirsiche",
+      "aliases": []
+    },
+    {
+      "id": "nectarines_flat",
+      "family_id": "nectarines",
+      "name_uk": "Пласкі нектарини",
+      "name_en": "Flat nectarines",
+      "name_de": "Plattnektarinen",
+      "aliases": []
+    },
+    {
+      "id": "nectarines_yellow",
+      "family_id": "nectarines",
+      "name_uk": "Жовті нектарини",
+      "name_en": "Yellow nectarines",
+      "name_de": "Gelbe Nektarinen",
+      "aliases": []
+    },
+    {
+      "id": "pears_abate",
+      "family_id": "pears",
+      "name_uk": "Абате",
+      "name_en": "Abate pears",
+      "name_de": "Abate-Birnen",
+      "aliases": []
+    },
+    {
+      "id": "potatoes_early",
+      "family_id": "potatoes",
+      "name_uk": "Молода картопля",
+      "name_en": "Early potatoes",
+      "name_de": "Frühkartoffeln",
+      "aliases": []
+    },
+    {
+      "id": "potatoes_mainly_waxy",
+      "family_id": "potatoes",
+      "name_uk": "Переважно воскова картопля",
+      "name_en": "Mainly waxy potatoes",
+      "name_de": "Vorwiegend festkochende Kartoffeln",
+      "aliases": []
+    },
+    {
+      "id": "potatoes_early_mainly_waxy",
+      "family_id": "potatoes",
+      "name_uk": "Молода переважно воскова картопля",
+      "name_en": "Early mainly waxy potatoes",
+      "name_de": "Frühe vorwiegend festkochende Kartoffeln",
+      "aliases": []
+    },
+    {
+      "id": "potatoes_baby",
+      "family_id": "potatoes",
+      "name_uk": "Дрібна картопля",
+      "name_en": "Baby potatoes",
+      "name_de": "Drillinge",
+      "aliases": []
+    },
+    {
+      "id": "potatoes_early_baby",
+      "family_id": "potatoes",
+      "name_uk": "Молода дрібна картопля",
+      "name_en": "Early baby potatoes",
+      "name_de": "Frühe Drillinge",
+      "aliases": []
+    },
+    {
+      "id": "kiwifruit_gold",
+      "family_id": "kiwifruit",
+      "name_uk": "Золотисте ківі",
+      "name_en": "Gold kiwifruit",
+      "name_de": "Gold-Kiwi",
+      "aliases": []
+    },
+    {
+      "id": "pineapple_sliced",
+      "family_id": "pineapple",
+      "name_uk": "Ананас скибочками",
+      "name_en": "Sliced pineapple",
+      "name_de": "Ananasscheiben",
+      "aliases": []
+    },
+    {
+      "id": "onions_mix",
+      "family_id": "onions",
+      "name_uk": "Суміш цибулі",
+      "name_en": "Mixed onions",
+      "name_de": "Zwiebelmix",
+      "aliases": []
+    },
+    {
+      "id": "salad_leaves_mix",
+      "family_id": "salad_leaves",
+      "name_uk": "Салатна суміш",
+      "name_en": "Mixed salad leaves",
+      "name_de": "Salatmix",
+      "aliases": []
+    },
+    {
+      "id": "salad_leaves_wild_herbs",
+      "family_id": "salad_leaves",
+      "name_uk": "Салат із дикими травами",
+      "name_en": "Wild herb salad",
+      "name_de": "Wildkräutersalat",
+      "aliases": []
+    },
+    {
+      "id": "carrots_baby",
+      "family_id": "carrots",
+      "name_uk": "Міні-морква",
+      "name_en": "Baby carrots",
+      "name_de": "Mini-Karotten",
+      "aliases": []
+    },
+    {
+      "id": "cucumbers_pickling",
+      "family_id": "cucumbers",
+      "name_uk": "Огірки для засолювання",
+      "name_en": "Pickling cucumbers",
+      "name_de": "Einlegegurken",
+      "aliases": []
+    },
+    {
+      "id": "cucumbers_field",
+      "family_id": "cucumbers",
+      "name_uk": "Ґрунтові огірки",
+      "name_en": "Field cucumbers",
+      "name_de": "Landgurken",
+      "aliases": []
+    },
+    {
+      "id": "cucumbers_snack",
+      "family_id": "cucumbers",
+      "name_uk": "Мініогірки",
+      "name_en": "Snack cucumbers",
+      "name_de": "Snackgurken",
+      "aliases": []
+    },
+    {
+      "id": "button_mushrooms_large_white",
+      "family_id": "button_mushrooms",
+      "name_uk": "Великі білі печериці",
+      "name_en": "Large white button mushrooms",
+      "name_de": "Weiße Riesenchampignons",
+      "aliases": []
+    },
+    {
+      "id": "grapes_green",
+      "family_id": "grapes",
+      "name_uk": "Світлий виноград",
+      "name_en": "Green grapes",
+      "name_de": "Helle Trauben",
+      "aliases": []
+    },
+    {
+      "id": "grapes_dark",
+      "family_id": "grapes",
+      "name_uk": "Темний виноград",
+      "name_en": "Dark grapes",
+      "name_de": "Dunkle Trauben",
+      "aliases": []
+    },
+    {
+      "id": "spinach_baby",
+      "family_id": "spinach",
+      "name_uk": "Молодий шпинат",
+      "name_en": "Baby spinach",
+      "name_de": "Junger Spinat",
+      "aliases": []
+    },
+    {
+      "id": "peppers_red",
+      "family_id": "peppers",
+      "name_uk": "Червоний перець",
+      "name_en": "Red peppers",
+      "name_de": "Rote Paprika",
+      "aliases": []
+    },
+    {
+      "id": "melons_perla",
+      "family_id": "melons",
+      "name_uk": "Диня Перла",
+      "name_en": "Perla melon",
+      "name_de": "Perla-Melone",
+      "aliases": []
+    },
+    {
+      "id": "asparagus_peeled",
+      "family_id": "asparagus",
+      "name_uk": "Очищена спаржа",
+      "name_en": "Peeled asparagus",
+      "name_de": "Geschälter Spargel",
+      "aliases": []
+    },
+    {
+      "id": "asparagus_green",
+      "family_id": "asparagus",
+      "name_uk": "Зелена спаржа",
+      "name_en": "Green asparagus",
+      "name_de": "Grüner Spargel",
+      "aliases": []
+    },
+    {
+      "id": "watermelon_seedless",
+      "family_id": "watermelon",
+      "name_uk": "Безкісточковий кавун",
+      "name_en": "Seedless watermelon",
+      "name_de": "Kernlose Wassermelone",
+      "aliases": []
+    },
+    {
+      "id": "watermelon_low_seed",
+      "family_id": "watermelon",
+      "name_uk": "Кавун із малою кількістю насіння",
+      "name_en": "Low-seed watermelon",
+      "name_de": "Kernarme Wassermelone",
+      "aliases": []
+    },
+    {
+      "id": "plums_damson",
+      "family_id": "plums",
+      "name_uk": "Слива-угорка",
+      "name_en": "Damson plums",
+      "name_de": "Zwetschgen",
+      "aliases": []
+    },
+    {
+      "id": "milk_fresh_3_8",
+      "family_id": "milk",
+      "name_uk": "Свіже молоко 3,8%",
+      "name_en": "Fresh milk 3.8%",
+      "name_de": "Frischmilch 3,8 %",
+      "aliases": []
+    },
+    {
+      "id": "milk_3_8",
+      "family_id": "milk",
+      "name_uk": "Молоко 3,8%",
+      "name_en": "Milk 3.8%",
+      "name_de": "Milch 3,8 %",
+      "aliases": []
+    },
+    {
+      "id": "milk_whole",
+      "family_id": "milk",
+      "name_uk": "Незбиране молоко",
+      "name_en": "Whole milk",
+      "name_de": "Vollmilch",
+      "aliases": []
+    },
+    {
+      "id": "milk_whole_3_5",
+      "family_id": "milk",
+      "name_uk": "Незбиране молоко 3,5%",
+      "name_en": "Whole milk 3.5%",
+      "name_de": "Vollmilch 3,5 %",
+      "aliases": []
+    },
+    {
+      "id": "milk_esl",
+      "family_id": "milk",
+      "name_uk": "Молоко тривалого зберігання ESL",
+      "name_en": "Extended shelf-life milk",
+      "name_de": "ESL-Milch",
+      "aliases": []
+    },
+    {
+      "id": "milk_fresh",
+      "family_id": "milk",
+      "name_uk": "Свіже молоко",
+      "name_en": "Fresh milk",
+      "name_de": "Frischmilch",
+      "aliases": []
+    },
+    {
+      "id": "milk_pasture",
+      "family_id": "milk",
+      "name_uk": "Молоко пасовищного утримання",
+      "name_en": "Pasture milk",
+      "name_de": "Weidemilch",
+      "aliases": []
+    },
+    {
+      "id": "plant_drinks_barista",
+      "family_id": "plant_drinks",
+      "name_uk": "Бариста, рослинна основа не уточнена",
+      "name_en": "Barista, plant base unspecified",
+      "name_de": "Barista, Pflanzenbasis unbestimmt",
+      "aliases": []
+    },
+    {
+      "id": "plant_drinks_almond",
+      "family_id": "plant_drinks",
+      "name_uk": "Мигдальний напій",
+      "name_en": "Almond drink",
+      "name_de": "Mandeldrink",
+      "aliases": []
+    },
+    {
+      "id": "plant_drinks_soy",
+      "family_id": "plant_drinks",
+      "name_uk": "Соєвий напій",
+      "name_en": "Soy drink",
+      "name_de": "Sojadrink",
+      "aliases": []
+    },
+    {
+      "id": "quark_buttermilk",
+      "family_id": "quark",
+      "name_uk": "Сир із маслянкою",
+      "name_en": "Buttermilk quark",
+      "name_de": "Buttermilchquark",
+      "aliases": []
+    },
+    {
+      "id": "eggs_quail",
+      "family_id": "eggs",
+      "name_uk": "Перепелині яйця",
+      "name_en": "Quail eggs",
+      "name_de": "Wachteleier",
+      "aliases": []
+    },
+    {
+      "id": "butter_herb_garlic",
+      "family_id": "butter",
+      "name_uk": "Масло з травами та часником",
+      "name_en": "Herb and garlic butter",
+      "name_de": "Kräuter-Knoblauchbutter",
+      "aliases": []
+    },
+    {
+      "id": "butter_sea_salt",
+      "family_id": "butter",
+      "name_uk": "Масло з морською сіллю",
+      "name_en": "Sea-salted butter",
+      "name_de": "Meersalzbutter",
+      "aliases": []
+    },
+    {
+      "id": "kefir_low_fat",
+      "family_id": "kefir",
+      "name_uk": "Нежирний кефір",
+      "name_en": "Low-fat kefir",
+      "name_de": "Fettarmer Kefir",
+      "aliases": []
+    },
+    {
+      "id": "yogurt_greek",
+      "family_id": "yogurt",
+      "name_uk": "Грецький йогурт",
+      "name_en": "Greek-style yogurt",
+      "name_de": "Joghurt griechischer Art",
+      "aliases": []
+    },
+    {
+      "id": "yogurt_greek_2",
+      "family_id": "yogurt",
+      "name_uk": "Грецький йогурт 2%",
+      "name_en": "Greek yogurt 2%",
+      "name_de": "Griechischer Joghurt 2 %",
+      "aliases": []
+    },
+    {
+      "id": "yogurt_plain",
+      "family_id": "yogurt",
+      "name_uk": "Натуральний йогурт",
+      "name_en": "Plain yogurt",
+      "name_de": "Naturjoghurt",
+      "aliases": []
+    },
+    {
+      "id": "yogurt_skyr",
+      "family_id": "yogurt",
+      "name_uk": "Скір",
+      "name_en": "Skyr",
+      "name_de": "Skyr",
+      "aliases": []
+    },
+    {
+      "id": "cream_sour",
+      "family_id": "cream",
+      "name_uk": "Сметана",
+      "name_en": "Sour cream",
+      "name_de": "Saure Sahne",
+      "aliases": []
+    },
+    {
+      "id": "cream_whipping",
+      "family_id": "cream",
+      "name_uk": "Вершки для збивання",
+      "name_en": "Whipping cream",
+      "name_de": "Schlagsahne",
+      "aliases": []
+    },
+    {
+      "id": "dairy_dessert_creme_brulee",
+      "family_id": "dairy_dessert",
+      "name_uk": "Крем-брюле",
+      "name_en": "Crème brûlée",
+      "name_de": "Crème brûlée",
+      "aliases": []
+    },
+    {
+      "id": "cheese_blue",
+      "family_id": "cheese",
+      "name_uk": "Сир із блакитною пліснявою",
+      "name_en": "Blue cheese",
+      "name_de": "Blauschimmelkäse",
+      "aliases": []
+    },
+    {
+      "id": "cheese_grilling",
+      "family_id": "cheese",
+      "name_uk": "Сир для смаження та гриля",
+      "name_en": "Grilling cheese",
+      "name_de": "Grillkäse",
+      "aliases": []
+    },
+    {
+      "id": "cheese_brie",
+      "family_id": "cheese",
+      "name_uk": "Брі",
+      "name_en": "Brie",
+      "name_de": "Brie",
+      "aliases": []
+    },
+    {
+      "id": "cheese_burrata",
+      "family_id": "cheese",
+      "name_uk": "Бурата",
+      "name_en": "Burrata",
+      "name_de": "Burrata",
+      "aliases": []
+    },
+    {
+      "id": "cheese_camembert",
+      "family_id": "cheese",
+      "name_uk": "Камамбер",
+      "name_en": "Camembert",
+      "name_de": "Camembert",
+      "aliases": []
+    },
+    {
+      "id": "cheese_ricotta",
+      "family_id": "cheese",
+      "name_uk": "Рікота",
+      "name_en": "Ricotta",
+      "name_de": "Ricotta",
+      "aliases": []
+    },
+    {
+      "id": "cheese_cream_plain",
+      "family_id": "cheese",
+      "name_uk": "Натуральний вершковий сир",
+      "name_en": "Plain cream cheese",
+      "name_de": "Frischkäse natur",
+      "aliases": []
+    },
+    {
+      "id": "cheese_cream",
+      "family_id": "cheese",
+      "name_uk": "Вершковий сир",
+      "name_en": "Cream cheese",
+      "name_de": "Frischkäse",
+      "aliases": []
+    },
+    {
+      "id": "cheese_feta",
+      "family_id": "cheese",
+      "name_uk": "Фета",
+      "name_en": "Feta",
+      "name_de": "Feta",
+      "aliases": []
+    },
+    {
+      "id": "cheese_sheep",
+      "family_id": "cheese",
+      "name_uk": "Овечий сир",
+      "name_en": "Sheep cheese",
+      "name_de": "Schafkäse",
+      "aliases": []
+    },
+    {
+      "id": "cheese_mozzarella",
+      "family_id": "cheese",
+      "name_uk": "Моцарела",
+      "name_en": "Mozzarella",
+      "name_de": "Mozzarella",
+      "aliases": []
+    },
+    {
+      "id": "cheese_mozzarella_grated",
+      "family_id": "cheese",
+      "name_uk": "Терта моцарела",
+      "name_en": "Grated mozzarella",
+      "name_de": "Geriebener Mozzarella",
+      "aliases": []
+    },
+    {
+      "id": "cheese_goat_roll",
+      "family_id": "cheese",
+      "name_uk": "Рулет із козячого сиру",
+      "name_en": "Goat cheese log",
+      "name_de": "Ziegenkäserolle",
+      "aliases": []
+    },
+    {
+      "id": "cheese_goat",
+      "family_id": "cheese",
+      "name_uk": "Козячий сир",
+      "name_en": "Goat cheese",
+      "name_de": "Ziegenkäse",
+      "aliases": []
+    },
+    {
+      "id": "cheese_mascarpone",
+      "family_id": "cheese",
+      "name_uk": "Маскарпоне",
+      "name_en": "Mascarpone",
+      "name_de": "Mascarpone",
+      "aliases": []
+    },
+    {
+      "id": "cheese_cottage",
+      "family_id": "cheese",
+      "name_uk": "Зернистий сир",
+      "name_en": "Cottage cheese",
+      "name_de": "Hüttenkäse",
+      "aliases": []
+    },
+    {
+      "id": "cheese_gorgonzola",
+      "family_id": "cheese",
+      "name_uk": "Горгонзола",
+      "name_en": "Gorgonzola",
+      "name_de": "Gorgonzola",
+      "aliases": []
+    },
+    {
+      "id": "cheese_gouda_young",
+      "family_id": "cheese",
+      "name_uk": "Молода гауда",
+      "name_en": "Young Gouda",
+      "name_de": "Junger Gouda",
+      "aliases": []
+    },
+    {
+      "id": "cheese_sliced",
+      "family_id": "cheese",
+      "name_uk": "Сир скибочками",
+      "name_en": "Sliced cheese",
+      "name_de": "Käsescheiben",
+      "aliases": []
+    },
+    {
+      "id": "cheese_braided",
+      "family_id": "cheese",
+      "name_uk": "Сир-косичка",
+      "name_en": "Braided cheese",
+      "name_de": "Zopfkäse",
+      "aliases": []
+    },
+    {
+      "id": "cheese_parmigiano_reggiano",
+      "family_id": "cheese",
+      "name_uk": "Парміджано-реджано",
+      "name_en": "Parmigiano Reggiano",
+      "name_de": "Parmigiano Reggiano",
+      "aliases": []
+    },
+    {
+      "id": "cheese_tete_de_moine",
+      "family_id": "cheese",
+      "name_uk": "Тет-де-муан",
+      "name_en": "Tête de Moine",
+      "name_de": "Tête de Moine",
+      "aliases": []
+    },
+    {
+      "id": "sausage_chicken_lyoner",
+      "family_id": "sausage",
+      "name_uk": "Куряча ліонська ковбаса",
+      "name_en": "Chicken Lyoner sausage",
+      "name_de": "Hähnchen-Lyoner",
+      "aliases": []
+    },
+    {
+      "id": "ham_cooked",
+      "family_id": "ham",
+      "name_uk": "Варена шинка",
+      "name_en": "Cooked ham",
+      "name_de": "Kochschinken",
+      "aliases": []
+    },
+    {
+      "id": "ham_serrano",
+      "family_id": "ham",
+      "name_uk": "Серрано",
+      "name_en": "Serrano ham",
+      "name_de": "Serrano-Schinken",
+      "aliases": []
+    },
+    {
+      "id": "ham_prosciutto_crudo",
+      "family_id": "ham",
+      "name_uk": "Прошуто крудо",
+      "name_en": "Prosciutto crudo",
+      "name_de": "Prosciutto crudo",
+      "aliases": []
+    },
+    {
+      "id": "pork_fillet",
+      "family_id": "pork",
+      "name_uk": "Свиняча вирізка",
+      "name_en": "Pork fillet",
+      "name_de": "Schweinefilet",
+      "aliases": []
+    },
+    {
+      "id": "pork_neck_steak",
+      "family_id": "pork",
+      "name_uk": "Стейк зі свинячої шиї",
+      "name_en": "Pork neck steak",
+      "name_de": "Schweinenackensteak",
+      "aliases": ["свиняча шия", "свинячий ошийок"]
+    },
+    {
+      "id": "pork_neck_steak_marinated",
+      "family_id": "pork",
+      "name_uk": "Маринований стейк зі свинячої шиї",
+      "name_en": "Marinated pork neck steak",
+      "name_de": "Mariniertes Schweinenackensteak",
+      "aliases": ["свиняча шия", "свинячий ошийок"]
+    },
+    {
+      "id": "pork_minute_steak",
+      "family_id": "pork",
+      "name_uk": "Тонкі свинячі стейки",
+      "name_en": "Pork minute steaks",
+      "name_de": "Schweine-Minutensteaks",
+      "aliases": []
+    },
+    {
+      "id": "pork_liver",
+      "family_id": "pork",
+      "name_uk": "Свиняча печінка",
+      "name_en": "Pork liver",
+      "name_de": "Schweineleber",
+      "aliases": []
+    },
+    {
+      "id": "pork_loin_garlic",
+      "family_id": "pork",
+      "name_uk": "Свиняча корейка з часником",
+      "name_en": "Garlic pork loin",
+      "name_de": "Schweinerücken mit Knoblauch",
+      "aliases": []
+    },
+    {
+      "id": "pork_loin_paprika",
+      "family_id": "pork",
+      "name_uk": "Свиняча корейка з паприкою",
+      "name_en": "Paprika pork loin",
+      "name_de": "Schweinerücken mit Paprika",
+      "aliases": []
+    },
+    {
+      "id": "beef_rump_seasoned",
+      "family_id": "beef",
+      "name_uk": "Приправлений ромштекс",
+      "name_en": "Seasoned beef rump steak",
+      "name_de": "Gewürztes Rinder-Rumpsteak",
+      "aliases": []
+    },
+    {
+      "id": "beef_liver",
+      "family_id": "beef",
+      "name_uk": "Яловича печінка",
+      "name_en": "Beef liver",
+      "name_de": "Rinderleber",
+      "aliases": []
+    },
+    {
+      "id": "beef_steak",
+      "family_id": "beef",
+      "name_uk": "Яловичий стейк",
+      "name_en": "Beef steak",
+      "name_de": "Rindersteak",
+      "aliases": []
+    },
+    {
+      "id": "minced_meat_mixed",
+      "family_id": "minced_meat",
+      "name_uk": "Змішаний фарш",
+      "name_en": "Mixed minced meat",
+      "name_de": "Gemischtes Hackfleisch",
+      "aliases": []
+    },
+    {
+      "id": "chicken_breast_fillet",
+      "family_id": "chicken",
+      "name_uk": "Куряче філе грудки",
+      "name_en": "Chicken breast fillet",
+      "name_de": "Hähnchenbrustfilet",
+      "aliases": []
+    },
+    {
+      "id": "chicken_minute_schnitzel",
+      "family_id": "chicken",
+      "name_uk": "Тонкі курячі шніцелі",
+      "name_en": "Chicken minute schnitzel",
+      "name_de": "Hähnchen-Minutenschnitzel",
+      "aliases": []
+    },
+    {
+      "id": "chicken_grilling_steak",
+      "family_id": "chicken",
+      "name_uk": "Курячий стейк для гриля",
+      "name_en": "Chicken grilling steak",
+      "name_de": "Hähnchen-Schwenksteak",
+      "aliases": []
+    },
+    {
+      "id": "chicken_steak_marinated",
+      "family_id": "chicken",
+      "name_uk": "Маринований курячий стейк",
+      "name_en": "Marinated chicken steak",
+      "name_de": "Mariniertes Hähnchensteak",
+      "aliases": []
+    },
+    {
+      "id": "lamb_medallions",
+      "family_id": "lamb",
+      "name_uk": "Медальйони з баранини",
+      "name_en": "Lamb medallions",
+      "name_de": "Lammmedaillons",
+      "aliases": []
+    },
+    {
+      "id": "trout_fillet",
+      "family_id": "trout",
+      "name_uk": "Філе форелі",
+      "name_en": "Trout fillet",
+      "name_de": "Forellenfilet",
+      "aliases": []
+    },
+    {
+      "id": "trout_salmon_trout_fillet",
+      "family_id": "trout",
+      "name_uk": "Філе лососевої форелі",
+      "name_en": "Salmon trout fillet",
+      "name_de": "Lachsforellenfilet",
+      "aliases": []
+    },
+    {
+      "id": "salmon_smoked",
+      "family_id": "salmon",
+      "name_uk": "Копчений лосось",
+      "name_en": "Smoked salmon",
+      "name_de": "Räucherlachs",
+      "aliases": []
+    },
+    {
+      "id": "salmon_hot_smoked",
+      "family_id": "salmon",
+      "name_uk": "Лосось гарячого копчення",
+      "name_en": "Hot-smoked salmon",
+      "name_de": "Stremellachs",
+      "aliases": []
+    },
+    {
+      "id": "salmon_fillet",
+      "family_id": "salmon",
+      "name_uk": "Філе лосося",
+      "name_en": "Salmon fillet",
+      "name_de": "Lachsfilet",
+      "aliases": []
+    },
+    {
+      "id": "shrimp_marinated",
+      "family_id": "shrimp",
+      "name_uk": "Мариновані креветки",
+      "name_en": "Marinated shrimp",
+      "name_de": "Marinierte Garnelen",
+      "aliases": []
+    },
+    {
+      "id": "shrimp_tiger",
+      "family_id": "shrimp",
+      "name_uk": "Тигрові креветки",
+      "name_en": "Tiger shrimp",
+      "name_de": "Tigergarnelen",
+      "aliases": []
+    },
+    {
+      "id": "herring_fillet",
+      "family_id": "herring",
+      "name_uk": "Філе оселедця",
+      "name_en": "Herring fillet",
+      "name_de": "Heringsfilet",
+      "aliases": []
+    },
+    {
+      "id": "anchovies_fillet",
+      "family_id": "anchovies",
+      "name_uk": "Філе анчоусів",
+      "name_en": "Anchovy fillets",
+      "name_de": "Sardellenfilets",
+      "aliases": []
+    },
+    {
+      "id": "pollock_fillet_plain",
+      "family_id": "pollock",
+      "name_uk": "Філе сайди без приправ",
+      "name_en": "Plain pollock fillet",
+      "name_de": "Seelachsfilet natur",
+      "aliases": []
+    },
+    {
+      "id": "surimi_sticks",
+      "family_id": "surimi",
+      "name_uk": "Палички сурімі",
+      "name_en": "Surimi sticks",
+      "name_de": "Surimi-Sticks",
+      "aliases": []
+    },
+    {
+      "id": "beer_alcohol_free",
+      "family_id": "beer",
+      "name_uk": "Безалкогольне пиво",
+      "name_en": "Alcohol-free beer",
+      "name_de": "Alkoholfreies Bier",
+      "aliases": []
+    },
+    {
+      "id": "beer_wheat",
+      "family_id": "beer",
+      "name_uk": "Пшеничне пиво",
+      "name_en": "Wheat beer",
+      "name_de": "Weißbier",
+      "aliases": []
+    },
+    {
+      "id": "beer_wheat_alcohol_free",
+      "family_id": "beer",
+      "name_uk": "Безалкогольне пшеничне пиво",
+      "name_en": "Alcohol-free wheat beer",
+      "name_de": "Alkoholfreies Weißbier",
+      "aliases": []
+    },
+    {
+      "id": "wine_rose",
+      "family_id": "wine",
+      "name_uk": "Рожеве вино",
+      "name_en": "Rosé wine",
+      "name_de": "Roséwein",
+      "aliases": []
+    },
+    {
+      "id": "wine_rose_alcohol_free",
+      "family_id": "wine",
+      "name_uk": "Безалкогольне рожеве вино",
+      "name_en": "Alcohol-free rosé wine",
+      "name_de": "Alkoholfreier Roséwein",
+      "aliases": []
+    },
+    {
+      "id": "wine_white_alcohol_free",
+      "family_id": "wine",
+      "name_uk": "Безалкогольне біле вино",
+      "name_en": "Alcohol-free white wine",
+      "name_de": "Alkoholfreier Weißwein",
+      "aliases": []
+    },
+    {
+      "id": "wine_red_alcohol_free",
+      "family_id": "wine",
+      "name_uk": "Безалкогольне червоне вино",
+      "name_en": "Alcohol-free red wine",
+      "name_de": "Alkoholfreier Rotwein",
+      "aliases": []
+    },
+    {
+      "id": "sparkling_wine_alcohol_free",
+      "family_id": "sparkling_wine",
+      "name_uk": "Безалкогольне ігристе",
+      "name_en": "Alcohol-free sparkling wine",
+      "name_de": "Alkoholfreier Schaumwein",
+      "aliases": []
+    },
+    {
+      "id": "soft_drinks_cola",
+      "family_id": "soft_drinks",
+      "name_uk": "Кола",
+      "name_en": "Cola",
+      "name_de": "Cola",
+      "aliases": []
+    },
+    {
+      "id": "soft_drinks_cola_zero",
+      "family_id": "soft_drinks",
+      "name_uk": "Кола без цукру",
+      "name_en": "Sugar-free cola",
+      "name_de": "Zuckerfreie Cola",
+      "aliases": []
+    },
+    {
+      "id": "soft_drinks_cherry_cola",
+      "family_id": "soft_drinks",
+      "name_uk": "Вишнева кола",
+      "name_en": "Cherry cola",
+      "name_de": "Kirsch-Cola",
+      "aliases": []
+    },
+    {
+      "id": "soft_drinks_grapefruit",
+      "family_id": "soft_drinks",
+      "name_uk": "Грейпфрутовий лимонад",
+      "name_en": "Grapefruit soft drink",
+      "name_de": "Grapefruit-Limonade",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_pear",
+      "family_id": "fruit_juice",
+      "name_uk": "Грушевий сік",
+      "name_en": "Pear juice",
+      "name_de": "Birnensaft",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_grapefruit",
+      "family_id": "fruit_juice",
+      "name_uk": "Грейпфрутовий сік",
+      "name_en": "Grapefruit juice",
+      "name_de": "Grapefruitsaft",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_apple_pear",
+      "family_id": "fruit_juice",
+      "name_uk": "Яблучно-грушевий сік",
+      "name_en": "Apple and pear juice",
+      "name_de": "Apfel-Birnensaft",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_apple",
+      "family_id": "fruit_juice",
+      "name_uk": "Яблучний сік",
+      "name_en": "Apple juice",
+      "name_de": "Apfelsaft",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_pineapple",
+      "family_id": "fruit_juice",
+      "name_uk": "Ананасовий сік",
+      "name_en": "Pineapple juice",
+      "name_de": "Ananassaft",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_grape",
+      "family_id": "fruit_juice",
+      "name_uk": "Виноградний сік",
+      "name_en": "Grape juice",
+      "name_de": "Traubensaft",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_multivitamin",
+      "family_id": "fruit_juice",
+      "name_uk": "Мультивітамінний сік",
+      "name_en": "Multivitamin juice",
+      "name_de": "Multivitaminsaft",
+      "aliases": []
+    },
+    {
+      "id": "fruit_juice_orange",
+      "family_id": "fruit_juice",
+      "name_uk": "Апельсиновий сік",
+      "name_en": "Orange juice",
+      "name_de": "Orangensaft",
+      "aliases": []
+    },
+    {
+      "id": "water_still_mineral",
+      "family_id": "water",
+      "name_uk": "Негазована мінеральна вода",
+      "name_en": "Still mineral water",
+      "name_de": "Stilles Mineralwasser",
+      "aliases": []
+    },
+    {
+      "id": "water_still_medicinal",
+      "family_id": "water",
+      "name_uk": "Негазована лікувальна вода",
+      "name_en": "Still medicinal water",
+      "name_de": "Stilles Heilwasser",
+      "aliases": []
+    },
+    {
+      "id": "pasta_penne",
+      "family_id": "pasta",
+      "name_uk": "Пенне",
+      "name_en": "Penne",
+      "name_de": "Penne",
+      "aliases": []
+    },
+    {
+      "id": "pasta_spaghetti",
+      "family_id": "pasta",
+      "name_uk": "Спагеті",
+      "name_en": "Spaghetti",
+      "name_de": "Spaghetti",
+      "aliases": []
+    },
+    {
+      "id": "pasta_tagliatelle",
+      "family_id": "pasta",
+      "name_uk": "Тальятеле",
+      "name_en": "Tagliatelle",
+      "name_de": "Tagliatelle",
+      "aliases": []
+    },
+    {
+      "id": "rice_basmati",
+      "family_id": "rice",
+      "name_uk": "Басматі",
+      "name_en": "Basmati rice",
+      "name_de": "Basmatireis",
+      "aliases": []
+    },
+    {
+      "id": "hummus_high_protein",
+      "family_id": "hummus",
+      "name_uk": "Хумус із підвищеним білком",
+      "name_en": "High-protein hummus",
+      "name_de": "Proteinreicher Hummus",
+      "aliases": []
+    },
+    {
+      "id": "coffee_espresso",
+      "family_id": "coffee",
+      "name_uk": "Кава еспресо",
+      "name_en": "Espresso coffee",
+      "name_de": "Espressokaffee",
+      "aliases": []
+    },
+    {
+      "id": "nuts_mix",
+      "family_id": "nuts",
+      "name_uk": "Горіхова суміш",
+      "name_en": "Mixed nuts",
+      "name_de": "Nussmischung",
+      "aliases": []
+    },
+    {
+      "id": "nuts_pistachios",
+      "family_id": "nuts",
+      "name_uk": "Фісташки",
+      "name_en": "Pistachios",
+      "name_de": "Pistazien",
+      "aliases": ["фісташка", "pistachio", "pistazie"]
+    },
+    {
+      "id": "nuts_peanuts",
+      "family_id": "nuts",
+      "name_uk": "Арахіс",
+      "name_en": "Peanuts",
+      "name_de": "Erdnüsse",
+      "aliases": ["peanut", "erdnuss"]
+    },
+    {
+      "id": "nuts_walnuts",
+      "family_id": "nuts",
+      "name_uk": "Волоські горіхи",
+      "name_en": "Walnuts",
+      "name_de": "Walnüsse",
+      "aliases": ["волоський горіх", "walnut", "walnuss"]
+    },
+    {
+      "id": "nuts_cashews",
+      "family_id": "nuts",
+      "name_uk": "Кеш’ю",
+      "name_en": "Cashews",
+      "name_de": "Cashewkerne",
+      "aliases": ["кешью", "cashew"]
+    },
+    {
+      "id": "nuts_trail_mix",
+      "family_id": "nuts",
+      "name_uk": "Горіхи з сухофруктами",
+      "name_en": "Trail mix",
+      "name_de": "Studentenfutter",
+      "aliases": []
+    },
+    {
+      "id": "sweeteners_erythritol",
+      "family_id": "sweeteners",
+      "name_uk": "Еритритол",
+      "name_en": "Erythritol",
+      "name_de": "Erythrit",
+      "aliases": []
+    },
+    {
+      "id": "pastry_dough_puff",
+      "family_id": "pastry_dough",
+      "name_uk": "Листкове тісто",
+      "name_en": "Puff pastry",
+      "name_de": "Blätterteig",
+      "aliases": []
+    },
+    {
+      "id": "chips_french_fries",
+      "family_id": "chips",
+      "name_uk": "Смак фрі",
+      "name_en": "Fries",
+      "name_de": "Fries",
+      "aliases": ["fries", "french fries", "kartoffel frites", "friten"]
+    },
+    {
+      "id": "chips_original",
+      "family_id": "chips",
+      "name_uk": "Класичний смак",
+      "name_en": "Original",
+      "name_de": "Original",
+      "aliases": ["original", "klassisch", "classic", "classisch"]
+    },
+    {
+      "id": "chips_salted_stacked",
+      "family_id": "chips",
+      "name_uk": "Солоні формовані чипси",
+      "name_en": "Salted stacked crisps",
+      "name_de": "Gesalzene Stapelchips",
+      "aliases": []
+    },
+    {
+      "id": "chips_salted",
+      "family_id": "chips",
+      "name_uk": "Солоні чипси",
+      "name_en": "Salted crisps",
+      "name_de": "Gesalzene Chips",
+      "aliases": []
+    },
+    {
+      "id": "chips_sour_cream_onion",
+      "family_id": "chips",
+      "name_uk": "Смак сметано-цибулевий",
+      "name_en": "Sour cream and onion",
+      "name_de": "Sour Cream & Onion",
+      "aliases": [
+        "sour cream and onion",
+        "sour cream&onion",
+        "sourcream&onion",
+        "saure sahne zwiebel",
+        "sour cream onion",
+        "sauerrahm zwiebel"
+      ]
+    },
+    {
+      "id": "chips_sweet_paprika",
+      "family_id": "chips",
+      "name_uk": "Смак солодкої паприки",
+      "name_en": "Sweet paprika",
+      "name_de": "Süßes Paprika",
+      "aliases": [
+        "sweet paprika",
+        "süße paprika",
+        "sweet paprika flavor",
+        "солодка паприка",
+        "паприка сладкая",
+        "paprika sweet"
+      ]
+    },
+    {
+      "id": "chips_wings",
+      "family_id": "chips",
+      "name_uk": "Смак Wings",
+      "name_en": "Wings",
+      "name_de": "Wings",
+      "aliases": ["wings", "chicken wings", "winges"]
+    },
+    {
+      "id": "chips_maple_barbecue",
+      "family_id": "chips",
+      "name_uk": "Чипси кленовий барбекю",
+      "name_en": "Maple barbecue crisps",
+      "name_de": "Chips Maple BBQ",
+      "aliases": []
+    },
+    {
+      "id": "dried_fruit_cranberries",
+      "family_id": "dried_fruit",
+      "name_uk": "Сушена журавлина",
+      "name_en": "Dried cranberries",
+      "name_de": "Getrocknete Cranberries",
+      "aliases": ["журавлина", "cranberry", "cranberries"]
+    },
+    {
+      "id": "bread_sandwich",
+      "family_id": "bread",
+      "name_uk": "Сендвічний хліб",
+      "name_en": "Sandwich bread",
+      "name_de": "Sandwichbrot",
+      "aliases": []
+    },
+    {
+      "id": "bread_sandwich_wholegrain",
+      "family_id": "bread",
+      "name_uk": "Цільнозерновий сендвічний хліб",
+      "name_en": "Wholegrain sandwich bread",
+      "name_de": "Vollkorn-Sandwichbrot",
+      "aliases": []
+    },
+    {
+      "id": "bread_brioche_buns",
+      "family_id": "bread",
+      "name_uk": "Булочки бріош",
+      "name_en": "Brioche buns",
+      "name_de": "Brioche-Buns",
+      "aliases": []
+    },
+    {
+      "id": "bread_protein",
+      "family_id": "bread",
+      "name_uk": "Білковий хліб",
+      "name_en": "Protein bread",
+      "name_de": "Proteinbrot",
+      "aliases": []
+    },
+    {
+      "id": "bread_baguette",
+      "family_id": "bread",
+      "name_uk": "Багет",
+      "name_en": "Baguette",
+      "name_de": "Baguette",
+      "aliases": []
+    },
+    {
+      "id": "bread_wholegrain_wraps",
+      "family_id": "bread",
+      "name_uk": "Цільнозернові тортильї",
+      "name_en": "Wholegrain wraps",
+      "name_de": "Vollkorn-Wraps",
+      "aliases": []
+    },
+    {
+      "id": "bread_crisp",
+      "family_id": "bread",
+      "name_uk": "Хрусткі хлібці",
+      "name_en": "Crispbread",
+      "name_de": "Knäckebrot",
+      "aliases": []
+    },
+    {
+      "id": "sauces_pesto",
+      "family_id": "sauces",
+      "name_uk": "Песто",
+      "name_en": "Pesto",
+      "name_de": "Pesto",
+      "aliases": []
+    },
+    {
+      "id": "sauces_fish",
+      "family_id": "sauces",
+      "name_uk": "Рибний соус",
+      "name_en": "Fish sauce",
+      "name_de": "Fischsauce",
+      "aliases": []
+    },
+    {
+      "id": "sauces_barbecue",
+      "family_id": "sauces",
+      "name_uk": "Соус барбекю",
+      "name_en": "Barbecue sauce",
+      "name_de": "Barbecuesauce",
+      "aliases": []
+    },
+    {
+      "id": "sauces_ketchup",
+      "family_id": "sauces",
+      "name_uk": "Кетчуп",
+      "name_en": "Ketchup",
+      "name_de": "Ketchup",
+      "aliases": []
+    },
+    {
+      "id": "sauces_hot_dog",
+      "family_id": "sauces",
+      "name_uk": "Соус для хот-догів",
+      "name_en": "Hot dog sauce",
+      "name_de": "Hot-Dog-Sauce",
+      "aliases": []
+    },
+    {
+      "id": "sauces_worcestershire",
+      "family_id": "sauces",
+      "name_uk": "Вустерський соус",
+      "name_en": "Worcestershire sauce",
+      "name_de": "Worcestersauce",
+      "aliases": []
+    },
+    {
+      "id": "sauces_steak",
+      "family_id": "sauces",
+      "name_uk": "Соус для стейка",
+      "name_en": "Steak sauce",
+      "name_de": "Steaksauce",
+      "aliases": []
+    },
+    {
+      "id": "sauces_remoulade",
+      "family_id": "sauces",
+      "name_uk": "Ремулад",
+      "name_en": "Remoulade",
+      "name_de": "Remoulade",
+      "aliases": []
+    },
+    {
+      "id": "dips_bruschetta",
+      "family_id": "dips",
+      "name_uk": "Дип брускета",
+      "name_en": "Bruschetta dip",
+      "name_de": "Bruschetta-Dip",
+      "aliases": []
+    },
+    {
+      "id": "protein_powder_soy_isolate",
+      "family_id": "protein_powder",
+      "name_uk": "Ізолят соєвого білка",
+      "name_en": "Soy protein isolate",
+      "name_de": "Sojaproteinisolat",
+      "aliases": []
+    },
+    {
+      "id": "protein_powder_casein_vanilla",
+      "family_id": "protein_powder",
+      "name_uk": "Казеїновий протеїн ваніль",
+      "name_en": "Vanilla casein protein",
+      "name_de": "Caseinprotein Vanille",
+      "aliases": []
+    },
+    {
+      "id": "spice_blends_italian",
+      "family_id": "spice_blends",
+      "name_uk": "Італійські спеції",
+      "name_en": "Italian spice blend",
+      "name_de": "Italienische Gewürzmischung",
+      "aliases": []
+    },
+    {
+      "id": "mushroom_seasoning_porcini_powder",
+      "family_id": "mushroom_seasoning",
+      "name_uk": "Порошок білих грибів",
+      "name_en": "Porcini mushroom powder",
+      "name_de": "Steinpilzpulver",
+      "aliases": ["білий гриб", "білі гриби", "porcini", "steinpilze"]
+    },
+    {
+      "id": "cooking_oil_olive",
+      "family_id": "cooking_oil",
+      "name_uk": "Оливкова олія",
+      "name_en": "Olive oil",
+      "name_de": "Olivenöl",
+      "aliases": []
+    },
+    {
+      "id": "cooking_oil_sunflower",
+      "family_id": "cooking_oil",
+      "name_uk": "Соняшникова олія",
+      "name_en": "Sunflower oil",
+      "name_de": "Sonnenblumenöl",
+      "aliases": []
+    },
+    {
+      "id": "olives_pitted",
+      "family_id": "olives",
+      "name_uk": "Оливки без кісточки",
+      "name_en": "Pitted olives",
+      "name_de": "Entsteinte Oliven",
+      "aliases": []
+    },
+    {
+      "id": "sugar_refined",
+      "family_id": "sugar",
+      "name_uk": "Рафінований цукор",
+      "name_en": "Refined sugar",
+      "name_de": "Raffinadezucker",
+      "aliases": []
+    },
+    {
+      "id": "food_additives_msg",
+      "family_id": "food_additives",
+      "name_uk": "Глутамат натрію",
+      "name_en": "Monosodium glutamate",
+      "name_de": "Mononatriumglutamat",
+      "aliases": []
+    },
+    {
+      "id": "burgers_cheeseburger",
+      "family_id": "burgers",
+      "name_uk": "Чизбургер",
+      "name_en": "Cheeseburger",
+      "name_de": "Cheeseburger",
+      "aliases": []
+    },
+    {
+      "id": "car_fluids_gear_oil",
+      "family_id": "car_fluids",
+      "name_uk": "Трансмісійна олива",
+      "name_en": "Transmission oil",
+      "name_de": "Getriebeöl",
+      "aliases": []
+    },
+    {
+      "id": "car_fluids_windscreen_wash",
+      "family_id": "car_fluids",
+      "name_uk": "Омивач скла",
+      "name_en": "Windscreen washer fluid",
+      "name_de": "Scheibenreiniger",
+      "aliases": []
+    },
+    {
+      "id": "fuel_petrol_e5",
+      "family_id": "fuel",
+      "name_uk": "Бензин E5",
+      "name_en": "E5 petrol",
+      "name_de": "Super E5",
+      "aliases": []
+    },
+    {
+      "id": "supplements_iodine_selenium",
+      "family_id": "supplements",
+      "name_uk": "Йод і селен",
+      "name_en": "Iodine and selenium",
+      "name_de": "Jod und Selen",
+      "aliases": []
+    },
+    {
+      "id": "supplements_iron",
+      "family_id": "supplements",
+      "name_uk": "Залізо",
+      "name_en": "Iron",
+      "name_de": "Eisen",
+      "aliases": []
+    },
+    {
+      "id": "supplements_magnesium",
+      "family_id": "supplements",
+      "name_uk": "Магній",
+      "name_en": "Magnesium",
+      "name_de": "Magnesium",
+      "aliases": []
+    },
+    {
+      "id": "supplements_multivitamin",
+      "family_id": "supplements",
+      "name_uk": "Мультивітаміни",
+      "name_en": "Multivitamins",
+      "name_de": "Multivitamine",
+      "aliases": []
+    },
+    {
+      "id": "supplements_collagen",
+      "family_id": "supplements",
+      "name_uk": "Колаген",
+      "name_en": "Collagen",
+      "name_de": "Kollagen",
+      "aliases": []
+    },
+    {
+      "id": "dressings_gauze",
+      "family_id": "dressings",
+      "name_uk": "Медична марля",
+      "name_en": "Medical gauze",
+      "name_de": "Medizinische Gaze",
+      "aliases": []
+    },
+    {
+      "id": "dressings_plasters",
+      "family_id": "dressings",
+      "name_uk": "Лейкопластирі",
+      "name_en": "Adhesive plasters",
+      "name_de": "Heftpflaster",
+      "aliases": []
+    },
+    {
+      "id": "water_filters_cartridges",
+      "family_id": "water_filters",
+      "name_uk": "Картриджі водяного фільтра",
+      "name_en": "Water filter cartridges",
+      "name_de": "Wasserfilterkartuschen",
+      "aliases": []
+    },
+    {
+      "id": "kitchen_utensils_tongs",
+      "family_id": "kitchen_utensils",
+      "name_uk": "Кухонні щипці",
+      "name_en": "Kitchen tongs",
+      "name_de": "Küchenzangen",
+      "aliases": []
+    },
+    {
+      "id": "kitchen_utensils_salt_shaker",
+      "family_id": "kitchen_utensils",
+      "name_uk": "Сільничка",
+      "name_en": "Salt shaker",
+      "name_de": "Salzstreuer",
+      "aliases": []
+    },
+    {
+      "id": "irons_steam",
+      "family_id": "irons",
+      "name_uk": "Парова праска",
+      "name_en": "Steam iron",
+      "name_de": "Dampfbügeleisen",
+      "aliases": []
+    },
+    {
+      "id": "window_blinds_pleated",
+      "family_id": "window_blinds",
+      "name_uk": "Жалюзі плісе",
+      "name_en": "Pleated blind",
+      "name_de": "Plissee",
+      "aliases": []
+    },
+    {
+      "id": "kitchen_thermometers_meat",
+      "family_id": "kitchen_thermometers",
+      "name_uk": "Термометр для м’яса",
+      "name_en": "Meat thermometer",
+      "name_de": "Fleischthermometer",
+      "aliases": []
+    },
+    {
+      "id": "pillowcases_satin",
+      "family_id": "pillowcases",
+      "name_uk": "Сатинові наволочки",
+      "name_en": "Satin pillowcases",
+      "name_de": "Satin-Kissenbezüge",
+      "aliases": []
+    },
+    {
+      "id": "firelighters_cubes",
+      "family_id": "firelighters",
+      "name_uk": "Кубики для розпалювання",
+      "name_en": "Firelighter cubes",
+      "name_de": "Anzündwürfel",
+      "aliases": []
+    },
+    {
+      "id": "chargers_usb_c",
+      "family_id": "chargers",
+      "name_uk": "Зарядний пристрій USB-C",
+      "name_en": "USB-C charger",
+      "name_de": "USB-C-Ladegerät",
+      "aliases": []
+    },
+    {
+      "id": "computer_cables_fan_splitter",
+      "family_id": "computer_cables",
+      "name_uk": "Розгалужувач вентиляторів PWM",
+      "name_en": "PWM fan splitter",
+      "name_de": "PWM-Lüfterverteiler",
+      "aliases": []
+    },
+    {
+      "id": "power_supplies_pc",
+      "family_id": "power_supplies",
+      "name_uk": "Блок живлення ПК",
+      "name_en": "PC power supply",
+      "name_de": "PC-Netzteil",
+      "aliases": []
+    },
+    {
+      "id": "batteries_cr2032",
+      "family_id": "batteries",
+      "name_uk": "Літієві батарейки CR2032",
+      "name_en": "CR2032 lithium batteries",
+      "name_de": "CR2032-Lithiumbatterien",
+      "aliases": []
+    },
+    {
+      "id": "lens_adapters_pentax_k_sony_e",
+      "family_id": "lens_adapters",
+      "name_uk": "Pentax K на Sony E",
+      "name_en": "Pentax K to Sony E",
+      "name_de": "Pentax K auf Sony E",
+      "aliases": []
+    },
+    {
+      "id": "keyboards_ergonomic",
+      "family_id": "keyboards",
+      "name_uk": "Ергономічна клавіатура",
+      "name_en": "Ergonomic keyboard",
+      "name_de": "Ergonomische Tastatur",
+      "aliases": []
+    },
+    {
+      "id": "computer_mice_vertical",
+      "family_id": "computer_mice",
+      "name_uk": "Вертикальна миша",
+      "name_en": "Vertical mouse",
+      "name_de": "Vertikale Maus",
+      "aliases": []
+    },
+    {
+      "id": "computer_fans_120_mm",
+      "family_id": "computer_fans",
+      "name_uk": "Вентилятор 120 мм",
+      "name_en": "120 mm fan",
+      "name_de": "120-mm-Lüfter",
+      "aliases": []
+    },
+    {
+      "id": "condoms_delay",
+      "family_id": "condoms",
+      "name_uk": "Презервативи з пролонгувальним гелем",
+      "name_en": "Delay condoms",
+      "name_de": "Verzögernde Kondome",
+      "aliases": []
+    },
+    {
+      "id": "lubricants_water_based",
+      "family_id": "lubricants",
+      "name_uk": "Лубрикант на водній основі",
+      "name_en": "Water-based lubricant",
+      "name_de": "Gleitmittel auf Wasserbasis",
+      "aliases": []
+    },
+    {
+      "id": "flowers_plants_cut_flowers",
+      "family_id": "flowers_plants",
+      "name_uk": "Зрізані квіти",
+      "name_en": "Cut flowers",
+      "name_de": "Schnittblumen",
+      "aliases": []
+    },
+    {
+      "id": "hair_accessories_ties",
+      "family_id": "hair_accessories",
+      "name_uk": "Гумки для волосся",
+      "name_en": "Hair ties",
+      "name_de": "Haargummis",
+      "aliases": []
+    },
+    {
+      "id": "hair_accessories_claw",
+      "family_id": "hair_accessories",
+      "name_uk": "Заколка-краб",
+      "name_en": "Claw hair clip",
+      "name_de": "Haarkralle",
+      "aliases": []
+    },
+    {
+      "id": "charcoal_briquettes",
+      "family_id": "charcoal",
+      "name_uk": "Вугільні брикети",
+      "name_en": "Charcoal briquettes",
+      "name_de": "Holzkohlebriketts",
+      "aliases": []
+    },
+    {
+      "id": "party_decorations_candles",
+      "family_id": "party_decorations",
+      "name_uk": "Святкові свічки",
+      "name_en": "Birthday candles",
+      "name_de": "Geburtstagskerzen",
+      "aliases": []
+    },
+    {
+      "id": "party_decorations_garland",
+      "family_id": "party_decorations",
+      "name_uk": "Гірлянда",
+      "name_en": "Garland",
+      "name_de": "Girlande",
+      "aliases": []
+    },
+    {
+      "id": "party_decorations_hats",
+      "family_id": "party_decorations",
+      "name_uk": "Святкові ковпаки",
+      "name_en": "Party hats",
+      "name_de": "Partyhüte",
+      "aliases": []
+    },
+    {
+      "id": "party_decorations_balloons",
+      "family_id": "party_decorations",
+      "name_uk": "Повітряні кульки",
+      "name_en": "Balloons",
+      "name_de": "Luftballons",
+      "aliases": []
+    },
+    {
+      "id": "kitchen_utensils_skewers",
+      "family_id": "kitchen_utensils",
+      "name_uk": "Шпажки для їжі",
+      "name_en": "Food skewers",
+      "name_de": "Lebensmittelspieße",
+      "aliases": []
+    },
+    {
+      "id": "kitchen_utensils_spoon_rest",
+      "family_id": "kitchen_utensils",
+      "name_uk": "Підставка для ложки",
+      "name_en": "Spoon rest",
+      "name_de": "Löffelablage",
+      "aliases": []
+    },
+    {
+      "id": "kitchen_utensils_straws",
+      "family_id": "kitchen_utensils",
+      "name_uk": "Соломинки для напоїв",
+      "name_en": "Drinking straws",
+      "name_de": "Trinkhalme",
+      "aliases": []
+    },
+    {
+      "id": "bags_produce",
+      "family_id": "bags",
+      "name_uk": "Пакети для овочів і фруктів",
+      "name_en": "Produce bags",
+      "name_de": "Obstbeutel",
+      "aliases": []
+    },
+    {
+      "id": "bags_frozen_food",
+      "family_id": "bags",
+      "name_uk": "Термопакет для заморожених продуктів",
+      "name_en": "Frozen-food carrier bag",
+      "name_de": "Tiefkühltragetasche",
+      "aliases": []
+    },
+    {
+      "id": "bags_paper",
+      "family_id": "bags",
+      "name_uk": "Паперовий пакет",
+      "name_en": "Paper carrier bag",
+      "name_de": "Papiertragetasche",
+      "aliases": []
+    },
+    {
+      "id": "tights_20_den",
+      "family_id": "tights",
+      "name_uk": "Колготки 20 DEN",
+      "name_en": "20 DEN tights",
+      "name_de": "Strumpfhose 20 DEN",
+      "aliases": []
+    },
+    {
+      "id": "tights_60_den",
+      "family_id": "tights",
+      "name_uk": "Колготки 60 DEN",
+      "name_en": "60 DEN tights",
+      "name_de": "Strumpfhose 60 DEN",
+      "aliases": []
+    },
+    {
+      "id": "caps_newsboy",
+      "family_id": "caps",
+      "name_uk": "Кепка-восьмиклинка",
+      "name_en": "Newsboy cap",
+      "name_de": "Schiebermütze",
+      "aliases": []
+    },
+    {
+      "id": "socks_bamboo_short",
+      "family_id": "socks",
+      "name_uk": "Короткі бамбукові шкарпетки",
+      "name_en": "Short bamboo socks",
+      "name_de": "Kurze Bambussocken",
+      "aliases": []
+    },
+    {
+      "id": "sportswear_women",
+      "family_id": "sportswear",
+      "name_uk": "Жіночий спортивний одяг",
+      "name_en": "Women’s sportswear",
+      "name_de": "Damen-Sportbekleidung",
+      "aliases": []
+    },
+    {
+      "id": "sportswear_men",
+      "family_id": "sportswear",
+      "name_uk": "Чоловічий спортивний одяг",
+      "name_en": "Men’s sportswear",
+      "name_de": "Herren-Sportbekleidung",
+      "aliases": []
+    },
+    {
+      "id": "device_protection_accident_theft",
+      "family_id": "device_protection",
+      "name_uk": "Захист від пошкодження та крадіжки",
+      "name_en": "Accident and theft protection",
+      "name_de": "Unfall- und Diebstahlschutz",
+      "aliases": []
+    },
+    {
+      "id": "device_protection_warranty_extension",
+      "family_id": "device_protection",
+      "name_uk": "Продовження гарантії",
+      "name_en": "Warranty extension",
+      "name_de": "Garantieverlängerung",
+      "aliases": []
+    },
+    {
+      "id": "puzzles_wooden_animals",
+      "family_id": "puzzles",
+      "name_uk": "Дерев’яні пазли з тваринами",
+      "name_en": "Wooden animal puzzles",
+      "name_de": "Tier-Holzpuzzles",
+      "aliases": []
+    },
+    {
+      "id": "puzzles_anatomy",
+      "family_id": "puzzles",
+      "name_uk": "Анатомічний пазл",
+      "name_en": "Anatomy puzzle",
+      "name_de": "Anatomiepuzzle",
+      "aliases": []
+    },
+    {
+      "id": "children_kitchen_tools_knife_set",
+      "family_id": "children_kitchen_tools",
+      "name_uk": "Дитячий кухонний набір із ножами",
+      "name_en": "Children’s kitchen knife set",
+      "name_de": "Kinderküchen-Messerset",
+      "aliases": []
+    },
+    {
+      "id": "exercise_equipment_grip_trainer",
+      "family_id": "exercise_equipment",
+      "name_uk": "Кистьовий еспандер",
+      "name_en": "Grip trainer",
+      "name_de": "Handtrainer",
+      "aliases": []
+    },
+    {
+      "id": "exercise_equipment_therapy_bar",
+      "family_id": "exercise_equipment",
+      "name_uk": "Гнучкий тренувальний стрижень",
+      "name_en": "Flexible therapy bar",
+      "name_de": "Flexibler Therapiestab",
+      "aliases": []
+    },
+    {
+      "id": "exercise_equipment_wrist_roller",
+      "family_id": "exercise_equipment",
+      "name_uk": "Роликовий тренажер передпліччя",
+      "name_en": "Wrist roller trainer",
+      "name_de": "Unterarmroller",
+      "aliases": []
+    },
+    {
+      "id": "exercise_equipment_pull_up_grips",
+      "family_id": "exercise_equipment",
+      "name_uk": "Набір хватів для підтягування",
+      "name_en": "Pull-up grip set",
+      "name_de": "Klimmzuggriff-Set",
+      "aliases": []
+    },
+    {
+      "id": "water_toys_water_gun",
+      "family_id": "water_toys",
+      "name_uk": "Водяний пістолет",
+      "name_en": "Water gun",
+      "name_de": "Wasserpistole",
+      "aliases": []
+    },
+    {
+      "id": "cleaning_accessories_steam_cleaner",
+      "family_id": "cleaning_accessories",
+      "name_uk": "Насадки для пароочисника",
+      "name_en": "Steam cleaner accessories",
+      "name_de": "Dampfreiniger-Zubehör",
+      "aliases": []
+    },
+    {
+      "id": "cleaning_accessories_robot_vacuum",
+      "family_id": "cleaning_accessories",
+      "name_uk": "Комплект для робота-пилососа",
+      "name_en": "Robot vacuum accessory kit",
+      "name_de": "Saugroboter-Zubehörset",
+      "aliases": []
+    },
+    {
+      "id": "cleaning_accessories_wipes",
+      "family_id": "cleaning_accessories",
+      "name_uk": "Універсальні серветки для прибирання",
+      "name_en": "All-purpose cleaning cloths",
+      "name_de": "Allzwecktücher",
+      "aliases": []
+    },
+    {
+      "id": "cleaning_accessories_sponge",
+      "family_id": "cleaning_accessories",
+      "name_uk": "Губки",
+      "name_en": "Sponges",
+      "name_de": "Schwämme",
+      "aliases": []
+    },
+    {
+      "id": "dental_floss_picks",
+      "family_id": "dental_floss",
+      "name_uk": "Тримачі із зубною ниткою",
+      "name_en": "Floss picks",
+      "name_de": "Zahnseidesticks",
+      "aliases": []
+    },
+    {
+      "id": "dishwasher_detergent_capsules",
+      "family_id": "dishwasher_detergent",
+      "name_uk": "Капсули для посудомийки",
+      "name_en": "Dishwasher capsules",
+      "name_de": "Spülmaschinen-Caps",
+      "aliases": []
+    },
+    {
+      "id": "cleaning_agents_degreaser",
+      "family_id": "cleaning_agents",
+      "name_uk": "Знежирювач",
+      "name_en": "Degreaser",
+      "name_de": "Fettlöser",
+      "aliases": []
+    },
+    {
+      "id": "cleaning_agents_robot_floor",
+      "family_id": "cleaning_agents",
+      "name_uk": "Рідина для робота-прибиральника",
+      "name_en": "Robot floor cleaning solution",
+      "name_de": "Reinigungslösung für Saugroboter",
+      "aliases": []
+    },
+    {
+      "id": "cleaning_agents_coffee_oil_remover",
+      "family_id": "cleaning_agents",
+      "name_uk": "Таблетки для кавових олій",
+      "name_en": "Coffee oil remover tablets",
+      "name_de": "Kaffeefettlöser-Tabletten",
+      "aliases": []
+    },
+    {
+      "id": "hair_accessories_rollers",
+      "family_id": "hair_accessories",
+      "name_uk": "Бігуді",
+      "name_en": "Hair rollers",
+      "name_de": "Lockenwickler",
+      "aliases": []
+    },
+    {
+      "id": "deodorant_roll_on",
+      "family_id": "deodorant",
+      "name_uk": "Кульковий дезодорант",
+      "name_en": "Roll-on deodorant",
+      "name_de": "Deo-Roll-on",
+      "aliases": []
+    },
+    {
+      "id": "laundry_detergent_capsules",
+      "family_id": "laundry_detergent",
+      "name_uk": "Капсули для прання",
+      "name_en": "Laundry capsules",
+      "name_de": "Waschmittel-Caps",
+      "aliases": []
+    },
+    {
+      "id": "ice_cream_vanilla",
+      "family_id": "ice_cream",
+      "name_uk": "Ванільне морозиво",
+      "name_en": "Vanilla ice cream",
+      "name_de": "Vanilleeis",
+      "aliases": []
+    },
+    {
+      "id": "ice_cream_cherry",
+      "family_id": "ice_cream",
+      "name_uk": "Вишневе морозиво",
+      "name_en": "Cherry ice cream",
+      "name_de": "Kirscheis",
+      "aliases": []
+    },
+    {
+      "id": "ice_cream_hazelnut",
+      "family_id": "ice_cream",
+      "name_uk": "Горіхове морозиво з фундуком",
+      "name_en": "Hazelnut ice cream",
+      "name_de": "Haselnusseis",
+      "aliases": []
+    },
+    {
+      "id": "ice_cream_pistachio",
+      "family_id": "ice_cream",
+      "name_uk": "Фісташкове морозиво",
+      "name_en": "Pistachio ice cream",
+      "name_de": "Pistazieneis",
+      "aliases": []
+    },
+    {
+      "id": "ice_cream_mini_cones",
+      "family_id": "ice_cream",
+      "name_uk": "Міні-ріжки морозива",
+      "name_en": "Mini ice cream cones",
+      "name_de": "Mini-Eiswaffelhörnchen",
+      "aliases": []
+    },
+    {
+      "id": "ice_cream_vanilla_chocolate",
+      "family_id": "ice_cream",
+      "name_uk": "Ванільно-шоколадне морозиво",
+      "name_en": "Vanilla and chocolate ice cream",
+      "name_de": "Vanille-Schokoladeneis",
+      "aliases": []
+    },
+    {
+      "id": "chocolate_dark_85",
+      "family_id": "chocolate",
+      "name_uk": "Чорний шоколад 85%",
+      "name_en": "Dark chocolate 85%",
+      "name_de": "Zartbitterschokolade 85 %",
+      "aliases": []
+    },
+    {
+      "id": "chocolate_caramel",
+      "family_id": "chocolate",
+      "name_uk": "Шоколад із карамеллю",
+      "name_en": "Caramel chocolate",
+      "name_de": "Karamellschokolade",
+      "aliases": []
+    },
+    {
+      "id": "pralines_pistachio",
+      "family_id": "pralines",
+      "name_uk": "Фісташкові шоколадні цукерки",
+      "name_en": "Pistachio chocolate pralines",
+      "name_de": "Pistazienpralinen",
+      "aliases": []
+    },
+    {
+      "id": "pralines_cappuccino",
+      "family_id": "pralines",
+      "name_uk": "Шоколадні цукерки капучино",
+      "name_en": "Cappuccino chocolate pralines",
+      "name_de": "Cappuccino-Pralinen",
+      "aliases": []
+    },
+    {
+      "id": "croissants_butter",
+      "family_id": "croissants",
+      "name_uk": "Масляний круасан",
+      "name_en": "Butter croissant",
+      "name_de": "Buttercroissant",
+      "aliases": []
+    },
+    {
+      "id": "waffles_butter",
+      "family_id": "waffles",
+      "name_uk": "Масляні вафлі",
+      "name_en": "Butter waffles",
+      "name_de": "Butterwaffeln",
+      "aliases": []
+    },
+    {
+      "id": "waffles_peanut",
+      "family_id": "waffles",
+      "name_uk": "Вафлі з арахісом",
+      "name_en": "Peanut wafers",
+      "name_de": "Erdnusswaffeln",
+      "aliases": []
+    },
+    {
+      "id": "waffles_yogurt",
+      "family_id": "waffles",
+      "name_uk": "Вафлі з йогуртом",
+      "name_en": "Yogurt wafers",
+      "name_de": "Joghurtwaffeln",
+      "aliases": []
+    },
+    {
+      "id": "cakes_strawberry_yogurt",
+      "family_id": "cakes",
+      "name_uk": "Полунично-йогуртовий торт",
+      "name_en": "Strawberry yogurt cake",
+      "name_de": "Erdbeer-Joghurt-Kuchen",
+      "aliases": []
+    },
+    {
+      "id": "cakes_lemon_cheesecake",
+      "family_id": "cakes",
+      "name_uk": "Лимонний чизкейк",
+      "name_en": "Lemon cheesecake",
+      "name_de": "Zitronen-Cheesecake",
+      "aliases": []
+    },
+    {
+      "id": "biscuits_amarettini",
+      "family_id": "biscuits",
+      "name_uk": "Амаретіні",
+      "name_en": "Amarettini",
+      "name_de": "Amarettini",
+      "aliases": []
+    },
+    {
+      "id": "biscuits_oat",
+      "family_id": "biscuits",
+      "name_uk": "Вівсяне печиво",
+      "name_en": "Oat biscuits",
+      "name_de": "Haferkekse",
+      "aliases": []
+    },
+    {
+      "id": "desserts_jelly",
+      "family_id": "desserts",
+      "name_uk": "Желейний десерт",
+      "name_en": "Jelly dessert",
+      "name_de": "Götterspeise",
+      "aliases": []
+    },
+    {
+      "id": "desserts_raspberry_cold_soup",
+      "family_id": "desserts",
+      "name_uk": "Малиновий холодний десерт",
+      "name_en": "Raspberry cold fruit dessert",
+      "name_de": "Himbeer-Kaltschale",
+      "aliases": []
+    }
+  ]
+}

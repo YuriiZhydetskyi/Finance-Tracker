@@ -7,10 +7,12 @@ import { CreateCategoryDialog } from '@/features/categories';
 import type { ManualFormValues } from '../schemas/manual-form';
 import { computeRowTotal } from '../utils/totals';
 import { formatMoney } from '@/shared/utils/format-money';
+import type { ProductTaxonomy } from '@/features/products/api/use-products';
 
 type Props = {
   index: number;
   categories: string[];
+  taxonomy?: ProductTaxonomy;
   onRemove: () => void;
 };
 
@@ -32,7 +34,12 @@ function isTrustedAmazonUrl(value: string | null | undefined, image: boolean): v
   }
 }
 
-export function ItemRow({ index, categories, onRemove }: Props) {
+export function ItemRow({
+  index,
+  categories,
+  taxonomy = { families: [], variants: [] },
+  onRemove,
+}: Props) {
   const {
     register,
     setValue,
@@ -52,6 +59,9 @@ export function ItemRow({ index, categories, onRemove }: Props) {
   const isDiscountMerged = marker?.kind === 'discount-merged';
   const isAggregated = marker?.kind === 'aggregated';
   const markerCount = marker?.count ?? 1;
+  const variants = taxonomy.variants.filter(
+    (variant) => variant.family_id === item?.product_family_id,
+  );
 
   const qty = item?.qty ?? 0;
   const unitPrice = item?.unit_price_orig ?? 0;
@@ -213,6 +223,65 @@ export function ItemRow({ index, categories, onRemove }: Props) {
       </div>
 
       <div className="mt-2 grid grid-cols-12 gap-2">
+        <div className="col-span-12 sm:col-span-4">
+          <label className={FIELD_LABEL_CLASS}>Товар · вид</label>
+          <select
+            className={SELECT_CLASS}
+            {...register(`items.${index}.product_family_id`, {
+              setValueAs: (value) => (value === '' ? null : value),
+              onChange: () => {
+                setValue(`items.${index}.product_variant_id`, null, { shouldDirty: true });
+              },
+            })}
+          >
+            <option value="">Невідомо</option>
+            {taxonomy.families.map((family) => (
+              <option key={family.id} value={family.id}>
+                {family.name_uk} · {family.name_de}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="col-span-12 sm:col-span-4">
+          <label className={FIELD_LABEL_CLASS}>Різновид</label>
+          <select
+            className={SELECT_CLASS}
+            disabled={!item?.product_family_id}
+            {...register(`items.${index}.product_variant_id`, {
+              setValueAs: (value) => (value === '' ? null : value),
+            })}
+          >
+            <option value="">Невідомо / без деталізації</option>
+            {variants.map((variant) => (
+              <option key={variant.id} value={variant.id}>
+                {variant.name_uk} · {variant.name_de}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="col-span-6 sm:col-span-2">
+          <label className={FIELD_LABEL_CLASS}>Бренд</label>
+          <Input
+            placeholder="—"
+            {...register(`items.${index}.brand`, {
+              setValueAs: (value) =>
+                typeof value === 'string' && value.trim() ? value.trim() : null,
+            })}
+          />
+        </div>
+        <div className="col-span-6 sm:col-span-2">
+          <label className={FIELD_LABEL_CLASS}>Bio</label>
+          <select
+            className={SELECT_CLASS}
+            {...register(`items.${index}.is_organic`, {
+              setValueAs: (value) => (value === '' ? null : value === 'true'),
+            })}
+          >
+            <option value="">Невідомо</option>
+            <option value="true">Bio</option>
+            <option value="false">Не Bio</option>
+          </select>
+        </div>
         <div className="col-span-6 sm:col-span-3">
           <label className={FIELD_LABEL_CLASS}>Хто</label>
           <select className={SELECT_CLASS} {...register(`items.${index}.consumed_by`)}>

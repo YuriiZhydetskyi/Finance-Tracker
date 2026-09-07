@@ -3,11 +3,12 @@ import { canonicalizeReceiptTime } from '../parse-receipt/time-evidence.ts';
 
 export type FinalizedReceipt = {
   receipt: Record<string, string | number | null>;
-  items: Record<string, string | number | null>[];
+  items: Record<string, string | number | boolean | null>[];
 };
 
 export type ValidationResult =
-  { ok: true; value: FinalizedReceipt } | { ok: false; reason: string };
+  | { ok: true; value: FinalizedReceipt }
+  | { ok: false; reason: string };
 
 export type ReceiptArithmeticCheck = {
   normalizedItems: ParsedItem[];
@@ -119,6 +120,10 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
       unit_price_orig: it.unit_price_orig,
       category_suggestion:
         typeof it.category_suggestion === 'string' ? it.category_suggestion : null,
+      product_family_id: typeof it.product_family_id === 'string' ? it.product_family_id : null,
+      product_variant_id: typeof it.product_variant_id === 'string' ? it.product_variant_id : null,
+      brand: typeof it.brand === 'string' && it.brand.trim() ? it.brand.trim() : null,
+      is_organic: typeof it.is_organic === 'boolean' ? it.is_organic : null,
       discount_orig: typeof discount === 'number' ? discount : 0,
       product_code: typeof it.product_code === 'string' ? it.product_code : null,
       product_url: trustedAmazonUrl(it.product_url, false),
@@ -539,6 +544,10 @@ export function prepareReceipt(
       store_product_code: item.product_code?.trim() || null,
       product_url: item.product_url ?? null,
       product_image_url: item.product_image_url ?? null,
+      product_family_id: item.product_family_id ?? null,
+      product_variant_id: item.product_variant_id ?? null,
+      brand: item.brand ?? null,
+      is_organic: item.is_organic ?? null,
       category:
         item.category_suggestion && categories.has(item.category_suggestion)
           ? item.category_suggestion

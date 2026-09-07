@@ -13,10 +13,59 @@ function existing(rows: Partial<ProductRow>[]): ProductRow[] {
     store: r.store ?? STORE,
     store_product_code: r.store_product_code ?? null,
     category: r.category ?? 'Інше',
+    product_family_id: r.product_family_id ?? null,
+    product_variant_id: r.product_variant_id ?? null,
+    brand: r.brand ?? null,
+    is_organic: r.is_organic ?? null,
   }));
 }
 
 describe('resolveProducts — match by code', () => {
+  it('enriches an unclassified existing SKU without overwriting a known product', () => {
+    const result = resolveProducts({
+      store: STORE,
+      existingProducts: existing([{ id: 'P1', name: 'Tomaten', store_product_code: '123' }]),
+      items: [
+        {
+          product_name: 'Tomaten',
+          store_product_code: '123',
+          category: 'Овочі/фрукти',
+          product_family_id: 'tomatoes',
+          product_variant_id: 'tomatoes_cherry',
+        },
+      ],
+    });
+
+    expect(result.enrichments).toEqual([
+      { id: 'P1', product_family_id: 'tomatoes', product_variant_id: 'tomatoes_cherry' },
+    ]);
+  });
+
+  it('puts an AI taxonomy suggestion only on a newly created product', () => {
+    const result = resolveProducts({
+      store: STORE,
+      existingProducts: [],
+      items: [
+        {
+          product_name: 'Cherry Tomaten',
+          store_product_code: '123',
+          category: 'Овочі/фрукти',
+          product_family_id: 'tomatoes',
+          product_variant_id: 'tomatoes_cherry',
+          brand: 'Gut Bio',
+          is_organic: true,
+        },
+      ],
+    });
+
+    expect(result.newProducts[0]).toMatchObject({
+      product_family_id: 'tomatoes',
+      product_variant_id: 'tomatoes_cherry',
+      brand: 'Gut Bio',
+      is_organic: true,
+    });
+  });
+
   it('item with code matches existing product by (store, code) regardless of name', () => {
     const ex = existing([
       { id: 'P1', name: 'Multivitamin 1l', store_product_code: '297855', category: 'Напої' },

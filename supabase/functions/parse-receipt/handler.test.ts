@@ -265,6 +265,41 @@ describe('handler — AI orchestration', () => {
 // ── Body normalization ───────────────────────────────────────────────────────
 
 describe('handler — body normalization', () => {
+  it('loads the allowed taxonomy after authorization and removes an invalid AI suggestion', async () => {
+    let captured: AiContext | undefined;
+    const deps = makeDeps({
+      loadTaxonomy: vi.fn(async () => ({
+        families: [
+          { id: 'tomatoes', name_uk: 'Помідори', name_en: 'Tomatoes', name_de: 'Tomaten' },
+        ],
+        variants: [],
+      })),
+      primary: provider(
+        'gemini',
+        vi.fn(async (_image, ctx) => {
+          captured = ctx;
+          return {
+            ...sampleResult,
+            items: [
+              {
+                ...sampleResult.items[0]!,
+                product_family_id: 'invented',
+                product_variant_id: 'also_invented',
+              },
+            ],
+          };
+        }),
+      ),
+    });
+    const handler = createHandler(deps);
+    const response = await handler(authedReq({ imageBase64: 'AAA' }));
+
+    expect(captured?.taxonomy?.families.map((family) => family.id)).toEqual(['tomatoes']);
+    expect((await response.json()) as ParsedReceipt).toMatchObject({
+      items: [{ product_family_id: null, product_variant_id: null }],
+    });
+  });
+
   it('forwards categories + products to primary.parse, defaulting mimeType to image/jpeg', async () => {
     let captured: AiContext | undefined;
     const deps = makeDeps({

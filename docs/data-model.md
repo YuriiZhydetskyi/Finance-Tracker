@@ -1,8 +1,28 @@
 # Модель даних
 
-> Цей документ — **єдине джерело істини** про схему. Якщо тут і в коді розбіжність — правда тут. Код треба виправити.
+> Поточну схему визначають міграції та згенеровані типи. Частина прикладів нижче
+> описує початкову модель; при розбіжностях звіряй їх з фактичними DDL.
 >
 > Канонічні DDL — у [supabase/migrations/](../supabase/migrations/). Згенеровані TS-типи — у [web/src/shared/types/database.types.ts](../web/src/shared/types/database.types.ts) (regenerate через `npx supabase gen types typescript --linked`). Zod-схеми (in-app валідація + factories) — у [packages/domain/src/schemas.ts](../packages/domain/src/schemas.ts).
+
+## Багатомовна класифікація товарів
+
+[ADR-0025](decisions/0025-multilingual-product-taxonomy.md) і міграція
+`20260907154353_multilingual_product_taxonomy.sql` додають два рівні деталізації:
+`product_families` (наприклад, помідори) та `product_variants` (наприклад,
+коктейльні). Обидва довідники мають незалежний від мови `id`, `name_uk`, `name_en`,
+`name_de` і масив пошукових `aliases`; варіант має `family_id`.
+
+У `items` та `products` додаються nullable `product_family_id` і
+`product_variant_id`. Складений FK перевіряє належність варіанта до сімейства.
+У продуктів також є `brand` та `is_organic`, незалежні від таксономії. Категорії
+отримують `name_en`, `name_de`, `aliases`, зберігаючи чинну українську `name`.
+
+Позиція чека може зберігати класифікацію без каталожного продукту. При імпорті
+вона успадковує класифікацію відомого продукту; історичний snapshot має пріоритет
+під час пошуку. RPC `search_waste_items` виконує багатомовний пошук з правами
+поточного користувача. Правила історії, мов, органічності та release-послідовність
+описані в ADR і [інструкції підготовки каталогу](../scripts/product-taxonomy/README.md).
 
 ## Фонові імпорти
 

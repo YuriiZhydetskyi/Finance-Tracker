@@ -47,16 +47,25 @@ export type Database = {
       };
       categories: {
         Row: {
+          aliases: string[];
           group_name: string;
           name: string;
+          name_de: string | null;
+          name_en: string | null;
         };
         Insert: {
+          aliases?: string[];
           group_name: string;
           name: string;
+          name_de?: string | null;
+          name_en?: string | null;
         };
         Update: {
+          aliases?: string[];
           group_name?: string;
           name?: string;
+          name_de?: string | null;
+          name_en?: string | null;
         };
         Relationships: [];
       };
@@ -68,10 +77,12 @@ export type Database = {
           discount_orig: number;
           id: string;
           note: string | null;
+          product_family_id: string | null;
           product_id: string | null;
           product_image_url: string | null;
           product_name: string;
           product_url: string | null;
+          product_variant_id: string | null;
           qty: number;
           receipt_id: string;
           store_product_code: string | null;
@@ -89,10 +100,12 @@ export type Database = {
           discount_orig?: number;
           id: string;
           note?: string | null;
+          product_family_id?: string | null;
           product_id?: string | null;
           product_image_url?: string | null;
           product_name: string;
           product_url?: string | null;
+          product_variant_id?: string | null;
           qty: number;
           receipt_id: string;
           store_product_code?: string | null;
@@ -110,10 +123,12 @@ export type Database = {
           discount_orig?: number;
           id?: string;
           note?: string | null;
+          product_family_id?: string | null;
           product_id?: string | null;
           product_image_url?: string | null;
           product_name?: string;
           product_url?: string | null;
+          product_variant_id?: string | null;
           qty?: number;
           receipt_id?: string;
           store_product_code?: string | null;
@@ -133,6 +148,13 @@ export type Database = {
             referencedColumns: ['name'];
           },
           {
+            foreignKeyName: 'items_product_family_id_fkey';
+            columns: ['product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'items_product_id_fkey';
             columns: ['product_id'];
             isOneToOne: false;
@@ -145,6 +167,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'receipts';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'items_variant_family_fkey';
+            columns: ['product_variant_id', 'product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_variants';
+            referencedColumns: ['id', 'family_id'];
           },
         ];
       };
@@ -178,6 +207,30 @@ export type Database = {
           paid_by?: string;
           photo_path?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_families: {
+        Row: {
+          aliases: string[];
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Insert: {
+          aliases?: string[];
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Update: {
+          aliases?: string[];
+          id?: string;
+          name_de?: string;
+          name_en?: string;
+          name_uk?: string;
         };
         Relationships: [];
       };
@@ -229,13 +282,52 @@ export type Database = {
           },
         ];
       };
+      product_variants: {
+        Row: {
+          aliases: string[];
+          family_id: string;
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Insert: {
+          aliases?: string[];
+          family_id: string;
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Update: {
+          aliases?: string[];
+          family_id?: string;
+          id?: string;
+          name_de?: string;
+          name_en?: string;
+          name_uk?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'product_variants_family_id_fkey';
+            columns: ['family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       products: {
         Row: {
+          brand: string | null;
           category: string;
           created_at: string;
           id: string;
+          is_organic: boolean | null;
           name: string;
           notes: string | null;
+          product_family_id: string | null;
+          product_variant_id: string | null;
           store: string;
           store_product_code: string | null;
           unit: Database['public']['Enums']['product_unit'] | null;
@@ -243,11 +335,15 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          brand?: string | null;
           category: string;
           created_at?: string;
           id: string;
+          is_organic?: boolean | null;
           name: string;
           notes?: string | null;
+          product_family_id?: string | null;
+          product_variant_id?: string | null;
           store?: string;
           store_product_code?: string | null;
           unit?: Database['public']['Enums']['product_unit'] | null;
@@ -255,11 +351,15 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          brand?: string | null;
           category?: string;
           created_at?: string;
           id?: string;
+          is_organic?: boolean | null;
           name?: string;
           notes?: string | null;
+          product_family_id?: string | null;
+          product_variant_id?: string | null;
           store?: string;
           store_product_code?: string | null;
           unit?: Database['public']['Enums']['product_unit'] | null;
@@ -273,6 +373,20 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'categories';
             referencedColumns: ['name'];
+          },
+          {
+            foreignKeyName: 'products_product_family_id_fkey';
+            columns: ['product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'products_variant_family_fkey';
+            columns: ['product_variant_id', 'product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_variants';
+            referencedColumns: ['id', 'family_id'];
           },
         ];
       };
@@ -771,6 +885,7 @@ export type Database = {
         Args: { p_error_message: string; p_file_id: string };
         Returns: undefined;
       };
+      normalize_product_search: { Args: { p_value: string }; Returns: string };
       queue_receipt_import_file: {
         Args: { p_file_id: string };
         Returns: undefined;
@@ -809,6 +924,38 @@ export type Database = {
           p_read_count: number;
         };
         Returns: undefined;
+      };
+      search_waste_items: {
+        Args: { p_query?: string };
+        Returns: {
+          category: string;
+          consumed_by: string;
+          created_at: string;
+          discount_orig: number;
+          id: string;
+          note: string | null;
+          product_family_id: string | null;
+          product_id: string | null;
+          product_image_url: string | null;
+          product_name: string;
+          product_url: string | null;
+          product_variant_id: string | null;
+          qty: number;
+          receipt_id: string;
+          store_product_code: string | null;
+          total_eur: number;
+          total_orig: number;
+          unit_price_orig: number;
+          updated_at: string;
+          wasted_at: string | null;
+          wasted_qty: number;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'items';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       submit_receipt_import_json: {
         Args: { p_file_id: string; p_manual_json: Json };

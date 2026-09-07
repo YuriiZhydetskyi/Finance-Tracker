@@ -11,3 +11,4 @@ export * from './pair-detector';
 export * from './store-match';
 export * from './bank-statement';
 export * from './reconcile-statement';
+export * from './product-taxonomy';

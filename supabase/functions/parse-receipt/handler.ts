@@ -12,7 +12,8 @@
 //   surface combined message as 502.
 
 import type { IAiProvider } from './providers/ai-provider.ts';
-import type { AiContext, ParsedReceipt } from './types.ts';
+import { EMPTY_PRODUCT_TAXONOMY, sanitizeParsedReceiptTaxonomy } from './taxonomy.ts';
+import type { AiContext, ParsedReceipt, ProductTaxonomyContext } from './types.ts';
 import { canonicalizeReceiptTime } from './time-evidence.ts';
 
 export type ParseRequestBody = {
@@ -27,6 +28,8 @@ export type HandlerDeps = {
   fallback: IAiProvider;
   /** Returns true if the JWT (extracted from Authorization header) belongs to an allowlisted user. */
   isAllowed: (authHeader: string) => Promise<boolean>;
+  /** Reads the caller-visible catalogue after authorization. */
+  loadTaxonomy?: (authHeader: string) => Promise<ProductTaxonomyContext>;
   /** Optional logger; defaults to console. Pure-function port over the Deno global. */
   log?: (level: 'info' | 'warn' | 'error', msg: string) => void;
 };
@@ -74,9 +77,21 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
       return jsonError(400, 'imageBase64 is required (base64-encoded image, no data: prefix)');
     }
 
+    let taxonomy = EMPTY_PRODUCT_TAXONOMY;
+    if (deps.loadTaxonomy) {
+      try {
+        taxonomy = await deps.loadTaxonomy(auth);
+      } catch (error) {
+        // Classification is optional; a catalogue lookup outage must not turn a
+        // readable receipt into a failed OCR request.
+        log('warn', `Product taxonomy lookup failed: ${(error as Error).message}`);
+      }
+    }
+
     const ctx: AiContext = {
       categories: Array.isArray(body.categories) ? body.categories : [],
       products: Array.isArray(body.products) ? body.products : [],
+      taxonomy,
       mimeType: body.mimeType ?? 'image/jpeg',
     };
 
@@ -103,10 +118,13 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
       }
     }
 
-    return new Response(JSON.stringify(canonicalizeReceiptTime(result)), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-    });
+    return new Response(
+      JSON.stringify(sanitizeParsedReceiptTaxonomy(canonicalizeReceiptTime(result), taxonomy)),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      },
+    );
   };
 }
 

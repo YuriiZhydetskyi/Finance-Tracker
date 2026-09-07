@@ -11,6 +11,7 @@ parse-receipt/
 ├── config.ts                 # Deno-only: env loading, Supabase client, isAllowed callback.
 ├── deno.json                 # Imports map: @supabase/supabase-js → npm:.
 ├── types.ts                  # ParsedReceipt + AiContext (mirror of @finance-tracker/domain).
+├── taxonomy.ts               # Validates family/variant membership after AI output.
 ├── providers/
 │   ├── ai-provider.ts        # IAiProvider strategy interface.
 │   ├── gemini-provider.ts    # Implementation using `responseJsonSchema`.
@@ -45,7 +46,16 @@ parse-receipt/
   "currency": "EUR",
   "total_orig": 12.5,
   "items": [
-    { "product_name": "...", "qty": 1, "unit_price_orig": 1.99, "category_suggestion": "Бакалія" }
+    {
+      "product_name": "...",
+      "qty": 1,
+      "unit_price_orig": 1.99,
+      "category_suggestion": "Бакалія",
+      "product_family_id": "milk",
+      "product_variant_id": null,
+      "brand": null,
+      "is_organic": false
+    }
   ]
 }
 ```
@@ -92,17 +102,33 @@ npx supabase functions deploy parse-receipt
 - We then call `is_allowed_user()` (Postgres SQL function) using the caller's JWT. RLS on `app_users` only returns the user's own row; the function checks for existence. One query, ~10ms.
 - If the user signs out, their JWT is invalidated by Supabase → next call returns `403`.
 
-## Why we don't validate the AI output server-side
+## Taxonomy suggestions
+
+After allowlist authorization the function loads the caller-visible
+`product_families` and `product_variants` catalogue itself; the browser does
+not provide that list. The model may return only those stable IDs. A helper
+then rejects an invented ID or a variant from a different family by converting
+the classification to `null`, while retaining the receipt row. `brand` is only
+for a visible product brand, never the retailer; `is_organic=true` requires an
+explicit Bio/organic/öko label. `false` is allowed only for an identified food
+product without one, otherwise it remains `null`.
+
+## Why we don't fully validate the AI output server-side
 
 The legacy Apps Script function ran `Domain.validateParsedReceipt()` after the AI call. We deliberately skip this here:
 
 1. Both providers enforce the JSON schema natively (Gemini: `responseJsonSchema`; Claude: `tool_use input_schema`). Bad output is rare.
 2. The web client validates with `ParsedReceiptSchema` (Zod) before showing data to the user. That's the source of truth.
 3. Removing Zod from the function avoids cross-runtime resolution gymnastics (Vite ↔ Deno workspace package).
-4. If a provider returns malformed JSON, the client surfaces it as a clear error and the user can retry or fall back to manual entry.
+4. A focused server-side taxonomy membership check protects the catalogue
+   boundary. Other malformed output is still surfaced by the client as a clear
+   error, so the user can retry or correct it manually.
 
 If we ever need server-side validation, the cheapest path is to inline a hand-written shape check in `handler.ts` — not to import Zod.
 
 ## Drift discipline
 
-The prompt + schema in `prompts/receipt-prompt.ts` MUST stay byte-equal to legacy `legacy/apps-script/src/Gemini.js`. The legacy code is the rollback path; if they diverge, swapping back becomes risky. When updating the prompt, update both files in the same commit.
+The active prompt and schema are shared by Gemini and Anthropic. The legacy
+Apps Script code is a frozen rollback reference; its older contract lacks
+taxonomy fields, so active-only taxonomy additions are intentional and must be
+documented here rather than silently copied into legacy.

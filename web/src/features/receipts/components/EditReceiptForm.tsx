@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/Button';
 import { useAppUsers } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
+import { useProductTaxonomy } from '@/features/products/api/use-products';
 import { useReceiptForm, emptyItemRow } from '../hooks/use-receipt-form';
 import { useUpdateReceiptMutation } from '../api/use-update-receipt-mutation';
 import { useDeleteReceiptMutation } from '../api/use-delete-receipt-mutation';
@@ -17,6 +18,7 @@ import {
 } from '../schemas/manual-form';
 import { ReceiptFormFields } from './ReceiptFormFields';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { editedItemClassification } from '../utils/edited-item-classification';
 
 type Props = {
   receipt: Receipt;
@@ -32,10 +34,15 @@ function toFormCurrency(currency: string): SupportedCurrency {
 function toFormRow(item: Item): ItemFormValues {
   return {
     product_id: item.product_id,
+    original_item_id: item.id,
     product_name: item.product_name,
     store_product_code: item.store_product_code,
     product_url: item.product_url,
     product_image_url: item.product_image_url,
+    product_family_id: item.product_family_id,
+    product_variant_id: item.product_variant_id,
+    brand: null,
+    is_organic: null,
     category: item.category,
     qty: item.qty,
     unit_price_orig: item.unit_price_orig,
@@ -53,6 +60,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
   const navigate = useNavigate();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
+  const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
   const update = useUpdateReceiptMutation();
   const remove = useDeleteReceiptMutation();
@@ -103,11 +111,18 @@ export function EditReceiptForm({ receipt, items }: Props) {
         raw_ocr_json: values.raw_ocr_json ?? null,
       },
       items: values.items.map((it) => ({
+        // Receipt editing replaces rows. Carry the historical classification only
+        // when the original identity is still present; renamed items re-resolve.
+        ...editedItemClassification(items, it, values.store === receipt.store),
         product_id: it.product_id ?? null,
         product_name: it.product_name,
         store_product_code: it.store_product_code ?? null,
         product_url: it.product_url ?? null,
         product_image_url: it.product_image_url ?? null,
+        product_family_id: it.product_family_id ?? null,
+        product_variant_id: it.product_variant_id ?? null,
+        brand: it.brand ?? null,
+        is_organic: it.is_organic ?? null,
         category: it.category,
         qty: it.qty,
         unit_price_orig: it.unit_price_orig,
@@ -146,6 +161,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
           itemsArray={itemsArray}
           categories={categoryNames}
           productNames={productNames}
+          taxonomy={taxonomyQuery.data ?? { families: [], variants: [] }}
           paidByOptions={paidByOptions}
           saveError={update.isError ? update.error : remove.isError ? remove.error : null}
           actions={

@@ -1,10 +1,9 @@
-// Verbatim port of legacy `Gemini._buildPrompt` and `Gemini._buildSchema`.
-// Both AI providers (Gemini primary, Anthropic fallback) use the same prompt
-// + schema — sharing them prevents drift on load-bearing rules (negative line
-// items, allowed-category enum) between the two providers.
+// Core receipt-extraction rules originated in legacy `Gemini._buildPrompt`.
+// Both active providers use this one prompt + schema, preventing drift on
+// load-bearing rules (negative rows, allowed categories and taxonomy).
 //
-// If you change the prompt, also update legacy/apps-script/src/Gemini.js so
-// the rollback path stays in sync.
+// Product taxonomy is deliberately active-app only: legacy is a frozen
+// rollback reference and cannot represent the current nullable fields.
 
 import type { AiContext } from '../types.ts';
 
@@ -14,6 +13,7 @@ export function buildPrompt(ctx: AiContext): string {
     .slice(0, 50)
     .map((p) => p.name)
     .join(', ');
+  const taxonomyHints = formatTaxonomyHints(ctx);
   return [
     'Extract receipt line items from this image.',
     '',
@@ -25,6 +25,9 @@ export function buildPrompt(ctx: AiContext): string {
     '- Preserve every separately printed financial row in visual top-to-bottom order. Consecutive rows with the same name and price are separate purchases; never collapse or deduplicate them.',
     '- unit_price_orig: numeric price per unit in the receipt currency. For count-based items this is the price for ONE unit (the receipt usually prints this explicitly, e.g. "3,89 € x 2"). For weight/volume items this is the per-kg / per-l price (NOT the total for that weight). CAN BE NEGATIVE for discounts, deposit refunds, and cancellations (see below).',
     '- category_suggestion: one of the listed categories (verbatim) or null if uncertain. Do not invent new categories.',
+    '- product_family_id and product_variant_id: classify the actual product only with IDs from the supplied taxonomy. product_variant_id must belong to product_family_id. If the product is clear but no matching variant exists, return the family ID and variant null. If the printed name is truncated, ambiguous, or the taxonomy has no matching family, return both null. Never infer a product from a flavour-only word such as "Original" or "Wings".',
+    '- brand: copy a brand only when it is explicitly printed as part of the product identity. A retailer/store (for example Aldi) is not automatically a brand. Return null when the receipt does not establish a brand.',
+    '- is_organic: true only when the product itself explicitly says Bio/organic/öko (not words such as Biotin or bioavailable). For an identified FOOD product with no such label, false is allowed. For an ambiguous or non-food item, return null. Missing "Bio" alone is never evidence for a specific product identity.',
     '- store: best-effort store/merchant name; null if illegible.',
     '- store_address: street address printed on receipt header (street, number, city); null if not printed or illegible. Copy as a single line, comma-separated.',
     '- date: receipt date as YYYY-MM-DD; null if illegible.',
@@ -50,6 +53,7 @@ export function buildPrompt(ctx: AiContext): string {
     'Final reminder: qty stays POSITIVE even on negative-price rows — only the price flips sign. Do not invent items not visible on the receipt; do not net out cancellations. Never add a balancing or rounding item merely to match the final total.',
     '',
     `Allowed categories: ${categories}`,
+    taxonomyHints,
     productHints
       ? `\nKnown product names from prior purchases (hint only — do not force a match): ${productHints}`
       : '',
@@ -58,6 +62,9 @@ export function buildPrompt(ctx: AiContext): string {
 
 export function buildSchema(ctx: AiContext): Record<string, unknown> {
   const categoryEnum = [...(ctx.categories ?? []), null];
+  const taxonomy = ctx.taxonomy ?? { families: [], variants: [] };
+  const familyEnum = [...taxonomy.families.map((family) => family.id), null];
+  const variantEnum = [...taxonomy.variants.map((variant) => variant.id), null];
   return {
     type: 'object',
     properties: {
@@ -93,8 +100,20 @@ export function buildSchema(ctx: AiContext): Record<string, unknown> {
             qty: { type: 'number' },
             unit_price_orig: { type: 'number' },
             category_suggestion: { type: ['string', 'null'], enum: categoryEnum },
+            product_family_id: { type: ['string', 'null'], enum: familyEnum },
+            product_variant_id: { type: ['string', 'null'], enum: variantEnum },
+            brand: { type: ['string', 'null'] },
+            is_organic: { type: ['boolean', 'null'] },
           },
-          required: ['product_name', 'qty', 'unit_price_orig'],
+          required: [
+            'product_name',
+            'qty',
+            'unit_price_orig',
+            'product_family_id',
+            'product_variant_id',
+            'brand',
+            'is_organic',
+          ],
         },
       },
     },
@@ -107,4 +126,23 @@ export function buildSchema(ctx: AiContext): Record<string, unknown> {
       'payment_time_raw_text',
     ],
   };
+}
+
+function formatTaxonomyHints(ctx: AiContext): string {
+  const taxonomy = ctx.taxonomy ?? { families: [], variants: [] };
+  if (taxonomy.families.length === 0) {
+    return 'Product taxonomy: none supplied. Set product_family_id and product_variant_id to null.';
+  }
+  const families = taxonomy.families
+    .map((family) => `${family.id} = ${family.name_uk} / ${family.name_de}`)
+    .join('; ');
+  const variants = taxonomy.variants.length
+    ? taxonomy.variants
+        .map(
+          (variant) =>
+            `${variant.id} (${variant.family_id}) = ${variant.name_uk} / ${variant.name_de}`,
+        )
+        .join('; ')
+    : 'none';
+  return `Allowed product taxonomy (IDs must match exactly). Families: ${families}\nVariants: ${variants}`;
 }

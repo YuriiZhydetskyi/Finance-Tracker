@@ -24,13 +24,17 @@
 // The resolver dedupes within-batch creations via the `pendingBy*` maps so we
 // never insert two new products for one logical match.
 
-import { makeProduct, type Product } from '@finance-tracker/domain';
+import { makeProduct } from '@finance-tracker/domain';
 import type { ProductRow } from '@/features/products/api/use-products';
 
 export type ItemKey = {
   product_name: string;
   store_product_code: string | null;
   category: string;
+  product_family_id?: string | null;
+  product_variant_id?: string | null;
+  brand?: string | null;
+  is_organic?: boolean | null;
 };
 
 export type ProductBackfill = {
@@ -38,10 +42,19 @@ export type ProductBackfill = {
   store_product_code: string;
 };
 
+export type ProductEnrichment = {
+  id: string;
+  product_family_id?: string;
+  product_variant_id?: string | null;
+  brand?: string;
+  is_organic?: boolean;
+};
+
 export type ResolveProductsResult = {
   productIdByIndex: string[];
-  newProducts: Product[];
+  newProducts: ReturnType<typeof makeProduct>[];
   backfills: ProductBackfill[];
+  enrichments: ProductEnrichment[];
 };
 
 function normalizeCode(code: string | null | undefined): string | null {
@@ -67,9 +80,11 @@ export function resolveProducts(args: {
     else byNameNoCode.set(p.name, p);
   }
 
-  const pendingByCode = new Map<string, Product>();
-  const pendingByNameNoCode = new Map<string, Product>();
+  const pendingByCode = new Map<string, ReturnType<typeof makeProduct>>();
+  const pendingByNameNoCode = new Map<string, ReturnType<typeof makeProduct>>();
   const backfillById = new Map<string, ProductBackfill>();
+  const enrichmentById = new Map<string, ProductEnrichment>();
+  const conflictingEnrichmentIds = new Set<string>();
   const productIdByIndex: string[] = [];
 
   for (const item of items) {
@@ -78,6 +93,7 @@ export function resolveProducts(args: {
     if (code != null) {
       const existing = byCode.get(code);
       if (existing) {
+        queueEnrichment(enrichmentById, conflictingEnrichmentIds, existing, item);
         productIdByIndex.push(existing.id);
         continue;
       }
@@ -88,6 +104,7 @@ export function resolveProducts(args: {
       }
       const nameMatch = byNameNoCode.get(item.product_name);
       if (nameMatch) {
+        queueEnrichment(enrichmentById, conflictingEnrichmentIds, nameMatch, item);
         backfillById.set(nameMatch.id, { id: nameMatch.id, store_product_code: code });
         // Promote into the byCode map so subsequent same-coded items in this
         // batch link to it, and remove from the no-code map (it's no longer
@@ -102,6 +119,10 @@ export function resolveProducts(args: {
         store,
         store_product_code: code,
         category: item.category,
+        product_family_id: item.product_family_id ?? null,
+        product_variant_id: item.product_variant_id ?? null,
+        brand: item.brand ?? null,
+        is_organic: item.is_organic ?? null,
       });
       pendingByCode.set(code, fresh);
       productIdByIndex.push(fresh.id);
@@ -110,6 +131,7 @@ export function resolveProducts(args: {
 
     const existing = byNameNoCode.get(item.product_name);
     if (existing) {
+      queueEnrichment(enrichmentById, conflictingEnrichmentIds, existing, item);
       productIdByIndex.push(existing.id);
       continue;
     }
@@ -123,6 +145,10 @@ export function resolveProducts(args: {
       store,
       store_product_code: null,
       category: item.category,
+      product_family_id: item.product_family_id ?? null,
+      product_variant_id: item.product_variant_id ?? null,
+      brand: item.brand ?? null,
+      is_organic: item.is_organic ?? null,
     });
     pendingByNameNoCode.set(item.product_name, fresh);
     productIdByIndex.push(fresh.id);
@@ -132,5 +158,49 @@ export function resolveProducts(args: {
     productIdByIndex,
     newProducts: [...pendingByCode.values(), ...pendingByNameNoCode.values()],
     backfills: [...backfillById.values()],
+    enrichments: [...enrichmentById.values()],
   };
+}
+
+function queueEnrichment(
+  enrichments: Map<string, ProductEnrichment>,
+  conflicts: Set<string>,
+  product: ProductRow,
+  item: ItemKey,
+): void {
+  if (conflicts.has(product.id)) return;
+  const current = enrichments.get(product.id) ?? { id: product.id };
+  if (product.product_family_id == null && item.product_family_id != null) {
+    if (
+      current.product_family_id === undefined ||
+      (current.product_family_id === item.product_family_id &&
+        current.product_variant_id === (item.product_variant_id ?? null))
+    ) {
+      current.product_family_id = item.product_family_id;
+      current.product_variant_id = item.product_variant_id ?? null;
+    } else {
+      // Two rows for the same SKU disagree: leave it for manual review.
+      conflicts.add(product.id);
+      enrichments.delete(product.id);
+      return;
+    }
+  }
+  if (product.brand == null && item.brand != null) {
+    if (current.brand === undefined || current.brand === item.brand) current.brand = item.brand;
+    else {
+      conflicts.add(product.id);
+      enrichments.delete(product.id);
+      return;
+    }
+  }
+  if (product.is_organic == null && item.is_organic != null) {
+    if (current.is_organic === undefined || current.is_organic === item.is_organic) {
+      current.is_organic = item.is_organic;
+    } else {
+      conflicts.add(product.id);
+      enrichments.delete(product.id);
+      return;
+    }
+  }
+  if (Object.keys(current).length > 1) enrichments.set(product.id, current);
 }

@@ -1,0 +1,5870 @@
+[
+  {
+    "source_name": "Eigemarke: Pfand",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Eigenmarke: Pfand",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "LEERG. MW V. ST",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Leerg.Entl.erm.EW",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Leergut Einw.allg.",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "LEERGUT EINWEG",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Leergut Entl.allg.",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Leergut Entl.erm.",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Pfand",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "PFAND 0,08 EUR",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "PFAND 0,15 EUR",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "PFAND 0,25 EURO",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Pfand 0,25 M",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "Pfand 2,25 EM",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Застава або повернення тари, не товар."
+  },
+  {
+    "source_name": "150 x 80 cm Large Parasol Car, Car Sun Protection Windscreen Foldable UV Protection Parasol for the Windscreen for Most Cars",
+    "product_family_id": "car_sunshades",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "RAVENOL MTF-1 SAE 75W-85",
+    "product_family_id": "car_fluids",
+    "product_variant_id": "car_fluids_gear_oil",
+    "brand": "RAVENOL",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SCHEIBENREINIGER",
+    "product_family_id": "car_fluids",
+    "product_variant_id": "car_fluids_windscreen_wash",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Super E5",
+    "product_family_id": "fuel",
+    "product_variant_id": "fuel_petrol_e5",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bitburger0,0 330ml",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_alcohol_free",
+    "brand": "Bitburger",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "deit Pink Gr.0,75l",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_grapefruit",
+    "brand": "deit",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erd.Weißb.AF 0,5l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ERD.WEISSB.ALKFR",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ERDINGER ALK.FRE",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_alcohol_free",
+    "brand": "ERDINGER",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Franz.Weizen 0,5l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Gaffels Fa.6x0,33l",
+    "product_family_id": "beer",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kromb.Himbee.0,33l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_alcohol_free",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kromb.Kirsche0,33l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_alcohol_free",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "L.Live Red 0,75l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_alcohol_free",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Marmorini Rose",
+    "product_family_id": "wine",
+    "product_variant_id": "wine_rose",
+    "brand": "Marmorini",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mayb.Rose AF 0,75l",
+    "product_family_id": "wine",
+    "product_variant_id": "wine_rose_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mayb.Weiß AF0,75l",
+    "product_family_id": "wine",
+    "product_variant_id": "wine_white_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "MUMM ALKOHOLFREI",
+    "product_family_id": "sparkling_wine",
+    "product_variant_id": "sparkling_wine_alcohol_free",
+    "brand": "MUMM",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pau.Weißb.Z.0,33l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paul.WB af.0,5l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paul.Weiß.af.",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paul.Weißb.Z.0,5l",
+    "product_family_id": "beer",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Скорочення Z. не визначає алкогольність або добавки пшеничного пива."
+  },
+  {
+    "source_name": "Rosso Alkoholfrei",
+    "product_family_id": "wine",
+    "product_variant_id": "wine_red_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Tir.Felsenkellerk.",
+    "product_family_id": "beer",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bened.Weiz.AF 0,5l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paul.Weiß.af.0,5l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Stolzen.alkfr.weiß",
+    "product_family_id": "wine",
+    "product_variant_id": "wine_white_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "CERAVE FEUCHTIGKEITSCREME",
+    "product_family_id": "skin_cream",
+    "product_variant_id": null,
+    "brand": "CeraVe",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Clabin plus 15 ml",
+    "product_family_id": "medicine",
+    "product_variant_id": null,
+    "brand": "Clabin",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Iodine Selenium Complex I 180 Thyroid Capsules",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_iodine_selenium",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Iron Tablets High Dose 365x with 20 mg Iron + Vitamin C (20 mg) from Rose Hips - Bioavailable Iron Bisglycinate + Natural Vitamin C from Rosehip Extract - Laboratory Tested with Certificate",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_iron",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magnesium Complex 180 Capsules, 400 mg Elemental Per Day, 5 High-Quality Forms: Magnesium Oxide, Citrate, Bisglycinate, Malate & Ascorbate, Optimal Bioavailability, 3 Month Supply",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_magnesium",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magnesium Complex 540 Capsules - 400 mg Elementary Magnesium per Day, 5 High-Quality Forms: Mag. Oxide, Citrate, Bisglycinate, Malate & Ascorbate - Optimal Bioavailability - Laboratory Tested with Certificate",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_magnesium",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Medrull Medical Gauze Large 90 cm x 10 m Premium Gauze Bandages Fixing Bandages",
+    "product_family_id": "dressings",
+    "product_variant_id": "dressings_gauze",
+    "brand": "Medrull",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mivolis Magnesium Tabl. 300St",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_magnesium",
+    "brand": "Mivolis",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mivolis Multivi-Bärchen Kinder",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_multivitamin",
+    "brand": "Mivolis",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mivolis Multivitamin Gummies",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_multivitamin",
+    "brand": "Mivolis",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mivolls Magnesium Tabl. 300St",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_magnesium",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mivolls Pflaster-strip",
+    "product_family_id": "dressings",
+    "product_variant_id": "dressings_plasters",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Weightworld Naticol Collagen Capsules, 1170 mg, Pure Marine Collagen, 120 Capsules, Hydrolysate Type 1, Laboratory Tested in Germany, with Pure Collagen Protein Powder",
+    "product_family_id": "supplements",
+    "product_variant_id": "supplements_collagen",
+    "brand": "Weightworld",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "AJI-NO-MOTO - Monosodium Glutamate (1 x 1 kg)",
+    "product_family_id": "food_additives",
+    "product_variant_id": "food_additives_msg",
+    "brand": "AJI-NO-MOTO",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "albi Birnensaft 1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_pear",
+    "brand": "albi",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "albi Pink Grape.1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_grapefruit",
+    "brand": "albi",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Amecke Apf.Birne1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_apple_pear",
+    "brand": "Amecke",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Amecke Apf.Birneli",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_apple_pear",
+    "brand": "Amecke",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Ananas Scheiben",
+    "product_family_id": "pineapple",
+    "product_variant_id": "pineapple_sliced",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Apfeldirektsaft 1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_apple",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Apfelsaft 1,5l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_apple",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Barilla Penne",
+    "product_family_id": "pasta",
+    "product_variant_id": "pasta_penne",
+    "brand": "Barilla",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Barilla Pesto",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_pesto",
+    "brand": "Barilla",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Barilla Spaghetti",
+    "product_family_id": "pasta",
+    "product_variant_id": "pasta_spaghetti",
+    "brand": "Barilla",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Basmati Reis",
+    "product_family_id": "rice",
+    "product_variant_id": "rice_basmati",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Al.Haferflock.",
+    "product_family_id": "oats",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Allos Creamy",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Allos",
+    "is_organic": true,
+    "status": "review",
+    "reason": "Allos Creamy не визначає основу та тип продукту; потрібна повна назва."
+  },
+  {
+    "source_name": "Bio El Or.Chips",
+    "product_family_id": "chips",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Honig Dostersp",
+    "product_family_id": "honey",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Hummus 175g",
+    "product_family_id": "hummus",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Koro Erdnu.Mus",
+    "product_family_id": "peanut_butter",
+    "product_variant_id": null,
+    "brand": "KoRo",
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "CC ZERO EW 1,5",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_cola_zero",
+    "brand": "Coca-Cola",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Coca-Cola 2l / Coca-Cola 2L",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_cola",
+    "brand": "Coca-Cola",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Coca-Cola Ch.1,25l",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_cherry_cola",
+    "brand": "Coca-Cola",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Coupon Heinz",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Знижка або купон, не окремий товар."
+  },
+  {
+    "source_name": "EGEN CherryRispto.",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_cherry_vine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erdnussbutter",
+    "product_family_id": "peanut_butter",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Espresso Trad. 1kg",
+    "product_family_id": "coffee",
+    "product_variant_id": "coffee_espresso",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "FARMER Nuss-Mix",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_mix",
+    "brand": "FARMER",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Franz.af.6x0,33l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Erythrit",
+    "product_family_id": "sweeteners",
+    "product_variant_id": "sweeteners_erythritol",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G F.Blättertei.",
+    "product_family_id": "pastry_dough",
+    "product_variant_id": "pastry_dough_puff",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G MiWa st.6x1,5l",
+    "product_family_id": "water",
+    "product_variant_id": "water_still_mineral",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Partypicker",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": "kitchen_utensils_skewers",
+    "brand": "G&G",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Spezi.Salz",
+    "product_family_id": "dishwasher_salt",
+    "product_variant_id": null,
+    "brand": "G&G",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Stap.Chip.Salz",
+    "product_family_id": "chips",
+    "product_variant_id": "chips_salted_stacked",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Gaffel Brause0,33l",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Getr.Cranberries",
+    "product_family_id": "dried_fruit",
+    "product_variant_id": "dried_fruit_cranberries",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Günth.Goldfont.",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Günth.Goldfont. не дозволяє надійно визначити товар."
+  },
+  {
+    "source_name": "Harry Sandwich",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_sandwich",
+    "brand": "Harry",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "HD Ananas 1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_pineapple",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Healthy Boy Fish Sauce, 700 ml (Pack of 1)",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_fish",
+    "brand": "Healthy Boy",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "HEILWASSER STILL",
+    "product_family_id": "water",
+    "product_variant_id": "water_still_medicinal",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Heinz Barbecue Sa.",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_barbecue",
+    "brand": "Heinz",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Heinz Ketchup",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_ketchup",
+    "brand": "Heinz",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Bruschet.Dip",
+    "product_family_id": "dips",
+    "product_variant_id": "dips_bruschetta",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Bulgur",
+    "product_family_id": "bulgur",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Kolumb.Kaff.",
+    "product_family_id": "coffee",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.La.Bri.Buns",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_brioche_buns",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hohes C Eisen 1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hom.Hot Dog Sauce",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_hot_dog",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "HSN - Soy Protein Isolate | Vegan Protein | Vegan Protein with Stevia | Soy",
+    "product_family_id": "protein_powder",
+    "product_variant_id": "protein_powder_soy_isolate",
+    "brand": "HSN",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hummus High Pro",
+    "product_family_id": "hummus",
+    "product_variant_id": "hummus_high_protein",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Just Spices Italian",
+    "product_family_id": "spice_blends",
+    "product_variant_id": "spice_blends_italian",
+    "brand": "Just Spices",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kattus Worcester Sauce 140ml",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_worcestershire",
+    "brand": "Kattus",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kühne Steak Sauce",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_steak",
+    "brand": "Kühne",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lay's Chips 150g",
+    "product_family_id": "chips",
+    "product_variant_id": null,
+    "brand": "Lay's",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lea & Perrins - Pack of 3 Original Worcestershire Sauce in 150 ml Glass Bottle (Seasoning Sauce) - Traditional English Worcester Worcester Sauce",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_worcestershire",
+    "brand": "Lea & Perrins",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Leicht&Cross",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_crisp",
+    "brand": "Leicht&Cross",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lie.Urk.Prot.Brot",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_protein",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Medusa Antipasti",
+    "product_family_id": "antipasti",
+    "product_variant_id": null,
+    "brand": "Medusa",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Meggle Baguette",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_baguette",
+    "brand": "Meggle",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mineralwasser still",
+    "product_family_id": "water",
+    "product_variant_id": "water_still_mineral",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nest.Fitn.Cereal",
+    "product_family_id": "breakfast_cereal",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Northy Remoulade",
+    "product_family_id": "sauces",
+    "product_variant_id": "sauces_remoulade",
+    "brand": "Northy",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nuss-Mix 150g",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_mix",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ORIGINAL",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "review",
+    "reason": "Назва урізана, є тільки смак. У чеку не вказано Pringles, тож вимагає ручного вибору."
+  },
+  {
+    "source_name": "Paul.WB af.0,33l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paul.Weiß.Z.0,5l",
+    "product_family_id": "beer",
+    "product_variant_id": "beer_wheat_alcohol_free",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "PBN micellar casein protein PBN4023 1 kg vanilla",
+    "product_family_id": "protein_powder",
+    "product_variant_id": "protein_powder_casein_vanilla",
+    "brand": "PBN",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pistazien",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_pistachios",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Porcini Mushroom Powder 200 g I Porcini Mushrooms I Natural I Ground I Porcini Mushrooms Dried",
+    "product_family_id": "mushroom_seasoning",
+    "product_variant_id": "mushroom_seasoning_porcini_powder",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "PRING. MAPLE BBQ",
+    "product_family_id": "chips",
+    "product_variant_id": "chips_maple_barbecue",
+    "brand": "Pringles",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pringles 185g",
+    "product_family_id": "chips",
+    "product_variant_id": null,
+    "brand": "Pringles",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "PRINGLES FRIES",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "review",
+    "reason": "Назва урізана, можливо Pringles Fries, але у чеку відсутній бренд/повний названий товар."
+  },
+  {
+    "source_name": "PRINGLES WINGS",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "review",
+    "reason": "Назва урізана, можливо Pringles Wings, але у чеку відсутній бренд/повний названий товар."
+  },
+  {
+    "source_name": "Red Bull Energy",
+    "product_family_id": "energy_drinks",
+    "product_variant_id": null,
+    "brand": "Red Bull",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Reibekuchen",
+    "product_family_id": "potato_pancakes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Rockstar Xdurance",
+    "product_family_id": "energy_drinks",
+    "product_variant_id": null,
+    "brand": "Rockstar",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "S&R Olive Oil",
+    "product_family_id": "cooking_oil",
+    "product_variant_id": "cooking_oil_olive",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schwartau Spezial.",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Schwartau",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Schwartau Spezial. не визначає, чи це джем, сироп або інший продукт."
+  },
+  {
+    "source_name": "Sonnenblumenöl 1L",
+    "product_family_id": "cooking_oil",
+    "product_variant_id": "cooking_oil_sunflower",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Sonnenmais 425ml",
+    "product_family_id": "sweetcorn",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SOUR CREAM&ONION",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "review",
+    "reason": "Назва урізана, можливо Pringles Sour Cream & Onion, але у чеку відсутній бренд/повний названий товар."
+  },
+  {
+    "source_name": "Span. Oliven entst",
+    "product_family_id": "olives",
+    "product_variant_id": "olives_pitted",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SWEET PAPRIKA",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "review",
+    "reason": "Назва урізана, можливо Pringles Sweet Paprika, але у чеку відсутній бренд/повний названий товар."
+  },
+  {
+    "source_name": "Tagliatelle 500g",
+    "product_family_id": "pasta",
+    "product_variant_id": "pasta_tagliatelle",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Traubendirektsa 1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_grape",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Ultje Erdnusse",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_peanuts",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Vitamalz 0,5l",
+    "product_family_id": "malt_drinks",
+    "product_variant_id": null,
+    "brand": "Vitamalz",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Vollkorn-Sandwich",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_sandwich_wholegrain",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "WACHTELEIER",
+    "product_family_id": "eggs",
+    "product_variant_id": "eggs_quail",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Walnusskerne",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_walnuts",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Wildpreiselbeeren",
+    "product_family_id": "lingonberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Wraps Vollkorn",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_wholegrain_wraps",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "XXL Cashewkerne",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_cashews",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "XXL Studentenf.",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_trail_mix",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zit.-/Ora.schale",
+    "product_family_id": "citrus_zest",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Назва об’єднує лимонну й апельсинову цедру; потрібен вибір конкретного варіанта."
+  },
+  {
+    "source_name": "Zucker - Raffinade",
+    "product_family_id": "sugar",
+    "product_variant_id": "sugar_refined",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zuckermals 400g va",
+    "product_family_id": "sweetcorn",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "CC Light/Zero",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_cola_zero",
+    "brand": "Coca-Cola",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Coke Zero 1,25l",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_cola_zero",
+    "brand": "Coca-Cola",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Multivitamin 1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_multivitamin",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Val. Orange 1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_orange",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "EIFEL Eier FlH / EIFEL Eier FLH",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G.Clar.Eier FLH",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bond.Familiy-Mix",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Bond.Familiy-Mix імовірно овочева суміш; склад і тип продукту потребують підтвердження."
+  },
+  {
+    "source_name": "Herz.Honey Peppers",
+    "product_family_id": "peppers",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Honey Peppers може позначати сорт або готову закуску; потрібна упаковка."
+  },
+  {
+    "source_name": "Cashews",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_cashews",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erdn. 200g Beutel",
+    "product_family_id": "nuts",
+    "product_variant_id": "nuts_peanuts",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lays Gesalzen",
+    "product_family_id": "chips",
+    "product_variant_id": "chips_salted",
+    "brand": "Lay's",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Stapelchips",
+    "product_family_id": "chips",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Fine Mesh Wire Mesh 40 cm x 5 m Vole Mesh for Raised Bed Wire Mesh Roll Galvanised Mesh Width 6 mm Wire Mesh as Rabbit Wire Aviary Wire Rabbit Wire Chicken Wire Rabbit Wire",
+    "product_family_id": "wire_mesh",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "GOLDEN ICEPURE Water Filter Cartridges Compatible with Brita Maxtra+ Plus Maxtra Pro All-in-1, Water Filter Cartridges Replacement for Mavea, Anna Duomax, Filtration for Limescale Removal, Pack of 9",
+    "product_family_id": "water_filters",
+    "product_variant_id": "water_filters_cartridges",
+    "brand": "GOLDEN ICEPURE",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Heat Resistant Silicone Kitchen Tongs: U-Taste 315°C Heat Resistant Cooking Tongs Set with Firmly Sealed Non-Stick Rubber Tips and Silicone-Coated Stainless Steel Handle (23/30 cm, Aqua Sky)",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": "kitchen_utensils_tongs",
+    "brand": "U-Taste",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "KTCHENDAO 2-in-1 Glass Salt Shaker with Side Spout, Salt Shaker with Lid, Built-in Lid to Slow Moisture with Measurement Markings, BPA-Free, 4 oz (White)",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": "kitchen_utensils_salt_shaker",
+    "brand": "KTCHENDAO",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Philips Domestic Appliances PSG6064/80 Steam Iron, Gold, 600 g Steam Boost",
+    "product_family_id": "irons",
+    "product_variant_id": "irons_steam",
+    "brand": "Philips",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pleated Blind, No Drilling Required, Klemmfix, 100 x 110 cm (L x W), White Blind, Sun Protection Easyfix Folding Blind, Translucent Roller Blind for Windows and Doors",
+    "product_family_id": "window_blinds",
+    "product_variant_id": "window_blinds_pleated",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "shinfly Felt Desk Mat, 120 x 60 cm, Desk Mat, Non-Slip Desk Mat, Office Desktop Protection, Desk Mat for Home Office Equipment (Grey)",
+    "product_family_id": "desk_mats",
+    "product_variant_id": null,
+    "brand": "shinfly",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Spice rack without drilling clips, spice organiser for gluing, 6 strips for 30 spices",
+    "product_family_id": "spice_storage",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ThermoMaven F1 Turbo Digital Meat Thermometer - 0.5s Instant Display Grill Thermometer, ±0.3°C Accurate Thermometer Cooking, IP67 Waterproof Magnetic Thermometer Cooking, Bottle Opener Roasting BBQ Grill",
+    "product_family_id": "kitchen_thermometers",
+    "product_variant_id": "kitchen_thermometers_meat",
+    "brand": "ThermoMaven",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Vielit Satin Pillowcases, Set of 2, 40 x 60 cm, Beige, Soft as Silk, Easy-Care, for Hair and Skin, Comes with 2 Scrunchies",
+    "product_family_id": "pillowcases",
+    "product_variant_id": "pillowcases_satin",
+    "brand": "Vielit",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Weber 17612 Lighting Cubes, Brown, Without Additives, Pack of 48",
+    "product_family_id": "firelighters",
+    "product_variant_id": "firelighters_cubes",
+    "brand": "Weber",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Weber Metal Fireplace",
+    "product_family_id": "barbecue_equipment",
+    "product_variant_id": null,
+    "brand": "Weber",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Yarall 32 Stück Verschlussclips für Lebensmittel, gebogenes Design, Kunststoff Verschlussklammern und Tütenclips, Clips für Tüten in 2 Größen – 11 cm ×20 & 8 cm ×12",
+    "product_family_id": "bag_clips",
+    "product_variant_id": null,
+    "brand": "Yarall",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Anker 100 W USB C Charger, Laptop Charger, Compact 3-Port GaN Wall Charger, Smart Display, Touch Control, for MacBook, iPad, iPhone 17/16/15 Series (USB-C Cable Included)",
+    "product_family_id": "chargers",
+    "product_variant_id": "chargers_usb_c",
+    "brand": "Anker",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Anker Zolo 50 W USB C Charger, 4-Port Power Supply with 2 USB-C and 2 USB-A, Compact Fast Charger for iPhone 17 Pro Max/16/15/14/13 Series, iPad, Pixel, Galaxy, MacBook (without Cable)",
+    "product_family_id": "chargers",
+    "product_variant_id": "chargers_usb_c",
+    "brand": "Anker",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Anker Zolo Powerbank (2025 Upgrade), 20000 mAh, 30 W High-Speed Charger with Integrated USB-C Cable, Battery Pack for iPhone 17/16/15 Series, Galaxy and More",
+    "product_family_id": "power_banks",
+    "product_variant_id": null,
+    "brand": "Anker",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Apple 13 inch MacBook Air Laptop, M5 Chip with 10-Core CPU and 8-Core GPU: Designed for AI, 13.6-inch Liquid Retina Display, 16GB Shared Memory, 512GB SSD, Touch ID, WiFi 7; Midnight",
+    "product_family_id": "laptops",
+    "product_variant_id": null,
+    "brand": "Apple",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ARCTIC 4-Pin PWM Fan Splitter Cable, PST Splitter Cable for 4 Fans",
+    "product_family_id": "computer_cables",
+    "product_variant_id": "computer_cables_fan_splitter",
+    "brand": "ARCTIC",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "be quiet! Power Zone 2 750W PC Power Supply, 80 Plus and Cybenetics Platinum",
+    "product_family_id": "power_supplies",
+    "product_variant_id": "power_supplies_pc",
+    "brand": "be quiet!",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Duracell Specialty 2032 Lithium Button Batteries 3 V Pack of 4 with Child Safe Technology for use in Keychains, Scales, Wearables and Medical Devices (CR2032 /DL2032)",
+    "product_family_id": "batteries",
+    "product_variant_id": "batteries_cr2032",
+    "brand": "Duracell",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "EXTRASTAR 3-Way Socket Adapter, 2 Euro + 1 Schuko, EU Plug Adapter with Child Lock, Power Strip for Office, Home, White (Pack of 1)",
+    "product_family_id": "socket_adapters",
+    "product_variant_id": null,
+    "brand": "EXTRASTAR",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hersmay PK-NEX Lens Adapter for Pentax PK K Lens Suitable for Sony E-Mount NEX5 NEX6 NEX7 A7 I II III IV A7S A7R A7SII A7SIII A7RII A6500 A6300 A6000 A5100 A5000 NEX-FS700 VGG 30 VG99 00 PXW-FS7",
+    "product_family_id": "lens_adapters",
+    "product_variant_id": "lens_adapters_pentax_k_sony_e",
+    "brand": "Hersmay",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Logitech ERGO K860 - Wireless ergonomic keyboard with split buttons, wristwear and support for natural tap - Windows / Mac, Bluetooth, USB receiver, QWERTZ layout graphite",
+    "product_family_id": "keyboards",
+    "product_variant_id": "keyboards_ergonomic",
+    "brand": "Logitech",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Logitech MX Vertical, Ergonomic Wireless Mouse, Bluetooth and 2.4 GHz connection via Unifying USB receiver, 4000 dpi sensor, Rechargeable Battery, 4 buttons, multi-device, PC / Mac / iPadOS - Black",
+    "product_family_id": "computer_mice",
+    "product_variant_id": "computer_mice_vertical",
+    "brand": "Logitech",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Noctua NF-A12x25 G2 PWM Quiet High Performance Fan 120 mm",
+    "product_family_id": "computer_fans",
+    "product_variant_id": "computer_fans_120_mm",
+    "brand": "Noctua",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Noctua NF-A12x25 G2 PWM Sx2-PP, Quiet High Performance Fan 2 x 120 mm",
+    "product_family_id": "computer_fans",
+    "product_variant_id": "computer_fans_120_mm",
+    "brand": "Noctua",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Sapphire Technology Carte Graphique Nitro Plus AMD Radeon RX 9060 XT Gaming OC 16GB Double HDMI-DP",
+    "product_family_id": "graphics_cards",
+    "product_variant_id": null,
+    "brand": "Sapphire",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "UGREEN 2.4G & Bluetooth Mouse Wireless Vertical Ergonomic Mouse for Windows/Mac OS etc. 1000/1600/2000/4000 DPI, 6 Buttons (2.4G + BT 5.4)",
+    "product_family_id": "computer_mice",
+    "product_variant_id": "computer_mice_vertical",
+    "brand": "UGREEN",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Durex Performa Condoms, Sex-Prolonging Condoms with 5% Benzocaine Gel and Easy-On Shape, Pack of 12 (1 x 12 Condoms)",
+    "product_family_id": "condoms",
+    "product_variant_id": "condoms_delay",
+    "brand": "Durex",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Durex Performa Condoms, Sex-Prolonging Condoms with 5% Benzocaine Gel for Longer-Lasting Sexual Pleasure, Pack of 36 (3 x 12 Condoms)",
+    "product_family_id": "condoms",
+    "product_variant_id": "condoms_delay",
+    "brand": "Durex",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lubido Original water-based lubricant without parabens, jumbo 500 ml (pack of 2)",
+    "product_family_id": "lubricants",
+    "product_variant_id": "lubricants_water_based",
+    "brand": "Lubido",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Akazienholz Sort.",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Akazienholz позначає матеріал, але не конкретний товар."
+  },
+  {
+    "source_name": "AvanC.Servietten",
+    "product_family_id": "napkins",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bambus Set",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Bambus Set позначає матеріал і набір, але не його призначення."
+  },
+  {
+    "source_name": "CC Li/Ze 6x1.25l",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_cola_zero",
+    "brand": "Coca-Cola",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Design Servietten",
+    "product_family_id": "napkins",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "EZH Anzünder",
+    "product_family_id": "firelighters",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Fack.Bambussticks",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Bambussticks можуть бути шпажками, паличками чи декоративним приладдям; потрібне уточнення."
+  },
+  {
+    "source_name": "Fra.Sommerblumen",
+    "product_family_id": "flowers_plants",
+    "product_variant_id": "flowers_plants_cut_flowers",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Fuchst.Haargummis",
+    "product_family_id": "hair_accessories",
+    "product_variant_id": "hair_accessories_ties",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Holzk.Briketts",
+    "product_family_id": "charcoal",
+    "product_variant_id": "charcoal_briquettes",
+    "brand": "G&G",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Grillholzkohle 3kg",
+    "product_family_id": "charcoal",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "HP Mousse 200g",
+    "product_family_id": "dairy_dessert",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Dekobutton",
+    "product_family_id": "party_decorations",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Fleischspieße",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": "kitchen_utensils_skewers",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Geburt.kerzen",
+    "product_family_id": "party_decorations",
+    "product_variant_id": "party_decorations_candles",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Girlande",
+    "product_family_id": "party_decorations",
+    "product_variant_id": "party_decorations_garland",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Haarkralle",
+    "product_family_id": "hair_accessories",
+    "product_variant_id": "hair_accessories_claw",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Löffelablage",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": "kitchen_utensils_spoon_rest",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Partyhüte",
+    "product_family_id": "party_decorations",
+    "product_variant_id": "party_decorations_hats",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Rotorspirale",
+    "product_family_id": "party_decorations",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "JES Schaschliksp.",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": "kitchen_utensils_skewers",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knotenbeutel",
+    "product_family_id": "bags",
+    "product_variant_id": "bags_produce",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kopierpapier",
+    "product_family_id": "copy_paper",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Küchenartikel",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Загальна назва Küchenartikel; конкретне кухонне приладдя невідоме."
+  },
+  {
+    "source_name": "Lebensmittel",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Lebensmittel — загальна назва харчів без конкретного продукту."
+  },
+  {
+    "source_name": "Marlboro Red XL",
+    "product_family_id": "cigarettes",
+    "product_variant_id": null,
+    "brand": "Marlboro",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Obstknotenbeutel",
+    "product_family_id": "bags",
+    "product_variant_id": "bags_produce",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pflanzen allg.",
+    "product_family_id": "flowers_plants",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Seitenb.Düsis",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Seitenb.Düsis не дозволяє надійно визначити товар."
+  },
+  {
+    "source_name": "Tiefkühltrageta.",
+    "product_family_id": "bags",
+    "product_variant_id": "bags_frozen_food",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Tragetasche",
+    "product_family_id": "bags",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Tragetasche Altp",
+    "product_family_id": "bags",
+    "product_variant_id": "bags_paper",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Trinkhalme",
+    "product_family_id": "kitchen_utensils",
+    "product_variant_id": "kitchen_utensils_straws",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zeitschrift.erm.",
+    "product_family_id": "magazines",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "0,2 Coca Cola Zer",
+    "product_family_id": "soft_drinks",
+    "product_variant_id": "soft_drinks_cola_zero",
+    "brand": "Coca-Cola",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Beilagen-Pommes",
+    "product_family_id": "fries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Cheeseburger",
+    "product_family_id": "burgers",
+    "product_variant_id": "burgers_cheeseburger",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.VK Sandwich",
+    "product_family_id": "bread",
+    "product_variant_id": "bread_sandwich_wholegrain",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Яблучний штрудель, полуничний пиріг, американо з вершками, чай",
+    "product_family_id": "restaurant_meals",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Один рядок містить кілька десертів і напоїв; для точного поділу потрібні окремі позиції."
+  },
+  {
+    "source_name": "Bio E.Forellenfil.",
+    "product_family_id": "trout",
+    "product_variant_id": "trout_fillet",
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio E.Hähn.Lyoner",
+    "product_family_id": "sausage",
+    "product_variant_id": "sausage_chicken_lyoner",
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "BIO NL Kochschink.",
+    "product_family_id": "ham",
+    "product_variant_id": "ham_cooked",
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Sommersteak",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "review",
+    "reason": "Sommersteak не вказує на вид м’яса."
+  },
+  {
+    "source_name": "Bio-Schweinefilet",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_fillet",
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bond.Salatmi.Ital.",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": "salad_leaves_mix",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bretteljause",
+    "product_family_id": "cold_cut_platters",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Bretteljause визначає асорті, але склад м’ясної закуски не відомий."
+  },
+  {
+    "source_name": "Dorade",
+    "product_family_id": "seabream",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "elGusto Ja.Serrano",
+    "product_family_id": "ham",
+    "product_variant_id": "ham_serrano",
+    "brand": "elGusto",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "F&G Hüftsteak",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": "F&G",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Hüftsteak визначає відруб, але не вид м’яса."
+  },
+  {
+    "source_name": "F&G Rd. Rump. gew.",
+    "product_family_id": "beef",
+    "product_variant_id": "beef_rump_seasoned",
+    "brand": "F&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Foll.Thunfisch",
+    "product_family_id": "tuna",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Forellenfilets",
+    "product_family_id": "trout",
+    "product_variant_id": "trout_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Nacken-S.",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_neck_steak",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Partygarnelen",
+    "product_family_id": "shrimp",
+    "product_variant_id": null,
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Räucherlachs",
+    "product_family_id": "salmon",
+    "product_variant_id": "salmon_smoked",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Stremellachs",
+    "product_family_id": "salmon",
+    "product_variant_id": "salmon_hot_smoked",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Garnelen ASC Prov.",
+    "product_family_id": "shrimp",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Garnelen Sort. XXL",
+    "product_family_id": "shrimp",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Garnelen-Sortiment",
+    "product_family_id": "shrimp",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "H.FLUEGEL GEW.",
+    "product_family_id": "chicken",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "H. імовірно означає Hähnchen; курячі приправлені крильця потребують підтвердження виду птиці."
+  },
+  {
+    "source_name": "Hackfl. gem. XXL",
+    "product_family_id": "minced_meat",
+    "product_variant_id": "minced_meat_mixed",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hähn. Brustf. XXL",
+    "product_family_id": "chicken",
+    "product_variant_id": "chicken_breast_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hähn. Minutenschn",
+    "product_family_id": "chicken",
+    "product_variant_id": "chicken_minute_schnitzel",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hahn. Schwenkst.",
+    "product_family_id": "chicken",
+    "product_variant_id": "chicken_grilling_steak",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hähn. Schwenkst.",
+    "product_family_id": "chicken",
+    "product_variant_id": "chicken_grilling_steak",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hähnchensteaks, ma",
+    "product_family_id": "chicken",
+    "product_variant_id": "chicken_steak_marinated",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Handgelegter Koch.",
+    "product_family_id": "ham",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Handgelegter Koch. може означати варену шинку; потрібна повна назва."
+  },
+  {
+    "source_name": "Handl Leich.Karree",
+    "product_family_id": "pork",
+    "product_variant_id": null,
+    "brand": "Handl",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Karree позначає корейку; спосіб приготування та конкретний продукт потребують уточнення."
+  },
+  {
+    "source_name": "Haw.Heringsfilets",
+    "product_family_id": "herring",
+    "product_variant_id": "herring_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herzh. Gef./Rinds",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Gef./Rinds вказує на птицю та яловичину, але не визначає форму продукту."
+  },
+  {
+    "source_name": "HF3 Minutensteaks",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "HF3 позначає утримання, а не вид тварини; вид м’яса невідомий."
+  },
+  {
+    "source_name": "HF3 Schnitzel",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "HF3 позначає утримання, а не вид тварини; вид м’яса невідомий."
+  },
+  {
+    "source_name": "Holzfällersteaks",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Holzfällersteaks зазвичай свинячі, але вид м’яса не вказаний у назві."
+  },
+  {
+    "source_name": "Lachsfiletseite750",
+    "product_family_id": "salmon",
+    "product_variant_id": "salmon_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lachsforellenfilet",
+    "product_family_id": "trout",
+    "product_variant_id": "trout_salmon_trout_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lachsseite XXL",
+    "product_family_id": "salmon",
+    "product_variant_id": "salmon_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lamm Medaillons",
+    "product_family_id": "lamb",
+    "product_variant_id": "lamb_medallions",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lysell Deut.Kaviar",
+    "product_family_id": "fish_roe",
+    "product_variant_id": null,
+    "brand": "Lysell",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mar. Garnelen 200g",
+    "product_family_id": "shrimp",
+    "product_variant_id": "shrimp_marinated",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "METZGERSCHIN",
+    "product_family_id": "ham",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "METZGERSCHIN схоже на шинку, але назва обрізана."
+  },
+  {
+    "source_name": "Nackensteaks, mar",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_neck_steak_marinated",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nackensteaks, mar.",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_neck_steak_marinated",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Norweg. Lachsfilet",
+    "product_family_id": "salmon",
+    "product_variant_id": "salmon_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Prosciutto Crudo",
+    "product_family_id": "ham",
+    "product_variant_id": "ham_prosciutto_crudo",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Rabatt",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Знижка або купон, не окремий товар."
+  },
+  {
+    "source_name": "Rabattaktion HF 3 Rind Rumps",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Знижка або купон, не окремий товар."
+  },
+  {
+    "source_name": "Rabattaktion QS: FF Schwein",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "excluded",
+    "reason": "Знижка або купон, не окремий товар."
+  },
+  {
+    "source_name": "Räucherl. 200g",
+    "product_family_id": "salmon",
+    "product_variant_id": "salmon_smoked",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Rinderleber",
+    "product_family_id": "beef",
+    "product_variant_id": "beef_liver",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Sardellenfilets",
+    "product_family_id": "anchovies",
+    "product_variant_id": "anchovies_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schw. Minutensteak",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_minute_steak",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schweine-Leber",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_liver",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schweinefilet",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schweinefilet vak.",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_fillet",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schwenksteaks",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Schwenksteaks не визначає однозначно вид м’яса."
+  },
+  {
+    "source_name": "Serrano Schinken S",
+    "product_family_id": "ham",
+    "product_variant_id": "ham_serrano",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SG Seelachsfilet Natur 400g",
+    "product_family_id": "pollock",
+    "product_variant_id": "pollock_fillet_plain",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Simmentaler Steaks",
+    "product_family_id": "beef",
+    "product_variant_id": "beef_steak",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Speisefrühk. 2kg",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_early",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Steinhaus Braten",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": "Steinhaus",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Braten не визначає вид м’яса або спосіб приготування."
+  },
+  {
+    "source_name": "SW-HUEFT. TO.BAE",
+    "product_family_id": "pork",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "SW-HUEFT. TO.BAE вказує на свинячу тазостегнову частину; приправу не розшифровано."
+  },
+  {
+    "source_name": "SW-RUECKEN GARLI",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_loin_garlic",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SW-RUECKEN PAPRI",
+    "product_family_id": "pork",
+    "product_variant_id": "pork_loin_paprika",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "T-Bone Steak",
+    "product_family_id": "meat_unspecified",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "T-Bone визначає відруб, але назва не вказує прямо на вид м’яса."
+  },
+  {
+    "source_name": "Vici Meeres Snacks",
+    "product_family_id": "seafood_snacks",
+    "product_variant_id": null,
+    "brand": "Vici",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Vici Surimi Sticks",
+    "product_family_id": "surimi",
+    "product_variant_id": "surimi_sticks",
+    "brand": "Vici",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "White Tiger Gar.",
+    "product_family_id": "shrimp",
+    "product_variant_id": "shrimp_tiger",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Wilken Butterfisch",
+    "product_family_id": "butterfish",
+    "product_variant_id": null,
+    "brand": "Wilken",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Alpro Bar.Drink 1l",
+    "product_family_id": "plant_drinks",
+    "product_variant_id": "plant_drinks_barista",
+    "brand": "Alpro",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Alpro Mandeldrink",
+    "product_family_id": "plant_drinks",
+    "product_variant_id": "plant_drinks_almond",
+    "brand": "Alpro",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Alpro Soya Drink",
+    "product_family_id": "plant_drinks",
+    "product_variant_id": "plant_drinks_soy",
+    "brand": "Alpro",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Alpro Soya Drink1l",
+    "product_family_id": "plant_drinks",
+    "product_variant_id": "plant_drinks_soy",
+    "brand": "Alpro",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bärenm.Fr.Milch",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_fresh",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bavaria Blu Käse",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_blue",
+    "brand": "Bavaria Blu",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "BBQ Grillkaese",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_grilling",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "BBQ Grillkäse",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_grilling",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Alna.Speisequ.",
+    "product_family_id": "quark",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio E.Hu.Hahn Eier",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Lehnertz Eier",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio PNL FriMil.3,8",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_fresh_3_8",
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio PNL Quark 250g",
+    "product_family_id": "quark",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brat u.Grillkaese",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_grilling",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brebicet",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": "Brebicet",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brie 200g",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_brie",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brie Minitorte",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_brie",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brugge Alt",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": "Brugge",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Buffalm. Minis 150",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Buffalm. Minis схоже на моцарелу з буйволячого молока; потрібне підтвердження повної назви."
+  },
+  {
+    "source_name": "Burrata 125g",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_burrata",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Camemb L Aromatiqu",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_camembert",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Cast.Ricotta",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_ricotta",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Chaumes Klassik",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": "Chaumes",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Dovgan Fam.2,5% Fett",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Dovgan",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Dovgan Fam.2,5% Fett містить бренд і жирність, але не тип молочного продукту."
+  },
+  {
+    "source_name": "Dovgan Fam.33% Fett",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Dovgan",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Dovgan Fam.33% Fett містить бренд і жирність, але не тип молочного продукту."
+  },
+  {
+    "source_name": "E.Gen.Creme Brulee",
+    "product_family_id": "dairy_dessert",
+    "product_variant_id": "dairy_dessert_creme_brulee",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "EIFEL Eier Fl.",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Exqu.Frischk.fitl.",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_cream",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Exqu.Frischk.Natur",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_cream_plain",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Feta / Schafskäse",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Назва містить Feta / Schafskäse: неможливо відрізнити захищену фету від іншого овечого сиру."
+  },
+  {
+    "source_name": "FH EIER 10ER",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Frau Antje Butter",
+    "product_family_id": "butter",
+    "product_variant_id": null,
+    "brand": "Frau Antje",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Frz. Camembert",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_camembert",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G.Clar.Eier F",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G ESL-Milch",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_esl",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Fettarm.Kefir",
+    "product_family_id": "kefir",
+    "product_variant_id": "kefir_low_fat",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Jogh.griech.",
+    "product_family_id": "yogurt",
+    "product_variant_id": "yogurt_greek",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Joghurt grie.",
+    "product_family_id": "yogurt",
+    "product_variant_id": "yogurt_greek",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Mozzarella",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mozzarella",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Zi.Käserolle",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_goat_roll",
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Galb.Mascarpone",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mascarpone",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Galb.Mozzarella",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mozzarella",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Geramont Crem",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": "Geramont",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Geramont Cremig",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": "Geramont",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Geramont Mix",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": "Geramont",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Gerv.Hüttenkäse",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_cottage",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Gervais HK 200g",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_cottage",
+    "brand": "Gervais",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Gorgonzola",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_gorgonzola",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Gouda jung",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_gouda_young",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Greco Feta, 150g",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_feta",
+    "brand": "Greco",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Griech. Joghurt 2%",
+    "product_family_id": "yogurt",
+    "product_variant_id": "yogurt_greek_2",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hennes Eier",
+    "product_family_id": "eggs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Camembert",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_camembert",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Mozzarella",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mozzarella",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Skyr",
+    "product_family_id": "yogurt",
+    "product_variant_id": "yogurt_skyr",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Weidemilch",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_pasture",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "HP Fruity 8-Pack",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "HP Fruity не визначає основу та тип продукту."
+  },
+  {
+    "source_name": "ital. Käsescheiben / Ital. Käsescheiben",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_sliced",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Joghurt gr Art 1kg",
+    "product_family_id": "yogurt",
+    "product_variant_id": "yogurt_greek",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kefir 500 g",
+    "product_family_id": "kefir",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kerry.Kr.Kn.Butter",
+    "product_family_id": "butter",
+    "product_variant_id": "butter_herb_garlic",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kerryg.Butter",
+    "product_family_id": "butter",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kerrygold Butter",
+    "product_family_id": "butter",
+    "product_variant_id": null,
+    "brand": "Kerrygold",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Landl.Frischmilch",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_fresh",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Landliebe F-Weidem",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_pasture",
+    "brand": "Landliebe",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "LANDMILCH 3,8%",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_3_8",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "M.Land Vollmilch",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_whole",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "MASCARPONE 40%",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mascarpone",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milr.Butterm.Quark",
+    "product_family_id": "quark",
+    "product_variant_id": "quark_buttermilk",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milr.Kefir Drink",
+    "product_family_id": "kefir",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milr.Speisequark",
+    "product_family_id": "quark",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "MinusL ESL Milch",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_esl",
+    "brand": "MinusL",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Moya Sem.Zopfkäse",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_braided",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mozzarella",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mozzarella",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mozzarella Classic",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mozzarella",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mozzarella, ger.",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_mozzarella_grated",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Naturjoghurt 1kg",
+    "product_family_id": "yogurt",
+    "product_variant_id": "yogurt_plain",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Parmigiano Reggiano",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_parmigiano_reggiano",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Petit Camembert",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_camembert",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Philadelphia",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_cream",
+    "brand": "Philadelphia",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Philadelphia FK",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_cream",
+    "brand": "Philadelphia",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pres Meersalzbutte",
+    "product_family_id": "butter",
+    "product_variant_id": "butter_sea_salt",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Quarki Quark FK 250g",
+    "product_family_id": "quark",
+    "product_variant_id": null,
+    "brand": "Quarki",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Reibek. Li. 250g",
+    "product_family_id": "cheese",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Reibek. Li. імовірно тертий сир; скорочення потребує перевірки."
+  },
+  {
+    "source_name": "Salakis Schafkäse",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_sheep",
+    "brand": "Salakis",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Saure Sahne 200g",
+    "product_family_id": "cream",
+    "product_variant_id": "cream_sour",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schlagsahne 200g",
+    "product_family_id": "cream",
+    "product_variant_id": "cream_whipping",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SO LEICHT NATUR",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "SO LEICHT NATUR не визначає тип продукту або конкретну жирність."
+  },
+  {
+    "source_name": "Tete de Moine",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_tete_de_moine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Tuffi Heimatmilch",
+    "product_family_id": "milk",
+    "product_variant_id": null,
+    "brand": "Tuffi",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Vollmilch 3,5 %",
+    "product_family_id": "milk",
+    "product_variant_id": "milk_whole_3_5",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Weih.Milch",
+    "product_family_id": "milk",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Ziegenk. 250g",
+    "product_family_id": "cheese",
+    "product_variant_id": "cheese_goat",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio E.Speiseq",
+    "product_family_id": "quark",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "229496 Plattnektarine500g",
+    "product_family_id": "nectarines",
+    "product_variant_id": "nectarines_flat",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "231292 Frühkart.Vwfk2.5kg",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_early_mainly_waxy",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "2E Kiwis Gold",
+    "product_family_id": "kiwifruit",
+    "product_variant_id": "kiwifruit_gold",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "309604 Cocktailtom. 500g",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_cocktail",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Aepfel 2kg VKE QS",
+    "product_family_id": "apples",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Albi Mutlivitam.1l",
+    "product_family_id": "fruit_juice",
+    "product_variant_id": "fruit_juice_multivitamin",
+    "brand": "albi",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Ananas Mini-Pack",
+    "product_family_id": "pineapple",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Apfel Pink Lady",
+    "product_family_id": "apples",
+    "product_variant_id": "apples_pink_lady",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Apfel rot",
+    "product_family_id": "apples",
+    "product_variant_id": "apples_red",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Äpfel rot",
+    "product_family_id": "apples",
+    "product_variant_id": "apples_red",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Aprikosen Prem los",
+    "product_family_id": "apricots",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Avocado Stk",
+    "product_family_id": "avocados",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bananen",
+    "product_family_id": "bananas",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bananen Bio",
+    "product_family_id": "bananas",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bananen FairTrade",
+    "product_family_id": "bananas",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bananen RFA",
+    "product_family_id": "bananas",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "BASILIKUM BIO",
+    "product_family_id": "basil",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Auberginen",
+    "product_family_id": "aubergines",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Edeka Bananen",
+    "product_family_id": "bananas",
+    "product_variant_id": null,
+    "brand": "Edeka",
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Gemüsesortim.",
+    "product_family_id": "vegetable_mix",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio GemüsesortIm.A",
+    "product_family_id": "vegetable_mix",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio ML Gartenkress",
+    "product_family_id": "cress",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bio Zitrone/Limett",
+    "product_family_id": "citrus_fruit",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "review",
+    "reason": "Одна назва об’єднує лимон і лайм; потрібен вибір конкретного фрукта."
+  },
+  {
+    "source_name": "Bio-Zucchini 500g",
+    "product_family_id": "courgettes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "BIOE Zwiebeln",
+    "product_family_id": "onions",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Biol.Topfk.Basilikum",
+    "product_family_id": "basil",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Birne Abate lose",
+    "product_family_id": "pears",
+    "product_variant_id": "pears_abate",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Birne Agate lose",
+    "product_family_id": "pears",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Назва Agate може містити помилку; сорт не нормалізовано до Abate без підтвердження."
+  },
+  {
+    "source_name": "Birnen",
+    "product_family_id": "pears",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bond.Salat",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Bonduelle Salat",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": null,
+    "brand": "Bonduelle",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brokkoli 500g",
+    "product_family_id": "broccoli",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brombeeren",
+    "product_family_id": "blackberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Brombeeren 125g",
+    "product_family_id": "blackberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Cherryrispentomate",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_cherry_vine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "CHERRYROMATOMATE",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_cherry_roma",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Cocktailtom. 500g",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_cocktail",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "DattelNaschtom250g",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_date",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "E.Regio.Möhren",
+    "product_family_id": "carrots",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "EGEN M.Pf.Risp.to.",
+    "product_family_id": "tomatoes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Скорочення M.Pf. не визначає сорт; підтверджено лише помідори на гілці."
+  },
+  {
+    "source_name": "Einlegegurken",
+    "product_family_id": "cucumbers",
+    "product_variant_id": "cucumbers_pickling",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ERDBEERE",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ERDBEERE RHEINL",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ErdbeereALDInaLose",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erdbeeren",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erdbeeren 500g",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erdbeeren kg",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erdbeeren lose",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ERRR Brombeeren",
+    "product_family_id": "blackberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Feigen frisch",
+    "product_family_id": "figs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Frank.Wilde Rauke",
+    "product_family_id": "rocket",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Fresh-Cut-Salat 2",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Frühk.Drillinge1kg",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_early_baby",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Frühkart.Vwfk2.5kg",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_early_mainly_waxy",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Frühkartoffeln",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_early",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Broccoli",
+    "product_family_id": "broccoli",
+    "product_variant_id": null,
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Champignons",
+    "product_family_id": "button_mushrooms",
+    "product_variant_id": null,
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Knoblauch",
+    "product_family_id": "garlic",
+    "product_variant_id": null,
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Nektarinen",
+    "product_family_id": "nectarines",
+    "product_variant_id": null,
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Trauben",
+    "product_family_id": "grapes",
+    "product_variant_id": null,
+    "brand": "G&G",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "HEIDELBEERE",
+    "product_family_id": "blueberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Heidelbeeren 200g",
+    "product_family_id": "blueberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Heidelbeeren 300g",
+    "product_family_id": "blueberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Heidelbeeren 500g",
+    "product_family_id": "blueberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz Nektar. gelb",
+    "product_family_id": "nectarines",
+    "product_variant_id": "nectarines_yellow",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Champign.sch.",
+    "product_family_id": "button_mushrooms",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Скорочення sch. може описувати колір або нарізання; варіант не визначено."
+  },
+  {
+    "source_name": "Herz.Frühkartoff.",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_early",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Guacamole",
+    "product_family_id": "guacamole",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Junger Spinat",
+    "product_family_id": "spinach",
+    "product_variant_id": "spinach_baby",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Kult.Heidelb.",
+    "product_family_id": "blueberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Mi.Rispe",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_mini_vine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Mi.Rispentom.",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_mini_vine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Paprikaglock.",
+    "product_family_id": "peppers",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Salat",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herz.Salatmix",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": "salad_leaves_mix",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kart. Vwfk 2.5kg",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_mainly_waxy",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kart.Drillinge 1kg",
+    "product_family_id": "potatoes",
+    "product_variant_id": "potatoes_baby",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kartoffeln",
+    "product_family_id": "potatoes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kirschen / KIRSCHEN",
+    "product_family_id": "cherries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kirschen lose",
+    "product_family_id": "cherries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kiwi Gold",
+    "product_family_id": "kiwifruit",
+    "product_variant_id": "kiwifruit_gold",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kiwi Gold Jumbo",
+    "product_family_id": "kiwifruit",
+    "product_variant_id": "kiwifruit_gold",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kiwi gold Stück",
+    "product_family_id": "kiwifruit",
+    "product_variant_id": "kiwifruit_gold",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knoblauch weiß200g",
+    "product_family_id": "garlic",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kokosnüsse",
+    "product_family_id": "coconuts",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kopfsalat Petersi.",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Скорочена назва поєднує Kopfsalat і Petersi.; вид салату потребує уточнення."
+  },
+  {
+    "source_name": "Kult.Heidelb.",
+    "product_family_id": "blueberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kulturheidelbeeren",
+    "product_family_id": "blueberries",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Landgurke Bio",
+    "product_family_id": "cucumbers",
+    "product_variant_id": "cucumbers_field",
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mangos",
+    "product_family_id": "mangoes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "MELONE PERLA",
+    "product_family_id": "melons",
+    "product_variant_id": "melons_perla",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mini BioKarot 200g",
+    "product_family_id": "carrots",
+    "product_variant_id": "carrots_baby",
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Mini Romarispent.",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_mini_roma_vine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nektarinen",
+    "product_family_id": "nectarines",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nektarinen 1kg",
+    "product_family_id": "nectarines",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nektarinen 500g",
+    "product_family_id": "nectarines",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Obst-Sortiment",
+    "product_family_id": "fruit_mix",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paprika rot / PAPRIKA ROT",
+    "product_family_id": "peppers",
+    "product_variant_id": "peppers_red",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paprika rot 500g",
+    "product_family_id": "peppers",
+    "product_variant_id": "peppers_red",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paprika rot lose",
+    "product_family_id": "peppers",
+    "product_variant_id": "peppers_red",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Paprika süß/scharf",
+    "product_family_id": "peppers",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Назва об’єднує солодкий і гострий перець; варіант потребує уточнення."
+  },
+  {
+    "source_name": "Pau.Champignons",
+    "product_family_id": "button_mushrooms",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pfirsiche",
+    "product_family_id": "peaches",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pfirsiche 1kg",
+    "product_family_id": "peaches",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pfirsiche gelb",
+    "product_family_id": "peaches",
+    "product_variant_id": "peaches_yellow",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Plattnektarine500g",
+    "product_family_id": "nectarines",
+    "product_variant_id": "nectarines_flat",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Plattpfirsich 500g",
+    "product_family_id": "peaches",
+    "product_variant_id": "peaches_flat",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Plattpirsich 500g",
+    "product_family_id": "peaches",
+    "product_variant_id": "peaches_flat",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "PURA Erdbeeren",
+    "product_family_id": "strawberries",
+    "product_variant_id": null,
+    "brand": "PURA",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Radieschen",
+    "product_family_id": "radishes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "RadieschenBund Stk",
+    "product_family_id": "radishes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "RiesenCham.we. 400g",
+    "product_family_id": "button_mushrooms",
+    "product_variant_id": "button_mushrooms_large_white",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "RiesenCham.we.400g",
+    "product_family_id": "button_mushrooms",
+    "product_variant_id": "button_mushrooms_large_white",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "RiesenCham.wo.400g",
+    "product_family_id": "button_mushrooms",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Скорочення wo. не дає надійно визначити колір або форму печериць."
+  },
+  {
+    "source_name": "Rispentomaten",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_vine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Rispentomaten lose",
+    "product_family_id": "tomatoes",
+    "product_variant_id": "tomatoes_vine",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Rucola 125g",
+    "product_family_id": "rocket",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SALAT WILDKR.",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": "salad_leaves_wild_herbs",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "SalatmWurzb",
+    "product_family_id": "salad_leaves",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Schnittkräuter",
+    "product_family_id": "herbs",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Snackgurken",
+    "product_family_id": "cucumbers",
+    "product_variant_id": "cucumbers_snack",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Sonnentomaten lose",
+    "product_family_id": "tomatoes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Spargel",
+    "product_family_id": "asparagus",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Spargel gesch.400g",
+    "product_family_id": "asparagus",
+    "product_variant_id": "asparagus_peeled",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Spargel grün 400g",
+    "product_family_id": "asparagus",
+    "product_variant_id": "asparagus_green",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Spargel w/v 500g",
+    "product_family_id": "asparagus",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Скорочення w/v не визначає однозначно різновид спаржі."
+  },
+  {
+    "source_name": "SUESSKARTOFFEL",
+    "product_family_id": "sweet_potatoes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Süßkartoffeln / SÜßkartoffeln",
+    "product_family_id": "sweet_potatoes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Tafeltrauben",
+    "product_family_id": "grapes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Topf Basilikum XL",
+    "product_family_id": "basil",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "TRAUBE HELL KL",
+    "product_family_id": "grapes",
+    "product_variant_id": "grapes_green",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Trauben dunk. 500g",
+    "product_family_id": "grapes",
+    "product_variant_id": "grapes_dark",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Trauben hell 500g",
+    "product_family_id": "grapes",
+    "product_variant_id": "grapes_green",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Wasserm.kernlos",
+    "product_family_id": "watermelon",
+    "product_variant_id": "watermelon_seedless",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Wassermel kernarm",
+    "product_family_id": "watermelon",
+    "product_variant_id": "watermelon_low_seed",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Wassermel.kernl",
+    "product_family_id": "watermelon",
+    "product_variant_id": "watermelon_seedless",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "ZE Kiwis Gold",
+    "product_family_id": "kiwifruit",
+    "product_variant_id": "kiwifruit_gold",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zitronen Prem. Stk",
+    "product_family_id": "lemons",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zuckermais 400g va",
+    "product_family_id": "sweetcorn",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zwetschgen lose",
+    "product_family_id": "plums",
+    "product_variant_id": "plums_damson",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zwiebel-Mix Stk",
+    "product_family_id": "onions",
+    "product_variant_id": "onions_mix",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zwiebeln Bio 750g",
+    "product_family_id": "onions",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "BANANALU Silky Gloss Elastic 20 Denier Women's Tights Multifibra, nero",
+    "product_family_id": "tights",
+    "product_variant_id": "tights_20_den",
+    "brand": "BANANALU",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Barts Men's Mr. Mitchell Newspaper Cap 0019-Dark Grey, 56, M",
+    "product_family_id": "caps",
+    "product_variant_id": "caps_newsboy",
+    "brand": "Barts",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Barts Mens Mr. Mitchell Funky Style Adjustable Newsboy Flat Cap Hat",
+    "product_family_id": "caps",
+    "product_variant_id": "caps_newsboy",
+    "brand": "Barts",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Closemate 6 Pairs Bamboo Socks Men Women 39-42 43-46, Thin Sneaker Socks, Breathable Short Socks for Summer, 6 White, L",
+    "product_family_id": "socks",
+    "product_variant_id": "socks_bamboo_short",
+    "brand": "Closemate",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Damen Sportbekleidung",
+    "product_family_id": "sportswear",
+    "product_variant_id": "sportswear_women",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Handtaschen",
+    "product_family_id": "handbags",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herren Accessoires",
+    "product_family_id": "clothing_accessories",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Herren Premium Designer",
+    "product_family_id": "clothing",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Рядок визначає лише чоловічий дизайнерський одяг; конкретний вид невідомий."
+  },
+  {
+    "source_name": "Herren Sportbekleidung",
+    "product_family_id": "sportswear",
+    "product_variant_id": "sportswear_men",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kleider",
+    "product_family_id": "dresses",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nike Revolution",
+    "product_family_id": "shoes",
+    "product_variant_id": null,
+    "brand": "Nike",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Nike Revolution є лінійкою взуття; конкретна модель та призначення не вказані."
+  },
+  {
+    "source_name": "Nur Die Women's Goodbye Laufmaschen 60 Strumpfhose Tights, 60 DEN, Black (Schwarz 94), 13",
+    "product_family_id": "tights",
+    "product_variant_id": "tights_60_den",
+    "brand": "Nur Die",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Stepace Round Shoelaces, 2 Pairs, Tear-Resistant Shoelaces for Hiking Shoes, Work Shoes, Trekking Shoes, Approx. 4.5 mm in Diameter, 100 cm–180 cm Length",
+    "product_family_id": "shoelaces",
+    "product_variant_id": null,
+    "brand": "Stepace",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Assurant 2 Year Accident and Theft Protection for ONE Laptop from €950 to €999.99",
+    "product_family_id": "device_protection",
+    "product_variant_id": "device_protection_accident_theft",
+    "brand": "Assurant",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Assurant 3 Year Warranty Extension for ONE Monitor from €500 to €549.99",
+    "product_family_id": "device_protection",
+    "product_variant_id": "device_protection_warranty_extension",
+    "brand": "Assurant",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Доставка Amazon",
+    "product_family_id": "delivery",
+    "product_variant_id": null,
+    "brand": "Amazon",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "16 Pieces Wooden Puzzles for Children - Boys and Girls 1, 2 and 3 Years, Ideal as Birthday and Nursery Gift, Montessori Educational Toy, Original Gifts, Animal Wooden Puzzles (16 Puzzles)",
+    "product_family_id": "puzzles",
+    "product_variant_id": "puzzles_wooden_animals",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "46Pcs Kids Knife Set for Real Cooking: Montessori Kitchen Tools for Toddlers, Kitchen Toy for 3 4 5 6 7 8 9 10 Year Old Boys Girls Birthday Gifts",
+    "product_family_id": "children_kitchen_tools",
+    "product_variant_id": "children_kitchen_tools_knife_set",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Captains of Crush Grip Trainer",
+    "product_family_id": "exercise_equipment",
+    "product_variant_id": "exercise_equipment_grip_trainer",
+    "brand": "Captains of Crush",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "FitBeast Flex Therapy Bar, Tennis Elbow Therapy Bar, Ideal for Relieving Tendinitis Pain and Improving Grip Strength, Fitness Resistance Bar for Golfer's Elbow",
+    "product_family_id": "exercise_equipment",
+    "product_variant_id": "exercise_equipment_therapy_bar",
+    "brand": "FitBeast",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Forearm Wrist Roller Trainer, Forearm Trainer for Training with Extremely Strong Nylon Webbing, Forearm Trainer Wrist Roller for Muscle Strength Training at Home, in the Gym or Outdoors",
+    "product_family_id": "exercise_equipment",
+    "product_variant_id": "exercise_equipment_wrist_roller",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Grarain Busy Board for Toddlers - Montessori Educational Toy for 1-3 Year Old Boys & Girls | Travel-Friendly Sensory Learning Activity | Ideal for Kids with Autism(Busy Board v3)",
+    "product_family_id": "activity_boards",
+    "product_variant_id": null,
+    "brand": "Grarain",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "P&K Luftballons",
+    "product_family_id": "party_decorations",
+    "product_variant_id": "party_decorations_balloons",
+    "brand": "P&K",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Quanquer Water Gun for Kids, 280 ml Water Gun with 9 Metre Range, Toy for Garden Parties, Pool Other Outdoor Activities for Boys and Girls (2 Pack)",
+    "product_family_id": "water_toys",
+    "product_variant_id": "water_toys_water_gun",
+    "brand": "Quanquer",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "RUF Zahlenkerze",
+    "product_family_id": "party_decorations",
+    "product_variant_id": "party_decorations_candles",
+    "brand": "RUF",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Sahara Sailor Water Bottle, Sports Water Bottle, (BPA-Free Tritan) 1L/500 ml/750 ml, Leak-Proof Sports Water Bottle, Sports Bottle for Bike, Camping, Yoga, Gym (1 Bottle)",
+    "product_family_id": "drink_bottles",
+    "product_variant_id": null,
+    "brand": "Sahara Sailor",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "WOODENFUN My Body Puzzle for Children 3-5, Montessori Anatomy Game Set, Layered Puzzle for Preschool Children and Children from 3 Years (Girls)",
+    "product_family_id": "puzzles",
+    "product_variant_id": "puzzles_anatomy",
+    "brand": "WOODENFUN",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "YCHLCHL Wooden Pull Up Bar Set Hand Grip Forearm Finger Exerciser Climbing Exercise Equipment for Door Pull Up Bar Fitness Bouldering Kettlebells",
+    "product_family_id": "exercise_equipment",
+    "product_variant_id": "exercise_equipment_pull_up_grips",
+    "brand": "YCHLCHL",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "AMARENA KIRSCH",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "AMARENA KIRSCH може бути вишнями, морозивом або іншим десертом; потрібен контекст."
+  },
+  {
+    "source_name": "Bio Knusperriegel",
+    "product_family_id": "sweet_bars",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": true,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Buttercroissant",
+    "product_family_id": "croissants",
+    "product_variant_id": "croissants_butter",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Buttercroissant 3 für 1€",
+    "product_family_id": "croissants",
+    "product_variant_id": "croissants_butter",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Butterwaffeln6x40g",
+    "product_family_id": "waffles",
+    "product_variant_id": "waffles_butter",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "C&W Erd.Jog.Kuchen",
+    "product_family_id": "cakes",
+    "product_variant_id": "cakes_strawberry_yogurt",
+    "brand": "C&W",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "C&W Lem.Cheesecake",
+    "product_family_id": "cakes",
+    "product_variant_id": "cakes_lemon_cheesecake",
+    "brand": "C&W",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Cremiss.Vanill.Eis",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_vanilla",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Cremissimo Eis",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Cremissimo",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Erlenbach.Schnitte",
+    "product_family_id": "cakes",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Ferrero Himb Chees",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Ferrero",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Ferrero Himb Chees визначає бренд і смак, але не форму продукту."
+  },
+  {
+    "source_name": "Gade. Amarettini",
+    "product_family_id": "biscuits",
+    "product_variant_id": "biscuits_amarettini",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Hachez Cocoa",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Hachez",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kinder Bueno Eis / KINDER BUENO EIS",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Kinder",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kinder Maxi King",
+    "product_family_id": "sweet_bars",
+    "product_variant_id": null,
+    "brand": "Kinder",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kinder Pingui",
+    "product_family_id": "sweet_bars",
+    "product_variant_id": null,
+    "brand": "Kinder",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Kinder Pingui 4er",
+    "product_family_id": "sweet_bars",
+    "product_variant_id": null,
+    "brand": "Kinder",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knoppers 8+1",
+    "product_family_id": "waffles",
+    "product_variant_id": null,
+    "brand": "Knoppers",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knoppers Erdnuss",
+    "product_family_id": "waffles",
+    "product_variant_id": "waffles_peanut",
+    "brand": "Knoppers",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knoppers Joghurt",
+    "product_family_id": "waffles",
+    "product_variant_id": "waffles_yogurt",
+    "brand": "Knoppers",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knoppers Riegel +1",
+    "product_family_id": "sweet_bars",
+    "product_variant_id": null,
+    "brand": "Knoppers",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knoppers Riegel So",
+    "product_family_id": "sweet_bars",
+    "product_variant_id": null,
+    "brand": "Knoppers",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Knoppers WM 8+1",
+    "product_family_id": "waffles",
+    "product_variant_id": null,
+    "brand": "Knoppers",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lang.Cremiss.Eis",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Leibniz Haferkeks",
+    "product_family_id": "biscuits",
+    "product_variant_id": "biscuits_oat",
+    "brand": "Leibniz",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt Excell.85%",
+    "product_family_id": "chocolate",
+    "product_variant_id": "chocolate_dark_85",
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt Extra Tafel",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt Fioret.Capp.",
+    "product_family_id": "pralines",
+    "product_variant_id": "pralines_cappuccino",
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt L.Grandes H.",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt Limo.Tafel",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt Lindor Pist.",
+    "product_family_id": "pralines",
+    "product_variant_id": "pralines_pistachio",
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt Lindor Stick",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Lindt",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Lindor Stick визначає лінійку шоколадного виробу; форму та начинку потрібно уточнити."
+  },
+  {
+    "source_name": "Lindt Lindor Taf.",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Lindt Mini Pralin.",
+    "product_family_id": "pralines",
+    "product_variant_id": null,
+    "brand": "Lindt",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magn. UtopiaD.Cherry255ml",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_cherry",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magnum",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Magnum",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magnum D.Hazelnut",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_hazelnut",
+    "brand": "Magnum",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magnum Double Che.",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Magnum",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Double Che. може означати cherry або chocolate; смак потребує уточнення."
+  },
+  {
+    "source_name": "Magnum Euphoria",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Magnum",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magnum La Pis",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Magnum",
+    "is_organic": null,
+    "status": "review",
+    "reason": "La Pis імовірно pistache; назву смаку потрібно підтвердити."
+  },
+  {
+    "source_name": "Magnum La Pistache",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_pistachio",
+    "brand": "Magnum",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Magnum LaPistacheEis270ml",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_pistachio",
+    "brand": "Magnum",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milka 81-100g",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Milka",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milka Großtafeln",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": "Milka",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milka Karamell",
+    "product_family_id": "chocolate",
+    "product_variant_id": "chocolate_caramel",
+    "brand": "Milka",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milka Mini Cones",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_mini_cones",
+    "brand": "Milka",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Milka Pralin.Stick",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Milka",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Milka Pralin.Stick може бути морозивом або шоколадним виробом; потрібна повна назва."
+  },
+  {
+    "source_name": "Milka V.&Ch.Swirl",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_vanilla_chocolate",
+    "brand": "Milka",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Moser Leckerbissen",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Moser",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Moser Leckerbissen не визначає форму та склад солодощів."
+  },
+  {
+    "source_name": "MR Schokolade",
+    "product_family_id": "chocolate",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nuii Cream White",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Nuii",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Cream White не визначає точний смак морозива."
+  },
+  {
+    "source_name": "Nuii Cream&Pistac.",
+    "product_family_id": "ice_cream",
+    "product_variant_id": "ice_cream_pistachio",
+    "brand": "Nuii",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nuii Eiscreme",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": "Nuii",
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Null Stieleis",
+    "product_family_id": "ice_cream",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Oetk.Göttersp.Ki.",
+    "product_family_id": "desserts",
+    "product_variant_id": "desserts_jelly",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Oetk.Kaltscha.Him.",
+    "product_family_id": "desserts",
+    "product_variant_id": "desserts_raspberry_cold_soup",
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "R.Mount.Marshmall.",
+    "product_family_id": "marshmallows",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": false,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Zetti Knusp.Flock.",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Zetti",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Knusp.Flock. вказує на хрусткі пластівці, але форма та склад солодощів не визначені."
+  },
+  {
+    "source_name": "8 pieces steam cleaner accessories for Kärcher SC1 SC2 SC3 SC4 SC5, hand steam cleaner, powerful cleaning brush, round brush, large, mouthpiece nozzle, power nozzles, for kitchen furniture, floor,",
+    "product_family_id": "cleaning_accessories",
+    "product_variant_id": "cleaning_accessories_steam_cleaner",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Alpecin Sens.Shampoo S1",
+    "product_family_id": "shampoo",
+    "product_variant_id": null,
+    "brand": "Alpecin",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Beauty",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Назва не дозволяє надійно визначити тип товару; потрібен перегляд чека або упаковки."
+  },
+  {
+    "source_name": "Christina Agull.Signat.EdP30ml",
+    "product_family_id": "perfume",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Dontodent Zahnseidesti",
+    "product_family_id": "dental_floss",
+    "product_variant_id": "dental_floss_picks",
+    "brand": "Dontodent",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Dr. Beckmann Deo",
+    "product_family_id": "cleaning_agents",
+    "product_variant_id": null,
+    "brand": "Dr. Beckmann",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Dr. Beckmann Deo може означати засіб проти плям дезодоранту; потрібна повна назва."
+  },
+  {
+    "source_name": "DWT SF Volumen Mega stark",
+    "product_family_id": "hair_styling",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "Скорочення DWT SF не визначає форму засобу для укладання."
+  },
+  {
+    "source_name": "Finish Caps",
+    "product_family_id": "dishwasher_detergent",
+    "product_variant_id": "dishwasher_detergent_capsules",
+    "brand": "Finish",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Finish MTR 2x250ml",
+    "product_family_id": "cleaning_agents",
+    "product_variant_id": null,
+    "brand": "Finish",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Finish MTR імовірно очищувач машини; форму та призначення слід звірити з упаковкою."
+  },
+  {
+    "source_name": "G&G Allzwecktüch.",
+    "product_family_id": "cleaning_accessories",
+    "product_variant_id": "cleaning_accessories_wipes",
+    "brand": "G&G",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Pow.Fettlöser",
+    "product_family_id": "cleaning_agents",
+    "product_variant_id": "cleaning_agents_degreaser",
+    "brand": "G&G",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "G&G Schwamm",
+    "product_family_id": "cleaning_accessories",
+    "product_variant_id": "cleaning_accessories_sponge",
+    "brand": "G&G",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Geoviizon Cleaning Solution Compatible with Ecovacs Deebot X8/X9/X11/T50/X5 Omni/X2 OMNI/T30S Combo / T30 (Pro) Omni/T20 OMNI/X1 OMNI/X1e OMNI/X1 TURBO/T10 TURBO Robot Vacuum Cleaner",
+    "product_family_id": "cleaning_agents",
+    "product_variant_id": "cleaning_agents_robot_floor",
+    "brand": "Geoviizon",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Glücksblatt HHP 3l",
+    "product_family_id": "paper_towels",
+    "product_variant_id": null,
+    "brand": "Glücksblatt",
+    "is_organic": null,
+    "status": "review",
+    "reason": "HHP 3l імовірно побутові паперові рушники; потрібне підтвердження."
+  },
+  {
+    "source_name": "Hair Rollers Set 50 Pieces, 24 Pieces 4 Sizes (60/48/36/25 mm) with 24 Stainless Steel Clips, Large Self-Adhesive, Hair Rollers, Hair Rollers with Clips for Long, Medium and Short Hair",
+    "product_family_id": "hair_accessories",
+    "product_variant_id": "hair_accessories_rollers",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "MAY Masc.Lash Sens.Intense bl.",
+    "product_family_id": "mascara",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Nivea Deo Roll-on",
+    "product_family_id": "deodorant",
+    "product_variant_id": "deodorant_roll_on",
+    "brand": "Nivea",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pack of 17 Accessories for Ecovacs Deebot X9 Pro Omni / X11 Pro Omni / T80S Omni Robot Vacuum Cleaner, 4 Vacuum Cleaner Bags, 4 Side Brushes, 4 Filters, 1 Main Brush, 2 Mop Rollers, 1 Cleaning Brush, 1 Screwdriver",
+    "product_family_id": "cleaning_accessories",
+    "product_variant_id": "cleaning_accessories_robot_vacuum",
+    "brand": null,
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Pantene Pro-V",
+    "product_family_id": null,
+    "product_variant_id": null,
+    "brand": "Pantene",
+    "is_organic": null,
+    "status": "review",
+    "reason": "Pantene Pro-V є назвою лінійки: це може бути шампунь, кондиціонер чи інший засіб."
+  },
+  {
+    "source_name": "Pantene Shampoo Rep.&Care",
+    "product_family_id": "shampoo",
+    "product_variant_id": null,
+    "brand": "Pantene",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Persil 4in1 Discs",
+    "product_family_id": "laundry_detergent",
+    "product_variant_id": "laundry_detergent_capsules",
+    "brand": "Persil",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Philips CA6704/10 Coffee Oil Remover, 6 Tablets for Philips, Saeco and Other Fully Automatic Coffee Machines",
+    "product_family_id": "cleaning_agents",
+    "product_variant_id": "cleaning_agents_coffee_oil_remover",
+    "brand": "Philips",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Rexona Deo Roll-On NP Bright B",
+    "product_family_id": "deodorant",
+    "product_variant_id": "deodorant_roll_on",
+    "brand": "Rexona",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Rexona Deo Roll-On NP Cott.Dry",
+    "product_family_id": "deodorant",
+    "product_variant_id": "deodorant_roll_on",
+    "brand": "Rexona",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "s.Oliver Life Time Wom.EdT30ml",
+    "product_family_id": "perfume",
+    "product_variant_id": null,
+    "brand": "s.Oliver",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "Somat4in1CapsExc.49ST",
+    "product_family_id": "dishwasher_detergent",
+    "product_variant_id": "dishwasher_detergent_capsules",
+    "brand": "Somat",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  },
+  {
+    "source_name": "topa 3lg. 10x220",
+    "product_family_id": "toilet_paper",
+    "product_variant_id": null,
+    "brand": null,
+    "is_organic": null,
+    "status": "review",
+    "reason": "topa імовірно Toilettenpapier; повна назва не вказана."
+  },
+  {
+    "source_name": "Zewa Wisch&Weg8x45",
+    "product_family_id": "paper_towels",
+    "product_variant_id": null,
+    "brand": "Zewa",
+    "is_organic": null,
+    "status": "ready",
+    "reason": null
+  }
+]
