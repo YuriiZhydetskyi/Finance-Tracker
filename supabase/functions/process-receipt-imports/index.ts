@@ -72,7 +72,7 @@ const fallback = new AnthropicProvider({
 type Job = { msg_id: number; read_count: number; import_file_id: string };
 type ImportFile = {
   id: string;
-  storage_path: string;
+  storage_path: string | null;
   mime_type: string;
   force_receipt: boolean;
   manual_json: unknown | null;
@@ -158,14 +158,20 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       .select('id, storage_path, mime_type, force_receipt, manual_json, parsed_json')
       .eq('id', job.import_file_id)
       .single();
-    if (fileError || !file?.storage_path) throw new Error('Import file metadata unavailable');
+    if (fileError || !file || (!file.storage_path && file.manual_json == null)) {
+      throw new Error('Import file metadata unavailable');
+    }
     const importFile = file as ImportFile;
     const manualSubmission = importFile.manual_json != null;
+    // Only a record created through create_manual_receipt_import_batch has no
+    // Storage file. That RPC is the explicit structured-order boundary; a
+    // file-backed JSON correction remains evidence-audited as a receipt.
+    const structuredPastedOrder = manualSubmission && !importFile.storage_path;
 
     const [documentResult, categoriesResult, productsResult] = await Promise.all([
       manualSubmission
         ? Promise.resolve({ data: null, error: null })
-        : db.storage.from(BUCKET).download(importFile.storage_path),
+        : db.storage.from(BUCKET).download(importFile.storage_path!),
       db.from('categories').select('name'),
       db.from('products').select('name').limit(50),
     ]);
@@ -268,7 +274,9 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     }
 
     const firstArithmetic = checkReceiptArithmetic(parsed);
-    const firstEvidence = auditReceiptEvidence(parsed);
+    const firstEvidence = auditReceiptEvidence(parsed, {
+      allowStructuredAmazonOrder: structuredPastedOrder,
+    });
     if (
       !manualSubmission &&
       !seed &&
@@ -287,7 +295,9 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       );
     }
 
-    const finalEvidence = auditReceiptEvidence(parsed);
+    const finalEvidence = auditReceiptEvidence(parsed, {
+      allowStructuredAmazonOrder: structuredPastedOrder,
+    });
     if (!finalEvidence.ok) {
       const message = joinReviewMessages(
         finalEvidence.issues[0]?.message ?? 'Не вдалося підтвердити рядки чека.',
@@ -320,9 +330,9 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
     }
 
     const fxRate = await getFxRate(parsed.currency, parsed.date);
-    const { data: signed } = await db.storage
-      .from(BUCKET)
-      .createSignedUrl(importFile.storage_path, 3600);
+    const signed = importFile.storage_path
+      ? (await db.storage.from(BUCKET).createSignedUrl(importFile.storage_path, 3600)).data
+      : null;
     const prepared = prepareReceipt(
       parsed,
       fxRate,
@@ -350,7 +360,10 @@ async function processJob(job: Job): Promise<{ id: string; status: string }> {
       return { id: importFile.id, status: 'needs_review' };
     }
 
-    const { data: finalResult, error: finalError } = await db.rpc('finalize_receipt_import', {
+    const finalizer = importFile.storage_path
+      ? 'finalize_receipt_import'
+      : 'finalize_pasted_json_import';
+    const { data: finalResult, error: finalError } = await db.rpc(finalizer, {
       p_file_id: importFile.id,
       p_msg_id: job.msg_id,
       p_receipt: prepared.value.receipt,

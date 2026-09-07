@@ -737,12 +737,26 @@ export type Database = {
           storage_path: string;
         }[];
       };
+      create_manual_receipt_import_batch: {
+        Args: { p_batch_id: string; p_paid_by: string; p_receipts: Json };
+        Returns: undefined;
+      };
       discard_receipt_import_file: {
         Args: { p_file_id: string };
         Returns: undefined;
       };
       expire_stale_receipt_import_uploads: { Args: never; Returns: number };
       finalize_receipt_import: {
+        Args: {
+          p_file_id: string;
+          p_items: Json;
+          p_msg_id: number;
+          p_parsed_json: Json;
+          p_receipt: Json;
+        };
+        Returns: Json;
+      };
+      finalize_pasted_json_import: {
         Args: {
           p_file_id: string;
           p_items: Json;
