@@ -1,12 +1,12 @@
 import { formatMoney } from '@/shared/utils/format-money';
 import type { StatsBreakdownRow } from '../category-details';
 
-type Props = {
+type Props = Readonly<{
   rows: StatsBreakdownRow[];
   total: number;
   label: string;
   onSelect?: (key: string) => void;
-};
+}>;
 
 const percent = new Intl.NumberFormat('uk-UA', { style: 'percent', maximumFractionDigits: 1 });
 

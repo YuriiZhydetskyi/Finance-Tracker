@@ -3,10 +3,10 @@ import { Bar } from 'react-chartjs-2';
 import './chart-setup';
 import type { StatsByCategoryRow } from '../api/stats.types';
 
-type Props = {
+type Props = Readonly<{
   rows: StatsByCategoryRow[];
   onSelect?: (category: string) => void;
-};
+}>;
 
 export function ByCategoryChart({ rows, onSelect }: Props) {
   const data = useMemo(
