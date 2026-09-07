@@ -119,6 +119,8 @@ function validateReceiptTotal(
     );
   }
 
+  if (options.validateTextEvidence === false) return;
+
   const totalRawText = record?.total_raw_text;
   if (options.requireEvidence && (typeof totalRawText !== 'string' || !totalRawText.trim())) {
     issues.push('Додай total_raw_text — дослівний рядок чека з фінальним підсумком.');
