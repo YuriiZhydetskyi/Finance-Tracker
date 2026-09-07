@@ -3,190 +3,124 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import {
-  useStatsByMonth,
   useStatsByCategory,
-  useStatsByUser,
+  useStatsByMonth,
   useStatsByStore,
+  useStatsByUser,
+  useStatsFilterOptions,
   useStatsSavingsByMonth,
+  useStatsWasteByMonth,
 } from './use-stats';
 
 type Row = Record<string, unknown>;
-type ChainResult = { data: Row[] | null; error: { message: string } | null };
+type RpcResult = { data: Row[] | null; error: { message: string } | null };
 
-const limitMock = vi.fn<(n: number) => Promise<ChainResult>>();
-const orderMock = vi.fn<(col: string, opts: unknown) => { limit: typeof limitMock }>();
-const selectMock = vi.fn<
-  (cols: string) => Promise<ChainResult> & {
-    order: typeof orderMock;
-    limit: typeof limitMock;
-  }
->();
-const fromMock = vi.fn<(table: string) => { select: typeof selectMock }>();
+const rpcMock = vi.fn<(name: string, args?: Record<string, unknown>) => Promise<RpcResult>>();
 
 vi.mock('@/shared/lib/supabase-client', () => ({
-  supabase: {
-    from: (table: string) => fromMock(table),
-  },
+  supabase: { rpc: (name: string, args?: Record<string, unknown>) => rpcMock(name, args) },
 }));
 
 beforeEach(() => {
-  fromMock.mockReset();
-  selectMock.mockReset();
-  orderMock.mockReset();
-  limitMock.mockReset();
-
-  // Default chain wiring: each builder returns the next link, terminal step
-  // resolves with whatever the test's `limitMock`/`selectMock` is set to.
-  fromMock.mockImplementation(() => ({ select: selectMock }));
+  rpcMock.mockReset();
 });
 
 function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
-describe('useStatsByMonth', () => {
-  it('queries v_stats_by_month, sorts month desc, limits, coerces numerics', async () => {
-    selectMock.mockReturnValue(
-      Object.assign(Promise.resolve({ data: [], error: null }), {
-        order: orderMock,
-        limit: limitMock,
+describe('period-aware stats queries', () => {
+  const range = { dateFrom: '2026-08-01', dateTo: '2026-08-31' };
+
+  it('passes the selected range to the monthly aggregate and coerces numeric values', async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ month: '2026-08', total_eur: '12.50', receipts_count: '3' }],
+      error: null,
+    });
+
+    const { result } = renderHook(
+      () => useStatsByMonth(range, { categories: ['Молочка'], stores: ['Lidl'] }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(rpcMock).toHaveBeenCalledWith('stats_by_month', {
+      p_date_from: '2026-08-01',
+      p_date_to: '2026-08-31',
+      p_categories: ['Молочка'],
+      p_stores: ['Lidl'],
+    });
+    expect(result.current.data).toEqual([{ month: '2026-08', total_eur: 12.5, receipts_count: 3 }]);
+  });
+
+  it('passes no dates for the all-time aggregate', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null });
+
+    const { result } = renderHook(() => useStatsByCategory({}, {}), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(rpcMock).toHaveBeenCalledWith('stats_by_category', {});
+  });
+
+  it('uses the same period for user, savings, waste, and store aggregates', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null });
+
+    const { result } = renderHook(
+      () => ({
+        user: useStatsByUser(range, {}),
+        savings: useStatsSavingsByMonth(range, {}),
+        waste: useStatsWasteByMonth(range, {}),
+        store: useStatsByStore(range, {}, 7),
       }),
+      { wrapper },
     );
-    orderMock.mockReturnValue({ limit: limitMock });
-    limitMock.mockResolvedValue({
-      data: [
-        { month: '2026-05', total_eur: '12.50', receipts_count: '3' },
-        { month: '2026-04', total_eur: 4, receipts_count: 1 },
-      ],
+
+    await waitFor(() => expect(result.current.store.isSuccess).toBe(true));
+
+    expect(rpcMock).toHaveBeenCalledWith('stats_by_user', {
+      p_date_from: '2026-08-01',
+      p_date_to: '2026-08-31',
+    });
+    expect(rpcMock).toHaveBeenCalledWith('stats_savings_by_month', {
+      p_date_from: '2026-08-01',
+      p_date_to: '2026-08-31',
+    });
+    expect(rpcMock).toHaveBeenCalledWith('stats_waste_by_month', {
+      p_date_from: '2026-08-01',
+      p_date_to: '2026-08-31',
+    });
+    expect(rpcMock).toHaveBeenCalledWith('stats_by_store', {
+      p_date_from: '2026-08-01',
+      p_date_to: '2026-08-31',
+      p_limit: 7,
+    });
+  });
+
+  it('surfaces database errors', async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { message: 'denied' } });
+
+    const { result } = renderHook(() => useStatsByMonth({}, {}), { wrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('loads all available categories and stores for the filter dropdowns', async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ categories: ['Молочка', 'Хліб'], stores: ['Aldi', 'Lidl'] }],
       error: null,
     });
 
-    const { result } = renderHook(() => useStatsByMonth(12), { wrapper });
+    const { result } = renderHook(() => useStatsFilterOptions(), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(rpcMock).toHaveBeenCalledWith('stats_filter_options', undefined);
+    expect(result.current.data).toEqual({
+      categories: ['Молочка', 'Хліб'],
+      stores: ['Aldi', 'Lidl'],
     });
-
-    expect(fromMock).toHaveBeenCalledWith('v_stats_by_month');
-    expect(orderMock).toHaveBeenCalledWith('month', { ascending: false });
-    expect(limitMock).toHaveBeenCalledWith(12);
-    expect(result.current.data).toEqual([
-      { month: '2026-05', total_eur: 12.5, receipts_count: 3 },
-      { month: '2026-04', total_eur: 4, receipts_count: 1 },
-    ]);
-  });
-
-  it('surfaces errors', async () => {
-    selectMock.mockReturnValue(
-      Object.assign(Promise.resolve({ data: null, error: { message: 'rls' } }), {
-        order: orderMock,
-        limit: limitMock,
-      }),
-    );
-    orderMock.mockReturnValue({ limit: limitMock });
-    limitMock.mockResolvedValue({ data: null, error: { message: 'denied' } });
-
-    const { result } = renderHook(() => useStatsByMonth(), { wrapper });
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
-  });
-});
-
-describe('useStatsByCategory', () => {
-  it('queries v_stats_by_category and coerces numerics', async () => {
-    selectMock.mockResolvedValue({
-      data: [
-        { category: 'Молочка', total_eur: '8.30', items_count: '5' },
-        { category: 'Pfand', total_eur: '-0.25', items_count: '1' },
-      ],
-      error: null,
-    });
-
-    const { result } = renderHook(() => useStatsByCategory(), { wrapper });
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(fromMock).toHaveBeenCalledWith('v_stats_by_category');
-    expect(result.current.data).toEqual([
-      { category: 'Молочка', total_eur: 8.3, items_count: 5 },
-      { category: 'Pfand', total_eur: -0.25, items_count: 1 },
-    ]);
-  });
-});
-
-describe('useStatsByUser', () => {
-  it('queries v_stats_by_user', async () => {
-    selectMock.mockResolvedValue({
-      data: [{ paid_by: 'you@example.com', total_eur: '50', receipts_count: '4' }],
-      error: null,
-    });
-
-    const { result } = renderHook(() => useStatsByUser(), { wrapper });
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(fromMock).toHaveBeenCalledWith('v_stats_by_user');
-    expect(result.current.data).toEqual([
-      { paid_by: 'you@example.com', total_eur: 50, receipts_count: 4 },
-    ]);
-  });
-});
-
-describe('useStatsSavingsByMonth', () => {
-  it('queries v_stats_savings_by_month, sorts month desc, limits, coerces numerics', async () => {
-    selectMock.mockReturnValue(
-      Object.assign(Promise.resolve({ data: [], error: null }), {
-        order: orderMock,
-        limit: limitMock,
-      }),
-    );
-    orderMock.mockReturnValue({ limit: limitMock });
-    limitMock.mockResolvedValue({
-      data: [
-        { month: '2026-05', savings_eur: '3.20', discounted_items_count: '2' },
-        { month: '2026-04', savings_eur: 1, discounted_items_count: 1 },
-      ],
-      error: null,
-    });
-
-    const { result } = renderHook(() => useStatsSavingsByMonth(12), { wrapper });
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(fromMock).toHaveBeenCalledWith('v_stats_savings_by_month');
-    expect(orderMock).toHaveBeenCalledWith('month', { ascending: false });
-    expect(limitMock).toHaveBeenCalledWith(12);
-    expect(result.current.data).toEqual([
-      { month: '2026-05', savings_eur: 3.2, discounted_items_count: 2 },
-      { month: '2026-04', savings_eur: 1, discounted_items_count: 1 },
-    ]);
-  });
-});
-
-describe('useStatsByStore', () => {
-  it('queries v_stats_by_store with limit', async () => {
-    selectMock.mockReturnValue(
-      Object.assign(Promise.resolve({ data: [], error: null }), {
-        limit: limitMock,
-      }) as never,
-    );
-    limitMock.mockResolvedValue({
-      data: [{ store: 'Lidl', total_eur: '20', receipts_count: '2' }],
-      error: null,
-    });
-
-    const { result } = renderHook(() => useStatsByStore(10), { wrapper });
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(fromMock).toHaveBeenCalledWith('v_stats_by_store');
-    expect(limitMock).toHaveBeenCalledWith(10);
-    expect(result.current.data).toEqual([{ store: 'Lidl', total_eur: 20, receipts_count: 2 }]);
   });
 });

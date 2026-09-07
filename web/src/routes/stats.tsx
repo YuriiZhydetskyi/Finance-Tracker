@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { RequireAuth } from '@/features/auth';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import {
@@ -9,17 +9,25 @@ import {
   ByStoreChart,
   ByUserChart,
   SavingsByMonthChart,
+  StatsFiltersPicker,
+  StatsPeriodPicker,
   WasteByMonthChart,
+  formatPeriodRange,
+  periodToDateRange,
   useStatsByCategory,
+  useStatsFilterOptions,
   useStatsByMonth,
   useStatsByStore,
   useStatsByUser,
   useStatsSavingsByMonth,
   useStatsWasteByMonth,
+  type StatsDateRange,
+  type StatsFilters,
 } from '@/features/stats';
 import { formatMoney } from '@/shared/utils/format-money';
 
 const StatsSearchSchema = z.object({}).optional();
+const EMPTY_FILTER_OPTIONS = { categories: [], stores: [] };
 
 export const Route = createFileRoute('/stats')({
   component: StatsPage,
@@ -58,14 +66,23 @@ function ChartState({
   isError,
   error,
   isEmpty,
+  isPeriodIncomplete,
   children,
 }: {
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
   isEmpty: boolean;
+  isPeriodIncomplete?: boolean;
   children: ReactNode;
 }) {
+  if (isPeriodIncomplete) {
+    return (
+      <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
+        Вкажіть початок і кінець свого періоду.
+      </div>
+    );
+  }
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-slate-500">
@@ -91,12 +108,21 @@ function ChartState({
 }
 
 function StatsDashboard() {
-  const monthQuery = useStatsByMonth(12);
-  const categoryQuery = useStatsByCategory();
-  const userQuery = useStatsByUser();
-  const storeQuery = useStatsByStore(10);
-  const savingsQuery = useStatsSavingsByMonth(12);
-  const wasteQuery = useStatsWasteByMonth(12);
+  const [dateRange, setDateRange] = useState<StatsDateRange | null>(() =>
+    periodToDateRange('last-3-months'),
+  );
+  const [filters, setFilters] = useState<StatsFilters>({});
+  const periodReady = dateRange !== null;
+  const queryRange = dateRange ?? {};
+  const queryOptions = { enabled: periodReady };
+  const filterOptionsQuery = useStatsFilterOptions();
+  const monthQuery = useStatsByMonth(queryRange, filters, queryOptions);
+  const categoryQuery = useStatsByCategory(queryRange, filters, queryOptions);
+  const userQuery = useStatsByUser(queryRange, filters, queryOptions);
+  const storeQuery = useStatsByStore(queryRange, filters, 10, queryOptions);
+  const savingsQuery = useStatsSavingsByMonth(queryRange, filters, queryOptions);
+  const wasteQuery = useStatsWasteByMonth(queryRange, filters, queryOptions);
+  const periodLabel = dateRange ? formatPeriodRange(dateRange) : 'Оберіть початок і кінець';
 
   const savingsRows = savingsQuery.data ?? [];
   const totalSaved = savingsRows.reduce((acc, r) => acc + r.savings_eur, 0);
@@ -110,21 +136,30 @@ function StatsDashboard() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Статистика</h1>
-        <p className="text-sm text-slate-600">Усі суми у EUR. Дані оновлюються при перезаході.</p>
+        <p className="text-sm text-slate-600">Усі суми у EUR.</p>
       </div>
+
+      <StatsPeriodPicker onChange={setDateRange} />
+      <StatsFiltersPicker
+        options={filterOptionsQuery.data ?? EMPTY_FILTER_OPTIONS}
+        isLoading={filterOptionsQuery.isLoading}
+        onChange={setFilters}
+      />
 
       <section className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-emerald-900">Заощаджено на знижках</h2>
             <p className="text-xs text-emerald-700">
-              {savingsQuery.isLoading
-                ? 'Завантажую...'
-                : `Сума знижок по всіх позиціях за останні 12 місяців · ${String(totalDiscountedItems)} позицій зі знижкою`}
+              {!periodReady
+                ? 'Вкажіть початок і кінець свого періоду'
+                : savingsQuery.isLoading
+                  ? 'Завантажую...'
+                  : `Сума знижок по всіх позиціях · ${String(totalDiscountedItems)} позицій зі знижкою`}
             </p>
           </div>
           <span className="text-3xl font-semibold tabular-nums text-emerald-900">
-            {savingsQuery.isLoading ? '—' : formatMoney(totalSaved, 'EUR')}
+            {!periodReady || savingsQuery.isLoading ? '—' : formatMoney(totalSaved, 'EUR')}
           </span>
         </div>
       </section>
@@ -134,79 +169,95 @@ function StatsDashboard() {
           <div>
             <h2 className="text-sm font-semibold text-red-900">Викинули</h2>
             <p className="text-xs text-red-700">
-              {wasteQuery.isLoading
-                ? 'Завантажую...'
-                : `Сума зіпсованого за останні 12 місяців · ${String(totalWastedItems)} позицій`}
+              {!periodReady
+                ? 'Вкажіть початок і кінець свого періоду'
+                : wasteQuery.isLoading
+                  ? 'Завантажую...'
+                  : `Сума зіпсованого · ${String(totalWastedItems)} позицій`}
             </p>
           </div>
           <span className="text-3xl font-semibold tabular-nums text-red-900">
-            {wasteQuery.isLoading ? '—' : formatMoney(totalWasted, 'EUR')}
+            {!periodReady || wasteQuery.isLoading ? '—' : formatMoney(totalWasted, 'EUR')}
           </span>
         </div>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="По місяцях" subtitle="Останні 12 місяців">
+        <Section title="По місяцях" subtitle={periodLabel}>
           <ChartState
             isLoading={monthQuery.isLoading}
             isError={monthQuery.isError}
             error={monthQuery.error}
             isEmpty={monthQuery.isSuccess && monthQuery.data.length === 0}
+            isPeriodIncomplete={!periodReady}
           >
             <ByMonthChart rows={monthQuery.data ?? []} />
           </ChartState>
         </Section>
 
-        <Section title="Заощаджено по місяцях" subtitle="Сума знижок по позиціях у EUR">
+        <Section title="Заощаджено по місяцях" subtitle={`Сума знижок у EUR · ${periodLabel}`}>
           <ChartState
             isLoading={savingsQuery.isLoading}
             isError={savingsQuery.isError}
             error={savingsQuery.error}
             isEmpty={savingsQuery.isSuccess && savingsRows.length === 0}
+            isPeriodIncomplete={!periodReady}
           >
             <SavingsByMonthChart rows={savingsRows} />
           </ChartState>
         </Section>
 
-        <Section title="Викинули по місяцях" subtitle="Сума зіпсованого у EUR">
+        <Section title="Викинули по місяцях" subtitle={`Сума зіпсованого у EUR · ${periodLabel}`}>
           <ChartState
             isLoading={wasteQuery.isLoading}
             isError={wasteQuery.isError}
             error={wasteQuery.error}
             isEmpty={wasteQuery.isSuccess && wasteRows.length === 0}
+            isPeriodIncomplete={!periodReady}
           >
             <WasteByMonthChart rows={wasteRows} />
           </ChartState>
         </Section>
 
-        <Section title="По користувачах" subtitle="Хто скільки сплатив (paid_by)">
+        <Section title="По користувачах" subtitle={`Хто скільки сплатив · ${periodLabel}`}>
           <ChartState
             isLoading={userQuery.isLoading}
             isError={userQuery.isError}
             error={userQuery.error}
             isEmpty={userQuery.isSuccess && userQuery.data.length === 0}
+            isPeriodIncomplete={!periodReady}
           >
             <ByUserChart rows={userQuery.data ?? []} />
           </ChartState>
         </Section>
 
-        <Section title="По категоріях" subtitle="Сума за товарними позиціями" height="h-96">
+        <Section
+          title="По категоріях"
+          subtitle={`Сума за товарними позиціями · ${periodLabel}`}
+          height="h-96"
+        >
           <ChartState
             isLoading={categoryQuery.isLoading}
             isError={categoryQuery.isError}
             error={categoryQuery.error}
             isEmpty={categoryQuery.isSuccess && categoryQuery.data.length === 0}
+            isPeriodIncomplete={!periodReady}
           >
             <ByCategoryChart rows={categoryQuery.data ?? []} />
           </ChartState>
         </Section>
 
-        <Section title="По магазинах" subtitle="Топ-10 за загальною сумою" height="h-96">
+        <Section
+          title="По магазинах"
+          subtitle={`Топ-10 за загальною сумою · ${periodLabel}`}
+          height="h-96"
+        >
           <ChartState
             isLoading={storeQuery.isLoading}
             isError={storeQuery.isError}
             error={storeQuery.error}
             isEmpty={storeQuery.isSuccess && storeQuery.data.length === 0}
+            isPeriodIncomplete={!periodReady}
           >
             <ByStoreChart rows={storeQuery.data ?? []} />
           </ChartState>

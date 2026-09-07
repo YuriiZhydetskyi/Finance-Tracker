@@ -1,8 +1,21 @@
-// Row shapes returned by the v_stats_* views (see migration 20260507000003).
-// These are not (yet) auto-included in database.types.ts because they were
-// added after the last `supabase gen types`. Until that runs again, hooks cast
-// row results to these types — Postgres-side numerics arrive as `string` over
-// the JSON wire, so we coerce to number at the hook boundary.
+// Row shapes returned by the date-aware stats functions. Postgres-side
+// numerics can arrive as strings over the JSON wire, so hooks coerce them at
+// the boundary before exposing chart data.
+
+export type StatsDateRange = {
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export type StatsFilters = {
+  categories?: string[];
+  stores?: string[];
+};
+
+export type StatsFilterOptions = {
+  categories: string[];
+  stores: string[];
+};
 
 export type StatsByMonthRow = {
   month: string; // 'YYYY-MM'

@@ -6,10 +6,13 @@ export { ByUserChart } from './components/ByUserChart';
 export { ByStoreChart } from './components/ByStoreChart';
 export { SavingsByMonthChart } from './components/SavingsByMonthChart';
 export { WasteByMonthChart } from './components/WasteByMonthChart';
+export { StatsPeriodPicker } from './components/StatsPeriodPicker';
+export { StatsFiltersPicker } from './components/StatsFiltersPicker';
 
 export {
   useStatsByMonth,
   useStatsByCategory,
+  useStatsFilterOptions,
   useStatsByUser,
   useStatsByStore,
   useStatsSavingsByMonth,
@@ -20,6 +23,7 @@ export {
   statsByStoreQueryKey,
   statsSavingsByMonthQueryKey,
   wasteByMonthQueryKey,
+  statsFilterOptionsQueryKey,
 } from './api/use-stats';
 
 export type {
@@ -29,4 +33,7 @@ export type {
   StatsByStoreRow,
   StatsSavingsByMonthRow,
   StatsWasteByMonthRow,
+  StatsDateRange,
+  StatsFilters,
 } from './api/stats.types';
+export { formatPeriodRange, periodToDateRange } from './stats-period';
