@@ -13,7 +13,8 @@ import {
   StatsPeriodPicker,
   WasteByMonthChart,
   formatPeriodRange,
-  periodToDateRange,
+  loadStatsDateRange,
+  loadStatsFilters,
   useStatsByCategory,
   useStatsFilterOptions,
   useStatsByMonth,
@@ -108,10 +109,8 @@ function ChartState({
 }
 
 function StatsDashboard() {
-  const [dateRange, setDateRange] = useState<StatsDateRange | null>(() =>
-    periodToDateRange('last-3-months'),
-  );
-  const [filters, setFilters] = useState<StatsFilters>({});
+  const [dateRange, setDateRange] = useState<StatsDateRange | null>(loadStatsDateRange);
+  const [filters, setFilters] = useState<StatsFilters>(loadStatsFilters);
   const periodReady = dateRange !== null;
   const queryRange = dateRange ?? {};
   const queryOptions = { enabled: periodReady };
@@ -140,6 +139,9 @@ function StatsDashboard() {
       </div>
 
       <StatsPeriodPicker onChange={setDateRange} />
+      {filterOptionsQuery.isError ? (
+        <ErrorDetails error={filterOptionsQuery.error} label="Не вдалося завантажити фільтри" />
+      ) : null}
       <StatsFiltersPicker
         options={filterOptionsQuery.data ?? EMPTY_FILTER_OPTIONS}
         isLoading={filterOptionsQuery.isLoading}

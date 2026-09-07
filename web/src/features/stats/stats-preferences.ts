@@ -1,12 +1,18 @@
-import { STATS_PERIODS, type StatsPeriod } from './stats-period';
+import type { StatsDateRange, StatsFilters } from './api/stats.types';
+import {
+  STATS_PERIODS,
+  isValidCustomRange,
+  periodToDateRange,
+  type StatsPeriod,
+} from './stats-period';
 
 const STORAGE_KEY = 'finance-tracker.stats-preferences.v1';
 
 type StatsPreferences = {
   period?: StatsPeriod;
   customRange?: { dateFrom: string; dateTo: string };
-  categories?: string[];
-  stores?: string[];
+  categories?: string[] | undefined;
+  stores?: string[] | undefined;
 };
 
 function isStringArray(value: unknown): value is string[] {
@@ -47,6 +53,24 @@ export function loadStatsPreferences(): StatsPreferences {
 
 export function saveStatsPreferences(update: StatsPreferences): void {
   if (typeof window === 'undefined') return;
-  const next = { ...loadStatsPreferences(), ...update };
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  try {
+    const next = { ...loadStatsPreferences(), ...update };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Storage may be blocked or full; filters must still work for this visit.
+  }
+}
+
+export function loadStatsFilters(): StatsFilters {
+  const saved = loadStatsPreferences();
+  return {
+    ...(saved.categories ? { categories: saved.categories } : {}),
+    ...(saved.stores ? { stores: saved.stores } : {}),
+  };
+}
+
+export function loadStatsDateRange(): StatsDateRange | null {
+  const saved = loadStatsPreferences();
+  if (saved.period !== 'custom') return periodToDateRange(saved.period ?? 'last-3-months');
+  return saved.customRange && isValidCustomRange(saved.customRange) ? saved.customRange : null;
 }

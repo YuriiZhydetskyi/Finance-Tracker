@@ -29,6 +29,13 @@ describe('periodToDateRange', () => {
       dateTo: '2026-03-31',
     });
   });
+
+  it('counts seven calendar dates across the spring daylight-saving transition', () => {
+    expect(periodToDateRange('last-week', new Date(2026, 2, 30, 0, 30))).toEqual({
+      dateFrom: '2026-03-24',
+      dateTo: '2026-03-30',
+    });
+  });
 });
 
 describe('isValidCustomRange', () => {
@@ -36,4 +43,11 @@ describe('isValidCustomRange', () => {
     expect(isValidCustomRange({ dateFrom: '2026-08-01', dateTo: '2026-08-01' })).toBe(true);
     expect(isValidCustomRange({ dateFrom: '2026-08-02', dateTo: '2026-08-01' })).toBe(false);
   });
+
+  it.each(['', 'invalid', '2026-02-30', '2026-13-01'])(
+    'rejects invalid saved dates: %s',
+    (dateFrom) => {
+      expect(isValidCustomRange({ dateFrom, dateTo: '2026-12-31' })).toBe(false);
+    },
+  );
 });

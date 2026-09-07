@@ -10,8 +10,6 @@ export const STATS_PERIODS = [
 
 export type StatsPeriod = (typeof STATS_PERIODS)[number];
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 function toIsoDate(date: Date): string {
   const year = String(date.getFullYear());
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -40,12 +38,20 @@ export function periodToDateRange(
     case 'last-month':
       return { dateFrom: toIsoDate(subtractCalendarMonths(today, 1)), dateTo };
     case 'last-week':
-      return { dateFrom: toIsoDate(new Date(today.getTime() - 6 * MS_PER_DAY)), dateTo };
+      return {
+        dateFrom: toIsoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6)),
+        dateTo,
+      };
   }
 }
 
 export function isValidCustomRange(range: Required<StatsDateRange>): boolean {
-  return range.dateFrom <= range.dateTo;
+  const isValidDate = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T12:00:00`);
+    return !Number.isNaN(date.getTime()) && toIsoDate(date) === value;
+  };
+  return isValidDate(range.dateFrom) && isValidDate(range.dateTo) && range.dateFrom <= range.dateTo;
 }
 
 export function formatPeriodRange(range: StatsDateRange): string {
