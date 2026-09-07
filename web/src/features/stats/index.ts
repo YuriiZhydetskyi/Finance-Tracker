@@ -8,6 +8,9 @@ export { SavingsByMonthChart } from './components/SavingsByMonthChart';
 export { WasteByMonthChart } from './components/WasteByMonthChart';
 export { StatsPeriodPicker } from './components/StatsPeriodPicker';
 export { StatsFiltersPicker } from './components/StatsFiltersPicker';
+export { StatsCategoryDetails } from './components/StatsCategoryDetails';
+export { StatsBreakdown } from './components/StatsBreakdown';
+export { groupCategoryStats, type StatsSelection } from './category-details';
 
 export {
   useStatsByMonth,
