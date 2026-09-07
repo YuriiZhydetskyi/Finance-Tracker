@@ -12,7 +12,7 @@ async function fetchCategoryDetailsPage(
   let query = supabase
     .from('items')
     .select(
-      'id, receipt_id, category, total_eur, product_family_id, family:product_families!items_product_family_id_fkey(name_uk), receipt:receipts!inner(date, store)',
+      'id, receipt_id, category, product_name, total_eur, product_family_id, family:product_families!items_product_family_id_fkey(name_uk), receipt:receipts!inner(date, store)',
     )
     .order('id')
     .limit(500);

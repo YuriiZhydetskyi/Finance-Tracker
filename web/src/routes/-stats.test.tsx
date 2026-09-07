@@ -28,6 +28,7 @@ function detailItem(
     receipt_id,
     total_eur: 10,
     category,
+    product_name: familyName ?? `Товар ${id}`,
     product_family_id,
     family: familyName ? { name_uk: familyName } : null,
     receipt: { date, store },
@@ -182,6 +183,9 @@ describe('saved statistics filters on page load', () => {
     expect(within(familyTable).queryByText('Без визначеного сімейства')).not.toBeInTheDocument();
     expect(
       within(screen.getByRole('table', { name: 'Магазин' })).getByText('REWE'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table', { name: 'Товар' })).getByText('Помідори'),
     ).toBeInTheDocument();
     expect(detailMock).toHaveBeenLastCalledWith(
       { dateFrom: '2026-08-01', dateTo: '2026-08-31' },
