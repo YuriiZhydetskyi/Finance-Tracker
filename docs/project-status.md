@@ -9,12 +9,20 @@ family/variant довідники, catalog attributes `brand`/`is_organic`, purc
 snapshot на `items` і RPC пошуку списань. Деталі рішення —
 [ADR-0025](decisions/0025-multilingual-product-taxonomy.md).
 
-Наступна migration `20260908083827_product_taxonomy_historical_backfill.sql` є
-**лише локально підготовленим** консервативним backfill: вона оновлює тільки
-порожні taxonomy/metadata поля за exact normalized-name match і не замінює
-ручні дані. Згенерований review snapshot містить 591 approved assignments, 42
-позиції для ручного рішення та 19 виключених службових рядків; це не live count.
-Backfill не застосовано й не можна застосовувати без окремого явного дозволу.
+Migration `20260908083827_product_taxonomy_historical_backfill.sql` ще не
+застосовано. Після зупиненого першого запуску її recovery-версія зафіксувала
+fresh snapshot: 622 Product і 1 112 Item, що належать 591 approved
+класифікації. Вона оновлює лише ці ID, перед записом перевіряє весь очікуваний
+стан та відкотиться при ручній зміні або появі неочікуваного catalog. Це
+вузький виняток із правила незмінності migration: попередній SQL не ввійшов у
+remote history і його транзакція повністю відкотилася.
+
+Перед release запусти `node scripts/product-taxonomy/verify-historical-backfill.mjs`
+та `node scripts/product-taxonomy/test-backfill-rollback.mjs`. Другий сценарій
+виконує повну SQL migration, intentional drift і неправильний variant лише в
+rollback-транзакціях. 42 позиції для ручного рішення та 19 виключених службових
+рядків не входять до frozen scope. Застосування потребує окремо підтвердженого
+`npx supabase db push --linked` після green PR.
 
 **Уточнення щодо статистики (2026-09-07):** `/stats` має вибір усього часу,
 останніх 3 місяців (типово), місяця, тижня та власного включного діапазону дат

@@ -1,0 +1,4143 @@
+{
+  "schema_version": 1,
+  "description": "Approved taxonomy payload only; no receipt, product, or item identifiers.",
+  "entries": [
+    {
+      "normalized_name": "0,2 coca cola zer",
+      "family_id": "cola",
+      "variant_id": "coca_cola_zero",
+      "brand": "Coca-Cola",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "150 x 80 cm large parasol car, car sun protection windscreen foldable uv protection parasol for the windscreen for most cars",
+      "family_id": "car_accessory",
+      "variant_id": "windscreen_sunshade",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "16 pieces wooden puzzles for children - boys and girls 1, 2 and 3 years, ideal as birthday and nursery gift, montessori educational toy, original gifts, animal wooden puzzles (16 puzzles)",
+      "family_id": "toy",
+      "variant_id": "wooden_animal_puzzle",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "229496 plattnektarine500g",
+      "family_id": "nectarine",
+      "variant_id": "flat_nectarine",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "231292 frühkart.vwfk2.5kg",
+      "family_id": "potato",
+      "variant_id": "early_waxy_potato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "2e kiwis gold",
+      "family_id": "kiwi",
+      "variant_id": "gold_kiwi",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "309604 cocktailtom. 500g",
+      "family_id": "tomato",
+      "variant_id": "cocktail_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "46pcs kids knife set for real cooking: montessori kitchen tools for toddlers, kitchen toy for 3 4 5 6 7 8 9 10 year old boys girls birthday gifts",
+      "family_id": "toy_kitchen_set",
+      "variant_id": "children_knife_set",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "8 pieces steam cleaner accessories for kärcher sc1 sc2 sc3 sc4 sc5, hand steam cleaner, powerful cleaning brush, round brush, large, mouthpiece nozzle, power nozzles, for kitchen furniture, floor,",
+      "family_id": "steam_cleaner_accessory",
+      "variant_id": "steam_cleaner_brush_set",
+      "brand": "Kärcher",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "aepfel 2kg vke qs",
+      "family_id": "apple",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "aji-no-moto - monosodium glutamate (1 x 1 kg)",
+      "family_id": "flavour_enhancer",
+      "variant_id": "monosodium_glutamate",
+      "brand": "Aji-No-Moto",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "albi birnensaft 1l",
+      "family_id": "fruit_juice",
+      "variant_id": "pear_juice",
+      "brand": "albi",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "albi mutlivitam.1l",
+      "family_id": "fruit_juice",
+      "variant_id": "multivitamin_juice",
+      "brand": "albi",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "albi pink grape.1l",
+      "family_id": "fruit_juice",
+      "variant_id": "pink_grapefruit_juice",
+      "brand": "albi",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "alpecin sens.shampoo s1",
+      "family_id": "hair_care",
+      "variant_id": "shampoo",
+      "brand": "Alpecin",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "alpro bar.drink 1l",
+      "family_id": "plant_based_drink",
+      "variant_id": "barista_plant_drink",
+      "brand": "Alpro",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "alpro mandeldrink",
+      "family_id": "plant_based_drink",
+      "variant_id": "almond_drink",
+      "brand": "Alpro",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "alpro soya drink",
+      "family_id": "plant_based_drink",
+      "variant_id": "soy_drink",
+      "brand": "Alpro",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "alpro soya drink1l",
+      "family_id": "plant_based_drink",
+      "variant_id": "soy_drink",
+      "brand": "Alpro",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "amarena kirsch",
+      "family_id": "cherry",
+      "variant_id": "amarena_cherry",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "amecke apf.birne1l",
+      "family_id": "fruit_juice",
+      "variant_id": "apple_pear_juice",
+      "brand": "Amecke",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "amecke apf.birneli",
+      "family_id": "fruit_juice",
+      "variant_id": "apple_pear_juice",
+      "brand": "Amecke",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "ananas mini-pack",
+      "family_id": "pineapple",
+      "variant_id": "mini_pineapple",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "ananas scheiben",
+      "family_id": "pineapple",
+      "variant_id": "pineapple_slices",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "anker 100 w usb c charger, laptop charger, compact 3-port gan wall charger, smart display, touch control, for macbook, ipad, iphone 17/16/15 series (usb-c cable included)",
+      "family_id": "electronics_accessory",
+      "variant_id": "usb_c_wall_charger",
+      "brand": "Anker",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "anker zolo 50 w usb c charger, 4-port power supply with 2 usb-c and 2 usb-a, compact fast charger for iphone 17 pro max/16/15/14/13 series, ipad, pixel, galaxy, macbook (without cable)",
+      "family_id": "electronics_accessory",
+      "variant_id": "usb_multiport_charger",
+      "brand": "Anker",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "anker zolo powerbank (2025 upgrade), 20000 mah, 30 w high-speed charger with integrated usb-c cable, battery pack for iphone 17/16/15 series, galaxy and more",
+      "family_id": "electronics_accessory",
+      "variant_id": "power_bank",
+      "brand": "Anker",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "apfel pink lady",
+      "family_id": "apple",
+      "variant_id": "pink_lady_apple",
+      "brand": "Pink Lady",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "apfel rot",
+      "family_id": "apple",
+      "variant_id": "red_apple",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "äpfel rot",
+      "family_id": "apple",
+      "variant_id": "red_apple",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "apfeldirektsaft 1l",
+      "family_id": "fruit_juice",
+      "variant_id": "apple_direct_juice",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "apfelsaft 1,5l",
+      "family_id": "fruit_juice",
+      "variant_id": "apple_juice",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "apple 13 inch macbook air laptop, m5 chip with 10-core cpu and 8-core gpu: designed for ai, 13.6-inch liquid retina display, 16gb shared memory, 512gb ssd, touch id, wifi 7; midnight",
+      "family_id": "laptop",
+      "variant_id": "macbook_air_13_m5",
+      "brand": "Apple",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "aprikosen prem los",
+      "family_id": "apricot",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "arctic 4-pin pwm fan splitter cable, pst splitter cable for 4 fans",
+      "family_id": "computer_accessory",
+      "variant_id": "pwm_fan_splitter_cable",
+      "brand": "ARCTIC",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "assurant 2 year accident and theft protection for one laptop from €950 to €999.99",
+      "family_id": "device_protection_plan",
+      "variant_id": "laptop_accident_theft_plan",
+      "brand": "Assurant",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "assurant 3 year warranty extension for one monitor from €500 to €549.99",
+      "family_id": "device_protection_plan",
+      "variant_id": "monitor_warranty_extension",
+      "brand": "Assurant",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "avanc.servietten",
+      "family_id": "paper_household_goods",
+      "variant_id": "paper_napkins",
+      "brand": "AvanC",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "avocado stk",
+      "family_id": "avocado",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bananalu silky gloss elastic 20 denier women's tights multifibra, nero",
+      "family_id": "hosiery",
+      "variant_id": "women_tights",
+      "brand": "BANANALU",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "bananen",
+      "family_id": "banana",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bananen bio",
+      "family_id": "banana",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bananen fairtrade",
+      "family_id": "banana",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bananen rfa",
+      "family_id": "banana",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bärenm.fr.milch",
+      "family_id": "cow_milk",
+      "variant_id": "fresh_milk",
+      "brand": "Bärenmarke",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "barilla penne",
+      "family_id": "pasta",
+      "variant_id": "penne",
+      "brand": "Barilla",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "barilla pesto",
+      "family_id": "pesto",
+      "variant_id": null,
+      "brand": "Barilla",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "barilla spaghetti",
+      "family_id": "pasta",
+      "variant_id": "spaghetti",
+      "brand": "Barilla",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "barts men's mr. mitchell newspaper cap 0019-dark grey, 56, m",
+      "family_id": "headwear",
+      "variant_id": "newsboy_cap",
+      "brand": "Barts",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "barts mens mr. mitchell funky style adjustable newsboy flat cap hat",
+      "family_id": "headwear",
+      "variant_id": "newsboy_cap",
+      "brand": "Barts",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "basilikum bio",
+      "family_id": "basil",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "basmati reis",
+      "family_id": "rice",
+      "variant_id": "basmati_rice",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bavaria blu käse",
+      "family_id": "blue_cheese",
+      "variant_id": "bavaria_blu",
+      "brand": "Bavaria Blu",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bbq grillkaese",
+      "family_id": "grilling_cheese",
+      "variant_id": "bbq_grilling_cheese",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bbq grillkäse",
+      "family_id": "grilling_cheese",
+      "variant_id": "bbq_grilling_cheese",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "be quiet! power zone 2 750w pc power supply, 80 plus and cybenetics platinum",
+      "family_id": "computer_component",
+      "variant_id": "pc_power_supply",
+      "brand": "be quiet!",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "beilagen-pommes",
+      "family_id": "prepared_potato",
+      "variant_id": "french_fries",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bened.weiz.af 0,5l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "non_alcoholic_wheat_beer",
+      "brand": "Benediktiner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bio al.haferflock.",
+      "family_id": "oatmeal",
+      "variant_id": null,
+      "brand": "Alnatura",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio alna.speisequ.",
+      "family_id": "quark",
+      "variant_id": null,
+      "brand": "Alnatura",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio auberginen",
+      "family_id": "eggplant",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio e.forellenfil.",
+      "family_id": "trout",
+      "variant_id": "trout_fillet",
+      "brand": "EDEKA",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio e.hähn.lyoner",
+      "family_id": "poultry_sausage",
+      "variant_id": "chicken_lyoner",
+      "brand": "EDEKA",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio e.hu.hahn eier",
+      "family_id": "chicken_egg",
+      "variant_id": null,
+      "brand": "EDEKA",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio e.speiseq",
+      "family_id": "quark",
+      "variant_id": null,
+      "brand": "EDEKA",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio edeka bananen",
+      "family_id": "banana",
+      "variant_id": null,
+      "brand": "EDEKA",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio el or.chips",
+      "family_id": "snack_chips",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio honig dostersp",
+      "family_id": "honey",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio hummus 175g",
+      "family_id": "hummus",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio knusperriegel",
+      "family_id": "cereal_bar",
+      "variant_id": "crunchy_cereal_bar",
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio koro erdnu.mus",
+      "family_id": "nut_butter",
+      "variant_id": "peanut_butter",
+      "brand": "KoRo",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio lehnertz eier",
+      "family_id": "chicken_egg",
+      "variant_id": null,
+      "brand": "Lehnertz",
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio ml gartenkress",
+      "family_id": "garden_cress",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio nl kochschink.",
+      "family_id": "ham",
+      "variant_id": "cooked_ham",
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio pnl frimil.3,8",
+      "family_id": "cow_milk",
+      "variant_id": "fresh_milk_3_8",
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio pnl quark 250g",
+      "family_id": "quark",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio-schweinefilet",
+      "family_id": "pork",
+      "variant_id": "pork_tenderloin",
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bio-zucchini 500g",
+      "family_id": "zucchini",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "bioe zwiebeln",
+      "family_id": "onion",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "biol.topfk.basilikum",
+      "family_id": "basil",
+      "variant_id": "potted_basil",
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "birne abate lose",
+      "family_id": "pear",
+      "variant_id": "abate_pear",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "birnen",
+      "family_id": "pear",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bitburger0,0 330ml",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "bitburger_0_0",
+      "brand": "Bitburger",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bond.salatmi.ital.",
+      "family_id": "prepared_salad",
+      "variant_id": "italian_salad_mix",
+      "brand": "Bonduelle",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "brat u.grillkaese",
+      "family_id": "grilling_cheese",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "bretteljause",
+      "family_id": "cold_cut_platter",
+      "variant_id": "bretteljause",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "brie 200g",
+      "family_id": "brie_cheese",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "brie minitorte",
+      "family_id": "brie_cheese",
+      "variant_id": "brie_mini_cake",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "brokkoli 500g",
+      "family_id": "broccoli",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "brombeeren",
+      "family_id": "blackberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "brombeeren 125g",
+      "family_id": "blackberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "brugge alt",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "brugge_alt",
+      "brand": "Brugge",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "buffalm. minis 150",
+      "family_id": "mozzarella",
+      "variant_id": "buffalo_mozzarella_mini",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "burrata 125g",
+      "family_id": "burrata",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "buttercroissant",
+      "family_id": "croissant",
+      "variant_id": "butter_croissant",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "buttercroissant 3 für 1€",
+      "family_id": "croissant",
+      "variant_id": "butter_croissant",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "butterwaffeln6x40g",
+      "family_id": "waffle",
+      "variant_id": "butter_waffle",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "c&w erd.jog.kuchen",
+      "family_id": "cake",
+      "variant_id": "strawberry_yogurt_cake",
+      "brand": "Coppenrath & Wiese",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "c&w lem.cheesecake",
+      "family_id": "cheesecake",
+      "variant_id": "lemon_cheesecake",
+      "brand": "Coppenrath & Wiese",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "camemb l aromatiqu",
+      "family_id": "camembert",
+      "variant_id": "aromatique_camembert",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "captains of crush grip trainer",
+      "family_id": "fitness_equipment",
+      "variant_id": "hand_grip_trainer",
+      "brand": "Captains of Crush",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "cashews",
+      "family_id": "cashew",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cast.ricotta",
+      "family_id": "ricotta",
+      "variant_id": null,
+      "brand": "Castelli",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cc zero ew 1,5",
+      "family_id": "cola",
+      "variant_id": "coca_cola_zero",
+      "brand": "Coca-Cola",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cerave feuchtigkeitscreme",
+      "family_id": "skin_care",
+      "variant_id": "moisturizer",
+      "brand": "CeraVe",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "chaumes klassik",
+      "family_id": "soft_cheese",
+      "variant_id": "chaumes_klassik",
+      "brand": "Chaumes",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cheeseburger",
+      "family_id": "burger",
+      "variant_id": "cheeseburger",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cherryrispentomate",
+      "family_id": "tomato",
+      "variant_id": "cherry_vine_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cherryromatomate",
+      "family_id": "tomato",
+      "variant_id": "cherry_roma_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "christina agull.signat.edp30ml",
+      "family_id": "fragrance",
+      "variant_id": "eau_de_parfum",
+      "brand": "Christina Aguilera",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "closemate 6 pairs bamboo socks men women 39-42 43-46, thin sneaker socks, breathable short socks for summer, 6 white, l",
+      "family_id": "socks",
+      "variant_id": "ankle_socks",
+      "brand": "Closemate",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "coca-cola 2l",
+      "family_id": "cola",
+      "variant_id": "coca_cola_classic",
+      "brand": "Coca-Cola",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "coca-cola ch.1,25l",
+      "family_id": "cola",
+      "variant_id": "coca_cola_cherry",
+      "brand": "Coca-Cola",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cocktailtom. 500g",
+      "family_id": "tomato",
+      "variant_id": "cocktail_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "coke zero 1,25l",
+      "family_id": "cola",
+      "variant_id": "coca_cola_zero",
+      "brand": "Coca-Cola",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cremiss.vanill.eis",
+      "family_id": "ice_cream",
+      "variant_id": "vanilla_ice_cream",
+      "brand": "Cremissimo",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "cremissimo eis",
+      "family_id": "ice_cream",
+      "variant_id": null,
+      "brand": "Cremissimo",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "damen sportbekleidung",
+      "family_id": "sportswear",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "dattelnaschtom250g",
+      "family_id": "tomato",
+      "variant_id": "date_snack_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "deit pink gr.0,75l",
+      "family_id": "soft_drink",
+      "variant_id": "pink_grapefruit_soft_drink",
+      "brand": "Deit",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "design servietten",
+      "family_id": "paper_household_goods",
+      "variant_id": "paper_napkins",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "dontodent zahnseidesti",
+      "family_id": "oral_care",
+      "variant_id": "dental_floss",
+      "brand": "Dontodent",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "dorade",
+      "family_id": "sea_bream",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "duracell specialty 2032 lithium button batteries 3 v pack of 4 with child safe technology for use in keychains, scales, wearables and medical devices (cr2032 /dl2032)",
+      "family_id": "battery",
+      "variant_id": "cr2032_button_cell",
+      "brand": "Duracell",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "durex performa condoms, sex-prolonging condoms with 5% benzocaine gel and easy-on shape, pack of 12 (1 x 12 condoms)",
+      "family_id": "sexual_wellness",
+      "variant_id": "condom",
+      "brand": "Durex",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "durex performa condoms, sex-prolonging condoms with 5% benzocaine gel for longer-lasting sexual pleasure, pack of 36 (3 x 12 condoms)",
+      "family_id": "sexual_wellness",
+      "variant_id": "condom",
+      "brand": "Durex",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "e.gen.creme brulee",
+      "family_id": "dairy_dessert",
+      "variant_id": "creme_brulee",
+      "brand": "EDEKA",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "e.regio.möhren",
+      "family_id": "carrot",
+      "variant_id": null,
+      "brand": "EDEKA",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "egen cherryrispto.",
+      "family_id": "tomato",
+      "variant_id": "cherry_vine_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "eifel eier fl.",
+      "family_id": "chicken_egg",
+      "variant_id": "free_range_eggs",
+      "brand": "Eifel-Ei",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "eifel eier flh",
+      "family_id": "chicken_egg",
+      "variant_id": "free_range_eggs",
+      "brand": "Eifel-Ei",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "einlegegurken",
+      "family_id": "cucumber",
+      "variant_id": "pickling_cucumber",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "elgusto ja.serrano",
+      "family_id": "ham",
+      "variant_id": "serrano_ham",
+      "brand": "elGusto",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erd.weißb.af 0,5l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "erdinger_non_alcoholic_wheat_beer",
+      "brand": "Erdinger",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erd.weissb.alkfr",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "erdinger_non_alcoholic_wheat_beer",
+      "brand": "Erdinger",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdbeere",
+      "family_id": "strawberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdbeere rheinl",
+      "family_id": "strawberry",
+      "variant_id": "regional_strawberry",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdbeerealdinalose",
+      "family_id": "strawberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdbeeren",
+      "family_id": "strawberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdbeeren 500g",
+      "family_id": "strawberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdbeeren kg",
+      "family_id": "strawberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdbeeren lose",
+      "family_id": "strawberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdinger alk.fre",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "erdinger_non_alcoholic_beer",
+      "brand": "Erdinger",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdn. 200g beutel",
+      "family_id": "peanut",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erdnussbutter",
+      "family_id": "nut_butter",
+      "variant_id": "peanut_butter",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "erlenbach.schnitte",
+      "family_id": "cake",
+      "variant_id": "cake_slice",
+      "brand": "Erlenbacher",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "errr brombeeren",
+      "family_id": "blackberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "espresso trad. 1kg",
+      "family_id": "coffee",
+      "variant_id": "espresso_coffee",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "exqu.frischk.fitl.",
+      "family_id": "cream_cheese",
+      "variant_id": "fitline_cream_cheese",
+      "brand": "Exquisa",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "exqu.frischk.natur",
+      "family_id": "cream_cheese",
+      "variant_id": "natural_cream_cheese",
+      "brand": "Exquisa",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "extrastar 3-way socket adapter, 2 euro + 1 schuko, eu plug adapter with child lock, power strip for office, home, white (pack of 1)",
+      "family_id": "electrical_accessory",
+      "variant_id": "socket_adapter",
+      "brand": "EXTRASTAR",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "ezh anzünder",
+      "family_id": "fire_lighting_supply",
+      "variant_id": "firelighter",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "f&g hüftsteak",
+      "family_id": "beef",
+      "variant_id": "beef_rump_steak",
+      "brand": "F&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "f&g rd. rump. gew.",
+      "family_id": "beef",
+      "variant_id": "seasoned_beef_rump_steak",
+      "brand": "F&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "fack.bambussticks",
+      "family_id": "kitchen_utensil",
+      "variant_id": "bamboo_skewers",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "farmer nuss-mix",
+      "family_id": "nut_mix",
+      "variant_id": null,
+      "brand": "Farmer",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "feigen frisch",
+      "family_id": "fig",
+      "variant_id": "fresh_fig",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "feta / schafskäse",
+      "family_id": "feta_cheese",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "fh eier 10er",
+      "family_id": "chicken_egg",
+      "variant_id": "free_range_eggs",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "fine mesh wire mesh 40 cm x 5 m vole mesh for raised bed wire mesh roll galvanised mesh width 6 mm wire mesh as rabbit wire aviary wire rabbit wire chicken wire rabbit wire",
+      "family_id": "garden_supply",
+      "variant_id": "wire_mesh",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "finish caps",
+      "family_id": "dishwasher_care",
+      "variant_id": "dishwasher_capsules",
+      "brand": "Finish",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "finish mtr 2x250ml",
+      "family_id": "dishwasher_care",
+      "variant_id": "dishwasher_machine_cleaner",
+      "brand": "Finish",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "fitbeast flex therapy bar, tennis elbow therapy bar, ideal for relieving tendinitis pain and improving grip strength, fitness resistance bar for golfer's elbow",
+      "family_id": "fitness_equipment",
+      "variant_id": "therapy_resistance_bar",
+      "brand": "FitBeast",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "foll.thunfisch",
+      "family_id": "tuna",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "forearm wrist roller trainer, forearm trainer for training with extremely strong nylon webbing, forearm trainer wrist roller for muscle strength training at home, in the gym or outdoors",
+      "family_id": "fitness_equipment",
+      "variant_id": "forearm_wrist_roller",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "forellenfilets",
+      "family_id": "trout",
+      "variant_id": "trout_fillet",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "fra.sommerblumen",
+      "family_id": "cut_flowers",
+      "variant_id": "summer_flower_bouquet",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "frank.wilde rauke",
+      "family_id": "arugula",
+      "variant_id": null,
+      "brand": "Frank Wilde",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "franz.af.6x0,33l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "franziskaner_non_alcoholic_beer",
+      "brand": "Franziskaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "franz.weizen 0,5l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "franziskaner_non_alcoholic_wheat_beer",
+      "brand": "Franziskaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "frau antje butter",
+      "family_id": "butter",
+      "variant_id": null,
+      "brand": "Frau Antje",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "fresh-cut-salat 2",
+      "family_id": "leaf_salad",
+      "variant_id": "fresh_cut_salad",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "frühk.drillinge1kg",
+      "family_id": "potato",
+      "variant_id": "early_baby_potato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "frühkart.vwfk2.5kg",
+      "family_id": "potato",
+      "variant_id": "early_waxy_potato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "frühkartoffeln",
+      "family_id": "potato",
+      "variant_id": "early_potato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "frz. camembert",
+      "family_id": "camembert",
+      "variant_id": "french_camembert",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "fuchst.haargummis",
+      "family_id": "hair_accessory",
+      "variant_id": "hair_ties",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "g.clar.eier f",
+      "family_id": "chicken_egg",
+      "variant_id": "free_range_eggs",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g.clar.eier flh",
+      "family_id": "chicken_egg",
+      "variant_id": "free_range_eggs",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g allzwecktüch.",
+      "family_id": "cleaning_cloth",
+      "variant_id": "all_purpose_cloth",
+      "brand": "G&G",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "g&g broccoli",
+      "family_id": "broccoli",
+      "variant_id": null,
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g champignons",
+      "family_id": "champignon",
+      "variant_id": null,
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g erythrit",
+      "family_id": "sweetener",
+      "variant_id": "erythritol",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g esl-milch",
+      "family_id": "cow_milk",
+      "variant_id": "esl_milk",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g f.blättertei.",
+      "family_id": "pastry_dough",
+      "variant_id": "puff_pastry",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g fettarm.kefir",
+      "family_id": "kefir",
+      "variant_id": "low_fat_kefir",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g holzk.briketts",
+      "family_id": "fuel",
+      "variant_id": "wood_briquettes",
+      "brand": "G&G",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "g&g jogh.griech.",
+      "family_id": "yogurt",
+      "variant_id": "greek_yogurt",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g joghurt grie.",
+      "family_id": "yogurt",
+      "variant_id": "greek_yogurt",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g knoblauch",
+      "family_id": "garlic",
+      "variant_id": null,
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g miwa st.6x1,5l",
+      "family_id": "mineral_water",
+      "variant_id": "still_mineral_water",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g mozzarella",
+      "family_id": "mozzarella",
+      "variant_id": null,
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g nacken-s.",
+      "family_id": "pork",
+      "variant_id": "pork_neck_steak",
+      "brand": "G&G",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g nektarinen",
+      "family_id": "nectarine",
+      "variant_id": null,
+      "brand": "Gut & Günstig",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g partygarnelen",
+      "family_id": "shrimp",
+      "variant_id": "party_shrimp",
+      "brand": "Gut & Günstig",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g partypicker",
+      "family_id": "kitchen_skewer",
+      "variant_id": "party_picks",
+      "brand": "Gut & Günstig",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "g&g pow.fettlöser",
+      "family_id": "household_cleaner",
+      "variant_id": "kitchen_degreaser",
+      "brand": "Gut & Günstig",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "g&g räucherlachs",
+      "family_id": "salmon",
+      "variant_id": "smoked_salmon",
+      "brand": "Gut & Günstig",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g schwamm",
+      "family_id": "cleaning_accessory",
+      "variant_id": "cleaning_sponge",
+      "brand": "Gut & Günstig",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "g&g spezi.salz",
+      "family_id": "dishwasher_care",
+      "variant_id": "dishwasher_salt",
+      "brand": "Gut & Günstig",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "g&g stap.chip.salz",
+      "family_id": "potato_crisps",
+      "variant_id": "salted_stack_chips",
+      "brand": "Gut & Günstig",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g stremellachs",
+      "family_id": "salmon",
+      "variant_id": "stremel_salmon",
+      "brand": "Gut & Günstig",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g trauben",
+      "family_id": "grape",
+      "variant_id": null,
+      "brand": "Gut & Günstig",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "g&g zi.käserolle",
+      "family_id": "goat_cheese",
+      "variant_id": "goat_cheese_roll",
+      "brand": "Gut & Günstig",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "gade. amarettini",
+      "family_id": "biscuit",
+      "variant_id": "amarettini",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "gaffel brause0,33l",
+      "family_id": "non_alcoholic_beer_lemonade",
+      "variant_id": null,
+      "brand": "Gaffel",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "gaffels fa.6x0,33l",
+      "family_id": "non_alcoholic_beer_lemonade",
+      "variant_id": "gaffel_fassbrause",
+      "brand": "Gaffel",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "galb.mascarpone",
+      "family_id": "mascarpone",
+      "variant_id": null,
+      "brand": "Galbani",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "galb.mozzarella",
+      "family_id": "mozzarella",
+      "variant_id": null,
+      "brand": "Galbani",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "garnelen sort. xxl",
+      "family_id": "shrimp",
+      "variant_id": "shrimp_assortment_xxl",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "garnelen-sortiment",
+      "family_id": "shrimp",
+      "variant_id": "shrimp_assortment",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "geoviizon cleaning solution compatible with ecovacs deebot x8/x9/x11/t50/x5 omni/x2 omni/t30s combo / t30 (pro) omni/t20 omni/x1 omni/x1e omni/x1 turbo/t10 turbo robot vacuum cleaner",
+      "family_id": "robot_vacuum_care",
+      "variant_id": "robot_vacuum_cleaning_solution",
+      "brand": "Geoviizon",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "geramont crem",
+      "family_id": "soft_cheese",
+      "variant_id": "geramont_cremig",
+      "brand": "Géramont",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "geramont cremig",
+      "family_id": "soft_cheese",
+      "variant_id": "geramont_cremig",
+      "brand": "Géramont",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "geramont mix",
+      "family_id": "soft_cheese",
+      "variant_id": "geramont_cheese_mix",
+      "brand": "Géramont",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "gerv.hüttenkäse",
+      "family_id": "cottage_cheese",
+      "variant_id": null,
+      "brand": "Gervais",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "gervais hk 200g",
+      "family_id": "cottage_cheese",
+      "variant_id": null,
+      "brand": "Gervais",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "getr.cranberries",
+      "family_id": "cranberry",
+      "variant_id": "dried_cranberries",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "golden icepure water filter cartridges compatible with brita maxtra+ plus maxtra pro all-in-1, water filter cartridges replacement for mavea, anna duomax, filtration for limescale removal, pack of 9",
+      "family_id": "water_filter",
+      "variant_id": "water_filter_cartridge",
+      "brand": "Golden Icepure",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "gorgonzola",
+      "family_id": "blue_cheese",
+      "variant_id": "gorgonzola",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "gouda jung",
+      "family_id": "gouda",
+      "variant_id": "young_gouda",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "grarain busy board for toddlers - montessori educational toy for 1-3 year old boys & girls | travel-friendly sensory learning activity | ideal for kids with autism(busy board v3)",
+      "family_id": "educational_toy",
+      "variant_id": "busy_board",
+      "brand": "Grarain",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "greco feta, 150g",
+      "family_id": "feta",
+      "variant_id": null,
+      "brand": "Greco",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "griech. joghurt 2%",
+      "family_id": "greek_yogurt",
+      "variant_id": "greek_yogurt_2_percent",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "grillholzkohle 3kg",
+      "family_id": "grill_fuel",
+      "variant_id": "charcoal",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "h.fluegel gew.",
+      "family_id": "chicken",
+      "variant_id": "chicken_wings",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hachez cocoa",
+      "family_id": "cocoa_powder",
+      "variant_id": null,
+      "brand": "Hachez",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hackfl. gem. xxl",
+      "family_id": "minced_meat",
+      "variant_id": "mixed_minced_meat",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hähn. brustf. xxl",
+      "family_id": "chicken",
+      "variant_id": "chicken_breast_fillet",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hähn. minutenschn",
+      "family_id": "chicken",
+      "variant_id": "chicken_minute_schnitzel",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hahn. schwenkst.",
+      "family_id": "chicken",
+      "variant_id": "chicken_schwenk_steak",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hähn. schwenkst.",
+      "family_id": "chicken",
+      "variant_id": "chicken_schwenk_steak",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hähnchensteaks, ma",
+      "family_id": "chicken",
+      "variant_id": "marinated_chicken_steak",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hair rollers set 50 pieces, 24 pieces 4 sizes (60/48/36/25 mm) with 24 stainless steel clips, large self-adhesive, hair rollers, hair rollers with clips for long, medium and short hair",
+      "family_id": "hair_accessory",
+      "variant_id": "hair_rollers",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "handgelegter koch.",
+      "family_id": "cooked_ham",
+      "variant_id": "hand_laid_cooked_ham",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "handl leich.karree",
+      "family_id": "pork_cold_cuts",
+      "variant_id": "smoked_pork_loin",
+      "brand": "Handl",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "handtaschen",
+      "family_id": "bag",
+      "variant_id": "handbag",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "harry sandwich",
+      "family_id": "sandwich_bread",
+      "variant_id": null,
+      "brand": "Harry",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "haw.heringsfilets",
+      "family_id": "herring",
+      "variant_id": "herring_fillets",
+      "brand": "Hawesta",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hd ananas 1l",
+      "family_id": "fruit_juice",
+      "variant_id": "pineapple_juice",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "healthy boy fish sauce, 700 ml (pack of 1)",
+      "family_id": "fish_sauce",
+      "variant_id": null,
+      "brand": "Healthy Boy",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "heat resistant silicone kitchen tongs: u-taste 315°c heat resistant cooking tongs set with firmly sealed non-stick rubber tips and silicone-coated stainless steel handle (23/30 cm, aqua sky)",
+      "family_id": "kitchen_utensil",
+      "variant_id": "kitchen_tongs",
+      "brand": "U-Taste",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "heidelbeere",
+      "family_id": "blueberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "heidelbeeren 200g",
+      "family_id": "blueberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "heidelbeeren 300g",
+      "family_id": "blueberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "heidelbeeren 500g",
+      "family_id": "blueberry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "heilwasser still",
+      "family_id": "mineral_water",
+      "variant_id": "still_mineral_water",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "heinz barbecue sa.",
+      "family_id": "barbecue_sauce",
+      "variant_id": null,
+      "brand": "Heinz",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "heinz ketchup",
+      "family_id": "ketchup",
+      "variant_id": null,
+      "brand": "Heinz",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hennes eier",
+      "family_id": "chicken_eggs",
+      "variant_id": null,
+      "brand": "Hennes",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herren accessoires",
+      "family_id": "fashion_accessory",
+      "variant_id": "mens_accessory",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "herren premium designer",
+      "family_id": "mens_clothing",
+      "variant_id": "premium_designer_mens_clothing",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "herren sportbekleidung",
+      "family_id": "sportswear",
+      "variant_id": "mens_sportswear",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "hersmay pk-nex lens adapter for pentax pk k lens suitable for sony e-mount nex5 nex6 nex7 a7 i ii iii iv a7s a7r a7sii a7siii a7rii a6500 a6300 a6000 a5100 a5000 nex-fs700 vgg 30 vg99 00 pxw-fs7",
+      "family_id": "camera_accessory",
+      "variant_id": "lens_mount_adapter",
+      "brand": "Hersmay",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "herz nektar. gelb",
+      "family_id": "nectarine",
+      "variant_id": "yellow_nectarine",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.bruschet.dip",
+      "family_id": "spice_mix",
+      "variant_id": "bruschetta_dip",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.bulgur",
+      "family_id": "bulgur",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.camembert",
+      "family_id": "camembert",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.champign.sch.",
+      "family_id": "champignon_mushroom",
+      "variant_id": "sliced_champignon_mushrooms",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.frühkartoff.",
+      "family_id": "potato",
+      "variant_id": "early_potato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.guacamole",
+      "family_id": "guacamole",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.honey peppers",
+      "family_id": "pepper_product",
+      "variant_id": "honey_peppers",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.junger spinat",
+      "family_id": "spinach",
+      "variant_id": "baby_spinach",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.kolumb.kaff.",
+      "family_id": "coffee",
+      "variant_id": "colombian_coffee",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.kult.heidelb.",
+      "family_id": "blueberry",
+      "variant_id": "cultivated_blueberry",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.la.bri.buns",
+      "family_id": "burger_bun",
+      "variant_id": "brioche_burger_buns",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.mi.rispe",
+      "family_id": "tomato",
+      "variant_id": "mini_vine_tomatoes",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.mi.rispentom.",
+      "family_id": "tomato",
+      "variant_id": "mini_vine_tomatoes",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.mozzarella",
+      "family_id": "mozzarella",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.paprikaglock.",
+      "family_id": "bell_pepper",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.salat",
+      "family_id": "lettuce",
+      "variant_id": "heart_lettuce",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.salatmix",
+      "family_id": "lettuce",
+      "variant_id": "salad_mix",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.skyr",
+      "family_id": "skyr",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.vk sandwich",
+      "family_id": "sandwich_bread",
+      "variant_id": "wholegrain_sandwich_bread",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "herz.weidemilch",
+      "family_id": "cow_milk",
+      "variant_id": "pasture_milk",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hf3 minutensteaks",
+      "family_id": "meat_steak",
+      "variant_id": "meat_steak_minute_steak",
+      "brand": "HF3",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hf3 schnitzel",
+      "family_id": "schnitzel",
+      "variant_id": null,
+      "brand": "HF3",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hohes c eisen 1l",
+      "family_id": "fruit_juice",
+      "variant_id": "iron_fortified_fruit_juice",
+      "brand": "Hohes C",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "holzfällersteaks",
+      "family_id": "meat_steak",
+      "variant_id": "woodcutter_steak",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hom.hot dog sauce",
+      "family_id": "hot_dog_sauce",
+      "variant_id": null,
+      "brand": "Homann",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hp mousse 200g",
+      "family_id": "high_protein_dessert",
+      "variant_id": "high_protein_mousse",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hsn - soy protein isolate | vegan protein | vegan protein with stevia | soy",
+      "family_id": "protein_powder",
+      "variant_id": "soy_protein_isolate",
+      "brand": "HSN",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "hummus high pro",
+      "family_id": "hummus",
+      "variant_id": "high_protein_hummus",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "iodine selenium complex i 180 thyroid capsules",
+      "family_id": "dietary_supplement",
+      "variant_id": "iodine_selenium_supplement",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "iron tablets high dose 365x with 20 mg iron + vitamin c (20 mg) from rose hips - bioavailable iron bisglycinate + natural vitamin c from rosehip extract - laboratory tested with certificate",
+      "family_id": "dietary_supplement",
+      "variant_id": "iron_vitamin_c_supplement",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "ital. käsescheiben",
+      "family_id": "cheese_slices",
+      "variant_id": "italian_cheese_slices",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "jes dekobutton",
+      "family_id": "craft_supply",
+      "variant_id": "decorative_button",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes fleischspieße",
+      "family_id": "kitchen_skewer",
+      "variant_id": "meat_skewers",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes geburt.kerzen",
+      "family_id": "party_decoration",
+      "variant_id": "birthday_candles",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes girlande",
+      "family_id": "party_decoration",
+      "variant_id": "party_garland",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes haarkralle",
+      "family_id": "hair_accessory",
+      "variant_id": "hair_claw_clip",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes löffelablage",
+      "family_id": "kitchen_utensil",
+      "variant_id": "spoon_rest",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes partyhüte",
+      "family_id": "party_decoration",
+      "variant_id": "party_hat",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes rotorspirale",
+      "family_id": "party_decoration",
+      "variant_id": "hanging_spiral_decoration",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "jes schaschliksp.",
+      "family_id": "kitchen_skewer",
+      "variant_id": "shashlik_skewers",
+      "brand": "JES",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "joghurt gr art 1kg",
+      "family_id": "greek_style_yogurt",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "just spices italian",
+      "family_id": "spice_mix",
+      "variant_id": "italian_spice_mix",
+      "brand": "Just Spices",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kart. vwfk 2.5kg",
+      "family_id": "potato",
+      "variant_id": "waxy_potato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kart.drillinge 1kg",
+      "family_id": "potato",
+      "variant_id": "baby_potato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kartoffeln",
+      "family_id": "potato",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kattus worcester sauce 140ml",
+      "family_id": "worcestershire_sauce",
+      "variant_id": null,
+      "brand": "Kattus",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kefir 500 g",
+      "family_id": "kefir",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kerry.kr.kn.butter",
+      "family_id": "butter",
+      "variant_id": "garlic_herb_butter",
+      "brand": "Kerrygold",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kerryg.butter",
+      "family_id": "butter",
+      "variant_id": null,
+      "brand": "Kerrygold",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kerrygold butter",
+      "family_id": "butter",
+      "variant_id": null,
+      "brand": "Kerrygold",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kinder bueno eis",
+      "family_id": "ice_cream",
+      "variant_id": "kinder_bueno_ice_cream",
+      "brand": "Kinder",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kinder maxi king",
+      "family_id": "chocolate_snack",
+      "variant_id": "kinder_maxi_king",
+      "brand": "Kinder",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kinder pingui",
+      "family_id": "chocolate_snack",
+      "variant_id": "kinder_pingui",
+      "brand": "Kinder",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kinder pingui 4er",
+      "family_id": "chocolate_snack",
+      "variant_id": "kinder_pingui",
+      "brand": "Kinder",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kirschen",
+      "family_id": "cherry",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kirschen lose",
+      "family_id": "cherry",
+      "variant_id": "loose_cherries",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kiwi gold",
+      "family_id": "kiwi",
+      "variant_id": "gold_kiwi",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kiwi gold jumbo",
+      "family_id": "kiwi",
+      "variant_id": "gold_kiwi_jumbo",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kiwi gold stück",
+      "family_id": "kiwi",
+      "variant_id": "gold_kiwi",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kleider",
+      "family_id": "clothing",
+      "variant_id": "clothes",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "knoblauch weiß200g",
+      "family_id": "garlic",
+      "variant_id": "white_garlic",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "knoppers 8+1",
+      "family_id": "wafer_bar",
+      "variant_id": "knoppers_original",
+      "brand": "Knoppers",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "knoppers erdnuss",
+      "family_id": "wafer_bar",
+      "variant_id": "knoppers_peanut",
+      "brand": "Knoppers",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "knoppers joghurt",
+      "family_id": "wafer_bar",
+      "variant_id": "knoppers_yogurt",
+      "brand": "Knoppers",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "knoppers riegel +1",
+      "family_id": "wafer_bar",
+      "variant_id": "knoppers_bar",
+      "brand": "Knoppers",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "knoppers riegel so",
+      "family_id": "wafer_bar",
+      "variant_id": "knoppers_bar",
+      "brand": "Knoppers",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "knotenbeutel",
+      "family_id": "shopping_bag",
+      "variant_id": "knot_handle_bag",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "kokosnüsse",
+      "family_id": "coconut",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kopierpapier",
+      "family_id": "office_supply",
+      "variant_id": "copy_paper",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "kromb.himbee.0,33l",
+      "family_id": "non_alcoholic_beer_lemonade",
+      "variant_id": "raspberry_non_alcoholic_beer_lemonade",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kromb.kirsche0,33l",
+      "family_id": "non_alcoholic_beer_lemonade",
+      "variant_id": "cherry_non_alcoholic_beer_lemonade",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "ktchendao 2-in-1 glass salt shaker with side spout, salt shaker with lid, built-in lid to slow moisture with measurement markings, bpa-free, 4 oz (white)",
+      "family_id": "kitchen_container",
+      "variant_id": "salt_shaker",
+      "brand": "KTCHENDAO",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "kühne steak sauce",
+      "family_id": "steak_sauce",
+      "variant_id": null,
+      "brand": "Kühne",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kult.heidelb.",
+      "family_id": "blueberry",
+      "variant_id": "cultivated_blueberry",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "kulturheidelbeeren",
+      "family_id": "blueberry",
+      "variant_id": "cultivated_blueberry",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "l.live red 0,75l",
+      "family_id": "non_alcoholic_wine",
+      "variant_id": "red_non_alcoholic_wine",
+      "brand": "L. Live",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lachsfiletseite750",
+      "family_id": "salmon",
+      "variant_id": "salmon_fillet_side",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lachsforellenfilet",
+      "family_id": "salmon_trout",
+      "variant_id": "salmon_trout_fillet",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lachsseite xxl",
+      "family_id": "salmon",
+      "variant_id": "salmon_side",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lamm medaillons",
+      "family_id": "lamb",
+      "variant_id": "lamb_medallions",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "landgurke bio",
+      "family_id": "cucumber",
+      "variant_id": "organic_country_cucumber",
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "landl.frischmilch",
+      "family_id": "cow_milk",
+      "variant_id": "fresh_milk",
+      "brand": "Landliebe",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "landliebe f-weidem",
+      "family_id": "cow_milk",
+      "variant_id": "fresh_pasture_milk",
+      "brand": "Landliebe",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "landmilch 3,8%",
+      "family_id": "cow_milk",
+      "variant_id": "whole_milk_3_8_percent",
+      "brand": "Landmilch",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lang.cremiss.eis",
+      "family_id": "ice_cream",
+      "variant_id": "cremissimo_ice_cream",
+      "brand": "Langnese",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lay's chips 150g",
+      "family_id": "potato_crisps",
+      "variant_id": null,
+      "brand": "Lay's",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lays gesalzen",
+      "family_id": "potato_crisps",
+      "variant_id": "salted_potato_crisps",
+      "brand": "Lay's",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lea & perrins - pack of 3 original worcestershire sauce in 150 ml glass bottle (seasoning sauce) - traditional english worcester worcester sauce",
+      "family_id": "worcestershire_sauce",
+      "variant_id": "lea_and_perrins_original",
+      "brand": "Lea & Perrins",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "leibniz haferkeks",
+      "family_id": "biscuit",
+      "variant_id": "oat_biscuit",
+      "brand": "Leibniz",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "leicht&cross",
+      "family_id": "crispbread",
+      "variant_id": "leicht_and_cross_crispbread",
+      "brand": "Leicht & Cross",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lie.urk.prot.brot",
+      "family_id": "protein_bread",
+      "variant_id": "urkorn_protein_bread",
+      "brand": "Lieken Urkorn",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt excell.85%",
+      "family_id": "dark_chocolate",
+      "variant_id": "lindt_excellence_85",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt extra tafel",
+      "family_id": "chocolate_bar",
+      "variant_id": "lindt_extra_chocolate_bar",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt fioret.capp.",
+      "family_id": "praline",
+      "variant_id": "lindt_fioretto_cappuccino",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt l.grandes h.",
+      "family_id": "chocolate_bar",
+      "variant_id": "lindt_les_grandes",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt limo.tafel",
+      "family_id": "chocolate_bar",
+      "variant_id": "lindt_chocolate_bar",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt lindor pist.",
+      "family_id": "praline",
+      "variant_id": "lindt_lindor_pistachio",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt lindor stick",
+      "family_id": "chocolate_snack",
+      "variant_id": "lindt_lindor_stick",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt lindor taf.",
+      "family_id": "chocolate_bar",
+      "variant_id": "lindt_lindor_chocolate_bar",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "lindt mini pralin.",
+      "family_id": "praline",
+      "variant_id": "lindt_mini_pralines",
+      "brand": "Lindt",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "logitech ergo k860 - wireless ergonomic keyboard with split buttons, wristwear and support for natural tap - windows / mac, bluetooth, usb receiver, qwertz layout graphite",
+      "family_id": "computer_peripheral",
+      "variant_id": "ergonomic_keyboard",
+      "brand": "Logitech",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "logitech mx vertical, ergonomic wireless mouse, bluetooth and 2.4 ghz connection via unifying usb receiver, 4000 dpi sensor, rechargeable battery, 4 buttons, multi-device, pc / mac / ipados - black",
+      "family_id": "computer_peripheral",
+      "variant_id": "vertical_mouse",
+      "brand": "Logitech",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "lubido original water-based lubricant without parabens, jumbo 500 ml (pack of 2)",
+      "family_id": "personal_care",
+      "variant_id": "water_based_lubricant",
+      "brand": "Lubido",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "lysell deut.kaviar",
+      "family_id": "fish_roe",
+      "variant_id": "german_caviar",
+      "brand": "Lysell",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "m.land vollmilch",
+      "family_id": "cow_milk",
+      "variant_id": "whole_milk",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "magnesium complex 180 capsules, 400 mg elemental per day, 5 high-quality forms: magnesium oxide, citrate, bisglycinate, malate & ascorbate, optimal bioavailability, 3 month supply",
+      "family_id": "dietary_supplement",
+      "variant_id": "magnesium_supplement",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "magnesium complex 540 capsules - 400 mg elementary magnesium per day, 5 high-quality forms: mag. oxide, citrate, bisglycinate, malate & ascorbate - optimal bioavailability - laboratory tested with certificate",
+      "family_id": "dietary_supplement",
+      "variant_id": "magnesium_supplement",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "magnum",
+      "family_id": "ice_cream",
+      "variant_id": "magnum_ice_cream",
+      "brand": "Magnum",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "magnum d.hazelnut",
+      "family_id": "ice_cream",
+      "variant_id": "magnum_double_hazelnut",
+      "brand": "Magnum",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "magnum double che.",
+      "family_id": "ice_cream",
+      "variant_id": "magnum_double_chocolate",
+      "brand": "Magnum",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "magnum euphoria",
+      "family_id": "ice_cream",
+      "variant_id": "magnum_euphoria",
+      "brand": "Magnum",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "magnum la pis",
+      "family_id": "ice_cream",
+      "variant_id": "magnum_la_pistache",
+      "brand": "Magnum",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "magnum la pistache",
+      "family_id": "ice_cream",
+      "variant_id": "magnum_la_pistache",
+      "brand": "Magnum",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "magnum lapistacheeis270ml",
+      "family_id": "ice_cream",
+      "variant_id": "magnum_la_pistache",
+      "brand": "Magnum",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mangos",
+      "family_id": "mango",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mar. garnelen 200g",
+      "family_id": "shrimp",
+      "variant_id": "marinated_shrimp",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "marlboro red xl",
+      "family_id": "tobacco_product",
+      "variant_id": "marlboro_red_cigarettes",
+      "brand": "Marlboro",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "marmorini rose",
+      "family_id": "non_alcoholic_wine",
+      "variant_id": "rose_non_alcoholic_wine",
+      "brand": "Marmorini",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mascarpone 40%",
+      "family_id": "mascarpone",
+      "variant_id": "mascarpone_40_percent",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "may masc.lash sens.intense bl.",
+      "family_id": "cosmetic",
+      "variant_id": "mascara",
+      "brand": "Maybelline",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "mayb.rose af 0,75l",
+      "family_id": "non_alcoholic_wine",
+      "variant_id": "rose_non_alcoholic_wine",
+      "brand": "Maybach",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mayb.weiß af0,75l",
+      "family_id": "non_alcoholic_wine",
+      "variant_id": "white_non_alcoholic_wine",
+      "brand": "Maybach",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "medrull medical gauze large 90 cm x 10 m premium gauze bandages fixing bandages",
+      "family_id": "medical_supply",
+      "variant_id": "medical_gauze",
+      "brand": "Medrull",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "medusa antipasti",
+      "family_id": "antipasti",
+      "variant_id": null,
+      "brand": "Medusa",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "meggle baguette",
+      "family_id": "bake_at_home_baguette",
+      "variant_id": null,
+      "brand": "Meggle",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "melone perla",
+      "family_id": "melon",
+      "variant_id": "perla_melon",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "metzgerschin",
+      "family_id": "cooked_ham",
+      "variant_id": "butchers_ham",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milka 81-100g",
+      "family_id": "chocolate_bar",
+      "variant_id": "milka_chocolate_bar",
+      "brand": "Milka",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milka großtafeln",
+      "family_id": "chocolate_bar",
+      "variant_id": "milka_large_chocolate_bar",
+      "brand": "Milka",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milka karamell",
+      "family_id": "chocolate_bar",
+      "variant_id": "milka_caramel",
+      "brand": "Milka",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milka mini cones",
+      "family_id": "ice_cream",
+      "variant_id": "milka_mini_cones",
+      "brand": "Milka",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milka pralin.stick",
+      "family_id": "chocolate_snack",
+      "variant_id": "milka_praline_stick",
+      "brand": "Milka",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milka v.&ch.swirl",
+      "family_id": "ice_cream",
+      "variant_id": "milka_vanilla_chocolate_swirl",
+      "brand": "Milka",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milr.butterm.quark",
+      "family_id": "quark",
+      "variant_id": "buttermilk_quark",
+      "brand": "Milram",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milr.kefir drink",
+      "family_id": "kefir_drink",
+      "variant_id": null,
+      "brand": "Milram",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "milr.speisequark",
+      "family_id": "quark",
+      "variant_id": "plain_quark",
+      "brand": "Milram",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mineralwasser still",
+      "family_id": "mineral_water",
+      "variant_id": "still_mineral_water",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mini biokarot 200g",
+      "family_id": "carrot",
+      "variant_id": "organic_mini_carrots",
+      "brand": null,
+      "is_organic": true
+    },
+    {
+      "normalized_name": "mini romarispent.",
+      "family_id": "lettuce",
+      "variant_id": "mini_romaine",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "minusl esl milch",
+      "family_id": "milk",
+      "variant_id": "lactose_free_esl",
+      "brand": "MinusL",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mivolis magnesium tabl. 300st",
+      "family_id": "dietary_supplement",
+      "variant_id": "magnesium_tablets",
+      "brand": "Mivolis",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "mivolis multivi-bärchen kinder",
+      "family_id": "dietary_supplement",
+      "variant_id": "children_multivitamin_gummies",
+      "brand": "Mivolis",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "mivolis multivitamin gummies",
+      "family_id": "dietary_supplement",
+      "variant_id": "multivitamin_gummies",
+      "brand": "Mivolis",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "mivolls magnesium tabl. 300st",
+      "family_id": "dietary_supplement",
+      "variant_id": "magnesium_tablets",
+      "brand": "Mivolis",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "mivolls pflaster-strip",
+      "family_id": "adhesive_bandages",
+      "variant_id": "bandage_strips",
+      "brand": "Mivolis",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "moya sem.zopfkäse",
+      "family_id": "cheese",
+      "variant_id": "braided_cheese",
+      "brand": "Moya",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mozzarella",
+      "family_id": "cheese",
+      "variant_id": "mozzarella",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mozzarella classic",
+      "family_id": "cheese",
+      "variant_id": "mozzarella",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mozzarella, ger.",
+      "family_id": "cheese",
+      "variant_id": "smoked_mozzarella",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mr schokolade",
+      "family_id": "chocolate",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "multivitamin 1l",
+      "family_id": "fruit_juice",
+      "variant_id": "multivitamin_juice",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "mumm alkoholfrei",
+      "family_id": "non_alcoholic_wine",
+      "variant_id": "sparkling_wine",
+      "brand": "Mumm",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nackensteaks, mar",
+      "family_id": "pork",
+      "variant_id": "marinated_neck_steaks",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nackensteaks, mar.",
+      "family_id": "pork",
+      "variant_id": "marinated_neck_steaks",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "naturjoghurt 1kg",
+      "family_id": "yogurt",
+      "variant_id": "natural_yogurt",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nektarinen",
+      "family_id": "nectarine",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nektarinen 1kg",
+      "family_id": "nectarine",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nektarinen 500g",
+      "family_id": "nectarine",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nest.fitn.cereal",
+      "family_id": "breakfast_cereal",
+      "variant_id": "fitness_cereal",
+      "brand": "Nestlé",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nike revolution",
+      "family_id": "footwear",
+      "variant_id": "running_shoes",
+      "brand": "Nike",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "nivea deo roll-on",
+      "family_id": "deodorant",
+      "variant_id": "roll_on",
+      "brand": "Nivea",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "noctua nf-a12x25 g2 pwm quiet high performance fan 120 mm",
+      "family_id": "computer_fan",
+      "variant_id": "nf_a12x25_g2_pwm_120mm",
+      "brand": "Noctua",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "noctua nf-a12x25 g2 pwm sx2-pp, quiet high performance fan 2 x 120 mm",
+      "family_id": "computer_fan",
+      "variant_id": "nf_a12x25_g2_pwm_sx2_pp",
+      "brand": "Noctua",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "northy remoulade",
+      "family_id": "sauce",
+      "variant_id": "remoulade",
+      "brand": "Northy",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "norweg. lachsfilet",
+      "family_id": "salmon",
+      "variant_id": "norwegian_salmon_fillet",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nuii cream white",
+      "family_id": "ice_cream",
+      "variant_id": "cream_white_chocolate",
+      "brand": "Nuii",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nuii cream&pistac.",
+      "family_id": "ice_cream",
+      "variant_id": "cream_pistachio",
+      "brand": "Nuii",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nuii eiscreme",
+      "family_id": "ice_cream",
+      "variant_id": null,
+      "brand": "Nuii",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "null stieleis",
+      "family_id": "ice_cream",
+      "variant_id": "ice_lolly",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "nur die women's goodbye laufmaschen 60 strumpfhose tights, 60 den, black (schwarz 94), 13",
+      "family_id": "tights",
+      "variant_id": "v_60_den_black",
+      "brand": "Nur Die",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "nuss-mix 150g",
+      "family_id": "nuts",
+      "variant_id": "mixed_nuts",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "obst-sortiment",
+      "family_id": "fruit",
+      "variant_id": "fruit_assortment",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "obstknotenbeutel",
+      "family_id": "shopping_bag",
+      "variant_id": "knot_handle_bag",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "oetk.göttersp.ki.",
+      "family_id": "dessert_jelly",
+      "variant_id": "cherry",
+      "brand": "Dr. Oetker",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "oetk.kaltscha.him.",
+      "family_id": "dessert_jelly",
+      "variant_id": "raspberry_cold_bowl",
+      "brand": "Dr. Oetker",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "original",
+      "family_id": "potato_chips",
+      "variant_id": "original",
+      "brand": "Pringles",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "p&k luftballons",
+      "family_id": "balloons",
+      "variant_id": null,
+      "brand": "P&K",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "pack of 17 accessories for ecovacs deebot x9 pro omni / x11 pro omni / t80s omni robot vacuum cleaner, 4 vacuum cleaner bags, 4 side brushes, 4 filters, 1 main brush, 2 mop rollers, 1 cleaning brush, 1 screwdriver",
+      "family_id": "robot_vacuum_accessories",
+      "variant_id": "ecovacs_deebot_maintenance_kit",
+      "brand": "Ecovacs",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "pantene shampoo rep.&care",
+      "family_id": "shampoo",
+      "variant_id": "repair_and_care",
+      "brand": "Pantene",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "paprika rot",
+      "family_id": "bell_pepper",
+      "variant_id": "bell_pepper_red",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paprika rot 500g",
+      "family_id": "bell_pepper",
+      "variant_id": "bell_pepper_red",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paprika rot lose",
+      "family_id": "bell_pepper",
+      "variant_id": "bell_pepper_red",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paprika süß/scharf",
+      "family_id": "bell_pepper",
+      "variant_id": "sweet_hot_mix",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "parmigiano reggiano",
+      "family_id": "cheese",
+      "variant_id": "parmigiano_reggiano",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pau.champignons",
+      "family_id": "mushroom",
+      "variant_id": "champignons",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pau.weißb.z.0,33l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "wheat_beer",
+      "brand": "Paulaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paul.wb af.0,33l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "wheat_beer",
+      "brand": "Paulaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paul.wb af.0,5l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "wheat_beer",
+      "brand": "Paulaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paul.weiß.af.",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "wheat_beer",
+      "brand": "Paulaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paul.weiß.af.0,5l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "wheat_beer",
+      "brand": "Paulaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paul.weiß.z.0,5l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "wheat_beer",
+      "brand": "Paulaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "paul.weißb.z.0,5l",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "wheat_beer",
+      "brand": "Paulaner",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pbn micellar casein protein pbn4023 1 kg vanilla",
+      "family_id": "protein_powder",
+      "variant_id": "micellar_casein_vanilla",
+      "brand": "PBN",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "persil 4in1 discs",
+      "family_id": "laundry_detergent",
+      "variant_id": "v_4in1_discs",
+      "brand": "Persil",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "petit camembert",
+      "family_id": "camembert",
+      "variant_id": "petit",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pfirsiche",
+      "family_id": "peach",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pfirsiche 1kg",
+      "family_id": "peach",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pfirsiche gelb",
+      "family_id": "peach",
+      "variant_id": "yellow",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pflanzen allg.",
+      "family_id": "live_plant",
+      "variant_id": "assorted_live_plants",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "philadelphia",
+      "family_id": "cream_cheese",
+      "variant_id": null,
+      "brand": "Philadelphia",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "philadelphia fk",
+      "family_id": "cream_cheese",
+      "variant_id": null,
+      "brand": "Philadelphia",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "philips ca6704/10 coffee oil remover, 6 tablets for philips, saeco and other fully automatic coffee machines",
+      "family_id": "coffee_machine_cleaner",
+      "variant_id": "oil_remover_tablets",
+      "brand": "Philips",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "philips domestic appliances psg6064/80 steam iron, gold, 600 g steam boost",
+      "family_id": "steam_generator_iron",
+      "variant_id": "psg6064_80",
+      "brand": "Philips",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "pistazien",
+      "family_id": "pistachio",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "plattnektarine500g",
+      "family_id": "nectarine",
+      "variant_id": "flat_nectarine",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "plattpfirsich 500g",
+      "family_id": "peach",
+      "variant_id": "flat_peach",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "plattpirsich 500g",
+      "family_id": "peach",
+      "variant_id": "flat_peach",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pleated blind, no drilling required, klemmfix, 100 x 110 cm (l x w), white blind, sun protection easyfix folding blind, translucent roller blind for windows and doors",
+      "family_id": "window_blind",
+      "variant_id": "pleated_100x110_white",
+      "brand": "Easyfix",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "porcini mushroom powder 200 g i porcini mushrooms i natural i ground i porcini mushrooms dried",
+      "family_id": "mushroom",
+      "variant_id": "porcini_powder",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pres meersalzbutte",
+      "family_id": "butter",
+      "variant_id": "sea_salt",
+      "brand": "Président",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pring. maple bbq",
+      "family_id": "potato_chips",
+      "variant_id": "maple_bbq",
+      "brand": "Pringles",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pringles 185g",
+      "family_id": "potato_chips",
+      "variant_id": null,
+      "brand": "Pringles",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pringles fries",
+      "family_id": "potato_chips",
+      "variant_id": "fries",
+      "brand": "Pringles",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pringles wings",
+      "family_id": "potato_chips",
+      "variant_id": "wings",
+      "brand": "Pringles",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "prosciutto crudo",
+      "family_id": "cured_ham",
+      "variant_id": "prosciutto_crudo",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "pura erdbeeren",
+      "family_id": "strawberry",
+      "variant_id": null,
+      "brand": "PURA",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "quanquer water gun for kids, 280 ml water gun with 9 metre range, toy for garden parties, pool other outdoor activities for boys and girls (2 pack)",
+      "family_id": "water_gun",
+      "variant_id": "v_2_pack_280ml",
+      "brand": "Quanquer",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "quarki quark fk 250g",
+      "family_id": "quark",
+      "variant_id": "low_fat",
+      "brand": "Quarki",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "r.mount.marshmall.",
+      "family_id": "marshmallow",
+      "variant_id": null,
+      "brand": "Rocky Mountain",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "radieschen",
+      "family_id": "radish",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "radieschenbund stk",
+      "family_id": "radish",
+      "variant_id": "bunch",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "ravenol mtf-1 sae 75w-85",
+      "family_id": "automotive_gear_oil",
+      "variant_id": "mtf_1_75w_85",
+      "brand": "Ravenol",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "red bull energy",
+      "family_id": "energy_drink",
+      "variant_id": null,
+      "brand": "Red Bull",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "reibek. li. 250g",
+      "family_id": "cheese",
+      "variant_id": "light_grated_cheese",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "reibekuchen",
+      "family_id": "potato_pancakes",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "rexona deo roll-on np bright b",
+      "family_id": "deodorant",
+      "variant_id": "roll_on_bright_bouquet",
+      "brand": "Rexona",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "rexona deo roll-on np cott.dry",
+      "family_id": "deodorant",
+      "variant_id": "roll_on_cotton_dry",
+      "brand": "Rexona",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "riesencham.we. 400g",
+      "family_id": "mushroom",
+      "variant_id": "large_white_champignons",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "riesencham.we.400g",
+      "family_id": "mushroom",
+      "variant_id": "large_white_champignons",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "riesencham.wo.400g",
+      "family_id": "mushroom",
+      "variant_id": "large_brown_champignons",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "rinderleber",
+      "family_id": "beef",
+      "variant_id": "beef_liver",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "rispentomaten",
+      "family_id": "tomato",
+      "variant_id": "vine_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "rispentomaten lose",
+      "family_id": "tomato",
+      "variant_id": "vine_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "rockstar xdurance",
+      "family_id": "energy_drink",
+      "variant_id": "xdurance",
+      "brand": "Rockstar",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "rosso alkoholfrei",
+      "family_id": "non_alcoholic_wine",
+      "variant_id": "non_alcoholic_wine_red",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "rucola 125g",
+      "family_id": "arugula",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "ruf zahlenkerze",
+      "family_id": "birthday_candle",
+      "variant_id": "number",
+      "brand": "RUF",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "s.oliver life time wom.edt30ml",
+      "family_id": "eau_de_toilette",
+      "variant_id": "life_time_women",
+      "brand": "s.Oliver",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "s&r olive oil",
+      "family_id": "olive_oil",
+      "variant_id": null,
+      "brand": "S&R",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sahara sailor water bottle, sports water bottle, (bpa-free tritan) 1l/500 ml/750 ml, leak-proof sports water bottle, sports bottle for bike, camping, yoga, gym (1 bottle)",
+      "family_id": "water_bottle",
+      "variant_id": "tritan_sports",
+      "brand": "Sahara Sailor",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "salakis schafkäse",
+      "family_id": "sheep_cheese",
+      "variant_id": null,
+      "brand": "Salakis",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "salat wildkr.",
+      "family_id": "salad",
+      "variant_id": "wild_herbs",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sapphire technology carte graphique nitro plus amd radeon rx 9060 xt gaming oc 16gb double hdmi-dp",
+      "family_id": "graphics_card",
+      "variant_id": "radeon_rx_9060_xt_16gb",
+      "brand": "Sapphire",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "sardellenfilets",
+      "family_id": "anchovy",
+      "variant_id": "fillets",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "saure sahne 200g",
+      "family_id": "sour_cream",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "scheibenreiniger",
+      "family_id": "windshield_cleaner",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "schlagsahne 200g",
+      "family_id": "whipping_cream",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "schnittkräuter",
+      "family_id": "fresh_herbs",
+      "variant_id": "mixed",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "schw. minutensteak",
+      "family_id": "pork",
+      "variant_id": "pork_minute_steak",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "schweine-leber",
+      "family_id": "pork",
+      "variant_id": "pork_liver",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "schweinefilet",
+      "family_id": "pork",
+      "variant_id": "tenderloin",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "schweinefilet vak.",
+      "family_id": "pork",
+      "variant_id": "vacuum_packed_tenderloin",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "schwenksteaks",
+      "family_id": "pork",
+      "variant_id": "schwenksteaks",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "serrano schinken s",
+      "family_id": "cured_ham",
+      "variant_id": "serrano",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sg seelachsfilet natur 400g",
+      "family_id": "pollock",
+      "variant_id": "natural_fillet",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "shinfly felt desk mat, 120 x 60 cm, desk mat, non-slip desk mat, office desktop protection, desk mat for home office equipment (grey)",
+      "family_id": "desk_mat",
+      "variant_id": "felt_120x60_grey",
+      "brand": "Shinfly",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "simmentaler steaks",
+      "family_id": "beef",
+      "variant_id": "simmental_steaks",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "snackgurken",
+      "family_id": "cucumber",
+      "variant_id": "snack",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "somat4in1capsexc.49st",
+      "family_id": "dishwasher_detergent",
+      "variant_id": "v_4in1_caps_excellence",
+      "brand": "Somat",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "sonnenblumenöl 1l",
+      "family_id": "sunflower_oil",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sonnenmais 425ml",
+      "family_id": "sweet_corn",
+      "variant_id": "canned",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sonnentomaten lose",
+      "family_id": "tomato",
+      "variant_id": "sun_tomato",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sour cream&onion",
+      "family_id": "potato_chips",
+      "variant_id": "sour_cream_onion",
+      "brand": "Pringles",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "span. oliven entst",
+      "family_id": "olive",
+      "variant_id": "spanish_pitted",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "spargel",
+      "family_id": "asparagus",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "spargel gesch.400g",
+      "family_id": "asparagus",
+      "variant_id": "peeled",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "spargel grün 400g",
+      "family_id": "asparagus",
+      "variant_id": "green",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "spargel w/v 500g",
+      "family_id": "asparagus",
+      "variant_id": "white_violet",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "speisefrühk. 2kg",
+      "family_id": "potato",
+      "variant_id": "early",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "spice rack without drilling clips, spice organiser for gluing, 6 strips for 30 spices",
+      "family_id": "spice_rack",
+      "variant_id": "adhesive",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "stapelchips",
+      "family_id": "potato_chips",
+      "variant_id": "stacked",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "steinhaus braten",
+      "family_id": "cooked_meat",
+      "variant_id": "roast",
+      "brand": "Steinhaus",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "stepace round shoelaces, 2 pairs, tear-resistant shoelaces for hiking shoes, work shoes, trekking shoes, approx. 4.5 mm in diameter, 100 cm–180 cm length",
+      "family_id": "shoelaces",
+      "variant_id": "round",
+      "brand": "Stepace",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "stolzen.alkfr.weiß",
+      "family_id": "non_alcoholic_wine",
+      "variant_id": "white",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "suesskartoffel",
+      "family_id": "sweet_potato",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "super e5",
+      "family_id": "automotive_fuel",
+      "variant_id": "super_e5",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "süßkartoffeln",
+      "family_id": "sweet_potato",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sw-ruecken garli",
+      "family_id": "pork",
+      "variant_id": "loin_garlic",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sw-ruecken papri",
+      "family_id": "pork",
+      "variant_id": "loin_paprika",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "sweet paprika",
+      "family_id": "potato_chips",
+      "variant_id": "sweet_paprika",
+      "brand": "Pringles",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "t-bone steak",
+      "family_id": "beef",
+      "variant_id": "t_bone_steak",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "tafeltrauben",
+      "family_id": "grapes",
+      "variant_id": "table",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "tagliatelle 500g",
+      "family_id": "pasta",
+      "variant_id": "tagliatelle",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "tete de moine",
+      "family_id": "cheese",
+      "variant_id": "tete_de_moine",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "thermomaven f1 turbo digital meat thermometer - 0.5s instant display grill thermometer, ±0.3°c accurate thermometer cooking, ip67 waterproof magnetic thermometer cooking, bottle opener roasting bbq grill",
+      "family_id": "meat_thermometer",
+      "variant_id": "f1_turbo",
+      "brand": "ThermoMaven",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "tiefkühltrageta.",
+      "family_id": "shopping_bag",
+      "variant_id": "frozen_goods_bag",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "tir.felsenkellerk.",
+      "family_id": "non_alcoholic_beer",
+      "variant_id": "kellerbier",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "topa 3lg. 10x220",
+      "family_id": "toilet_paper",
+      "variant_id": "v_3_ply",
+      "brand": "topa",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "topf basilikum xl",
+      "family_id": "basil",
+      "variant_id": "potted_xl",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "tragetasche",
+      "family_id": "shopping_bag",
+      "variant_id": "carrier_bag",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "tragetasche altp",
+      "family_id": "shopping_bag",
+      "variant_id": "carrier_bag",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "traube hell kl",
+      "family_id": "grapes",
+      "variant_id": "light_small",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "trauben dunk. 500g",
+      "family_id": "grapes",
+      "variant_id": "dark",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "trauben hell 500g",
+      "family_id": "grapes",
+      "variant_id": "light",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "traubendirektsa 1l",
+      "family_id": "fruit_juice",
+      "variant_id": "direct_grape_juice",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "trinkhalme",
+      "family_id": "drinking_straw",
+      "variant_id": "drinking_straws",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "tuffi heimatmilch",
+      "family_id": "milk",
+      "variant_id": null,
+      "brand": "Tuffi",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "ugreen 2.4g & bluetooth mouse wireless vertical ergonomic mouse for windows/mac os etc. 1000/1600/2000/4000 dpi, 6 buttons (2.4g + bt 5.4)",
+      "family_id": "computer_mouse",
+      "variant_id": "vertical_wireless",
+      "brand": "UGREEN",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "ultje erdnusse",
+      "family_id": "nuts",
+      "variant_id": "peanuts",
+      "brand": "Ültje",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "val. orange 1l",
+      "family_id": "fruit_juice",
+      "variant_id": "orange_juice",
+      "brand": "Valensina",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "vici meeres snacks",
+      "family_id": "surimi",
+      "variant_id": "seafood_snacks",
+      "brand": "Vici",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "vici surimi sticks",
+      "family_id": "surimi",
+      "variant_id": "sticks",
+      "brand": "Vici",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "vielit satin pillowcases, set of 2, 40 x 60 cm, beige, soft as silk, easy-care, for hair and skin, comes with 2 scrunchies",
+      "family_id": "pillowcase",
+      "variant_id": "satin_40x60_beige",
+      "brand": "Vielit",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "vitamalz 0,5l",
+      "family_id": "malt_drink",
+      "variant_id": null,
+      "brand": "Vitamalz",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "vollkorn-sandwich",
+      "family_id": "bread",
+      "variant_id": "wholegrain_sandwich",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "vollmilch 3,5 %",
+      "family_id": "milk",
+      "variant_id": "whole_3_5_percent",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "wachteleier",
+      "family_id": "egg",
+      "variant_id": "quail",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "walnusskerne",
+      "family_id": "walnut",
+      "variant_id": "kernels",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "wasserm.kernlos",
+      "family_id": "watermelon",
+      "variant_id": "seedless",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "wassermel kernarm",
+      "family_id": "watermelon",
+      "variant_id": "low_seed",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "wassermel.kernl",
+      "family_id": "watermelon",
+      "variant_id": "seedless",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "weber 17612 lighting cubes, brown, without additives, pack of 48",
+      "family_id": "firelighter",
+      "variant_id": "lighting_cubes_48",
+      "brand": "Weber",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "weber metal fireplace",
+      "family_id": "barbecue_chimney_starter",
+      "variant_id": null,
+      "brand": "Weber",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "weightworld naticol collagen capsules, 1170 mg, pure marine collagen, 120 capsules, hydrolysate type 1, laboratory tested in germany, with pure collagen protein powder",
+      "family_id": "collagen_supplement",
+      "variant_id": "marine_capsules",
+      "brand": "WeightWorld",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "weih.milch",
+      "family_id": "milk",
+      "variant_id": null,
+      "brand": "Weihenstephan",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "white tiger gar.",
+      "family_id": "shrimp",
+      "variant_id": "white_tiger",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "wildpreiselbeeren",
+      "family_id": "lingonberry",
+      "variant_id": "wild",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "wilken butterfisch",
+      "family_id": "butterfish",
+      "variant_id": null,
+      "brand": "Wilken",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "woodenfun my body puzzle for children 3-5, montessori anatomy game set, layered puzzle for preschool children and children from 3 years (girls)",
+      "family_id": "children_puzzle",
+      "variant_id": "anatomy_layered",
+      "brand": "WOODENFUN",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "wraps vollkorn",
+      "family_id": "wraps",
+      "variant_id": "wholegrain",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "xxl cashewkerne",
+      "family_id": "nuts",
+      "variant_id": "cashew",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "xxl studentenf.",
+      "family_id": "nuts",
+      "variant_id": "trail_mix",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "yarall 32 stück verschlussclips für lebensmittel, gebogenes design, kunststoff verschlussklammern und tütenclips, clips für tüten in 2 größen – 11 cm ×20 & 8 cm ×12",
+      "family_id": "bag_clips",
+      "variant_id": "v_32_piece",
+      "brand": "Yarall",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "ychlchl wooden pull up bar set hand grip forearm finger exerciser climbing exercise equipment for door pull up bar fitness bouldering kettlebells",
+      "family_id": "climbing_training_accessory",
+      "variant_id": "wooden_grip_set",
+      "brand": "YCHLCHL",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "ze kiwis gold",
+      "family_id": "kiwi",
+      "variant_id": "gold",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zeitschrift.erm.",
+      "family_id": "magazine",
+      "variant_id": "printed_magazine",
+      "brand": null,
+      "is_organic": null
+    },
+    {
+      "normalized_name": "zetti knusp.flock.",
+      "family_id": "chocolate",
+      "variant_id": "knusperflocken",
+      "brand": "Zetti",
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zewa wisch&weg8x45",
+      "family_id": "paper_towels",
+      "variant_id": "wisch_und_weg",
+      "brand": "Zewa",
+      "is_organic": null
+    },
+    {
+      "normalized_name": "ziegenk. 250g",
+      "family_id": "cheese",
+      "variant_id": "goat_cheese",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zit.-/ora.schale",
+      "family_id": "baking_ingredient",
+      "variant_id": "lemon_orange_peel",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zitronen prem. stk",
+      "family_id": "lemon",
+      "variant_id": "premium",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zucker - raffinade",
+      "family_id": "sugar",
+      "variant_id": "refined",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zuckermais 400g va",
+      "family_id": "sweet_corn",
+      "variant_id": "canned",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zwetschgen lose",
+      "family_id": "plum",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zwiebel-mix stk",
+      "family_id": "onion",
+      "variant_id": "mix",
+      "brand": null,
+      "is_organic": false
+    },
+    {
+      "normalized_name": "zwiebeln bio 750g",
+      "family_id": "onion",
+      "variant_id": null,
+      "brand": null,
+      "is_organic": true
+    }
+  ]
+}
