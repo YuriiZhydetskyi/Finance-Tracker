@@ -210,7 +210,7 @@ assert.equal(ready.length, expected.ready);
 const proposalByName = new Map(ready.map((proposal) => [proposal.normalized_name, proposal]));
 assert.equal(proposalByName.size, expected.ready);
 
-const approvedNames = [...proposalByName.keys()].sort();
+const approvedNames = [...proposalByName.keys()].sort((left, right) => left.localeCompare(right));
 const query = `
 with approved(normalized_name) as (values ${approvedNames.map((name) => `(${sql(name)})`).join(', ')}),
 product_targets as (
