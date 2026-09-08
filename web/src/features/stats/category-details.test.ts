@@ -1,5 +1,6 @@
 import {
   groupCategoryStats,
+  selectDetailItems,
   summarizeCategoryDetails,
   type StatsDetailItem,
 } from './category-details';
@@ -19,6 +20,59 @@ function item(overrides: Partial<StatsDetailItem> = {}): StatsDetailItem {
 }
 
 describe('category detail totals', () => {
+  it('drills into a family across names and stores, then an optional variant without losing refunds', () => {
+    const purchases = [
+      item({
+        id: '1',
+        product_name: 'Філе',
+        product_family_id: 'chicken',
+        product_variant_id: 'plain',
+        variant: { name_uk: 'Немариноване філе' },
+        total_eur: 5,
+      }),
+      item({
+        id: '2',
+        product_name: 'Hähnchenfilet',
+        product_family_id: 'chicken',
+        product_variant_id: 'plain',
+        total_eur: -1,
+        receipt: { date: '2026-08-02', time: '12:30:00', store: 'REWE' },
+      }),
+      item({
+        id: '3',
+        product_name: 'Ніжки',
+        product_family_id: 'chicken',
+        product_variant_id: null,
+        total_eur: 3,
+      }),
+      item({ id: '4', product_name: 'Лохина', total_eur: 2 }),
+    ];
+    const family = summarizeCategoryDetails(selectDetailItems(purchases, { family: 'chicken' }));
+    expect(family.total_eur).toBe(7);
+    expect(family.items.map((row) => row.id)).toEqual(['2', '3', '1']);
+    expect(family.variants.map((row) => row.total_eur)).toEqual([4, 3]);
+    const variant = summarizeCategoryDetails(
+      selectDetailItems(purchases, { family: 'chicken', variant: 'plain' }),
+    );
+    expect(variant.total_eur).toBe(4);
+    expect(variant.items).toHaveLength(2);
+    expect(
+      selectDetailItems(purchases, { family: 'chicken', variant: 'unspecified' }).map(
+        (row) => row.id,
+      ),
+    ).toEqual(['3']);
+    expect(selectDetailItems(purchases, { family: 'chicken', product: 'Лохина' })).toEqual([]);
+  });
+
+  it('opens every unclassified purchase including unlinked and negative rows', () => {
+    const purchases = [
+      item(),
+      item({ id: 'unknown', product_family_id: null, family: null, total_eur: -2 }),
+    ];
+    expect(selectDetailItems(purchases, { family: 'unclassified' }).map((row) => row.id)).toEqual([
+      'unknown',
+    ]);
+  });
   it('combines a family across stores and retains unclassified purchases in every total', () => {
     const result = summarizeCategoryDetails([
       item(),

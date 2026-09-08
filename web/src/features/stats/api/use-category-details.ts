@@ -12,7 +12,7 @@ async function fetchCategoryDetailsPage(
   let query = supabase
     .from('items')
     .select(
-      'id, receipt_id, category, product_name, total_eur, product_family_id, family:product_families!items_product_family_id_fkey(name_uk), receipt:receipts!inner(date, store)',
+      'id, receipt_id, category, product_name, total_eur, qty, unit_price_orig, discount_orig, total_orig, product_family_id, product_variant_id, family:product_families!items_product_family_id_fkey(name_uk), variant:product_variants!items_variant_family_fkey(name_uk), receipt:receipts!inner(date, time, store, currency, photo_path, photo_url)',
     )
     .order('id')
     .limit(500);
@@ -23,7 +23,8 @@ async function fetchCategoryDetailsPage(
   if (filters.stores) query = query.in('receipt.store', filters.stores);
   const { data: rawData, error } = await query.abortSignal(signal);
   if (error) throw error;
-  return (rawData ?? []) as unknown as StatsDetailItem[];
+  const items: StatsDetailItem[] = rawData ?? [];
+  return items;
 }
 
 export function useCategoryDetails(range: StatsDateRange, filters: StatsFilters, enabled: boolean) {

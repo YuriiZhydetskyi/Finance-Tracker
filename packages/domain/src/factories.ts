@@ -91,6 +91,9 @@ export function makeItem(input: ItemInput): Item & {
     receipt_id: input.receipt_id,
     product_id: input.product_id ?? null,
     product_name: input.product_name,
+    // Imports and manual entry start with the entered receipt label. Historical
+    // corrections can later change product_name without losing this evidence.
+    raw_product_name: input.raw_product_name ?? input.product_name,
     store_product_code: input.store_product_code ?? null,
     product_url: input.product_url ?? null,
     product_image_url: input.product_image_url ?? null,

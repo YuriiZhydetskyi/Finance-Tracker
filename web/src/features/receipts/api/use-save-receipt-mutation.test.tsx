@@ -21,7 +21,8 @@ const productsSelectMock = vi.fn<(col: string, val: string) => Promise<DataRes>>
 const productsInsertMock = vi.fn<(rows: unknown) => Promise<ErrorRes>>();
 const productsUpdateMock = vi.fn<(patch: unknown, col: string, val: string) => Promise<ErrorRes>>();
 const receiptInsertMock = vi.fn<(row: unknown) => Promise<ErrorRes>>();
-const itemsInsertMock = vi.fn<(rows: unknown) => Promise<ErrorRes>>();
+const itemsInsertMock =
+  vi.fn<(rows: unknown) => Promise<{ data?: unknown; error: ErrorRes['error'] }>>();
 const receiptDeleteEqMock = vi.fn<(col: string, val: string) => Promise<ErrorRes>>();
 const pricesInsertMock = vi.fn<(rows: unknown) => Promise<ErrorRes>>();
 const fxRateMock = vi.fn<(currency: string, dateIso: string) => Promise<number>>();
@@ -50,7 +51,13 @@ vi.mock('@/shared/lib/supabase-client', () => ({
       }
       if (table === 'items') {
         return {
-          insert: (rows: unknown) => itemsInsertMock(rows),
+          insert: (rows: unknown) => ({
+            select: () =>
+              itemsInsertMock(rows).then((result) => ({
+                data: result.data ?? rows,
+                error: result.error,
+              })),
+          }),
         };
       }
       if (table === 'product_prices') {
@@ -202,7 +209,18 @@ describe('useSaveReceiptMutation', () => {
     });
     productsInsertMock.mockResolvedValue({ error: null });
     receiptInsertMock.mockResolvedValue({ error: null });
-    itemsInsertMock.mockResolvedValue({ error: null });
+    // An insert trigger can replace this product link with a store rule.
+    itemsInsertMock.mockResolvedValue({
+      data: [
+        {
+          id: '01HM4N6RPP3K2P9F8DZ7QWERRR',
+          product_id: '01HM4N6RPP3K2P9F8DZ7QWERCN',
+          unit_price_orig: 1.39,
+          discount_orig: 0,
+        },
+      ],
+      error: null,
+    });
     pricesInsertMock.mockResolvedValue({ error: null });
 
     const { Wrapper } = makeWrapper();
@@ -232,7 +250,7 @@ describe('useSaveReceiptMutation', () => {
     const insertedItems = itemsInsertMock.mock.calls[0]?.[0] as { product_id: string | null }[];
     expect(insertedItems[0]?.product_id).toBe('01HM4N6RPP3K2P9F8DZ7QWERTZ');
     const prices = pricesInsertMock.mock.calls[0]?.[0] as { product_id: string }[];
-    expect(prices[0]?.product_id).toBe('01HM4N6RPP3K2P9F8DZ7QWERTZ');
+    expect(prices[0]?.product_id).toBe('01HM4N6RPP3K2P9F8DZ7QWERCN');
   });
 
   it('backfills code on a code-less existing product when item has a code', async () => {
@@ -393,6 +411,37 @@ describe('useSaveReceiptMutation', () => {
     const [col, val] = receiptDeleteEqMock.mock.calls[0]!;
     expect(col).toBe('id');
     expect(val).toBe(insertedReceipt.id);
+  });
+
+  it('rolls back when inserted items cannot be read back for price snapshots', async () => {
+    fxRateMock.mockResolvedValue(1.0);
+    productsSelectMock.mockResolvedValue({ data: [], error: null });
+    productsInsertMock.mockResolvedValue({ error: null });
+    receiptInsertMock.mockResolvedValue({ error: null });
+    itemsInsertMock.mockResolvedValue({
+      data: [
+        {
+          id: '01HM4N6RPP3K2P9F8DZ7QWERRR',
+          product_id: '01HM4N6RPP3K2P9F8DZ7QWERCN',
+          unit_price_orig: 1.5,
+          discount_orig: 0,
+        },
+      ],
+      error: null,
+    });
+    receiptDeleteEqMock.mockResolvedValue({ error: null });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useSaveReceiptMutation(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ receipt: baseReceipt, items: baseItems }),
+      ).rejects.toThrow(/could not be read back/);
+    });
+
+    expect(pricesInsertMock).not.toHaveBeenCalled();
+    expect(receiptDeleteEqMock).toHaveBeenCalledTimes(1);
   });
 
   it('rolls back the receipt when product_prices insert fails', async () => {

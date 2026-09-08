@@ -78,6 +78,11 @@ vi.mock('@/features/auth', () => ({
   RequireAuth: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('react-chartjs-2', () => ({ Bar: () => null, Pie: () => null }));
+vi.mock('@/features/product-corrections', () => ({
+  PurchaseCorrectionDialog: ({ itemId }: { itemId: string }) => (
+    <div role="dialog">Редагування {itemId}</div>
+  ),
+}));
 
 function openStats(url = '/stats') {
   const router = createRouter({
@@ -175,7 +180,7 @@ describe('saved statistics filters on page load', () => {
     expect(
       within(screen.getByRole('table', { name: 'Сімейство' })).getByText('50%'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Без визначеного сімейства')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Без визначеного сімейства →' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Овочі/фрукти →' }));
     expect(await screen.findByRole('heading', { name: 'Овочі/фрукти' })).toBeInTheDocument();
     const familyTable = screen.getByRole('table', { name: 'Сімейство' });
@@ -185,7 +190,9 @@ describe('saved statistics filters on page load', () => {
       within(screen.getByRole('table', { name: 'Магазин' })).getByText('REWE'),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByRole('table', { name: 'Товар' })).getByText('Помідори'),
+      within(screen.getByRole('table', { name: 'Товар' })).getByRole('button', {
+        name: 'Помідори →',
+      }),
     ).toBeInTheDocument();
     expect(detailMock).toHaveBeenLastCalledWith(
       { dateFrom: '2026-08-01', dateTo: '2026-08-31' },
@@ -210,5 +217,49 @@ describe('saved statistics filters on page load', () => {
     expect(await screen.findByText('За вибраними фільтрами покупок немає.')).toBeInTheDocument();
     expect(detailMock).toHaveBeenLastCalledWith({}, { categories: [], stores: ['Lidl'] }, true);
     expect(rpcMock.mock.calls.map(([name]) => name)).toEqual(['stats_filter_options']);
+  });
+
+  it('opens family purchases across stores, supports correction, and retains family in browser history', async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(
+      'finance-tracker.stats-preferences.v1',
+      JSON.stringify({ period: 'all-time' }),
+    );
+    const router = openStats('/stats?group=Продукти&family=tomato');
+    expect(await screen.findByRole('heading', { name: 'Помідори' })).toBeInTheDocument();
+    const list = screen.getByRole('list');
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(list).getByText(/REWE ·/)).toBeInTheDocument();
+    expect(within(list).getByText(/Lidl ·/)).toBeInTheDocument();
+    expect(within(list).getAllByRole('link', { name: 'Відкрити чек' })[0]).toHaveAttribute(
+      'href',
+      '/edit/r2',
+    );
+    await user.click(within(list).getAllByRole('button', { name: 'Виправити товар' })[0]!);
+    expect(screen.getByRole('dialog')).toHaveTextContent('Редагування b');
+    await user.click(screen.getByText('Варіанти товару'));
+    await user.click(screen.getByRole('button', { name: 'Без уточнення варіанта →' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Без уточнення варіанта' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.search).toMatchObject({
+      family: 'tomato',
+      variant: 'unspecified',
+    });
+    act(() => router.history.back());
+    expect(await screen.findByRole('heading', { name: 'Помідори' })).toBeInTheDocument();
+  });
+
+  it('opens unclassified purchase history without silently excluding it', async () => {
+    window.localStorage.setItem(
+      'finance-tracker.stats-preferences.v1',
+      JSON.stringify({ period: 'all-time' }),
+    );
+    openStats('/stats?group=Продукти&family=unclassified');
+    expect(
+      await screen.findByRole('heading', { name: 'Без визначеного сімейства' }),
+    ).toBeInTheDocument();
+    expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(screen.getByRole('list')).getByText('Товар d')).toBeInTheDocument();
   });
 });

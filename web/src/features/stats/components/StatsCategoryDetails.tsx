@@ -2,10 +2,16 @@ import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { formatMoney } from '@/shared/utils/format-money';
 import { useCategoryDetails } from '../api/use-category-details';
 import type { StatsDateRange, StatsFilters } from '../api/stats.types';
-import type { StatsBreakdownRow, StatsSelection } from '../category-details';
+import {
+  selectDetailItems,
+  summarizeCategoryDetails,
+  type StatsBreakdownRow,
+  type StatsSelection,
+} from '../category-details';
 import { formatPeriodRange } from '../stats-period';
 import { ByMonthChart } from './ByMonthChart';
 import { StatsBreakdown } from './StatsBreakdown';
+import { StatsPurchaseList } from './StatsPurchaseList';
 
 type Props = Readonly<{
   selection: StatsSelection;
@@ -51,7 +57,9 @@ function selectedCategories(
     selection.category !== undefined
       ? [selection.category]
       : categories
-          .filter((category) => category.group_name === selection.group)
+          .filter(
+            (category) => selection.group === undefined || category.group_name === selection.group,
+          )
           .map((category) => category.name);
   return available.filter(
     (category) => !filters.categories || filters.categories.includes(category),
@@ -71,7 +79,9 @@ function DetailsBody({ range, query, title, selection, onSelect }: DetailsBodyPr
   if (query.isError) {
     return <ErrorDetails error={query.error} label="Не вдалося завантажити деталізацію" />;
   }
-  const data = query.data;
+  const data = query.data
+    ? summarizeCategoryDetails(selectDetailItems(query.data.items, selection))
+    : undefined;
   if (!data) {
     return (
       <output className="text-sm text-slate-500" aria-live="polite">
@@ -99,6 +109,30 @@ function DetailsBody({ range, query, title, selection, onSelect }: DetailsBodyPr
             : ''}
         </p>
       </section>
+      {selection.family === undefined && selection.product === undefined ? (
+        <BreakdownSection
+          title="По сімействах товарів"
+          subtitle="Помідори, лохина, сир та інші види товарів — незалежно від магазину, бренду й упаковки. Натисніть, щоб побачити покупки та варіанти."
+          rows={data.families}
+          total={data.total_eur}
+          label="Сімейство"
+          onSelect={(family) => onSelect({ ...selection, family })}
+        />
+      ) : null}
+      {selection.family !== undefined &&
+      selection.variant === undefined &&
+      selection.product === undefined ? (
+        <details className="rounded-md border border-slate-200 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-semibold">Варіанти товару</summary>
+          <StatsBreakdown
+            rows={data.variants}
+            total={data.total_eur}
+            label="Варіант"
+            onSelect={(variant) => onSelect({ ...selection, variant })}
+          />
+        </details>
+      ) : null}
+      <StatsPurchaseList key={JSON.stringify(selection)} items={data.items} />
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-md border border-slate-200 bg-white p-4">
           <h3 className="mb-3 text-sm font-semibold">По місяцях</h3>
@@ -112,14 +146,19 @@ function DetailsBody({ range, query, title, selection, onSelect }: DetailsBodyPr
           total={data.total_eur}
           label="Магазин"
         />
-        <BreakdownSection
-          title="По товарах"
-          subtitle="Однакові назви з чеків об’єднано незалежно від магазину."
-          rows={data.products}
-          total={data.total_eur}
-          label="Товар"
-        />
-        {selection.category === undefined ? (
+        {selection.product === undefined ? (
+          <BreakdownSection
+            title="По товарах"
+            subtitle="Однакові назви з чеків об’єднано незалежно від магазину."
+            rows={data.products}
+            total={data.total_eur}
+            label="Товар"
+            onSelect={(product) => onSelect({ ...selection, product })}
+          />
+        ) : null}
+        {selection.category === undefined &&
+        selection.family === undefined &&
+        selection.product === undefined ? (
           <BreakdownSection
             title="По категоріях"
             rows={data.categories}
@@ -128,13 +167,6 @@ function DetailsBody({ range, query, title, selection, onSelect }: DetailsBodyPr
             onSelect={(category) => onSelect({ ...selection, category })}
           />
         ) : null}
-        <BreakdownSection
-          title="По сімействах товарів"
-          subtitle="Однакові сімейства об’єднано незалежно від магазину, бренду та упаковки."
-          rows={data.families}
-          total={data.total_eur}
-          label="Сімейство"
-        />
       </div>
     </>
   );
@@ -154,8 +186,27 @@ export function StatsCategoryDetails({
     { ...filters, categories: scope },
     range !== null && (selection.category !== undefined || categoriesReady),
   );
-  const title = selection.category ?? selection.group ?? '';
-  const group = selection.group;
+  const familyTitle =
+    query.data?.families.find((row) => row.key === selection.family)?.name ??
+    (selection.family === 'unclassified' ? 'Без визначеного сімейства' : 'Сімейство');
+  const variantTitle =
+    query.data?.variants.find((row) => row.key === selection.variant)?.name ??
+    (selection.variant === 'unspecified' ? 'Без уточнення варіанта' : 'Варіант');
+  const crumbs: { title: string; selection: StatsSelection }[] = [];
+  let parent: StatsSelection = {};
+  for (const [key, label] of [
+    ['group', selection.group],
+    ['category', selection.category],
+    ['family', selection.family === undefined ? undefined : familyTitle],
+    ['variant', selection.variant === undefined ? undefined : variantTitle],
+    ['product', selection.product],
+  ] as const) {
+    if (label !== undefined) {
+      parent = { ...parent, [key]: selection[key] };
+      crumbs.push({ title: label, selection: parent });
+    }
+  }
+  const title = crumbs.at(-1)?.title ?? '';
 
   return (
     <div className="space-y-4">
@@ -163,20 +214,22 @@ export function StatsCategoryDetails({
         <button type="button" className="text-teal-700 underline" onClick={() => onSelect({})}>
           Уся статистика
         </button>
-        {selection.group !== undefined && selection.category !== undefined ? (
-          <>
+        {crumbs.map((crumb, index) => (
+          <span key={JSON.stringify(crumb.selection)} className="contents">
             <span aria-hidden="true">/</span>
-            <button
-              type="button"
-              className="text-teal-700 underline"
-              onClick={() => onSelect(group !== undefined ? { group } : {})}
-            >
-              {selection.group}
-            </button>
-          </>
-        ) : null}
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">{title}</span>
+            {index === crumbs.length - 1 ? (
+              <span aria-current="page">{crumb.title}</span>
+            ) : (
+              <button
+                type="button"
+                className="text-teal-700 underline"
+                onClick={() => onSelect(crumb.selection)}
+              >
+                {crumb.title}
+              </button>
+            )}
+          </span>
+        ))}
       </nav>
       <header>
         <h2 className="text-xl font-semibold text-slate-900">{title}</h2>

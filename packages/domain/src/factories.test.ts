@@ -124,6 +124,23 @@ describe('makeItem', () => {
     expect(it.wasted_at).toBe(null);
   });
 
+  it('keeps the entered receipt label as raw_product_name by default', () => {
+    const it = makeItem({ ...ITEM_DEFAULTS, product_name: 'Original', qty: 1, unit_price_orig: 1 });
+    expect(it.raw_product_name).toBe('Original');
+  });
+
+  it('preserves a receipt label supplied separately from a corrected display name', () => {
+    const it = makeItem({
+      ...ITEM_DEFAULTS,
+      product_name: 'Pringles Original',
+      raw_product_name: 'Original',
+      qty: 1,
+      unit_price_orig: 1,
+    });
+    expect(it.raw_product_name).toBe('Original');
+    expect(it.product_name).toBe('Pringles Original');
+  });
+
   it('sets wasted_at to now() when wasted_qty > 0 and no wasted_at provided', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-18T12:00:00.000Z'));

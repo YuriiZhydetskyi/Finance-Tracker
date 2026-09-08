@@ -35,6 +35,9 @@ import { formatMoney } from '@/shared/utils/format-money';
 const StatsSearchSchema = z.object({
   group: z.string().optional().catch(undefined),
   category: z.string().optional().catch(undefined),
+  family: z.string().optional().catch(undefined),
+  variant: z.string().optional().catch(undefined),
+  product: z.string().optional().catch(undefined),
 });
 const EMPTY_FILTER_OPTIONS = { categories: [], stores: [] };
 
@@ -122,8 +125,11 @@ function StatsDashboard() {
   const selection: StatsSelection = {
     ...(search.group !== undefined ? { group: search.group } : {}),
     ...(search.category !== undefined ? { category: search.category } : {}),
+    ...(search.family !== undefined ? { family: search.family } : {}),
+    ...(search.variant !== undefined ? { variant: search.variant } : {}),
+    ...(search.product !== undefined ? { product: search.product } : {}),
   };
-  const showDetails = selection.group !== undefined || selection.category !== undefined;
+  const showDetails = Object.keys(selection).length > 0;
   const selectStats = (next: StatsSelection) => {
     void navigate({ search: next });
   };

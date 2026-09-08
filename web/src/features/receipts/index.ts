@@ -4,6 +4,7 @@ export { ManualReceiptForm } from './components/ManualReceiptForm';
 export { EditReceiptForm } from './components/EditReceiptForm';
 export { ReceiptFormFields } from './components/ReceiptFormFields';
 export { ReceiptCard } from './components/ReceiptCard';
+export { ReceiptPhoto } from './components/ReceiptPhoto';
 export { EmptyReceiptsState } from './components/EmptyReceiptsState';
 export { NoMatchingReceipts } from './components/NoMatchingReceipts';
 export { DuplicateWarningBanner } from './components/DuplicateWarningBanner';

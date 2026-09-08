@@ -123,15 +123,30 @@ export function useSaveReceiptMutation() {
       const { error: receiptError } = await supabase.from('receipts').insert(receipt);
       if (receiptError) throw wrapError('Receipt insert failed', receiptError);
 
+      let savedItems: {
+        product_id: string | null;
+        unit_price_orig: number;
+        discount_orig: number;
+      }[] = [];
       if (items.length > 0) {
-        const { error: itemsError } = await supabase.from('items').insert(items);
+        const { data, error: itemsError } = await supabase
+          .from('items')
+          .insert(items)
+          .select('id, product_id, unit_price_orig, discount_orig');
         if (itemsError) {
           await supabase.from('receipts').delete().eq('id', receipt.id);
           throw wrapError('Items insert failed', itemsError);
         }
+        savedItems = data ?? [];
+        if (savedItems.length !== items.length) {
+          await supabase.from('receipts').delete().eq('id', receipt.id);
+          throw new Error(
+            'Items were saved but could not be read back to create price snapshots. The receipt was removed; please try again.',
+          );
+        }
       }
 
-      const prices = items
+      const prices = savedItems
         .filter((it) => it.product_id != null)
         .map((it) =>
           makeProductPrice({
