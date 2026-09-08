@@ -23,6 +23,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Verify frozen taxonomy backfill
+        run: node scripts/product-taxonomy/verify-historical-backfill.mjs
+
       - name: Lint
         run: npm run lint
 
