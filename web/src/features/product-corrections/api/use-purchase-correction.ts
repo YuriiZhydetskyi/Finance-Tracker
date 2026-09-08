@@ -62,9 +62,9 @@ export function usePurchaseCorrectionMutation() {
         p_product_id: ulid(),
         p_product_name: vars.productName.trim(),
         p_category: vars.category,
-        p_product_family_id: vars.productFamilyId,
-        p_product_variant_id: vars.productVariantId,
         p_remember_rule: vars.rememberRule,
+        ...(vars.productFamilyId === null ? {} : { p_product_family_id: vars.productFamilyId }),
+        ...(vars.productVariantId === null ? {} : { p_product_variant_id: vars.productVariantId }),
       });
       if (error) throw wrapError('Purchase correction failed', error);
     },

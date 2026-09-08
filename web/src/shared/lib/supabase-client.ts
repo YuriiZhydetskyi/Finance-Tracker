@@ -6,23 +6,16 @@
 // go through the relevant port (authService / photoStorage / fxRateProvider /
 // parseReceiptService) exported from `@/shared/lib/dependencies`.
 //
-// The schema overlay includes the pending purchase-correction migration.
-// Regenerate database.types.ts and remove the overlay after deploying it.
-
 import { createClient } from '@supabase/supabase-js';
 import { env } from './env';
-import type { DatabaseWithPurchaseCorrections } from '@/shared/types/purchase-corrections-schema';
+import type { Database } from '@/shared/types/database.types';
 
-export const supabase = createClient<DatabaseWithPurchaseCorrections>(
-  env.VITE_SUPABASE_URL,
-  env.VITE_SUPABASE_ANON_KEY,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
+export const supabase = createClient<Database>(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
   },
-);
+});
 
 export type SupabaseClientInstance = typeof supabase;
