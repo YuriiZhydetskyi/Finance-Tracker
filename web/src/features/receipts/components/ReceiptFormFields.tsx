@@ -7,6 +7,7 @@ import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
 import { ItemsList } from './ItemsList';
 import { SummaryFooter } from './SummaryFooter';
 import { SUPPORTED_CURRENCIES, type ManualFormValues } from '../schemas/manual-form';
+import type { ProductTaxonomy } from '@/features/products/api/use-products';
 
 // RHF `register` returns `any` from the input event, so an inline arrow trips
 // no-unsafe-return. Hoist as a typed helper; HTML inputs always emit string.
@@ -18,6 +19,7 @@ type Props = {
   itemsArray: UseFieldArrayReturn<ManualFormValues, 'items', 'id'>;
   categories: string[];
   productNames: string[];
+  taxonomy: ProductTaxonomy;
   paidByOptions: string[];
   saveError?: Error | null;
   /** Action buttons rendered at the bottom of the form (Save/Cancel/Delete). */
@@ -33,6 +35,7 @@ export function ReceiptFormFields({
   itemsArray,
   categories,
   productNames,
+  taxonomy,
   paidByOptions,
   saveError,
   actions,
@@ -107,7 +110,12 @@ export function ReceiptFormFields({
         </div>
       </div>
 
-      <ItemsList itemsArray={itemsArray} categories={categories} productNames={productNames} />
+      <ItemsList
+        itemsArray={itemsArray}
+        categories={categories}
+        productNames={productNames}
+        taxonomy={taxonomy}
+      />
 
       {itemErrors?.root && <p className="text-sm text-red-600">{itemErrors.root.message}</p>}
 

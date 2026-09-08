@@ -10,6 +10,7 @@
 import { roundFxRate, roundMoney, roundQty } from './money';
 import { nowIso } from './time';
 import { ulid } from './ulid';
+import { ProductClassificationSchema } from './product-taxonomy';
 
 // Normalize a time-of-day input (HH:MM or HH:MM:SS, possibly null/undefined/'')
 // into the canonical HH:MM:SS string stored on Receipt. Empty string → null
@@ -69,7 +70,10 @@ export function makeReceipt(input: ReceiptInput): Receipt {
   return ReceiptSchema.parse(candidate);
 }
 
-export function makeItem(input: ItemInput): Item {
+export function makeItem(input: ItemInput): Item & {
+  product_family_id: string | null;
+  product_variant_id: string | null;
+} {
   const qty = roundQty(input.qty);
   const unit_price_orig = roundMoney(input.unit_price_orig);
   const discount_orig = roundMoney(input.discount_orig ?? 0);
@@ -82,6 +86,7 @@ export function makeItem(input: ItemInput): Item {
   // to now() for newly-wasted items and null for clean ones.
   const wasted_at = wasted_qty > 0 ? (input.wasted_at ?? now) : null;
   const candidate: Item = {
+    ...ProductClassificationSchema.parse(input),
     id: ulid(),
     receipt_id: input.receipt_id,
     product_id: input.product_id ?? null,
@@ -102,12 +107,25 @@ export function makeItem(input: ItemInput): Item {
     created_at: now,
     updated_at: now,
   };
-  return ItemSchema.parse(candidate);
+  const item = ItemSchema.parse(candidate);
+  return {
+    ...item,
+    product_family_id: item.product_family_id ?? null,
+    product_variant_id: item.product_variant_id ?? null,
+  };
 }
 
-export function makeProduct(input: ProductInput): Product {
+export function makeProduct(input: ProductInput): Product & {
+  product_family_id: string | null;
+  product_variant_id: string | null;
+  brand: string | null;
+  is_organic: boolean | null;
+} {
   const now = nowIso();
   const candidate: Product = {
+    ...ProductClassificationSchema.parse(input),
+    ...(input.brand !== undefined ? { brand: input.brand } : {}),
+    ...(input.is_organic !== undefined ? { is_organic: input.is_organic } : {}),
     id: ulid(),
     name: input.name,
     store: input.store,
@@ -119,7 +137,14 @@ export function makeProduct(input: ProductInput): Product {
     created_at: now,
     updated_at: now,
   };
-  return ProductSchema.parse(candidate);
+  const product = ProductSchema.parse(candidate);
+  return {
+    ...product,
+    product_family_id: product.product_family_id ?? null,
+    product_variant_id: product.product_variant_id ?? null,
+    brand: product.brand ?? null,
+    is_organic: product.is_organic ?? null,
+  };
 }
 
 export function makeProductPrice(input: ProductPriceInput): ProductPrice {

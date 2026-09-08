@@ -10,6 +10,7 @@ import {
   CONSUMED_BY_SCHEMA,
   EMAIL_LIKE_SCHEMA,
   ISO_DATE_SCHEMA,
+  ProductClassificationSchema,
   SOURCE_SCHEMA,
   ULID_SCHEMA,
 } from '@finance-tracker/domain';
@@ -29,11 +30,20 @@ const PairMarkerSchema = z.discriminatedUnion('kind', [
 ]);
 
 const ItemFormSchema = z.object({
+  // UI-only identity to preserve the correct historical classification on edit.
+  original_item_id: z.string().min(1).optional(),
+  // Set only after a person changes family, variant, brand or Bio in the form.
+  // AI suggestions remain conservative enrichments; an explicit edit can correct
+  // an already-classified catalogue product.
+  product_metadata_override: z.boolean().optional(),
   product_id: ULID_SCHEMA.nullable().optional(),
   product_name: z.string().min(1, "Назва товару обов'язкова"),
   store_product_code: z.string().nullable().optional(),
   product_url: z.string().nullable().optional(),
   product_image_url: z.string().nullable().optional(),
+  ...ProductClassificationSchema.shape,
+  brand: z.string().trim().min(1).nullable().optional(),
+  is_organic: z.boolean().nullable().optional(),
   category: z.string().min(1, "Категорія обов'язкова"),
   qty: z.number().finite().positive('Кількість має бути більша 0'),
   unit_price_orig: z.number().finite(),

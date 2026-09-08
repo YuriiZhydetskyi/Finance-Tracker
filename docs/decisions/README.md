@@ -44,3 +44,4 @@
 | [0022](0022-printed-article-count-repair.md) | Доказове відновлення повторів за надрукованою кількістю товарів | accepted | Import / AI / Domain |
 | [0023](0023-compact-chunked-receipt-extraction.md) | Компактне поетапне розпізнавання довгих чеків | accepted | Import / AI / Queue / Domain |
 | [0024](0024-manual-json-through-durable-import-queue.md) | Ручний JSON через стійку чергу імпорту | accepted | Import / Queue / Security / UI |
+| [0025](0025-multilingual-product-taxonomy.md) | Багатомовна таксономія товарів із snapshot для покупки | accepted | Schema / Search / AI |

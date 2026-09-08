@@ -10,6 +10,13 @@ export type ParsedItem = {
   qty: number;
   unit_price_orig: number;
   category_suggestion: string | null;
+  /** Suggested catalogue identity. Null means the receipt does not establish it. */
+  product_family_id?: string | null;
+  product_variant_id?: string | null;
+  /** Brand printed for this product, never the store name. */
+  brand?: string | null;
+  /** True only for an explicit organic/Bio label; false only for identified food. */
+  is_organic?: boolean | null;
   discount_orig?: number;
   product_code?: string | null;
   product_url?: string | null;
@@ -86,11 +93,29 @@ export type AiCallResult<T> = {
 
 export type BulkParseMode = 'standard' | 'verification';
 
+export type TaxonomyFamilyHint = {
+  id: string;
+  name_uk: string;
+  name_en: string;
+  name_de: string;
+};
+
+export type TaxonomyVariantHint = TaxonomyFamilyHint & {
+  family_id: string;
+};
+
+export type ProductTaxonomyContext = {
+  families: TaxonomyFamilyHint[];
+  variants: TaxonomyVariantHint[];
+};
+
 export type AiContext = {
   /** Allowed category names. Used to constrain category_suggestion via JSON schema enum. */
   categories: string[];
   /** Known product names from prior receipts — passed as a soft hint, not enforced. */
   products: { name: string }[];
+  /** Current catalogue choices. AI may return only these IDs, otherwise null. */
+  taxonomy?: ProductTaxonomyContext;
   /** MIME of the inline image bytes. Default 'image/jpeg'. */
   mimeType: string;
 };

@@ -4,6 +4,7 @@ import {
   makeProductPrice,
   makeReceipt,
   type ItemInput,
+  type ProductInput,
   type ReceiptInput,
 } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
@@ -19,7 +20,11 @@ import { resolveProducts } from './resolve-products';
 // total_orig out of the input avoids drift between form-computed and
 // mutation-computed sums; the mutation is the single source of truth.
 export type SaveReceiptInput = Omit<ReceiptInput, 'fx_rate_eur' | 'total_orig'>;
-export type SaveItemInput = Omit<ItemInput, 'fx_rate_eur' | 'receipt_id'>;
+export type SaveItemInput = Omit<ItemInput, 'fx_rate_eur' | 'receipt_id'> &
+  Pick<ProductInput, 'brand' | 'is_organic'> & {
+    /** Set by the review form only after a person changes product metadata. */
+    product_metadata_override?: boolean;
+  };
 
 export type SaveReceiptVars = {
   receipt: SaveReceiptInput;
@@ -64,7 +69,9 @@ export function useSaveReceiptMutation() {
 
       const { data: existing, error: fetchError } = await supabase
         .from('products')
-        .select('id, name, store, store_product_code, category')
+        .select(
+          'id, name, store, store_product_code, category, product_family_id, product_variant_id, brand, is_organic',
+        )
         .eq('store', receipt.store);
       if (fetchError) throw wrapError('Products fetch failed', fetchError);
 
@@ -74,6 +81,11 @@ export function useSaveReceiptMutation() {
           product_name: it.product_name,
           store_product_code: it.store_product_code ?? null,
           category: it.category,
+          product_family_id: it.product_family_id ?? null,
+          product_variant_id: it.product_variant_id ?? null,
+          brand: it.brand ?? null,
+          is_organic: it.is_organic ?? null,
+          product_metadata_override: it.product_metadata_override ?? false,
         })),
         existingProducts: existing ?? [],
       });
@@ -93,14 +105,20 @@ export function useSaveReceiptMutation() {
         if (bfError) throw wrapError('Product backfill failed', bfError);
       }
 
-      const items = itemInputs.map((it, idx) =>
-        makeItem({
+      for (const enrichment of resolution.enrichments) {
+        const { id, ...patch } = enrichment;
+        const { error } = await supabase.from('products').update(patch).eq('id', id);
+        if (error) throw wrapError('Product enrichment failed', error);
+      }
+
+      const items = itemInputs.map((it, idx) => {
+        return makeItem({
           ...it,
           receipt_id: receipt.id,
           product_id: resolution.productIdByIndex[idx] ?? null,
           fx_rate_eur,
-        }),
-      );
+        });
+      });
 
       const { error: receiptError } = await supabase.from('receipts').insert(receipt);
       if (receiptError) throw wrapError('Receipt insert failed', receiptError);

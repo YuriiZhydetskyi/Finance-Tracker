@@ -7,7 +7,7 @@ import { supabase } from '@/shared/lib/supabase-client';
 // as a filterable expression and we don't want a dedicated SQL view for it.
 
 export type WasteFilters = {
-  nameSearch?: string; // ILIKE %name% on items.product_name
+  nameSearch?: string; // Receipt text, taxonomy translations/aliases and brand.
   category?: string; // exact match on items.category
   dateFrom?: string; // YYYY-MM-DD lower bound on receipts.date
   dateTo?: string; // YYYY-MM-DD upper bound on receipts.date
@@ -52,33 +52,41 @@ export function useWasteItems(filters: WasteFilters) {
   return useQuery<WasteItemRow[]>({
     queryKey: [...wasteItemsQueryKey, { filters }] as const,
     queryFn: async () => {
-      let q = supabase
-        .from('items')
-        .select(
-          `
+      const rows: WasteItemRow[] = [];
+      // PostgREST caps every response. Fetch all pages before applying the
+      // fully-wasted filter so a long history cannot hide matching purchases.
+      const pageSize = 500;
+      for (let offset = 0; ; offset += pageSize) {
+        let q = supabase
+          .rpc('search_waste_items', { p_query: filters.nameSearch?.trim() ?? '' })
+          .select(
+            `
           id, product_name, category, qty, unit_price_orig, total_orig, total_eur,
           discount_orig, wasted_qty, wasted_at,
           receipt:receipts!inner(id, date, store, currency, fx_rate_eur)
         `,
-        )
-        .gt('total_orig', 0);
+          )
+          .gt('total_orig', 0);
 
-      if (filters.nameSearch) q = q.ilike('product_name', `%${filters.nameSearch}%`);
-      if (filters.category) q = q.eq('category', filters.category);
-      if (filters.dateFrom) q = q.gte('receipts.date', filters.dateFrom);
-      if (filters.dateTo) q = q.lte('receipts.date', filters.dateTo);
-      if (filters.storeSearch) q = q.ilike('receipts.store', `%${filters.storeSearch}%`);
-      if (filters.priceMin != null) q = q.gte('total_orig', filters.priceMin);
-      if (filters.priceMax != null) q = q.lte('total_orig', filters.priceMax);
+        if (filters.category) q = q.eq('category', filters.category);
+        if (filters.dateFrom) q = q.gte('receipt.date', filters.dateFrom);
+        if (filters.dateTo) q = q.lte('receipt.date', filters.dateTo);
+        if (filters.storeSearch) q = q.ilike('receipt.store', `%${filters.storeSearch}%`);
+        if (filters.priceMin != null) q = q.gte('total_orig', filters.priceMin);
+        if (filters.priceMax != null) q = q.lte('total_orig', filters.priceMax);
 
-      const { data, error } = await q
-        // `referencedTable` orders only the embedded receipt object. Ordering
-        // the root item rows needs PostgREST's relation(column) syntax.
-        .order('receipt(date)', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-
-      const rows = (data ?? []) as unknown as WasteItemRow[];
+        const { data, error } = await q
+          // `referencedTable` orders only the embedded receipt object. Ordering
+          // the root item rows needs PostgREST's relation(column) syntax.
+          .order('receipt(date)', { ascending: false })
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
+          .range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        const page = (data ?? []) as unknown as WasteItemRow[];
+        rows.push(...page);
+        if (page.length < pageSize) break;
+      }
       // Hide fully-wasted unless explicitly opted in. Cheap client-side filter:
       // there is no PostgREST expression for `wasted_qty == qty`.
       return filters.showFullyWasted ? rows : rows.filter((r) => r.wasted_qty < r.qty);

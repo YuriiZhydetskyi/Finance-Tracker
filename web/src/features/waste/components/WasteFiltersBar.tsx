@@ -72,10 +72,14 @@ export function WasteFiltersBar({ search, categoryOptions, activeCount }: Props)
           </label>
           <Input
             id="waste-filter-name"
-            placeholder="хліб, йогурт…"
+            placeholder="яблуко, Apfel, apple…"
             value={nameDraft}
             onChange={(e) => setNameDraft(e.target.value)}
+            aria-describedby="waste-search-help"
           />
+          <p id="waste-search-help" className="mt-1 text-xs text-slate-500">
+            Назва, вид або бренд — українською, німецькою чи англійською.
+          </p>
         </div>
         <div className="col-span-12 sm:col-span-3">
           <label className={FIELD_LABEL_CLASS} htmlFor="waste-filter-category">

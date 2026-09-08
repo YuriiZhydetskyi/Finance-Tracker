@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { isValidConsumedBy } from './consumed-by';
 import { ULID_REGEX } from './ulid';
+import { ProductClassificationSchema } from './product-taxonomy';
 
 // ── Reusable atoms ──────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ export const ItemSchema = z
     id: ULID_SCHEMA,
     receipt_id: ULID_SCHEMA,
     product_id: ULID_SCHEMA.nullable(),
+    ...ProductClassificationSchema.shape,
     product_name: z.string().min(1, 'product_name is required'),
     store_product_code: z.string().nullable(),
     product_url: z.string().nullable().default(null),
@@ -88,6 +90,12 @@ export const ItemSchema = z
     updated_at: ISO_DATETIME_SCHEMA,
   })
   .superRefine((it, ctx) => {
+    const classification = ProductClassificationSchema.safeParse(it);
+    if (!classification.success) {
+      for (const issue of classification.error.issues) {
+        ctx.addIssue({ code: 'custom', message: issue.message, path: issue.path });
+      }
+    }
     if (it.wasted_qty > it.qty) {
       ctx.addIssue({
         code: 'custom',
@@ -122,18 +130,26 @@ export type Item = z.infer<typeof ItemSchema>;
 
 // ── Product ─────────────────────────────────────────────────────────────────
 
-export const ProductSchema = z.object({
-  id: ULID_SCHEMA,
-  name: z.string().min(1, 'name is required'),
-  store: z.string().min(1, 'store is required'),
-  store_product_code: z.string().nullable(),
-  category: z.string().min(1, 'category is required'),
-  unit: PRODUCT_UNIT_SCHEMA.nullable(),
-  unit_size: z.number().finite().nullable(),
-  notes: z.string().nullable(),
-  created_at: ISO_DATETIME_SCHEMA,
-  updated_at: ISO_DATETIME_SCHEMA,
-});
+export const ProductSchema = z
+  .object({
+    ...ProductClassificationSchema.shape,
+    brand: z.string().trim().min(1).nullable().optional(),
+    is_organic: z.boolean().nullable().optional(),
+    id: ULID_SCHEMA,
+    name: z.string().min(1, 'name is required'),
+    store: z.string().min(1, 'store is required'),
+    store_product_code: z.string().nullable(),
+    category: z.string().min(1, 'category is required'),
+    unit: PRODUCT_UNIT_SCHEMA.nullable(),
+    unit_size: z.number().finite().nullable(),
+    notes: z.string().nullable(),
+    created_at: ISO_DATETIME_SCHEMA,
+    updated_at: ISO_DATETIME_SCHEMA,
+  })
+  .refine((value) => ProductClassificationSchema.safeParse(value).success, {
+    message: 'A product variant requires a family',
+    path: ['product_variant_id'],
+  });
 export type Product = z.infer<typeof ProductSchema>;
 
 // ── ProductPrice (price-history snapshot) ───────────────────────────────────
@@ -162,6 +178,9 @@ export const ParsedItemSchema = z.object({
   qty: z.number().finite().positive(),
   unit_price_orig: z.number().finite(),
   category_suggestion: z.string().nullable().default(null),
+  ...ProductClassificationSchema.shape,
+  brand: z.string().trim().min(1).nullable().optional(),
+  is_organic: z.boolean().nullable().optional(),
   product_url: z.string().nullable().optional(),
   product_image_url: z.string().nullable().optional(),
   discount_orig: z.number().finite().nonnegative().optional(),
@@ -283,6 +302,7 @@ export const ReceiptInputSchema = z.object({
 export type ReceiptInput = z.infer<typeof ReceiptInputSchema>;
 
 export const ItemInputSchema = z.object({
+  ...ProductClassificationSchema.shape,
   receipt_id: ULID_SCHEMA,
   product_id: ULID_SCHEMA.nullable().optional(),
   product_name: z.string().min(1),
@@ -302,6 +322,9 @@ export const ItemInputSchema = z.object({
 export type ItemInput = z.infer<typeof ItemInputSchema>;
 
 export const ProductInputSchema = z.object({
+  ...ProductClassificationSchema.shape,
+  brand: z.string().trim().min(1).nullable().optional(),
+  is_organic: z.boolean().nullable().optional(),
   name: z.string().min(1),
   store: z.string().min(1),
   store_product_code: z.string().nullable().optional(),

@@ -14,6 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 import { GeminiProvider } from './providers/gemini-provider.ts';
 import { AnthropicProvider } from './providers/anthropic-provider.ts';
 import type { HandlerDeps } from './handler.ts';
+import type { ProductTaxonomyContext } from './types.ts';
 
 function requireEnv(name: string): string {
   const v = Deno.env.get(name);
@@ -43,5 +44,25 @@ export function loadDeps(): HandlerDeps {
     return data === true;
   };
 
-  return { primary, fallback, isAllowed };
+  const loadTaxonomy = async (authHeader: string): Promise<ProductTaxonomyContext> => {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const [families, variants] = await Promise.all([
+      supabase.from('product_families').select('id, name_uk, name_en, name_de').order('id'),
+      supabase
+        .from('product_variants')
+        .select('id, family_id, name_uk, name_en, name_de')
+        .order('id'),
+    ]);
+    if (families.error || variants.error) {
+      throw new Error(
+        families.error?.message ?? variants.error?.message ?? 'taxonomy lookup failed',
+      );
+    }
+    return { families: families.data ?? [], variants: variants.data ?? [] };
+  };
+
+  return { primary, fallback, isAllowed, loadTaxonomy };
 }
