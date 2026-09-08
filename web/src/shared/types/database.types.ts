@@ -84,6 +84,7 @@ export type Database = {
           product_url: string | null;
           product_variant_id: string | null;
           qty: number;
+          raw_product_name: string;
           receipt_id: string;
           store_product_code: string | null;
           total_eur: number;
@@ -107,6 +108,7 @@ export type Database = {
           product_url?: string | null;
           product_variant_id?: string | null;
           qty: number;
+          raw_product_name: string;
           receipt_id: string;
           store_product_code?: string | null;
           total_eur: number;
@@ -130,6 +132,7 @@ export type Database = {
           product_url?: string | null;
           product_variant_id?: string | null;
           qty?: number;
+          raw_product_name?: string;
           receipt_id?: string;
           store_product_code?: string | null;
           total_eur?: number;
@@ -233,6 +236,71 @@ export type Database = {
           name_uk?: string;
         };
         Relationships: [];
+      };
+      product_match_rules: {
+        Row: {
+          category: string;
+          created_at: string;
+          product_family_id: string | null;
+          product_id: string;
+          product_name: string;
+          product_variant_id: string | null;
+          raw_product_name_key: string;
+          store_key: string;
+          updated_at: string;
+        };
+        Insert: {
+          category: string;
+          created_at?: string;
+          product_family_id?: string | null;
+          product_id: string;
+          product_name: string;
+          product_variant_id?: string | null;
+          raw_product_name_key: string;
+          store_key: string;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          product_family_id?: string | null;
+          product_id?: string;
+          product_name?: string;
+          product_variant_id?: string | null;
+          raw_product_name_key?: string;
+          store_key?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'product_match_rules_category_fkey';
+            columns: ['category'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['name'];
+          },
+          {
+            foreignKeyName: 'product_match_rules_product_family_id_fkey';
+            columns: ['product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'product_match_rules_product_id_fkey';
+            columns: ['product_id'];
+            isOneToOne: false;
+            referencedRelation: 'products';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'product_match_rules_variant_family_fkey';
+            columns: ['product_variant_id', 'product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_variants';
+            referencedColumns: ['id', 'family_id'];
+          },
+        ];
       };
       product_prices: {
         Row: {
@@ -842,6 +910,47 @@ export type Database = {
         };
         Returns: undefined;
       };
+      correct_purchase_classification: {
+        Args: {
+          p_category: string;
+          p_item_id: string;
+          p_product_family_id?: string;
+          p_product_id: string;
+          p_product_name: string;
+          p_product_variant_id?: string;
+          p_remember_rule?: boolean;
+        };
+        Returns: {
+          category: string;
+          consumed_by: string;
+          created_at: string;
+          discount_orig: number;
+          id: string;
+          note: string | null;
+          product_family_id: string | null;
+          product_id: string | null;
+          product_image_url: string | null;
+          product_name: string;
+          product_url: string | null;
+          product_variant_id: string | null;
+          qty: number;
+          raw_product_name: string;
+          receipt_id: string;
+          store_product_code: string | null;
+          total_eur: number;
+          total_orig: number;
+          unit_price_orig: number;
+          updated_at: string;
+          wasted_at: string | null;
+          wasted_qty: number;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'items';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       create_manual_receipt_import_batch: {
         Args: { p_batch_id: string; p_paid_by: string; p_receipts: Json };
         Returns: undefined;
@@ -894,6 +1003,10 @@ export type Database = {
       mark_receipt_import_upload_failed: {
         Args: { p_error_message: string; p_file_id: string };
         Returns: undefined;
+      };
+      normalize_product_match_key: {
+        Args: { p_value: string };
+        Returns: string;
       };
       normalize_product_search: { Args: { p_value: string }; Returns: string };
       queue_receipt_import_file: {
@@ -951,6 +1064,7 @@ export type Database = {
           product_url: string | null;
           product_variant_id: string | null;
           qty: number;
+          raw_product_name: string;
           receipt_id: string;
           store_product_code: string | null;
           total_eur: number;
