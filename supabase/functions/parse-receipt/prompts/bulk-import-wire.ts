@@ -3,7 +3,7 @@ import { buildBulkSchema } from './bulk-import-prompt.ts';
 
 export const COMPACT_ITEM_FIELD_INSTRUCTIONS = [
   'The record_receipt tool uses compact aliases only inside each items object:',
-  'n=product_name, p=product_code, q=qty, u=unit_price_orig, c=category_suggestion, d=discount_orig,',
+  'n=product_name, p=product_code, q=qty, u=unit_price_orig, c=category_suggestion, d=discount_orig, f=product_family_id, v=product_variant_id, b=brand, g=is_organic,',
   'o=source_ordinal, r=raw_text, k=row_kind, e=qty_evidence, l=printed_line_total_orig, t=tax_class.',
   'Populate every compact item field. Keep all top-level field names unchanged.',
 ].join('\n');
@@ -48,6 +48,10 @@ function compactSchema(ctx: AiContext, chunk: boolean): Record<string, unknown> 
             item.discount_orig ?? { type: 'number' },
             'Per-unit discount_orig; normally 0.',
           ),
+          f: withDescription(item.product_family_id, 'Allowed product_family_id or null.'),
+          v: withDescription(item.product_variant_id, 'Allowed product_variant_id or null.'),
+          b: withDescription(item.brand, 'Printed brand or null.'),
+          g: withDescription(item.is_organic, 'Organic status or null.'),
           o: withDescription(item.source_ordinal, 'Absolute 1-based source_ordinal.'),
           r: withDescription(item.raw_text, 'Shortest complete verbatim row evidence.'),
           k: withDescription(item.row_kind, 'Financial row_kind.'),
@@ -55,7 +59,7 @@ function compactSchema(ctx: AiContext, chunk: boolean): Record<string, unknown> 
           l: withDescription(item.printed_line_total_orig, 'Printed line total or null.'),
           t: withDescription(item.tax_class, 'Rightmost VAT class or null.'),
         },
-        required: ['n', 'p', 'q', 'u', 'c', 'd', 'o', 'r', 'k', 'e', 'l', 't'],
+        required: ['n', 'p', 'q', 'u', 'c', 'd', 'f', 'v', 'b', 'g', 'o', 'r', 'k', 'e', 'l', 't'],
       },
     },
   };
@@ -100,6 +104,10 @@ function expandItem(value: unknown): ParsedItem | unknown {
     unit_price_orig: row.u,
     category_suggestion: row.c,
     discount_orig: row.d,
+    product_family_id: row.f,
+    product_variant_id: row.v,
+    brand: row.b,
+    is_organic: row.g,
     source_ordinal: row.o,
     raw_text: row.r,
     row_kind: row.k,

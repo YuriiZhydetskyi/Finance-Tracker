@@ -30,16 +30,14 @@ function makeDeps(overrides: Partial<HandlerDeps> = {}): HandlerDeps & {
   isAllowed: ReturnType<typeof vi.fn>;
   log: ReturnType<typeof vi.fn>;
 } {
-  const primaryParse = vi.fn<IAiProvider['parse']>(async () => sampleResult);
-  const fallbackParse = vi.fn<IAiProvider['parse']>(async () => sampleResult);
-  const isAllowed = vi.fn<HandlerDeps['isAllowed']>(async () => true);
+  const primaryParse = vi.fn<IAiProvider['parse']>(() => Promise.resolve(sampleResult));
+  const fallbackParse = vi.fn<IAiProvider['parse']>(() => Promise.resolve(sampleResult));
+  const isAllowed = vi.fn<HandlerDeps['isAllowed']>(() => Promise.resolve(true));
   const log = vi.fn<NonNullable<HandlerDeps['log']>>();
   return {
-    primary: provider('gemini', primaryParse),
-    fallback: provider('claude', fallbackParse),
-    isAllowed,
-    log,
-    ...overrides,
+    primary: overrides.primary ?? provider('gemini', primaryParse),
+    fallback: overrides.fallback ?? provider('claude', fallbackParse),
+    ...(overrides.loadTaxonomy ? { loadTaxonomy: overrides.loadTaxonomy } : {}),
     primaryParse,
     fallbackParse,
     isAllowed: (overrides.isAllowed as ReturnType<typeof vi.fn>) ?? isAllowed,
@@ -114,9 +112,7 @@ describe('handler — authorization', () => {
 
   it('isAllowed throws → 401 "Allowlist check failed" + error log', async () => {
     const deps = makeDeps({
-      isAllowed: vi.fn(async () => {
-        throw new Error('rpc unavailable');
-      }),
+      isAllowed: vi.fn(() => Promise.reject(new Error('rpc unavailable'))),
     });
     const handler = createHandler(deps);
     const res = await handler(authedReq({ imageBase64: 'AAA' }));
@@ -129,7 +125,7 @@ describe('handler — authorization', () => {
   });
 
   it('isAllowed returns false → 403', async () => {
-    const deps = makeDeps({ isAllowed: vi.fn(async () => false) });
+    const deps = makeDeps({ isAllowed: vi.fn(() => Promise.resolve(false)) });
     const handler = createHandler(deps);
     const res = await handler(authedReq({ imageBase64: 'AAA' }));
     expect(res.status).toBe(403);
@@ -218,9 +214,7 @@ describe('handler — AI orchestration', () => {
     const deps = makeDeps({
       primary: provider(
         'gemini',
-        vi.fn(async () => {
-          throw new Error('gemini boom');
-        }),
+        vi.fn(() => Promise.reject(new Error('gemini boom'))),
       ),
     });
     const handler = createHandler(deps);
@@ -239,15 +233,11 @@ describe('handler — AI orchestration', () => {
     const deps = makeDeps({
       primary: provider(
         'gemini',
-        vi.fn(async () => {
-          throw new Error('primary down');
-        }),
+        vi.fn(() => Promise.reject(new Error('primary down'))),
       ),
       fallback: provider(
         'claude',
-        vi.fn(async () => {
-          throw new Error('fallback down');
-        }),
+        vi.fn(() => Promise.reject(new Error('fallback down'))),
       ),
     });
     const handler = createHandler(deps);
@@ -265,14 +255,51 @@ describe('handler — AI orchestration', () => {
 // ── Body normalization ───────────────────────────────────────────────────────
 
 describe('handler — body normalization', () => {
+  it('loads the allowed taxonomy after authorization and removes an invalid AI suggestion', async () => {
+    let captured: AiContext | undefined;
+    const deps = makeDeps({
+      loadTaxonomy: vi.fn(() =>
+        Promise.resolve({
+          families: [
+            { id: 'tomatoes', name_uk: 'Помідори', name_en: 'Tomatoes', name_de: 'Tomaten' },
+          ],
+          variants: [],
+        }),
+      ),
+      primary: provider(
+        'gemini',
+        vi.fn((_image, ctx) => {
+          captured = ctx;
+          return Promise.resolve({
+            ...sampleResult,
+            items: [
+              {
+                ...sampleResult.items[0]!,
+                product_family_id: 'invented',
+                product_variant_id: 'also_invented',
+              },
+            ],
+          });
+        }),
+      ),
+    });
+    const handler = createHandler(deps);
+    const response = await handler(authedReq({ imageBase64: 'AAA' }));
+
+    expect(captured?.taxonomy?.families.map((family) => family.id)).toEqual(['tomatoes']);
+    expect((await response.json()) as ParsedReceipt).toMatchObject({
+      items: [{ product_family_id: null, product_variant_id: null }],
+    });
+  });
+
   it('forwards categories + products to primary.parse, defaulting mimeType to image/jpeg', async () => {
     let captured: AiContext | undefined;
     const deps = makeDeps({
       primary: provider(
         'gemini',
-        vi.fn(async (_img, ctx) => {
+        vi.fn((_img, ctx) => {
           captured = ctx;
-          return sampleResult;
+          return Promise.resolve(sampleResult);
         }),
       ),
     });
@@ -294,9 +321,9 @@ describe('handler — body normalization', () => {
     const deps = makeDeps({
       primary: provider(
         'gemini',
-        vi.fn(async (_img, ctx) => {
+        vi.fn((_img, ctx) => {
           captured = ctx;
-          return sampleResult;
+          return Promise.resolve(sampleResult);
         }),
       ),
     });
@@ -317,9 +344,9 @@ describe('handler — body normalization', () => {
     const deps = makeDeps({
       primary: provider(
         'gemini',
-        vi.fn(async (_img, ctx) => {
+        vi.fn((_img, ctx) => {
           captured = ctx;
-          return sampleResult;
+          return Promise.resolve(sampleResult);
         }),
       ),
     });

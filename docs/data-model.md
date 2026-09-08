@@ -1,6 +1,8 @@
 # Модель даних
 
-> Цей документ — **єдине джерело істини** про схему. Якщо тут і в коді розбіжність — правда тут. Код треба виправити.
+> Цей документ пояснює актуальну модель. Канонічний порядок schema-змін —
+> forward-only файли в `supabase/migrations/`; якщо опис тут розходиться з ними,
+> виправляємо цей документ.
 >
 > Канонічні DDL — у [supabase/migrations/](../supabase/migrations/). Згенеровані TS-типи — у [web/src/shared/types/database.types.ts](../web/src/shared/types/database.types.ts) (regenerate через `npx supabase gen types typescript --linked`). Zod-схеми (in-app валідація + factories) — у [packages/domain/src/schemas.ts](../packages/domain/src/schemas.ts).
 
@@ -22,7 +24,12 @@ upload. Semantic duplicate з точним збігом date/time/currency/total
 RLS дає allowlisted користувачам тільки `select`; мутації браузера проходять через вузькі RPC,
 worker RPC відкриті лише ролі `service_role`.
 
-Зберігання — Postgres у Supabase project `<your-project-ref>`. 4 основні таблиці (`receipts`, `items`, `products`, `categories`) + `app_users` (allowlist) + `pending_parses` (черга невдалих парсингів) + `statement_transactions` (орфанні транзакції виписки) + `store_aliases` (вивчені пари назв для звірки) + 4 read-only view-и `v_stats_by_*` для дашборду + 1 Storage bucket `receipts` для фото.
+Зберігання — Postgres у Supabase project `<your-project-ref>`. Основні таблиці
+`receipts`, `items`, `products`, `categories`, `product_families` і
+`product_variants` доповнюються `app_users` (allowlist), `pending_parses` (черга
+невдалих парсингів), `statement_transactions` (орфанні транзакції виписки) та
+`store_aliases` (вивчені пари назв для звірки), read-only view-ами статистики і
+Storage bucket `receipts` для фото.
 
 Чому Postgres + Supabase замість Sheets — див. [ADR-0013](decisions/0013-migrate-to-react-supabase.md). Курси валют **не зберігаються** в окремій таблиці — конвертація відбувається on-the-fly при збереженні чеку через NBU API; курс фіксується назавжди на самому Receipt-рядку як audit trail (ADR-0004).
 
@@ -193,6 +200,8 @@ create table public.items (
   id              text primary key,
   receipt_id      text not null references public.receipts(id) on delete cascade,
   product_id      text references public.products(id) on delete set null,
+  product_family_id text references public.product_families(id),
+  product_variant_id text,
   product_name    text not null,
   product_url     text,
   product_image_url text,
@@ -216,26 +225,28 @@ create table public.items (
 );
 ```
 
-| Колонка             | Тип           | Nullable       | Правила                                                                                                   | Приклад                                           |
-| ------------------- | ------------- | -------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `id`                | text (ULID)   | ні             |                                                                                                           | `01HM4N6RZZ7K2P9F8DZ7QWERAA`                      |
-| `receipt_id`        | text (ULID)   | ні             | FK → `receipts.id`, CASCADE on delete                                                                     |                                                   |
-| `product_id`        | text (ULID)   | так            | FK → `products.id`, SET NULL on delete                                                                    |                                                   |
-| `product_name`      | text          | ні             | snapshot на момент покупки (ADR snapshot rule)                                                            | `Pesto Barilla Genovese 190g`                     |
-| `product_url`       | text          | так            | Зовнішня URL товару з structured import; UI відкриває тільки allowlisted Amazon HTTPS URL.                | `https://www.amazon.de/dp/B07W6JPVP3`             |
-| `product_image_url` | text          | так            | Thumbnail товару з structured import; UI завантажує тільки `m.media-amazon.com` через HTTPS без referrer. | `https://m.media-amazon.com/images/I/example.jpg` |
-| `category`          | text          | ні             | FK → `categories.name`, CASCADE on update                                                                 | `Бакалія`                                         |
-| `qty`               | numeric(10,3) | ні             | > 0                                                                                                       | `2.000` / `0.350`                                 |
-| `unit_price_orig`   | numeric(12,2) | ні             | у валюті чеку. **Може бути від'ємним** (cancellation, Pfand-refund, Rabatt)                               | `3.49` / `-2.99`                                  |
-| `total_orig`        | numeric(12,2) | ні             | `round(qty * (unit_price_orig - discount_orig), 2)`                                                       | `6.98` / `-2.99`                                  |
-| `total_eur`         | numeric(12,2) | ні             | `round(total_orig * receipt.fx_rate_eur, 2)`                                                              | `6.98`                                            |
-| `consumed_by`       | text          | ні             | `'his' \| 'hers' \| 'shared' \| 'custom:N/M'`                                                             | `shared` / `custom:30/70`                         |
-| `note`              | text          | так            |                                                                                                           | `Купили на знижці -50%`                           |
-| `wasted_qty`        | numeric(10,3) | ні (default 0) | ≤ `qty`                                                                                                   | `0.000`                                           |
-| `wasted_at`         | timestamptz   | так            | non-null iff `wasted_qty > 0` (Zod-level); перезаписується на останню дату                                | `2026-05-18T12:00:00Z`                            |
-| `discount_orig`     | numeric(12,2) | ні (default 0) | ≥ 0; ≤ `unit_price_orig` коли positive                                                                    | `0.00` / `1.00`                                   |
-| `created_at`        | timestamptz   | ні             | default `now()`                                                                                           |                                                   |
-| `updated_at`        | timestamptz   | ні             | trigger                                                                                                   |                                                   |
+| Колонка              | Тип           | Nullable       | Правила                                                                                                   | Приклад                                           |
+| -------------------- | ------------- | -------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `id`                 | text (ULID)   | ні             |                                                                                                           | `01HM4N6RZZ7K2P9F8DZ7QWERAA`                      |
+| `receipt_id`         | text (ULID)   | ні             | FK → `receipts.id`, CASCADE on delete                                                                     |                                                   |
+| `product_id`         | text (ULID)   | так            | FK → `products.id`, SET NULL on delete                                                                    |                                                   |
+| `product_family_id`  | text (FK)     | так            | snapshot сімейства товару на час покупки                                                                  | `tomato`                                          |
+| `product_variant_id` | text          | так            | snapshot варіанта в межах `product_family_id`; без сімейства не допускається                              | `cherry_tomato`                                   |
+| `product_name`       | text          | ні             | snapshot на момент покупки (ADR snapshot rule)                                                            | `Pesto Barilla Genovese 190g`                     |
+| `product_url`        | text          | так            | Зовнішня URL товару з structured import; UI відкриває тільки allowlisted Amazon HTTPS URL.                | `https://www.amazon.de/dp/B07W6JPVP3`             |
+| `product_image_url`  | text          | так            | Thumbnail товару з structured import; UI завантажує тільки `m.media-amazon.com` через HTTPS без referrer. | `https://m.media-amazon.com/images/I/example.jpg` |
+| `category`           | text          | ні             | FK → `categories.name`, CASCADE on update                                                                 | `Бакалія`                                         |
+| `qty`                | numeric(10,3) | ні             | > 0                                                                                                       | `2.000` / `0.350`                                 |
+| `unit_price_orig`    | numeric(12,2) | ні             | у валюті чеку. **Може бути від'ємним** (cancellation, Pfand-refund, Rabatt)                               | `3.49` / `-2.99`                                  |
+| `total_orig`         | numeric(12,2) | ні             | `round(qty * (unit_price_orig - discount_orig), 2)`                                                       | `6.98` / `-2.99`                                  |
+| `total_eur`          | numeric(12,2) | ні             | `round(total_orig * receipt.fx_rate_eur, 2)`                                                              | `6.98`                                            |
+| `consumed_by`        | text          | ні             | `'his' \| 'hers' \| 'shared' \| 'custom:N/M'`                                                             | `shared` / `custom:30/70`                         |
+| `note`               | text          | так            |                                                                                                           | `Купили на знижці -50%`                           |
+| `wasted_qty`         | numeric(10,3) | ні (default 0) | ≤ `qty`                                                                                                   | `0.000`                                           |
+| `wasted_at`          | timestamptz   | так            | non-null iff `wasted_qty > 0` (Zod-level); перезаписується на останню дату                                | `2026-05-18T12:00:00Z`                            |
+| `discount_orig`      | numeric(12,2) | ні (default 0) | ≥ 0; ≤ `unit_price_orig` коли positive                                                                    | `0.00` / `1.00`                                   |
+| `created_at`         | timestamptz   | ні             | default `now()`                                                                                           |                                                   |
+| `updated_at`         | timestamptz   | ні             | trigger                                                                                                   |                                                   |
 
 **Інваріанти:**
 
@@ -244,6 +255,12 @@ create table public.items (
 - `wasted_qty <= qty` — Postgres check + Zod superRefine.
 - `wasted_at` non-null iff `wasted_qty > 0` — Zod superRefine only (Postgres колонка просто nullable; інваріант підтримується на write-боці у `makeItem` factory + `useUpdateItemWasteMutation`). При `wasted_qty=0` `wasted_at` стає `null`; при `wasted_qty>0` — `now()` (перезапис при кожному оновленні).
 - `discount_orig <= unit_price_orig` коли `unit_price_orig > 0` — Zod superRefine (Postgres check тільки `>= 0`).
+- **Taxonomy snapshot.** `product_family_id` і `product_variant_id` описують
+  придбаний товар, а не поточний стан каталогу. Якщо під час запису item має
+  `product_id`, але не має власної класифікації, trigger успадковує класифікацію
+  Product. Подальша зміна або відв'язування Product не переписує вже зафіксовану
+  ідентичність покупки. Варіант завжди належить указаному сімейству; family-only
+  класифікація є валідною.
 - **Negative line items.** `unit_price_orig` (і `total_orig` / `total_eur`) може бути від'ємним. Три типові причини на німецьких чеках: cancellation pair, discount/Rabatt, Pfand/Leergut refund. `qty` лишається додатнім (≥ 1) — змінюється тільки знак ціни. Receipt's `total_orig` природно нетятиме.
 - **Pair grouping** (тільки на photo flow): коли AI повертає Rabatt-пару (`+X` + `−Y` з тим самим product_name), `detectPairs` ([packages/domain/src/pair-detector.ts](../packages/domain/src/pair-detector.ts)) зливає їх у один Item з `unit_price_orig=X` і `discount_orig=Y` перед review-formою. Cancellation pair (`+X` + `−X`) — за замовчуванням не зберігається; user може override через checkbox у `<CancellationCard>`. Див. [ADR-0012](decisions/0012-cancellation-discount-grouping.md).
 - **`consumed_by` parse:** `'his'` / `'hers'` — повністю одного. `'shared'` — 50/50. `'custom:30/70'` — 30% його / 70% її. Парсер у [`packages/domain/src/consumed-by.ts`](../packages/domain/src/consumed-by.ts).
@@ -266,6 +283,10 @@ create table public.products (
   id          text primary key,
   name        text not null unique,
   category    text not null references public.categories(name) on update cascade,
+  product_family_id text references public.product_families(id),
+  product_variant_id text,
+  brand       text,
+  is_organic  boolean,
   unit        public.product_unit,             -- enum: 'pcs' | 'g' | 'kg' | 'ml' | 'l'
   unit_size   numeric(10, 3),
   notes       text,
@@ -274,19 +295,53 @@ create table public.products (
 );
 ```
 
-| Колонка     | Тип           | Nullable    | Приклад                       |
-| ----------- | ------------- | ----------- | ----------------------------- |
-| `id`        | text (ULID)   | ні          | `01HM4N6RPP3K2P9F8DZ7QWERTZ`  |
-| `name`      | text          | ні (UNIQUE) | `Pesto Barilla Genovese 190g` |
-| `category`  | text (FK)     | ні          | `Бакалія`                     |
-| `unit`      | enum          | так         | `g`                           |
-| `unit_size` | numeric(10,3) | так         | `190.000`                     |
-| `notes`     | text          | так         | `Улюблений бренд`             |
+| Колонка              | Тип           | Nullable    | Приклад                                                             |
+| -------------------- | ------------- | ----------- | ------------------------------------------------------------------- | --------------- |
+| `id`                 | text (ULID)   | ні          | `01HM4N6RPP3K2P9F8DZ7QWERTZ`                                        |
+| `name`               | text          | ні (UNIQUE) | `Pesto Barilla Genovese 190g`                                       |
+| `category`           | text (FK)     | ні          | `Бакалія`                                                           |
+| `product_family_id`  | text (FK)     | так         | стабільне сімейство товару                                          | `tomato`        |
+| `product_variant_id` | text          | так         | варіант у межах сімейства                                           | `cherry_tomato` |
+| `brand`              | text          | так         | явно надрукована марка, не просто магазин                           | `Barilla`       |
+| `is_organic`         | boolean       | так         | `true`/`false` лише коли ознаку можна встановити; `null` — невідомо | `false`         |
+| `unit`               | enum          | так         | `g`                                                                 |
+| `unit_size`          | numeric(10,3) | так         | `190.000`                                                           |
+| `notes`              | text          | так         | `Улюблений бренд`                                                   |
 
 **Правила:**
 
 - `name` UNIQUE на DB-level (Postgres ловить дублі при INSERT).
 - При перейменуванні `name` — `items.product_name` НЕ оновлюється (snapshot rule).
+- `product_variant_id` вимагає `product_family_id` і посилається на варіант саме
+  цього сімейства. Brand і Bio — незалежні від ієрархії атрибути каталогу.
+
+---
+
+## Таксономія товарів
+
+Таксономія має три рівні деталізації для різних задач:
+
+1. **Сімейство** (`product_families`) — тип товару, наприклад `tomato`.
+2. **Варіант** (`product_variants`) — точніша форма в межах сімейства, наприклад
+   `cherry_tomato`; він необов'язковий.
+3. **Каталожні атрибути Product** — `brand` і `is_organic`, наприклад Barilla або
+   Bio. Вони не створюють штучної ієрархії: марка і Bio можуть бути невідомі.
+
+У `product_families` і `product_variants` є стабільний ASCII `id`, назви
+`name_uk`, `name_en`, `name_de` та масив `aliases`. Це дає пошук за «помідори»,
+`Tomaten`, `Apple`, `Apfel` чи «яблуко», не перетворюючи текст чеку на канонічну
+назву. `categories` мають такі самі англійські, німецькі назви й aliases для
+пошуку категорій.
+
+`search_waste_items(query)` повертає лише додатні purchase items під поточним
+RLS-контекстом. Він нормалізує регістр, діакритики й німецькі умлаути, а потім
+збігає кожен літеральний токен з назвою чеку, кодом, каталогом, family/variant,
+багатомовними назвами, aliases, категорією або брендом. Наявність `is_organic`
+додає пошукові синоніми Bio; явне `false` також підтримує запит «небіо».
+
+Каталог Product лишається необов'язковим (див. [ADR-0007](decisions/0007-products-as-optional-dimension.md)). Історичний `items` зберігає власний
+taxonomy snapshot, тому перейменування або перекласифікація Product не змінює
+минулі покупки.
 
 ---
 
@@ -297,14 +352,20 @@ create table public.products (
 ```sql
 create table public.categories (
   name        text primary key,
-  group_name  text not null
+  group_name  text not null,
+  name_en     text,
+  name_de     text,
+  aliases     text[] not null default '{}'
 );
 ```
 
-| #   | Колонка      | Тип       | Приклад    |
-| --- | ------------ | --------- | ---------- |
-| 1   | `name`       | text (PK) | `Молочка`  |
-| 2   | `group_name` | text      | `Продукти` |
+| #   | Колонка      | Тип       | Приклад            |
+| --- | ------------ | --------- | ------------------ |
+| 1   | `name`       | text (PK) | `Молочка`          |
+| 2   | `group_name` | text      | `Продукти`         |
+| 3   | `name_en`    | text      | `Dairy`            |
+| 4   | `name_de`    | text      | `Milchprodukte`    |
+| 5   | `aliases`    | text[]    | `{dairy products}` |
 
 > Чому `group_name` а не `group`: `group` — reserved word у SQL. Renamed для simplicity.
 
@@ -572,19 +633,26 @@ order by sum(total_eur) desc;
 
 **`ParsedItem`:**
 
-| Поле                  | Тип    | Nullable | Примітка                                                                      |
-| --------------------- | ------ | -------- | ----------------------------------------------------------------------------- |
-| `product_name`        | string | ні       | verbatim з чека (мова як у чеку)                                              |
-| `qty`                 | number | ні       | > 0                                                                           |
-| `unit_price_orig`     | number | ні       | у валюті чеку; може бути < 0                                                  |
-| `category_suggestion` | string | так      | one of `categories.name` або `null`                                           |
-| `discount_orig`       | number | так      | заповнюється UI-шаром після pair-grouping; AI завжди повертає `0`/`undefined` |
+| Поле                  | Тип     | Nullable | Примітка                                                                        |
+| --------------------- | ------- | -------- | ------------------------------------------------------------------------------- |
+| `product_name`        | string  | ні       | verbatim з чека (мова як у чеку)                                                |
+| `qty`                 | number  | ні       | > 0                                                                             |
+| `unit_price_orig`     | number  | ні       | у валюті чеку; може бути < 0                                                    |
+| `category_suggestion` | string  | так      | one of `categories.name` або `null`                                             |
+| `product_family_id`   | string  | так      | відомий taxonomy ID або `null`, якщо товар неясний чи відповідника немає        |
+| `product_variant_id`  | string  | так      | варіант саме для указаного family; `null` дозволений                            |
+| `brand`               | string  | так      | лише явно надрукована марка; магазин сам по собі не є маркою                    |
+| `is_organic`          | boolean | так      | `true` за явним Bio/organic; `false` для впізнаного food без Bio; інакше `null` |
+| `discount_orig`       | number  | так      | заповнюється UI-шаром після pair-grouping; AI завжди повертає `0`/`undefined`   |
 
 **Validation flow:**
 
 1. Gemini/Claude провайдери у Edge Function видають JSON через native schema enforcement (`responseJsonSchema` для Gemini, `tool_use input_schema` для Claude). Server-side Zod **не** запускається.
 2. Client-side `edge-fn-parse-receipt.ts` валідує відповідь через `ParsedReceiptSchema.safeParse()` — single source of truth.
-3. Якщо schema-mismatch — throw з `parse-receipt returned invalid shape: <details>`.
+3. Edge Function передає provider лише дозволені taxonomy IDs і після відповіді
+   відкидає невідомий family або variant з іншого family. Неоднозначність є
+   нормальним результатом: поля лишаються `null` до ручного уточнення.
+4. Якщо schema-mismatch — throw з `parse-receipt returned invalid shape: <details>`.
 
 > **Edge Function vendoring.** `supabase/functions/parse-receipt/types.ts` містить ~25 LOC mirror цих типів. Deno не резолвить Vite-style workspace package; vendoring + client-side Zod валідація — pragmatic компроміс. Drift discipline: при зміні `ParsedReceiptSchema` у domain — синхронізуй вендоренний файл. Phase 7 lessons learned + ADR-0013.
 
@@ -616,6 +684,20 @@ Product matching до існуючих `products.id` — **не** робить A
                          │ products    │
                          │  (0..1)     │
                          └─────────────┘
+                              │ catalog classification (optional)
+                              ▼
+                 ┌───────────────────────┐
+                 │ product_families (1)  │──< product_variants (N)
+                 │ uk/en/de + aliases    │
+                 └───────────────────────┘
+                              ▲
+                              │ purchase snapshot (optional)
+                              │
+                         items (N)
+
+`products` і `items` можуть посилатися на family та його variant. Посилання в
+item — історичний snapshot покупки, а не live join, що змінюється разом із
+каталогом Product.
 
                          ┌─────────────────────────┐
                          │ storage.objects         │

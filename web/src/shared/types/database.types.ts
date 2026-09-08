@@ -47,16 +47,25 @@ export type Database = {
       };
       categories: {
         Row: {
+          aliases: string[];
           group_name: string;
           name: string;
+          name_de: string | null;
+          name_en: string | null;
         };
         Insert: {
+          aliases?: string[];
           group_name: string;
           name: string;
+          name_de?: string | null;
+          name_en?: string | null;
         };
         Update: {
+          aliases?: string[];
           group_name?: string;
           name?: string;
+          name_de?: string | null;
+          name_en?: string | null;
         };
         Relationships: [];
       };
@@ -68,10 +77,12 @@ export type Database = {
           discount_orig: number;
           id: string;
           note: string | null;
+          product_family_id: string | null;
           product_id: string | null;
           product_image_url: string | null;
           product_name: string;
           product_url: string | null;
+          product_variant_id: string | null;
           qty: number;
           receipt_id: string;
           store_product_code: string | null;
@@ -89,10 +100,12 @@ export type Database = {
           discount_orig?: number;
           id: string;
           note?: string | null;
+          product_family_id?: string | null;
           product_id?: string | null;
           product_image_url?: string | null;
           product_name: string;
           product_url?: string | null;
+          product_variant_id?: string | null;
           qty: number;
           receipt_id: string;
           store_product_code?: string | null;
@@ -110,10 +123,12 @@ export type Database = {
           discount_orig?: number;
           id?: string;
           note?: string | null;
+          product_family_id?: string | null;
           product_id?: string | null;
           product_image_url?: string | null;
           product_name?: string;
           product_url?: string | null;
+          product_variant_id?: string | null;
           qty?: number;
           receipt_id?: string;
           store_product_code?: string | null;
@@ -133,6 +148,13 @@ export type Database = {
             referencedColumns: ['name'];
           },
           {
+            foreignKeyName: 'items_product_family_id_fkey';
+            columns: ['product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'items_product_id_fkey';
             columns: ['product_id'];
             isOneToOne: false;
@@ -145,6 +167,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'receipts';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'items_variant_family_fkey';
+            columns: ['product_variant_id', 'product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_variants';
+            referencedColumns: ['id', 'family_id'];
           },
         ];
       };
@@ -178,6 +207,30 @@ export type Database = {
           paid_by?: string;
           photo_path?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_families: {
+        Row: {
+          aliases: string[];
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Insert: {
+          aliases?: string[];
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Update: {
+          aliases?: string[];
+          id?: string;
+          name_de?: string;
+          name_en?: string;
+          name_uk?: string;
         };
         Relationships: [];
       };
@@ -229,13 +282,52 @@ export type Database = {
           },
         ];
       };
+      product_variants: {
+        Row: {
+          aliases: string[];
+          family_id: string;
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Insert: {
+          aliases?: string[];
+          family_id: string;
+          id: string;
+          name_de: string;
+          name_en: string;
+          name_uk: string;
+        };
+        Update: {
+          aliases?: string[];
+          family_id?: string;
+          id?: string;
+          name_de?: string;
+          name_en?: string;
+          name_uk?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'product_variants_family_id_fkey';
+            columns: ['family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       products: {
         Row: {
+          brand: string | null;
           category: string;
           created_at: string;
           id: string;
+          is_organic: boolean | null;
           name: string;
           notes: string | null;
+          product_family_id: string | null;
+          product_variant_id: string | null;
           store: string;
           store_product_code: string | null;
           unit: Database['public']['Enums']['product_unit'] | null;
@@ -243,11 +335,15 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          brand?: string | null;
           category: string;
           created_at?: string;
           id: string;
+          is_organic?: boolean | null;
           name: string;
           notes?: string | null;
+          product_family_id?: string | null;
+          product_variant_id?: string | null;
           store?: string;
           store_product_code?: string | null;
           unit?: Database['public']['Enums']['product_unit'] | null;
@@ -255,11 +351,15 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          brand?: string | null;
           category?: string;
           created_at?: string;
           id?: string;
+          is_organic?: boolean | null;
           name?: string;
           notes?: string | null;
+          product_family_id?: string | null;
+          product_variant_id?: string | null;
           store?: string;
           store_product_code?: string | null;
           unit?: Database['public']['Enums']['product_unit'] | null;
@@ -273,6 +373,20 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'categories';
             referencedColumns: ['name'];
+          },
+          {
+            foreignKeyName: 'products_product_family_id_fkey';
+            columns: ['product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'products_variant_family_fkey';
+            columns: ['product_variant_id', 'product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_variants';
+            referencedColumns: ['id', 'family_id'];
           },
         ];
       };
@@ -728,6 +842,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      create_manual_receipt_import_batch: {
+        Args: { p_batch_id: string; p_paid_by: string; p_receipts: Json };
+        Returns: undefined;
+      };
       create_receipt_import_batch: {
         Args: { p_batch_id: string; p_files: Json; p_paid_by: string };
         Returns: {
@@ -737,16 +855,12 @@ export type Database = {
           storage_path: string;
         }[];
       };
-      create_manual_receipt_import_batch: {
-        Args: { p_batch_id: string; p_paid_by: string; p_receipts: Json };
-        Returns: undefined;
-      };
       discard_receipt_import_file: {
         Args: { p_file_id: string };
         Returns: undefined;
       };
       expire_stale_receipt_import_uploads: { Args: never; Returns: number };
-      finalize_receipt_import: {
+      finalize_pasted_json_import: {
         Args: {
           p_file_id: string;
           p_items: Json;
@@ -756,7 +870,17 @@ export type Database = {
         };
         Returns: Json;
       };
-      finalize_pasted_json_import: {
+      finalize_pasted_json_import_review_duplicate: {
+        Args: {
+          p_file_id: string;
+          p_items: Json;
+          p_msg_id: number;
+          p_parsed_json: Json;
+          p_receipt: Json;
+        };
+        Returns: Json;
+      };
+      finalize_receipt_import: {
         Args: {
           p_file_id: string;
           p_items: Json;
@@ -771,6 +895,7 @@ export type Database = {
         Args: { p_error_message: string; p_file_id: string };
         Returns: undefined;
       };
+      normalize_product_search: { Args: { p_value: string }; Returns: string };
       queue_receipt_import_file: {
         Args: { p_file_id: string };
         Returns: undefined;
@@ -810,9 +935,37 @@ export type Database = {
         };
         Returns: undefined;
       };
-      submit_receipt_import_json: {
-        Args: { p_file_id: string; p_manual_json: Json };
-        Returns: undefined;
+      search_waste_items: {
+        Args: { p_query?: string };
+        Returns: {
+          category: string;
+          consumed_by: string;
+          created_at: string;
+          discount_orig: number;
+          id: string;
+          note: string | null;
+          product_family_id: string | null;
+          product_id: string | null;
+          product_image_url: string | null;
+          product_name: string;
+          product_url: string | null;
+          product_variant_id: string | null;
+          qty: number;
+          receipt_id: string;
+          store_product_code: string | null;
+          total_eur: number;
+          total_orig: number;
+          unit_price_orig: number;
+          updated_at: string;
+          wasted_at: string | null;
+          wasted_qty: number;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'items';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       stats_by_category: {
         Args: {
@@ -821,7 +974,11 @@ export type Database = {
           p_date_to?: string;
           p_stores?: string[];
         };
-        Returns: { category: string; items_count: number; total_eur: number }[];
+        Returns: {
+          category: string;
+          items_count: number;
+          total_eur: number;
+        }[];
       };
       stats_by_month: {
         Args: {
@@ -830,7 +987,11 @@ export type Database = {
           p_date_to?: string;
           p_stores?: string[];
         };
-        Returns: { month: string; receipts_count: number; total_eur: number }[];
+        Returns: {
+          month: string;
+          receipts_count: number;
+          total_eur: number;
+        }[];
       };
       stats_by_store: {
         Args: {
@@ -840,7 +1001,11 @@ export type Database = {
           p_limit?: number;
           p_stores?: string[];
         };
-        Returns: { receipts_count: number; store: string; total_eur: number }[];
+        Returns: {
+          receipts_count: number;
+          store: string;
+          total_eur: number;
+        }[];
       };
       stats_by_user: {
         Args: {
@@ -849,7 +1014,18 @@ export type Database = {
           p_date_to?: string;
           p_stores?: string[];
         };
-        Returns: { paid_by: string; receipts_count: number; total_eur: number }[];
+        Returns: {
+          paid_by: string;
+          receipts_count: number;
+          total_eur: number;
+        }[];
+      };
+      stats_filter_options: {
+        Args: never;
+        Returns: {
+          categories: string[];
+          stores: string[];
+        }[];
       };
       stats_savings_by_month: {
         Args: {
@@ -858,7 +1034,11 @@ export type Database = {
           p_date_to?: string;
           p_stores?: string[];
         };
-        Returns: { discounted_items_count: number; month: string; savings_eur: number }[];
+        Returns: {
+          discounted_items_count: number;
+          month: string;
+          savings_eur: number;
+        }[];
       };
       stats_waste_by_month: {
         Args: {
@@ -867,11 +1047,15 @@ export type Database = {
           p_date_to?: string;
           p_stores?: string[];
         };
-        Returns: { month: string; wasted_items_count: number; wasted_value_eur: number }[];
+        Returns: {
+          month: string;
+          wasted_items_count: number;
+          wasted_value_eur: number;
+        }[];
       };
-      stats_filter_options: {
-        Args: never;
-        Returns: { categories: string[]; stores: string[] }[];
+      submit_receipt_import_json: {
+        Args: { p_file_id: string; p_manual_json: Json };
+        Returns: undefined;
       };
     };
     Enums: {

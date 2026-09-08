@@ -3,14 +3,16 @@ import { Button } from '@/shared/ui/Button';
 import { ItemRow } from './ItemRow';
 import { emptyItemRow } from '../hooks/use-receipt-form';
 import type { ManualFormValues } from '../schemas/manual-form';
+import type { ProductTaxonomy } from '@/features/products/api/use-products';
 
 type Props = {
   itemsArray: UseFieldArrayReturn<ManualFormValues, 'items'>;
   categories: string[];
   productNames: string[];
+  taxonomy: ProductTaxonomy;
 };
 
-export function ItemsList({ itemsArray, categories, productNames }: Props) {
+export function ItemsList({ itemsArray, categories, productNames, taxonomy }: Props) {
   return (
     <div className="space-y-3">
       <datalist id="products-datalist">
@@ -24,6 +26,7 @@ export function ItemsList({ itemsArray, categories, productNames }: Props) {
           key={field.id}
           index={index}
           categories={categories}
+          taxonomy={taxonomy}
           onRemove={() => {
             itemsArray.remove(index);
           }}

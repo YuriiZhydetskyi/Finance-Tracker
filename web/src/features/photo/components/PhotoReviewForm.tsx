@@ -12,6 +12,7 @@ import { Button } from '@/shared/ui/Button';
 import { useAppUsers } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
+import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
   computeGrandTotal,
   DuplicateWarningBanner,
@@ -56,6 +57,11 @@ function detectedItemToFormRow(it: DetectedItem): ItemFormValues {
     store_product_code: it.product_code ?? null,
     product_url: it.product_url ?? null,
     product_image_url: it.product_image_url ?? null,
+    product_family_id: it.product_family_id ?? null,
+    product_variant_id: it.product_variant_id ?? null,
+    brand: it.brand ?? null,
+    is_organic: it.is_organic ?? null,
+    product_metadata_override: false,
     category: it.category_suggestion ?? '',
     qty: it.qty,
     unit_price_orig: it.unit_price_orig,
@@ -89,6 +95,7 @@ export function PhotoReviewForm({
   const navigate = useNavigate();
   const categoriesQuery = useCategories();
   const productsQuery = useProducts();
+  const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
   const savePhoto = useSavePhotoReceiptMutation();
   const saveReceipt = useSaveReceiptMutation();
@@ -166,6 +173,11 @@ export function PhotoReviewForm({
       store_product_code: it.store_product_code ?? null,
       product_url: it.product_url ?? null,
       product_image_url: it.product_image_url ?? null,
+      product_family_id: it.product_family_id ?? null,
+      product_variant_id: it.product_variant_id ?? null,
+      brand: it.brand ?? null,
+      is_organic: it.is_organic ?? null,
+      product_metadata_override: it.product_metadata_override ?? false,
       category: it.category,
       qty: it.qty,
       unit_price_orig: it.unit_price_orig,
@@ -255,6 +267,7 @@ export function PhotoReviewForm({
           itemsArray={itemsArray}
           categories={categoryNames}
           productNames={productNames}
+          taxonomy={taxonomyQuery.data ?? { families: [], variants: [] }}
           paidByOptions={paidByOptions}
           saveError={saveError}
           actions={
