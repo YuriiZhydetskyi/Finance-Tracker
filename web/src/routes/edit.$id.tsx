@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { RequireAuth } from '@/features/auth';
-import { useReceipt, EditReceiptForm } from '@/features/receipts';
+import { useReceipt, EditReceiptForm, ReceiptPhoto } from '@/features/receipts';
 
 export const Route = createFileRoute('/edit/$id')({
   component: EditPage,
@@ -40,6 +40,13 @@ function EditView({ id }: { id: string }) {
             </Link>
           </p>
         </div>
+      )}
+      {query.isSuccess && query.data && (
+        <ReceiptPhoto
+          key={id}
+          photoPath={query.data.receipt.photo_path}
+          photoUrl={query.data.receipt.photo_url}
+        />
       )}
       {query.isSuccess && query.data && (
         <EditReceiptForm receipt={query.data.receipt} items={query.data.items} />

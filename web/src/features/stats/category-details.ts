@@ -1,7 +1,13 @@
 import { roundMoney } from '@finance-tracker/domain';
 import type { StatsByCategoryRow, StatsByMonthRow } from './api/stats.types';
 
-export type StatsSelection = { group?: string; category?: string };
+export type StatsSelection = {
+  group?: string;
+  category?: string;
+  family?: string;
+  variant?: string;
+  product?: string;
+};
 
 export type StatsDetailItem = {
   id: string;
@@ -11,8 +17,32 @@ export type StatsDetailItem = {
   total_eur: number;
   product_family_id: string | null;
   family: { name_uk: string } | null;
-  receipt: { date: string; store: string };
+  product_variant_id?: string | null;
+  variant?: { name_uk: string } | null;
+  qty?: number;
+  unit_price_orig?: number;
+  discount_orig?: number;
+  total_orig?: number;
+  receipt: {
+    date: string;
+    store: string;
+    time?: string | null;
+    currency?: string;
+    photo_path?: string | null;
+    photo_url?: string | null;
+  };
 };
+
+export function selectDetailItems(items: StatsDetailItem[], selection: StatsSelection) {
+  return items.filter(
+    (item) =>
+      (selection.family === undefined ||
+        (item.product_family_id ?? 'unclassified') === selection.family) &&
+      (selection.variant === undefined ||
+        (item.product_variant_id ?? 'unspecified') === selection.variant) &&
+      (selection.product === undefined || item.product_name === selection.product),
+  );
+}
 
 export type StatsBreakdownRow = { key: string; name: string; total_eur: number };
 
@@ -49,6 +79,7 @@ export function summarizeCategoryDetails(items: StatsDetailItem[]) {
   const stores = new Map<string, StatsBreakdownRow>();
   const products = new Map<string, StatsBreakdownRow>();
   const families = new Map<string, StatsBreakdownRow>();
+  const variants = new Map<string, StatsBreakdownRow>();
   const categories = new Map<string, StatsBreakdownRow>();
   const months = new Map<string, StatsByMonthRow & { receipts: Set<string> }>();
   const receipts = new Set<string>();
@@ -59,6 +90,12 @@ export function summarizeCategoryDetails(items: StatsDetailItem[]) {
     addAmount(stores, item.receipt.store, item.receipt.store, item.total_eur);
     addAmount(products, item.product_name, item.product_name, item.total_eur);
     addAmount(categories, item.category, item.category, item.total_eur);
+    addAmount(
+      variants,
+      item.product_variant_id ?? 'unspecified',
+      item.variant?.name_uk ?? 'Без уточнення варіанта',
+      item.total_eur,
+    );
     addAmount(
       families,
       item.product_family_id ?? 'unclassified',
@@ -84,6 +121,13 @@ export function summarizeCategoryDetails(items: StatsDetailItem[]) {
     stores: sorted(stores),
     products: sorted(products),
     families: sorted(families),
+    variants: sorted(variants),
+    items: [...items].sort(
+      (a, b) =>
+        b.receipt.date.localeCompare(a.receipt.date) ||
+        (b.receipt.time ?? '').localeCompare(a.receipt.time ?? '') ||
+        b.id.localeCompare(a.id),
+    ),
     categories: sorted(categories),
     months: [...months.values()].sort((a, b) => b.month.localeCompare(a.month)),
   };

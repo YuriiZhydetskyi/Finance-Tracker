@@ -17,10 +17,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && npm run test:purchase-correction-sql",
+    "test:purchase-correction-sql": "node scripts/test-purchase-correction-rules.mjs",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.2",
     "prettier": "^3.8.3",

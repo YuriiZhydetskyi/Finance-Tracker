@@ -38,6 +38,9 @@ const ItemFormSchema = z.object({
   product_metadata_override: z.boolean().optional(),
   product_id: ULID_SCHEMA.nullable().optional(),
   product_name: z.string().min(1, "Назва товару обов'язкова"),
+  // Hidden pass-through during full receipt replacement. It preserves the
+  // printed label while a person edits a historical receipt.
+  raw_product_name: z.string().min(1).optional(),
   store_product_code: z.string().nullable().optional(),
   product_url: z.string().nullable().optional(),
   product_image_url: z.string().nullable().optional(),

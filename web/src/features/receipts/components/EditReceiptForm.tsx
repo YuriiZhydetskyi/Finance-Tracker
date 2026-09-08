@@ -39,6 +39,7 @@ function toFormRow(item: Item): ItemFormValues {
     product_id: item.product_id,
     original_item_id: item.id,
     product_name: item.product_name,
+    raw_product_name: item.raw_product_name,
     store_product_code: item.store_product_code,
     product_url: item.product_url,
     product_image_url: item.product_image_url,
@@ -149,6 +150,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
         return {
           product_id: it.product_id ?? null,
           product_name: it.product_name,
+          raw_product_name: it.raw_product_name,
           store_product_code: it.store_product_code ?? null,
           product_url: it.product_url ?? null,
           product_image_url: it.product_image_url ?? null,

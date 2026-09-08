@@ -12,6 +12,7 @@ export function emptyItemRow(): ItemFormValues {
   return {
     product_id: null,
     product_name: '',
+    raw_product_name: undefined,
     store_product_code: null,
     product_url: null,
     product_image_url: null,
