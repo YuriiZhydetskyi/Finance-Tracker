@@ -9,20 +9,21 @@ family/variant довідники, catalog attributes `brand`/`is_organic`, purc
 snapshot на `items` і RPC пошуку списань. Деталі рішення —
 [ADR-0025](decisions/0025-multilingual-product-taxonomy.md).
 
-Migration `20260908083827_product_taxonomy_historical_backfill.sql` ще не
-застосовано. Після зупиненого першого запуску її recovery-версія зафіксувала
-fresh snapshot: 622 Product і 1 112 Item, що належать 591 approved
-класифікації. Вона оновлює лише ці ID, перед записом перевіряє весь очікуваний
-стан та відкотиться при ручній зміні або появі неочікуваного catalog. Це
-вузький виняток із правила незмінності migration: попередній SQL не ввійшов у
-remote history і його транзакція повністю відкотилася.
+Migration `20260908083827_product_taxonomy_historical_backfill.sql` застосовано
+до linked Supabase 2026-09-08. Після зупиненого першого запуску її
+recovery-версія зафіксувала fresh snapshot: 622 Product і 1 112 Item, що
+належать 591 approved класифікації. Вона оновила лише ці ID, перевіривши весь
+очікуваний стан до запису. Це вузький виняток із правила незмінності migration:
+попередній SQL не ввійшов у remote history і його транзакція повністю
+відкотилася.
 
-Перед release запусти `node scripts/product-taxonomy/verify-historical-backfill.mjs`
-та `node scripts/product-taxonomy/test-backfill-rollback.mjs`. Другий сценарій
-виконує повну SQL migration, intentional drift і неправильний variant лише в
+Після застосування підтверджено 278 families, 406 variants, 622 класифіковані
+Products і 1 112 класифіковані Items. Кількість чеків і позицій, їхні кількості
+та суми не змінилися. `node scripts/product-taxonomy/verify-historical-backfill.mjs`
+перевіряє frozen scope статично; `node scripts/product-taxonomy/test-backfill-rollback.mjs`
+перевіряє migration, intentional drift і неправильний variant лише в
 rollback-транзакціях. 42 позиції для ручного рішення та 19 виключених службових
-рядків не входять до frozen scope. Застосування потребує окремо підтвердженого
-`npx supabase db push --linked` після green PR.
+рядків не входять до frozen scope.
 
 **Уточнення щодо статистики (2026-09-07):** `/stats` має вибір усього часу,
 останніх 3 місяців (типово), місяця, тижня та власного включного діапазону дат
@@ -49,8 +50,8 @@ rollback-транзакціях. 42 позиції для ручного ріш�
 Деталі читають наявні `items`, `receipts` і `product_families` сторінками за
 `items.id` у контексті поточного користувача; нова міграція не потрібна.
 Для сімейств потрібна міграція `20260907202419_multilingual_product_taxonomy.sql`
-та заповнена класифікація позицій. Поточна доробка не застосовує historical
-backfill і не підтверджує production deployment.
+та заповнена класифікація позицій. Historical backfill застосовано; окремий
+Cloudflare deployment не був частиною цього release.
 
 **Останнє оновлення:** 2026-08-31 (реалізовано окремий `/imports` для до 200 фото/PDF: resumable upload, PGMQ/Cron worker, автоматичне збереження валідних чеків і persisted exception queue. Production deployment ще потребує застосування міграції, deploy worker-функції та Vault secrets; live поведінка не верифікована. Деталі — ADR-0016.)
 
