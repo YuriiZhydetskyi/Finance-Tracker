@@ -329,7 +329,7 @@ Reference: будь-який існуючий порт у `web/src/shared/lib/<a
 
 2. **Interface.** Тримай мінімальним — тільки те, що app реально використовує. 3–5 методів. Уникай leaky abstractions (vendor-specific параметри, вендор-специфічні error types).
 
-3. **Adapter.** Імпортує `supabase` (або інший vendor SDK) з `../supabase-client`. ESLint exemption через `eslint.config.js` для `**/shared/lib/**/*-*.ts`.
+3. **Adapter.** Імпортує `supabase` (або інший vendor SDK) з `../supabase-client`. ESLint exemption у `web/eslint.config.js` покриває саме `src/shared/lib/**/supabase-*.ts` — файл на кшталт `photo-storage-factory.ts` впаде на lint, тож тримай префікс `supabase-`.
 
 4. **Barrel.**
 

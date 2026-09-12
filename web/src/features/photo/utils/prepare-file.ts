@@ -6,7 +6,7 @@
 // and resizing them isn't possible in-browser without a full PDF stack.
 
 import { heicTo } from 'heic-to';
-import { resizeImage } from './resize-image';
+import { resizeImage, type ResizeOptions } from './resize-image';
 
 const PDF_MAX_BYTES = 20 * 1024 * 1024;
 
@@ -28,7 +28,12 @@ export type PreparedFile = {
   mimeType: string;
 };
 
-export async function prepareFile(file: File): Promise<PreparedFile> {
+/**
+ * `resize` overrides the receipt defaults (1600px / q 0.8). Packaging photos pass
+ * a larger edge: at 1600px the small print of an ingredient list stops being
+ * readable in the archive, and nobody re-photographs a pack they already threw out.
+ */
+export async function prepareFile(file: File, resize?: ResizeOptions): Promise<PreparedFile> {
   const type = (file.type || '').toLowerCase();
   const name = file.name || '';
 
@@ -52,12 +57,12 @@ export async function prepareFile(file: File): Promise<PreparedFile> {
         `Не вдалося прочитати HEIC/HEIF файл: ${e instanceof Error ? e.message : 'невідома помилка'}`,
       );
     }
-    const resized = await resizeImage(jpegFromHeic);
+    const resized = await resizeImage(jpegFromHeic, resize);
     return { blob: resized, previewUrl: URL.createObjectURL(resized), mimeType: 'image/jpeg' };
   }
 
   if (RASTER_MIME.has(type)) {
-    const resized = await resizeImage(file);
+    const resized = await resizeImage(file, resize);
     return { blob: resized, previewUrl: URL.createObjectURL(resized), mimeType: 'image/jpeg' };
   }
 

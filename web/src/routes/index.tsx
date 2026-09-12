@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { z } from 'zod';
 import { RequireAuth } from '@/features/auth';
 import { usePendingParses } from '@/features/pending-parses';
+import { usePackagingCandidatesCount } from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
 
 const HomeSearchSchema = z
@@ -29,6 +30,8 @@ function HomePage() {
 function HomeNav({ savedId }: { savedId?: string | undefined }) {
   const pendingQuery = usePendingParses();
   const pendingCount = pendingQuery.data?.length ?? 0;
+  const packagingQuery = usePackagingCandidatesCount();
+  const packagingCount = packagingQuery.data ?? 0;
 
   return (
     <div className="space-y-4">
@@ -61,6 +64,16 @@ function HomeNav({ savedId }: { savedId?: string | undefined }) {
           </Link>
           <Link to="/waste">
             <Button variant="secondary">Викинули</Button>
+          </Link>
+          <Link to="/packaged-products">
+            <Button variant="secondary">
+              Пакований товар
+              {packagingCount > 0 && (
+                <span className="rounded-full bg-slate-200 px-1.5 text-xs font-semibold text-slate-700">
+                  {packagingCount}
+                </span>
+              )}
+            </Button>
           </Link>
           <Link to="/stats">
             <Button variant="secondary">Статистика</Button>

@@ -345,6 +345,111 @@ taxonomy snapshot, тому перейменування або переклас
 
 ---
 
+## Таблиця `packaged_products` (Пакований товар)
+
+Один рядок = один **фізичний товар**, впізнаваний за упаковкою: штрихкод, харчова цінність, склад, фото. На відміну від `products`, не привʼязаний до магазину: та сама шоколадка з Rewe й Aldi — один рядок тут і два рядки в `products`. Див. [ADR-0027](decisions/0027-packaged-product-catalogue.md).
+
+Ланцюг: `items.raw_product_name` + `receipts.store` → `product_match_rules` → `items.product_id` → `products.packaged_product_id` → `packaged_products`.
+
+```sql
+create table public.packaged_products (
+  id                  text primary key,                -- ULID
+  name                text not null,                   -- «Pringles Original 165 г»
+  brand               text,
+  barcode             text,                            -- nullable! ~ '^[0-9]{8,14}$'
+  category            text not null references public.categories(name) on update cascade,
+  product_family_id   text references public.product_families(id),
+  product_variant_id  text,
+  is_organic          boolean,
+  package_size        numeric(10, 3),                  -- нетто
+  package_unit        public.product_unit,             -- разом із package_size або обидва null
+  package_count       integer,                         -- «4 × 125 g» → 4
+  serving_size        numeric(10, 3),
+  nutrition_basis     public.nutrition_basis,          -- 'per_100_g' | 'per_100_ml'
+  energy_kj           numeric(8, 1),
+  energy_kcal         numeric(7, 1),
+  fat_g               numeric(6, 3),
+  saturated_fat_g     numeric(6, 3),
+  carbohydrate_g      numeric(6, 3),
+  sugars_g            numeric(6, 3),
+  fibre_g             numeric(6, 3),
+  protein_g           numeric(6, 3),
+  salt_g              numeric(6, 3),
+  nutri_score         text,                            -- 'A'..'E'
+  allergens           public.eu_allergen[] not null default '{}',
+  allergen_traces     public.eu_allergen[] not null default '{}',
+  ingredients_text    text,
+  notes               text,
+  import_source       text not null default 'manual-json',
+  raw_import_json     jsonb,                           -- дослівний вхід імпорту
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+```
+
+**Штрихкод nullable і не є ключем.** Наявні товари дозаповнюються поступово. Унікальність — партіальний індекс `packaged_products_barcode_uniq ... where barcode is not null`; для рядків без штрихкоду ідентичністю є нормалізована назва (`packaged_products_name_nobarcode_uniq on (lower(btrim(name))) where barcode is null`), дзеркально до `products_store_name_nocode_uniq`.
+
+**Контрольна цифра GTIN не перевіряється в схемі** — лише формат. Вагові внутрішньомагазинні коди (`2xxxxxxxxxxx`) легітимно не проходять mod-10. Перевірка mod-10 живе в `packages/domain/src/nutrition.ts` (`isValidGtin`) і показується як попередження в UI.
+
+**Інваріанти-CHECK**, які дзеркалить `PackagedProductSchema.superRefine`:
+
+- `nutrition_requires_basis` — жодного нутрієнта без `nutrition_basis`. Значення ніколи не перераховуються з колонки «на порцію»: якщо етикетка друкує лише порцію, нутрієнти лишаються `null`.
+- `saturated_fat_within_fat` і `sugars_within_carbohydrate` — із запасом `0.05` на округлення самої етикетки.
+- `package_size_unit_together` — обидва або жоден.
+- `variant_requires_family` + композитний FK на `product_variants(id, family_id)`, як у `products` та `items`.
+
+Грамові нутрієнти мають однакову точність `numeric(6,3)`: 3 dp потрібні для `salt 0.001 g`. Округлення — `roundNutrientGrams` (3 dp) і `roundEnergy` (1 dp) у `packages/domain/src/nutrition.ts`, застосовані у фабриці `makePackagedProduct`.
+
+## Таблиця `packaged_product_photos`
+
+```sql
+create table public.packaged_product_photos (
+  id                  text primary key,
+  packaged_product_id text not null references public.packaged_products(id) on delete cascade,
+  storage_path        text not null unique,            -- шлях у bucket `packaging`
+  kind                text not null default 'other',   -- front|back|nutrition|ingredients|barcode|source_pdf|other
+  content_type        text,
+  byte_size           integer,
+  sort_order          integer not null default 0,
+  note                text,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+```
+
+Каскад прибирає рядки, але **не** обʼєкти в Storage — той самий orphan-blob борг, що й для чеків. Мутація видалення прибирає їх best-effort.
+
+## Звʼязок із `products`
+
+```sql
+alter table public.products
+  add column packaged_product_id text references public.packaged_products(id) on delete set null,
+  add column packaging_not_applicable boolean not null default false;
+```
+
+`packaged_product_id` — це і є мапінг «як цей товар називається в чеку магазину X». Окремої junction-таблиці немає: `products` уже задає одну надруковану ідентичність на магазин своїми партіальними унікальними індексами.
+
+`on delete set null` навмисно: видалення картки розлінковує магазинні рядки, і вони повертаються в чергу на фотографування.
+
+`packaging_not_applicable` виключає вагові овочі, хліб із прилавка, послуги та Pfand — без нього черга назавжди забита шумом.
+
+`items` **не** має власного FK на `packaged_products`: пакований товар це ідентичність SKU, а не рішення на момент покупки. Обґрунтування й готовий backfill — в ADR-0027.
+
+## Функції черги фотографування
+
+Обидві `language sql stable security invoker set search_path = ''`, тож RLS викликача лишається в силі:
+
+- `search_packaging_candidates(p_query, p_categories, p_stores, p_date_from, p_date_to, p_limit, p_offset)` — магазинні позиції без картки, найчастіше куповані зверху. Повертає `receipt_labels` (дослівні `items.raw_product_name`) і `group_key` = `normalize_product_search(brand || ' ' || name)`, щоб той самий товар із двох магазинів утворював одну задачу сфотографувати. Пошук через `strpos`, не `LIKE`.
+- `packaged_product_store_labels(p_packaged_product_id)` — усі назви цієї картки по магазинах із кількістю покупок і останньою ціною.
+
+## Storage bucket `packaging`
+
+Приватний, `file_size_limit` 20 MB, `allowed_mime_types` `image/jpeg|png|webp` + `application/pdf`. Чотири політики на `storage.objects`, гейт той самий `public.is_allowed_user()`. Схема шляху (забезпечує клієнт): `{email}/{packaged_product_id}/{ulid}.{ext}`.
+
+PDF дозволено навмисно: вихідний PDF, згодований зовнішньому AI, архівується рядком `kind = 'source_pdf'`.
+
+---
+
 ## Таблиця `categories`
 
 Один рядок = одна категорія. Read-only через RLS — mutate тільки через Studio SQL editor.

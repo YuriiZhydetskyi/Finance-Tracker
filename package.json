@@ -17,8 +17,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present && npm run test:purchase-correction-sql",
+    "test": "npm run test --workspaces --if-present && npm run test:purchase-correction-sql && npm run test:packaged-products-sql",
     "test:purchase-correction-sql": "node scripts/test-purchase-correction-rules.mjs",
+    "test:packaged-products-sql": "node scripts/test-packaged-products-sql.mjs",
     "prepare": "husky"
   },
   "devDependencies": {

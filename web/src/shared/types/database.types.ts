@@ -180,6 +180,177 @@ export type Database = {
           },
         ];
       };
+      packaged_product_photos: {
+        Row: {
+          byte_size: number | null;
+          content_type: string | null;
+          created_at: string;
+          id: string;
+          kind: string;
+          note: string | null;
+          packaged_product_id: string;
+          sort_order: number;
+          storage_path: string;
+          updated_at: string;
+        };
+        Insert: {
+          byte_size?: number | null;
+          content_type?: string | null;
+          created_at?: string;
+          id: string;
+          kind?: string;
+          note?: string | null;
+          packaged_product_id: string;
+          sort_order?: number;
+          storage_path: string;
+          updated_at?: string;
+        };
+        Update: {
+          byte_size?: number | null;
+          content_type?: string | null;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          note?: string | null;
+          packaged_product_id?: string;
+          sort_order?: number;
+          storage_path?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'packaged_product_photos_packaged_product_id_fkey';
+            columns: ['packaged_product_id'];
+            isOneToOne: false;
+            referencedRelation: 'packaged_products';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      packaged_products: {
+        Row: {
+          allergen_traces: Database['public']['Enums']['eu_allergen'][];
+          allergens: Database['public']['Enums']['eu_allergen'][];
+          barcode: string | null;
+          brand: string | null;
+          carbohydrate_g: number | null;
+          category: string;
+          created_at: string;
+          energy_kcal: number | null;
+          energy_kj: number | null;
+          fat_g: number | null;
+          fibre_g: number | null;
+          id: string;
+          import_source: string;
+          ingredients_text: string | null;
+          is_organic: boolean | null;
+          name: string;
+          notes: string | null;
+          nutri_score: string | null;
+          nutrition_basis: Database['public']['Enums']['nutrition_basis'] | null;
+          package_count: number | null;
+          package_size: number | null;
+          package_unit: Database['public']['Enums']['product_unit'] | null;
+          product_family_id: string | null;
+          product_variant_id: string | null;
+          protein_g: number | null;
+          raw_import_json: Json | null;
+          salt_g: number | null;
+          saturated_fat_g: number | null;
+          serving_size: number | null;
+          sugars_g: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          allergen_traces?: Database['public']['Enums']['eu_allergen'][];
+          allergens?: Database['public']['Enums']['eu_allergen'][];
+          barcode?: string | null;
+          brand?: string | null;
+          carbohydrate_g?: number | null;
+          category: string;
+          created_at?: string;
+          energy_kcal?: number | null;
+          energy_kj?: number | null;
+          fat_g?: number | null;
+          fibre_g?: number | null;
+          id: string;
+          import_source?: string;
+          ingredients_text?: string | null;
+          is_organic?: boolean | null;
+          name: string;
+          notes?: string | null;
+          nutri_score?: string | null;
+          nutrition_basis?: Database['public']['Enums']['nutrition_basis'] | null;
+          package_count?: number | null;
+          package_size?: number | null;
+          package_unit?: Database['public']['Enums']['product_unit'] | null;
+          product_family_id?: string | null;
+          product_variant_id?: string | null;
+          protein_g?: number | null;
+          raw_import_json?: Json | null;
+          salt_g?: number | null;
+          saturated_fat_g?: number | null;
+          serving_size?: number | null;
+          sugars_g?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          allergen_traces?: Database['public']['Enums']['eu_allergen'][];
+          allergens?: Database['public']['Enums']['eu_allergen'][];
+          barcode?: string | null;
+          brand?: string | null;
+          carbohydrate_g?: number | null;
+          category?: string;
+          created_at?: string;
+          energy_kcal?: number | null;
+          energy_kj?: number | null;
+          fat_g?: number | null;
+          fibre_g?: number | null;
+          id?: string;
+          import_source?: string;
+          ingredients_text?: string | null;
+          is_organic?: boolean | null;
+          name?: string;
+          notes?: string | null;
+          nutri_score?: string | null;
+          nutrition_basis?: Database['public']['Enums']['nutrition_basis'] | null;
+          package_count?: number | null;
+          package_size?: number | null;
+          package_unit?: Database['public']['Enums']['product_unit'] | null;
+          product_family_id?: string | null;
+          product_variant_id?: string | null;
+          protein_g?: number | null;
+          raw_import_json?: Json | null;
+          salt_g?: number | null;
+          saturated_fat_g?: number | null;
+          serving_size?: number | null;
+          sugars_g?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'packaged_products_category_fkey';
+            columns: ['category'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['name'];
+          },
+          {
+            foreignKeyName: 'packaged_products_product_family_id_fkey';
+            columns: ['product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_families';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'packaged_products_variant_family_fkey';
+            columns: ['product_variant_id', 'product_family_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_variants';
+            referencedColumns: ['id', 'family_id'];
+          },
+        ];
+      };
       pending_parses: {
         Row: {
           attempts: number;
@@ -394,6 +565,8 @@ export type Database = {
           is_organic: boolean | null;
           name: string;
           notes: string | null;
+          packaged_product_id: string | null;
+          packaging_not_applicable: boolean;
           product_family_id: string | null;
           product_variant_id: string | null;
           store: string;
@@ -410,6 +583,8 @@ export type Database = {
           is_organic?: boolean | null;
           name: string;
           notes?: string | null;
+          packaged_product_id?: string | null;
+          packaging_not_applicable?: boolean;
           product_family_id?: string | null;
           product_variant_id?: string | null;
           store?: string;
@@ -426,6 +601,8 @@ export type Database = {
           is_organic?: boolean | null;
           name?: string;
           notes?: string | null;
+          packaged_product_id?: string | null;
+          packaging_not_applicable?: boolean;
           product_family_id?: string | null;
           product_variant_id?: string | null;
           store?: string;
@@ -441,6 +618,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'categories';
             referencedColumns: ['name'];
+          },
+          {
+            foreignKeyName: 'products_packaged_product_id_fkey';
+            columns: ['packaged_product_id'];
+            isOneToOne: false;
+            referencedRelation: 'packaged_products';
+            referencedColumns: ['id'];
           },
           {
             foreignKeyName: 'products_product_family_id_fkey';
@@ -1009,6 +1193,22 @@ export type Database = {
         Returns: string;
       };
       normalize_product_search: { Args: { p_value: string }; Returns: string };
+      packaged_product_store_labels: {
+        Args: { p_packaged_product_id: string };
+        Returns: {
+          first_purchased_on: string;
+          last_currency: string;
+          last_price_net: number;
+          last_price_orig: number;
+          last_purchased_on: string;
+          product_id: string;
+          product_name: string;
+          purchases_count: number;
+          receipt_labels: string[];
+          store: string;
+          store_product_code: string;
+        }[];
+      };
       queue_receipt_import_file: {
         Args: { p_file_id: string };
         Returns: undefined;
@@ -1047,6 +1247,37 @@ export type Database = {
           p_read_count: number;
         };
         Returns: undefined;
+      };
+      search_packaging_candidates: {
+        Args: {
+          p_categories?: string[];
+          p_date_from?: string;
+          p_date_to?: string;
+          p_limit?: number;
+          p_offset?: number;
+          p_query?: string;
+          p_stores?: string[];
+        };
+        Returns: {
+          brand: string;
+          category: string;
+          group_key: string;
+          group_purchases_count: number;
+          is_organic: boolean;
+          last_currency: string;
+          last_price_orig: number;
+          last_purchased_on: string;
+          product_family_id: string;
+          product_id: string;
+          product_name: string;
+          product_variant_id: string;
+          purchases_count: number;
+          receipt_labels: string[];
+          store: string;
+          store_product_code: string;
+          total_eur: number;
+          total_qty: number;
+        }[];
       };
       search_waste_items: {
         Args: { p_query?: string };
@@ -1173,6 +1404,22 @@ export type Database = {
       };
     };
     Enums: {
+      eu_allergen:
+        | 'gluten'
+        | 'crustaceans'
+        | 'eggs'
+        | 'fish'
+        | 'peanuts'
+        | 'soybeans'
+        | 'milk'
+        | 'nuts'
+        | 'celery'
+        | 'mustard'
+        | 'sesame'
+        | 'sulphites'
+        | 'lupin'
+        | 'molluscs';
+      nutrition_basis: 'per_100_g' | 'per_100_ml';
       product_unit: 'pcs' | 'g' | 'kg' | 'ml' | 'l';
       receipt_source: 'photo' | 'manual' | 'edit' | 'manual-json' | 'statement';
     };
@@ -1303,6 +1550,23 @@ export const Constants = {
   },
   public: {
     Enums: {
+      eu_allergen: [
+        'gluten',
+        'crustaceans',
+        'eggs',
+        'fish',
+        'peanuts',
+        'soybeans',
+        'milk',
+        'nuts',
+        'celery',
+        'mustard',
+        'sesame',
+        'sulphites',
+        'lupin',
+        'molluscs',
+      ],
+      nutrition_basis: ['per_100_g', 'per_100_ml'],
       product_unit: ['pcs', 'g', 'kg', 'ml', 'l'],
       receipt_source: ['photo', 'manual', 'edit', 'manual-json', 'statement'],
     },

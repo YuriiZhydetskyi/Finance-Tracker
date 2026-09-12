@@ -28,6 +28,8 @@ import {
   ReceiptSchema,
   StatementTransactionSchema,
   StoreAliasSchema,
+  PackagedProductSchema,
+  PackagedProductPhotoSchema,
   type Item,
   type ItemInput,
   type Product,
@@ -40,7 +42,23 @@ import {
   type StatementTransactionInput,
   type StoreAlias,
   type StoreAliasInput,
+  type PackagedProduct,
+  type PackagedProductInput,
+  type PackagedProductImport,
+  type PackagedProductPhoto,
+  type PackagedProductPhotoInput,
 } from './schemas';
+import {
+  NUTRIENT_GRAM_KEYS,
+  normalizeAllergens,
+  normalizeBarcode,
+  normalizeNutriScore,
+  normalizeNutritionBasis,
+  normalizePackageUnit,
+  roundEnergy,
+  roundNutrientGrams,
+  type PackagedProductImportSource,
+} from './nutrition';
 
 export function makeReceipt(input: ReceiptInput): Receipt {
   const total_orig = roundMoney(input.total_orig);
@@ -276,4 +294,141 @@ export function applyItemPatch(existing: Item, patch: ItemPatch, parentFxRate: n
     merged.wasted_at = merged.wasted_qty > 0 ? (existing.wasted_at ?? merged.updated_at) : null;
   }
   return ItemSchema.parse(merged);
+}
+
+// ── PackagedProduct (Пакований товар) ───────────────────────────────────────
+
+function trimToNull(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+function roundNullable(
+  value: number | null | undefined,
+  round: (n: number) => number,
+): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? round(value) : null;
+}
+
+function positiveIntOrNull(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  const rounded = Math.round(value);
+  return rounded > 0 ? rounded : null;
+}
+
+// The classification keys are optional on the schema, but Postgres inserts under
+// `exactOptionalPropertyTypes` reject `undefined` for a `string | null` column —
+// the same widening makeProduct does for exactly the same reason.
+export function makePackagedProduct(
+  input: PackagedProductInput,
+): PackagedProduct & { product_family_id: string | null; product_variant_id: string | null } {
+  const now = nowIso();
+  const barcode = trimToNull(input.barcode);
+  const grams = Object.fromEntries(
+    NUTRIENT_GRAM_KEYS.map((key) => [key, roundNullable(input[key], roundNutrientGrams)]),
+  ) as Record<(typeof NUTRIENT_GRAM_KEYS)[number], number | null>;
+
+  const candidate: PackagedProduct = {
+    ...ProductClassificationSchema.parse(input),
+    id: ulid(),
+    name: input.name.trim(),
+    brand: trimToNull(input.brand),
+    barcode: barcode == null ? null : normalizeBarcode(barcode),
+    category: input.category,
+    is_organic: input.is_organic ?? null,
+    package_size: roundNullable(input.package_size, roundQty),
+    package_unit: input.package_unit ?? null,
+    package_count: positiveIntOrNull(input.package_count),
+    serving_size: roundNullable(input.serving_size, roundQty),
+    nutrition_basis: input.nutrition_basis ?? null,
+    energy_kj: roundNullable(input.energy_kj, roundEnergy),
+    energy_kcal: roundNullable(input.energy_kcal, roundEnergy),
+    ...grams,
+    nutri_score: input.nutri_score ?? null,
+    allergens: normalizeAllergens(input.allergens ?? []),
+    allergen_traces: normalizeAllergens(input.allergen_traces ?? []),
+    ingredients_text: trimToNull(input.ingredients_text),
+    notes: trimToNull(input.notes),
+    import_source: input.import_source ?? 'manual',
+    raw_import_json: input.raw_import_json ?? null,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const product = PackagedProductSchema.parse(candidate);
+  return {
+    ...product,
+    product_family_id: product.product_family_id ?? null,
+    product_variant_id: product.product_variant_id ?? null,
+  };
+}
+
+export function makePackagedProductPhoto(input: PackagedProductPhotoInput): PackagedProductPhoto {
+  const now = nowIso();
+  const candidate: PackagedProductPhoto = {
+    id: ulid(),
+    packaged_product_id: input.packaged_product_id,
+    storage_path: input.storage_path.trim(),
+    kind: input.kind ?? 'other',
+    content_type: trimToNull(input.content_type),
+    byte_size: positiveIntOrNull(input.byte_size),
+    sort_order: Math.round(input.sort_order ?? 0),
+    note: trimToNull(input.note),
+    created_at: now,
+    updated_at: now,
+  };
+  return PackagedProductPhotoSchema.parse(candidate);
+}
+
+/**
+ * Adapter from the external-AI contract to a persisted row. This is the seam:
+ * a future parse-packaging Edge Function produces the same PackagedProductImport
+ * shape and this function persists it, so only `import_source` differs.
+ *
+ * Free-text enum-ish fields are normalized here rather than in the schema so a
+ * German "Gramm" or a lowercase nutri-score does not cost the user a whole paste.
+ * A value that still cannot be understood becomes null and is then caught by
+ * PackagedProductSchema (for example a nutrient without a basis).
+ */
+export function packagedProductFromImport(
+  raw: PackagedProductImport,
+  extras: { import_source: PackagedProductImportSource; raw_import_json?: unknown },
+): ReturnType<typeof makePackagedProduct> {
+  const barcodeText = raw.barcode == null ? null : String(raw.barcode);
+  const barcode = barcodeText == null ? null : normalizeBarcode(barcodeText);
+  const unit = trimToNull(raw.package_unit);
+  const basis = trimToNull(raw.nutrition_basis);
+  const score = trimToNull(raw.nutri_score);
+
+  return makePackagedProduct({
+    name: raw.name,
+    category: raw.category,
+    brand: raw.brand ?? null,
+    barcode: barcode === '' ? null : barcode,
+    product_family_id: raw.product_family_id ?? null,
+    product_variant_id: raw.product_variant_id ?? null,
+    is_organic: raw.is_organic ?? null,
+    package_size: raw.package_size,
+    package_unit: unit == null ? null : normalizePackageUnit(unit),
+    package_count: raw.package_count,
+    serving_size: raw.serving_size,
+    nutrition_basis: basis == null ? null : normalizeNutritionBasis(basis),
+    energy_kj: raw.energy_kj,
+    energy_kcal: raw.energy_kcal,
+    fat_g: raw.fat_g,
+    saturated_fat_g: raw.saturated_fat_g,
+    carbohydrate_g: raw.carbohydrate_g,
+    sugars_g: raw.sugars_g,
+    fibre_g: raw.fibre_g,
+    protein_g: raw.protein_g,
+    salt_g: raw.salt_g,
+    nutri_score: score == null ? null : normalizeNutriScore(score),
+    allergens: normalizeAllergens(raw.allergens ?? []),
+    allergen_traces: normalizeAllergens(raw.allergen_traces ?? []),
+    ingredients_text: raw.ingredients_text ?? null,
+    notes: raw.notes ?? null,
+    import_source: extras.import_source,
+    raw_import_json: extras.raw_import_json ?? null,
+  });
 }

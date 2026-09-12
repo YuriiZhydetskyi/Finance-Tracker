@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { photoStorage } from '@/shared/lib/dependencies';
+import { useSignedUrl } from '@/shared/hooks/use-signed-url';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 
 type Props = Readonly<{ photoPath: string | null; photoUrl: string | null }>;
@@ -8,12 +8,7 @@ type Props = Readonly<{ photoPath: string | null; photoUrl: string | null }>;
 export function ReceiptPhoto({ photoPath, photoUrl }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
-  const query = useQuery({
-    queryKey: ['receipt-photo', photoPath, photoUrl],
-    enabled: expanded && Boolean(photoPath ?? photoUrl),
-    staleTime: 30 * 60_000,
-    queryFn: () => (photoPath ? photoStorage.getSignedUrl(photoPath) : Promise.resolve(photoUrl)),
-  });
+  const query = useSignedUrl(photoStorage, photoPath, photoUrl, expanded);
   if (!photoPath && !photoUrl) {
     return <p className="text-sm text-slate-500">Фото оригіналу для цього чека не збережено.</p>;
   }

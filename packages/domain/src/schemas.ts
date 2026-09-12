@@ -9,6 +9,13 @@ import { z } from 'zod';
 import { isValidConsumedBy } from './consumed-by';
 import { ULID_REGEX } from './ulid';
 import { ProductClassificationSchema } from './product-taxonomy';
+import {
+  EU_ALLERGENS,
+  NUTRI_SCORES,
+  NUTRITION_BASES,
+  PACKAGED_PRODUCT_IMPORT_SOURCES,
+  PACKAGED_PRODUCT_PHOTO_KINDS,
+} from './nutrition';
 
 // ── Reusable atoms ──────────────────────────────────────────────────────────
 
@@ -346,3 +353,261 @@ export const ProductPriceInputSchema = z.object({
   date: ISO_DATE_SCHEMA,
 });
 export type ProductPriceInput = z.infer<typeof ProductPriceInputSchema>;
+
+// ── PackagedProduct (Пакований товар) ───────────────────────────────────────
+// A store-agnostic physical product identified by its packaging. `products`
+// stays the per-store receipt label and points here via packaged_product_id.
+// See ADR-0027.
+
+export const NUTRITION_BASIS_SCHEMA = z.enum(NUTRITION_BASES);
+export const EU_ALLERGEN_SCHEMA = z.enum(EU_ALLERGENS);
+export const NUTRI_SCORE_SCHEMA = z.enum(NUTRI_SCORES);
+export const PACKAGED_PRODUCT_PHOTO_KIND_SCHEMA = z.enum(PACKAGED_PRODUCT_PHOTO_KINDS);
+export const PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA = z.enum(PACKAGED_PRODUCT_IMPORT_SOURCES);
+
+// Format only. The GTIN check digit is advisory and lives in the UI, because
+// in-store weight-embedded codes legitimately fail it. See ADR-0027.
+export const BARCODE_SCHEMA = z.string().regex(/^[0-9]{8,14}$/, 'Barcode must be 8-14 digits');
+
+const GRAM_NUTRIENT_SCHEMA = z.number().finite().min(0).max(100).nullable();
+
+const PACKAGED_PRODUCT_NUTRITION_SHAPE = {
+  nutrition_basis: NUTRITION_BASIS_SCHEMA.nullable(),
+  energy_kj: z.number().finite().min(0).max(5000).nullable(),
+  energy_kcal: z.number().finite().min(0).max(1200).nullable(),
+  fat_g: GRAM_NUTRIENT_SCHEMA,
+  saturated_fat_g: GRAM_NUTRIENT_SCHEMA,
+  carbohydrate_g: GRAM_NUTRIENT_SCHEMA,
+  sugars_g: GRAM_NUTRIENT_SCHEMA,
+  fibre_g: GRAM_NUTRIENT_SCHEMA,
+  protein_g: GRAM_NUTRIENT_SCHEMA,
+  salt_g: GRAM_NUTRIENT_SCHEMA,
+};
+
+type PackagedProductInvariantInput = {
+  nutrition_basis: string | null;
+  energy_kj: number | null;
+  energy_kcal: number | null;
+  fat_g: number | null;
+  saturated_fat_g: number | null;
+  carbohydrate_g: number | null;
+  sugars_g: number | null;
+  fibre_g: number | null;
+  protein_g: number | null;
+  salt_g: number | null;
+  package_size: number | null;
+  package_unit: string | null;
+};
+
+// The 0.05 slack mirrors the CHECK constraints: it absorbs per-column rounding
+// on the printed label, not transcription errors.
+const LABEL_ROUNDING_SLACK = 0.05;
+
+/**
+ * Mirrors the CHECK constraints in 20260912072149_packaged_products.sql so a
+ * violation surfaces as a readable issue before the round-trip to Postgres.
+ */
+export function addPackagedProductInvariantIssues(
+  value: PackagedProductInvariantInput,
+  ctx: z.RefinementCtx,
+): void {
+  const nutrients = [
+    value.energy_kj,
+    value.energy_kcal,
+    value.fat_g,
+    value.saturated_fat_g,
+    value.carbohydrate_g,
+    value.sugars_g,
+    value.fibre_g,
+    value.protein_g,
+    value.salt_g,
+  ];
+  if (value.nutrition_basis == null && nutrients.some((n) => n != null)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'nutrition_basis is required when any nutrient value is present',
+      path: ['nutrition_basis'],
+    });
+  }
+  if (
+    value.saturated_fat_g != null &&
+    value.fat_g != null &&
+    value.saturated_fat_g > value.fat_g + LABEL_ROUNDING_SLACK
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'saturated_fat_g cannot exceed fat_g',
+      path: ['saturated_fat_g'],
+    });
+  }
+  if (
+    value.sugars_g != null &&
+    value.carbohydrate_g != null &&
+    value.sugars_g > value.carbohydrate_g + LABEL_ROUNDING_SLACK
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'sugars_g cannot exceed carbohydrate_g',
+      path: ['sugars_g'],
+    });
+  }
+  if ((value.package_size == null) !== (value.package_unit == null)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'package_size and package_unit must be set together',
+      path: ['package_unit'],
+    });
+  }
+}
+
+export const PackagedProductSchema = z
+  .object({
+    ...ProductClassificationSchema.shape,
+    ...PACKAGED_PRODUCT_NUTRITION_SHAPE,
+    id: ULID_SCHEMA,
+    name: z.string().trim().min(1, 'name is required'),
+    brand: z.string().trim().min(1).nullable(),
+    barcode: BARCODE_SCHEMA.nullable(),
+    category: z.string().min(1, 'category is required'),
+    is_organic: z.boolean().nullable(),
+    package_size: z.number().finite().positive().nullable(),
+    package_unit: PRODUCT_UNIT_SCHEMA.nullable(),
+    package_count: z.number().int().positive().nullable(),
+    serving_size: z.number().finite().positive().nullable(),
+    nutri_score: NUTRI_SCORE_SCHEMA.nullable(),
+    allergens: z.array(EU_ALLERGEN_SCHEMA),
+    allergen_traces: z.array(EU_ALLERGEN_SCHEMA),
+    ingredients_text: z.string().nullable(),
+    notes: z.string().nullable(),
+    import_source: PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA,
+    raw_import_json: z.unknown().nullable(),
+    created_at: ISO_DATETIME_SCHEMA,
+    updated_at: ISO_DATETIME_SCHEMA,
+  })
+  .superRefine((value, ctx) => {
+    if (!ProductClassificationSchema.safeParse(value).success) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'A product variant requires a family',
+        path: ['product_variant_id'],
+      });
+    }
+    addPackagedProductInvariantIssues(value, ctx);
+  });
+export type PackagedProduct = z.infer<typeof PackagedProductSchema>;
+
+export const PackagedProductPhotoSchema = z.object({
+  id: ULID_SCHEMA,
+  packaged_product_id: ULID_SCHEMA,
+  storage_path: z.string().trim().min(1),
+  kind: PACKAGED_PRODUCT_PHOTO_KIND_SCHEMA,
+  content_type: z.string().nullable(),
+  byte_size: z.number().int().positive().nullable(),
+  sort_order: z.number().int(),
+  note: z.string().nullable(),
+  created_at: ISO_DATETIME_SCHEMA,
+  updated_at: ISO_DATETIME_SCHEMA,
+});
+export type PackagedProductPhoto = z.infer<typeof PackagedProductPhotoSchema>;
+
+export const PackagedProductInputSchema = z.object({
+  ...ProductClassificationSchema.shape,
+  name: z.string().min(1),
+  category: z.string().min(1),
+  brand: z.string().nullable().optional(),
+  barcode: z.string().nullable().optional(),
+  is_organic: z.boolean().nullable().optional(),
+  package_size: z.number().finite().nullable().optional(),
+  package_unit: PRODUCT_UNIT_SCHEMA.nullable().optional(),
+  package_count: z.number().finite().nullable().optional(),
+  serving_size: z.number().finite().nullable().optional(),
+  nutrition_basis: NUTRITION_BASIS_SCHEMA.nullable().optional(),
+  energy_kj: z.number().finite().nullable().optional(),
+  energy_kcal: z.number().finite().nullable().optional(),
+  fat_g: z.number().finite().nullable().optional(),
+  saturated_fat_g: z.number().finite().nullable().optional(),
+  carbohydrate_g: z.number().finite().nullable().optional(),
+  sugars_g: z.number().finite().nullable().optional(),
+  fibre_g: z.number().finite().nullable().optional(),
+  protein_g: z.number().finite().nullable().optional(),
+  salt_g: z.number().finite().nullable().optional(),
+  nutri_score: NUTRI_SCORE_SCHEMA.nullable().optional(),
+  allergens: z.array(EU_ALLERGEN_SCHEMA).optional(),
+  allergen_traces: z.array(EU_ALLERGEN_SCHEMA).optional(),
+  ingredients_text: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  import_source: PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA.optional(),
+  raw_import_json: z.unknown().nullable().optional(),
+});
+export type PackagedProductInput = z.infer<typeof PackagedProductInputSchema>;
+
+export const PackagedProductPhotoInputSchema = z.object({
+  packaged_product_id: ULID_SCHEMA,
+  storage_path: z.string().trim().min(1),
+  kind: PACKAGED_PRODUCT_PHOTO_KIND_SCHEMA.optional(),
+  content_type: z.string().nullable().optional(),
+  byte_size: z.number().finite().nullable().optional(),
+  sort_order: z.number().finite().optional(),
+  note: z.string().nullable().optional(),
+});
+export type PackagedProductPhotoInput = z.infer<typeof PackagedProductPhotoInputSchema>;
+
+// ── PackagedProductImport (external AI output) ──────────────────────────────
+// The contract an external ChatGPT session produces today and a future Edge
+// Function must produce too. Deliberately looser than PackagedProductSchema, in
+// the same spirit as ParsedReceiptSchema: enum-ish fields arrive as free text and
+// are normalized by `packagedProductFromImport`, and `category` is NOT checked
+// against the categories table here — the dialog does that against live data so
+// it can show which value was wrong.
+
+/** German labels print "31,0"; some models pass numbers through as strings. */
+const LOOSE_NUMBER_SCHEMA = z
+  .union([z.number(), z.string()])
+  .nullable()
+  .optional()
+  .transform((value, ctx) => {
+    if (value == null) return null;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    const trimmed = value.trim();
+    if (trimmed === '') return null;
+    // "< 0,5" is a printed upper bound; the prompt asks for the bare number, but
+    // accept the bound rather than losing the row over a leading glyph.
+    const parsed = Number(trimmed.replace(/^[<≈~]\s*/, '').replace(',', '.'));
+    if (!Number.isFinite(parsed)) {
+      ctx.addIssue({ code: 'custom', message: `Expected a number, received "${value}"` });
+      return null;
+    }
+    return parsed;
+  });
+
+const LOOSE_TEXT_SCHEMA = z.union([z.string(), z.number()]).nullable().optional();
+
+export const PackagedProductImportSchema = z.object({
+  name: z.string().trim().min(1, 'name is required'),
+  brand: z.string().nullable().optional(),
+  barcode: LOOSE_TEXT_SCHEMA,
+  category: z.string().trim().min(1, 'category is required'),
+  product_family_id: z.string().nullable().optional(),
+  product_variant_id: z.string().nullable().optional(),
+  is_organic: z.boolean().nullable().optional(),
+  package_size: LOOSE_NUMBER_SCHEMA,
+  package_unit: z.string().nullable().optional(),
+  package_count: LOOSE_NUMBER_SCHEMA,
+  serving_size: LOOSE_NUMBER_SCHEMA,
+  nutrition_basis: z.string().nullable().optional(),
+  energy_kj: LOOSE_NUMBER_SCHEMA,
+  energy_kcal: LOOSE_NUMBER_SCHEMA,
+  fat_g: LOOSE_NUMBER_SCHEMA,
+  saturated_fat_g: LOOSE_NUMBER_SCHEMA,
+  carbohydrate_g: LOOSE_NUMBER_SCHEMA,
+  sugars_g: LOOSE_NUMBER_SCHEMA,
+  fibre_g: LOOSE_NUMBER_SCHEMA,
+  protein_g: LOOSE_NUMBER_SCHEMA,
+  salt_g: LOOSE_NUMBER_SCHEMA,
+  nutri_score: z.string().nullable().optional(),
+  allergens: z.array(z.string()).nullable().optional(),
+  allergen_traces: z.array(z.string()).nullable().optional(),
+  ingredients_text: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+export type PackagedProductImport = z.infer<typeof PackagedProductImportSchema>;

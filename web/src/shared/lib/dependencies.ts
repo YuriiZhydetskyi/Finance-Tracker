@@ -12,5 +12,5 @@ export type { IFxRateProvider } from './fx-rate';
 export { parseReceiptService } from './parse-receipt';
 export type { IParseReceiptService, ParseReceiptInput } from './parse-receipt';
 
-export { photoStorage } from './photo-storage';
+export { photoStorage, packagingPhotoStorage, extensionFor } from './photo-storage';
 export type { IPhotoStorage, UploadedPhoto } from './photo-storage';

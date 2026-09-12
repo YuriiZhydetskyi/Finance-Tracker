@@ -4,3 +4,5 @@
 
 export type { IPhotoStorage, UploadedPhoto } from './photo-storage.types';
 export { supabasePhotoStorage as photoStorage } from './supabase-photo-storage';
+export { supabasePackagingPhotoStorage as packagingPhotoStorage } from './supabase-photo-storage';
+export { extensionFor } from './supabase-photo-storage';
