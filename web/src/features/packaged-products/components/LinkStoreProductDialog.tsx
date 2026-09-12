@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import type { PackagedProductListRow } from '../api/use-packaged-products';
@@ -61,6 +61,15 @@ export function LinkStoreProductDialog({
     if (event.target === event.currentTarget) onClose();
   };
 
+  // Keyboard equivalent of the backdrop click, for the rare case the dialog
+  // root itself holds focus (e.g. right after showModal(), before focus moves
+  // to a child). Escape already closes via the native `cancel` event above.
+  const handleBackdropKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
+    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+      onClose();
+    }
+  };
+
   return (
     <dialog
       ref={dialogRef}
@@ -69,6 +78,7 @@ export function LinkStoreProductDialog({
         onClose();
       }}
       onClick={handleBackdropClick}
+      onKeyDown={handleBackdropKeyDown}
       aria-labelledby="link-store-product-title"
       className="max-h-[85vh] w-[min(96vw,40rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
     >

@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { PackagedProductImportSchema, type PackagedProductImport } from '@finance-tracker/domain';
 import { parseJsonText } from '@/shared/utils/parse-json-text';
 import { formatZodIssues } from '@/shared/utils/format-zod-issues';
@@ -149,6 +157,15 @@ export function PackagedProductJsonImportDialog({
     if (event.target === event.currentTarget) handleClose();
   };
 
+  // Keyboard equivalent of the backdrop click, for the rare case the dialog
+  // root itself holds focus (e.g. right after showModal(), before focus moves
+  // to a child). Escape already closes via the native `cancel` event above.
+  const handleBackdropKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
+    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+      handleClose();
+    }
+  };
+
   return (
     <dialog
       ref={dialogRef}
@@ -157,6 +174,7 @@ export function PackagedProductJsonImportDialog({
         handleClose();
       }}
       onClick={handleBackdropClick}
+      onKeyDown={handleBackdropKeyDown}
       aria-labelledby="packaged-json-title"
       className="max-h-[92vh] w-[min(96vw,64rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
     >
