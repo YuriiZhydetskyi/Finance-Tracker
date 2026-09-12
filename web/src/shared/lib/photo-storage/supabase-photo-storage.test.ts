@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { supabasePhotoStorage } from './supabase-photo-storage';
+import { supabasePackagingPhotoStorage, supabasePhotoStorage } from './supabase-photo-storage';
 
 type UploadResult = { error: { message: string } | null };
 type SignResult = { data: { signedUrl: string } | null; error: { message: string } | null };
@@ -9,15 +9,19 @@ const uploadMock = vi.fn<(path: string, blob: Blob, opts: unknown) => Promise<Up
 const signMock = vi.fn<(path: string, ttl: number) => Promise<SignResult>>();
 const removeMock = vi.fn<(paths: string[]) => Promise<RemoveResult>>();
 const getCurrentUserMock = vi.fn<() => Promise<{ email: string } | null>>();
+const fromMock = vi.fn<(bucket: string) => void>();
 
 vi.mock('../supabase-client', () => ({
   supabase: {
     storage: {
-      from: () => ({
-        upload: (path: string, blob: Blob, opts: unknown) => uploadMock(path, blob, opts),
-        createSignedUrl: (path: string, ttl: number) => signMock(path, ttl),
-        remove: (paths: string[]) => removeMock(paths),
-      }),
+      from: (bucket: string) => {
+        fromMock(bucket);
+        return {
+          upload: (path: string, blob: Blob, opts: unknown) => uploadMock(path, blob, opts),
+          createSignedUrl: (path: string, ttl: number) => signMock(path, ttl),
+          remove: (paths: string[]) => removeMock(paths),
+        };
+      },
     },
   },
 }));
@@ -33,6 +37,7 @@ beforeEach(() => {
   signMock.mockReset();
   removeMock.mockReset();
   getCurrentUserMock.mockReset();
+  fromMock.mockReset();
   getCurrentUserMock.mockResolvedValue({ email: 'you@example.com' });
 });
 
@@ -127,5 +132,36 @@ describe('supabasePhotoStorage.remove', () => {
   it('throws on delete error', async () => {
     removeMock.mockResolvedValue({ error: { message: 'denied' } });
     await expect(supabasePhotoStorage.remove('p')).rejects.toThrow(/denied/);
+  });
+});
+
+describe('bucket routing', () => {
+  it('addresses the receipts bucket for the receipts singleton', async () => {
+    uploadMock.mockResolvedValue({ error: null });
+    await supabasePhotoStorage.uploadToPath(new Blob(['x'], { type: 'image/jpeg' }), 'a/b.jpg');
+    expect(fromMock).toHaveBeenCalledWith('receipts');
+    expect(fromMock).not.toHaveBeenCalledWith('packaging');
+  });
+
+  it('addresses the packaging bucket for the packaging singleton', async () => {
+    uploadMock.mockResolvedValue({ error: null });
+    await supabasePackagingPhotoStorage.uploadToPath(
+      new Blob(['x'], { type: 'image/jpeg' }),
+      'you@example.com/01JB/01JC.jpg',
+    );
+    expect(fromMock).toHaveBeenCalledWith('packaging');
+    expect(fromMock).not.toHaveBeenCalledWith('receipts');
+  });
+
+  it('signs and removes packaging objects from the packaging bucket', async () => {
+    signMock.mockResolvedValue({ data: { signedUrl: 'https://signed' }, error: null });
+    removeMock.mockResolvedValue({ error: null });
+
+    await expect(
+      supabasePackagingPhotoStorage.getSignedUrl('you@example.com/01JB/01JC.jpg'),
+    ).resolves.toBe('https://signed');
+    await supabasePackagingPhotoStorage.remove('you@example.com/01JB/01JC.jpg');
+
+    expect(fromMock.mock.calls.every(([bucket]) => bucket === 'packaging')).toBe(true);
   });
 });
