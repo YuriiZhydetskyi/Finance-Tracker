@@ -1,11 +1,15 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import {
-  PackagedProductJsonImportDialog,
-  type ImportedPackagedProduct,
-} from './PackagedProductJsonImportDialog';
+import { PackagedProductJsonImportDialog } from './PackagedProductJsonImportDialog';
 import type { PackagedProductListRow } from '../api/use-packaged-products';
 import type { PackagingCandidateRow } from '../types';
+import type { PackagingSavePlan } from '../api/use-save-packaged-products-mutation';
+
+vi.mock('../api/use-packaging-candidates', () => ({
+  usePackagingCandidates: () => ({ data: [CANDIDATE], isPending: false, isError: false }),
+}));
+const openPdf = vi.hoisted(() => vi.fn());
+vi.mock('@/shared/lib/dependencies', () => ({ openPackagingPdf: openPdf }));
 
 // jsdom does not implement the native <dialog> element.
 beforeAll(() => {
@@ -108,7 +112,7 @@ const CANDIDATE: PackagingCandidateRow = {
 function renderDialog(
   overrides: Partial<Parameters<typeof PackagedProductJsonImportDialog>[0]> = {},
 ) {
-  const onImported = vi.fn<(products: ImportedPackagedProduct[]) => void>();
+  const onImported = vi.fn<(products: PackagingSavePlan) => void>();
   render(
     <PackagedProductJsonImportDialog
       open
@@ -125,24 +129,32 @@ function renderDialog(
 }
 
 function promptText(): string {
-  return screen.getByLabelText<HTMLTextAreaElement>('Prompt').value;
+  return screen.getByLabelText<HTMLTextAreaElement>('Запит для ШІ').value;
 }
 
 function paste(json: string) {
   fireEvent.change(screen.getByLabelText('JSON'), { target: { value: json } });
-  fireEvent.click(screen.getByRole('button', { name: 'Перевірити та зберегти' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Перевірити JSON і PDF' }));
+}
+
+async function confirmSave() {
+  const confirm = await screen.findByLabelText(/Я перевірив сторінки/);
+  fireEvent.click(confirm);
+  fireEvent.click(screen.getByRole('button', { name: 'Зберегти товари та фото' }));
 }
 
 describe('PackagedProductJsonImportDialog', () => {
   it('accepts a valid single product', async () => {
     const { onImported } = renderDialog();
     paste(VALID_JSON);
+    expect(onImported).not.toHaveBeenCalled();
+    await confirmSave();
 
     await vi.waitFor(() => {
       expect(onImported).toHaveBeenCalledTimes(1);
     });
     const [products] = onImported.mock.calls[0] ?? [];
-    expect(products?.[0]?.parsed.name).toBe('Pringles Original 165 г');
+    expect(products?.[0]?.name).toBe('Pringles Original 165 г');
   });
 
   it('accepts an array of products', async () => {
@@ -151,6 +163,7 @@ describe('PackagedProductJsonImportDialog', () => {
     second.name = 'Pringles Paprika 165 г';
     second.barcode = '5449000000996';
     paste(JSON.stringify([JSON.parse(VALID_JSON), second]));
+    await confirmSave();
 
     await vi.waitFor(() => {
       expect(onImported).toHaveBeenCalledTimes(1);
@@ -168,14 +181,18 @@ describe('PackagedProductJsonImportDialog', () => {
     expect(onImported).not.toHaveBeenCalled();
   });
 
-  it('blocks a barcode another card already owns', async () => {
+  it('reuses an existing barcode without overwriting the card', async () => {
     const { onImported } = renderDialog({
       existing: [existingRow({ barcode: '5053990101658', name: 'Стара картка' })],
     });
     paste(VALID_JSON);
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Стара картка');
-    expect(onImported).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Використати наявну картку/)).toBeInTheDocument();
+    await confirmSave();
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalled());
+    expect(onImported.mock.calls[0]?.[0][0]).toMatchObject({
+      id: '01JAAAAAAAAAAAAAAAAAAAAAAA',
+      row: null,
+    });
   });
 
   it('blocks a duplicate barcode inside one paste', async () => {
@@ -191,6 +208,7 @@ describe('PackagedProductJsonImportDialog', () => {
     const payload = JSON.parse(VALID_JSON) as Record<string, unknown>;
     payload.barcode = '5053990101659';
     paste(JSON.stringify(payload));
+    await confirmSave();
 
     await vi.waitFor(() => {
       expect(onImported).toHaveBeenCalledTimes(1);
@@ -223,5 +241,117 @@ describe('PackagedProductJsonImportDialog', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(onImported).not.toHaveBeenCalled();
+  });
+
+  it('does not attach the selected receipt label to the first product in an array', async () => {
+    const { onImported } = renderDialog({ candidate: CANDIDATE });
+    const second = {
+      ...(JSON.parse(VALID_JSON) as object),
+      name: 'Milk',
+      barcode: '5449000000996',
+    };
+    paste(JSON.stringify([second, JSON.parse(VALID_JSON)]));
+    await confirmSave();
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalled());
+    expect(onImported.mock.calls[0]?.[0].map((entry) => entry.links)).toEqual([[], []]);
+  });
+
+  it('keeps a failed save open and retries the same plan', async () => {
+    const onImported = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Connection lost'))
+      .mockResolvedValue(undefined);
+    renderDialog({ onImported });
+    paste(VALID_JSON);
+    await confirmSave();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Connection lost');
+    fireEvent.click(screen.getByRole('button', { name: 'Повторити збереження' }));
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalledTimes(2));
+    expect(onImported.mock.calls[0]?.[0]).toBe(onImported.mock.calls[1]?.[0]);
+  });
+
+  it('links the chosen second product without linking the first product', async () => {
+    const { onImported } = renderDialog({ candidate: CANDIDATE });
+    paste(
+      JSON.stringify([{ name: 'Milk', category: 'Молочка' }, JSON.parse(VALID_JSON) as unknown]),
+    );
+    await screen.findByLabelText(/Я перевірив сторінки/);
+    fireEvent.click(screen.getAllByRole('checkbox')[1]!);
+    await confirmSave();
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalled());
+    expect(onImported.mock.calls[0]?.[0].map((entry) => entry.links)).toEqual([
+      [],
+      [CANDIDATE.product_id],
+    ]);
+  });
+
+  it('blocks the same store label selected for two different products', async () => {
+    const { onImported } = renderDialog({ candidate: CANDIDATE });
+    paste(
+      JSON.stringify([{ name: 'Milk', category: 'Молочка' }, JSON.parse(VALID_JSON) as unknown]),
+    );
+    await screen.findByLabelText(/Я перевірив сторінки/);
+    fireEvent.click(screen.getAllByRole('checkbox')[0]!);
+    fireEvent.click(screen.getAllByRole('checkbox')[1]!);
+    await confirmSave();
+    expect(await screen.findByRole('alert')).toHaveTextContent('двох товарів');
+    expect(onImported).not.toHaveBeenCalled();
+  });
+
+  it('requires the PDF when the JSON references its pages', async () => {
+    const { onImported } = renderDialog();
+    paste(
+      JSON.stringify({
+        products: [
+          { ...(JSON.parse(VALID_JSON) as object), source_pages: [{ page: 2, kind: 'front' }] },
+        ],
+      }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Додай той самий PDF');
+    expect(onImported).not.toHaveBeenCalled();
+  });
+
+  it('previews receipt and packaging pages but saves only packaging JPEGs', async () => {
+    const front = new Blob(['front'], { type: 'image/jpeg' });
+    const receipt = new Blob(['receipt'], { type: 'image/jpeg' });
+    const close = vi.fn().mockResolvedValue(undefined);
+    openPdf.mockResolvedValue({
+      pageCount: 2,
+      fingerprint: 'abc',
+      renderPages: vi.fn().mockResolvedValue(
+        new Map([
+          [1, receipt],
+          [2, front],
+        ]),
+      ),
+      close,
+    });
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, {
+        createObjectURL: vi.fn(() => 'blob:preview'),
+        revokeObjectURL: vi.fn(),
+      }),
+    );
+    const { onImported } = renderDialog();
+    fireEvent.change(screen.getByLabelText(/PDF із фотографіями/), {
+      target: { files: [new File(['pdf'], 'shopping.pdf', { type: 'application/pdf' })] },
+    });
+    paste(
+      JSON.stringify({
+        receipt_pages: [1],
+        products: [
+          { ...(JSON.parse(VALID_JSON) as object), source_pages: [{ page: 2, kind: 'front' }] },
+        ],
+      }),
+    );
+    expect(await screen.findByAltText('Лицевий бік · сторінка 2')).toBeInTheDocument();
+    expect(screen.getByAltText('Чек · сторінка 1')).toBeInTheDocument();
+    await confirmSave();
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalled());
+    const plan = onImported.mock.calls[0]?.[0];
+    expect(plan?.[0]?.photos).toHaveLength(1);
+    expect(plan?.[0]?.photos[0]?.blob).toBe(front);
+    expect(close).toHaveBeenCalled();
   });
 });

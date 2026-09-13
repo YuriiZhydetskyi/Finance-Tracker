@@ -14,12 +14,12 @@ import {
   usePackagingCandidates,
   useSavePackagedProductsMutation,
   useSkipPackagingMutation,
-  type ImportedPackagedProduct,
   type PackagingCandidateRow,
 } from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import type { PackagingSavePlan } from '@/features/packaged-products/api/use-save-packaged-products-mutation';
 
 const PackagedProductsSearchSchema = z
   .object({
@@ -51,6 +51,8 @@ function PackagedProductsFlow() {
   const taxonomyQuery = useProductTaxonomy();
   const productsQuery = usePackagedProducts();
   const candidatesQuery = usePackagingCandidates({ query });
+  const catalogueReady =
+    categoriesQuery.isSuccess && taxonomyQuery.isSuccess && productsQuery.isSuccess;
 
   const saveProducts = useSavePackagedProductsMutation();
   const linkProduct = useLinkStoreProductMutation();
@@ -98,13 +100,12 @@ function PackagedProductsFlow() {
     });
   };
 
-  const handleImported = async (imported: ImportedPackagedProduct[]) => {
-    const saved = await saveProducts.mutateAsync({
-      imports: imported,
-      linkProductIds: importFor ? [importFor.product_id] : [],
-    });
+  const handleImported = async (plan: PackagingSavePlan, onProgress: (message: string) => void) => {
+    const saved = await saveProducts.mutateAsync({ plan, onProgress });
     const first = saved[0];
-    if (first) void navigate({ to: '/packaged-products/$id', params: { id: first.id } });
+    if (saved.length === 1 && first)
+      void navigate({ to: '/packaged-products/$id', params: { id: first.id } });
+    else setSearch({ tab: 'catalogue', q: '' });
   };
 
   return (
@@ -114,12 +115,13 @@ function PackagedProductsFlow() {
         <Button
           type="button"
           variant="secondary"
+          disabled={!catalogueReady}
           onClick={() => {
             setImportFor(null);
             setImportOpen(true);
           }}
         >
-          Додати з JSON
+          Додати JSON + PDF
         </Button>
       </div>
 
@@ -131,7 +133,7 @@ function PackagedProductsFlow() {
             className="h-8 px-3 text-xs"
             onClick={() => setSearch({ tab: 'queue' })}
           >
-            Сфотографувати
+            Без картки
           </Button>
           <Button
             type="button"
@@ -154,6 +156,24 @@ function PackagedProductsFlow() {
       {saveProducts.isError ? (
         <ErrorDetails error={saveProducts.error} label="Не вдалося зберегти картку" />
       ) : null}
+      {categoriesQuery.isError ? (
+        <ErrorDetails
+          error={categoriesQuery.error}
+          label="Не вдалося завантажити категорії для імпорту"
+        />
+      ) : null}
+      {taxonomyQuery.isError ? (
+        <ErrorDetails
+          error={taxonomyQuery.error}
+          label="Не вдалося завантажити класифікацію для імпорту"
+        />
+      ) : null}
+      {productsQuery.isError && tab === 'queue' ? (
+        <ErrorDetails error={productsQuery.error} label="Не вдалося перевірити наявні картки" />
+      ) : null}
+      {categoriesQuery.isPending || taxonomyQuery.isPending || productsQuery.isPending ? (
+        <p className="text-sm text-slate-500">Завантажую довідники для імпорту…</p>
+      ) : null}
       {linkProduct.isError ? (
         <ErrorDetails error={linkProduct.error} label="Не вдалося привʼязати позицію" />
       ) : null}
@@ -169,6 +189,7 @@ function PackagedProductsFlow() {
         ) : (
           <PackagingCandidatesList
             candidates={candidatesQuery.data}
+            catalogueReady={catalogueReady}
             busyProductId={busyProductId}
             onCreateCard={(candidate) => {
               setImportFor(candidate);
@@ -190,7 +211,7 @@ function PackagedProductsFlow() {
           emptyMessage={
             query
               ? 'За цим запитом нічого не знайдено.'
-              : 'Каталог порожній. Створи першу картку з вкладки «Сфотографувати».'
+              : 'Каталог порожній. Створи першу картку з вкладки «Без картки».'
           }
         />
       )}

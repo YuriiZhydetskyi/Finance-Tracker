@@ -10,6 +10,7 @@ type Props = Readonly<{
   onLinkExisting: (candidate: PackagingCandidateRow) => void;
   onSkip: (candidate: PackagingCandidateRow) => void;
   busyProductId?: string | null;
+  catalogueReady?: boolean;
 }>;
 
 /**
@@ -24,11 +25,12 @@ export function PackagingCandidatesList({
   onLinkExisting,
   onSkip,
   busyProductId = null,
+  catalogueReady = true,
 }: Props) {
   if (candidates.length === 0) {
     return (
       <p className="rounded-md border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
-        Усе сфотографовано. Нових позицій без картки немає.
+        Позицій без картки за цим запитом немає. Наявність фото перевіряй у каталозі.
       </p>
     );
   }
@@ -84,7 +86,7 @@ export function PackagingCandidatesList({
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !catalogueReady}
                   onClick={() => onCreateCard(candidate)}
                   className="px-3"
                 >
@@ -93,7 +95,7 @@ export function PackagingCandidatesList({
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={busy}
+                  disabled={busy || !catalogueReady}
                   onClick={() => onLinkExisting(candidate)}
                   className="px-3"
                 >

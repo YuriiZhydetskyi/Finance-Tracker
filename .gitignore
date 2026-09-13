@@ -31,6 +31,7 @@ desktop.ini
 *.swo
 
 # Build / cache
+web/public/pdfjs/
 dist/
 build/
 .cache/
