@@ -47,3 +47,4 @@
 | [0025](0025-multilingual-product-taxonomy.md) | Багатомовна таксономія товарів із snapshot для покупки | accepted | Schema / Search / AI |
 | [0026](0026-store-scoped-receipt-product-rules.md) | Правила товарів за точним текстом чека й магазином | accepted | Schema / Import / UI |
 | [0027](0027-packaged-product-catalogue.md) | Каталог пакованих товарів із харчовою цінністю | accepted | Schema / Storage / UI |
+| [0028](0028-packaging-pdf-evidence-import.md) | JSON із PDF-сторінками упаковок і підтвердженими прив’язками | accepted | Import / Storage / UI |

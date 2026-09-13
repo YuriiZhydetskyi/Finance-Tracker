@@ -1,43 +1,49 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-} from 'react';
-import { PackagedProductImportSchema, type PackagedProductImport } from '@finance-tracker/domain';
-import { parseJsonText } from '@/shared/utils/parse-json-text';
-import { formatZodIssues } from '@/shared/utils/format-zod-issues';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
+import { openPackagingPdf } from '@/shared/lib/dependencies';
 import { Button } from '@/shared/ui/Button';
-import { toPackagedProductCandidates } from '../utils/packaged-product-candidates';
 import {
   buildPackagedProductPrompt,
   EXAMPLE_PACKAGED_PRODUCT_JSON,
   type PromptTaxonomy,
 } from '../utils/build-packaged-product-prompt';
 import {
-  normalizeCatalogueName,
-  validatePackagedProductImport,
-} from '../utils/validate-packaged-product-import';
-import type { PackagedProductListRow } from '../api/use-packaged-products';
+  parsePackagingImport,
+  validatePackagingPages,
+  validatePackagingLinks,
+  type ExistingPackagingIdentity,
+  type PackagingImport,
+} from '../utils/packaging-import';
+import {
+  createPackagingSavePlan,
+  type PackagingSavePlan,
+  type PackagingImportSource,
+} from '../api/use-save-packaged-products-mutation';
+import { PackagingImportReview } from './PackagingImportReview';
 import type { PackagingCandidateRow } from '../types';
 
-export type ImportedPackagedProduct = { parsed: PackagedProductImport; raw: unknown };
+export type { ImportedPackagedProduct } from '../utils/packaging-import';
 
 type Props = Readonly<{
   open: boolean;
   categories: string[];
   taxonomy: PromptTaxonomy;
-  existing: Pick<PackagedProductListRow, 'id' | 'name' | 'barcode'>[];
-  /** When set, the prompt names the receipt labels this card is being created for. */
+  existing: ExistingPackagingIdentity[];
   candidate?: PackagingCandidateRow | null;
   submitting: boolean;
   onClose: () => void;
-  onImported: (products: ImportedPackagedProduct[]) => void | Promise<void>;
+  onImported: (
+    plan: PackagingSavePlan,
+    onProgress: (message: string) => void,
+  ) => void | Promise<void>;
 }>;
+
+type Review = {
+  batch: PackagingImport;
+  source: PackagingImportSource | null;
+  pageCount: number | null;
+  pages: Map<number, Blob>;
+};
 
 export function PackagedProductJsonImportDialog({
   open,
@@ -50,24 +56,22 @@ export function PackagedProductJsonImportDialog({
   onImported,
 }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const savePlan = useRef<PackagingSavePlan | null>(null);
   const prompt = useMemo(
     () => buildPackagedProductPrompt(categories, taxonomy, candidate),
     [categories, taxonomy, candidate],
   );
   const [jsonText, setJsonText] = useState('');
-  const [errors, setErrors] = useState<string[]>([]);
-  const [warnings, setWarnings] = useState<string[]>([]);
-  const { copyState, copy, reset: resetCopy } = useCopyToClipboard(prompt);
-
-  const lookups = useMemo(() => {
-    const byBarcode = new Map<string, { id: string; name: string }>();
-    const byName = new Map<string, { id: string; name: string }>();
-    for (const row of existing) {
-      if (row.barcode) byBarcode.set(row.barcode, { id: row.id, name: row.name });
-      else byName.set(normalizeCatalogueName(row.name), { id: row.id, name: row.name });
-    }
-    return { byBarcode, byName };
-  }, [existing]);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [review, setReview] = useState<Review | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [startedSave, setStartedSave] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState('');
+  const { copyState, copy } = useCopyToClipboard(prompt);
+  const busy = preparing || saving || submitting;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -76,196 +80,257 @@ export function PackagedProductJsonImportDialog({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  // jsonText survives close/reopen so an accidental close doesn't wipe a paste
-  // the user is mid-way through fixing.
   const handleClose = () => {
-    setErrors([]);
-    setWarnings([]);
-    resetCopy();
-    onClose();
+    if (!busy) onClose();
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setErrors([]);
-    setWarnings([]);
-
-    let candidates: unknown[];
+  const prepareReview = async () => {
+    setError(null);
+    setPreparing(true);
     try {
-      candidates = toPackagedProductCandidates(parseJsonText(jsonText));
-    } catch (e) {
-      setErrors([e instanceof Error ? e.message : 'Не вдалося прочитати JSON.']);
-      return;
-    }
-
-    if (candidates.length === 0) {
-      setErrors(['JSON не містить жодного товару.']);
-      return;
-    }
-
-    const products: ImportedPackagedProduct[] = [];
-    const collectedErrors: string[] = [];
-    const collectedWarnings: string[] = [];
-    // Duplicates inside one paste are caught here; the partial unique indexes
-    // remain the real guard against a concurrent insert by the other user.
-    const seenBarcodes = new Set<string>();
-
-    candidates.forEach((raw, index) => {
-      const label = candidates.length > 1 ? `Товар #${String(index + 1)} — ` : '';
-      const result = PackagedProductImportSchema.safeParse(raw);
-      if (!result.success) {
-        collectedErrors.push(label + formatZodIssues(result.error));
-        return;
-      }
-
-      const checked = validatePackagedProductImport(result.data, {
-        categories,
-        families: taxonomy.families,
-        variants: taxonomy.variants,
-        existingByBarcode: lookups.byBarcode,
-        existingNamesWithoutBarcode: lookups.byName,
-      });
-      collectedErrors.push(...checked.errors.map((message) => label + message));
-      collectedWarnings.push(...checked.warnings.map((message) => label + message));
-
-      const barcode = result.data.barcode == null ? null : String(result.data.barcode);
-      if (barcode) {
-        if (seenBarcodes.has(barcode)) {
-          collectedErrors.push(`${label}штрихкод ${barcode} повторюється в цій же вставці`);
+      const batch = parsePackagingImport(jsonText, { categories, taxonomy, existing });
+      let source: PackagingImportSource | null = null;
+      let pageCount: number | null = null;
+      let pages = new Map<number, Blob>();
+      if (pdfFile) {
+        setProgress('Читаю PDF…');
+        const pdf = await openPackagingPdf(pdfFile);
+        try {
+          pageCount = pdf.pageCount;
+          validatePackagingPages(batch, pageCount);
+          pages = await pdf.renderPages(
+            [
+              ...batch.receipt_pages,
+              ...batch.products.flatMap((p) => p.source_pages.map((ref) => ref.page)),
+            ],
+            (done, total) => setProgress(`Готую JPEG: ${String(done)} / ${String(total)}`),
+          );
+          source = {
+            file_name: pdfFile.name,
+            fingerprint: pdf.fingerprint,
+            receipt_pages: batch.receipt_pages,
+            pages,
+          };
+        } finally {
+          await pdf.close();
         }
-        seenBarcodes.add(barcode);
+      } else {
+        validatePackagingPages(batch, null);
       }
-
-      products.push({ parsed: result.data, raw });
-    });
-
-    // All-or-nothing: one bad product blocks the paste so the source gets fixed
-    // rather than half a batch landing in the catalogue.
-    if (collectedErrors.length > 0) {
-      setErrors(collectedErrors);
-      setWarnings(collectedWarnings);
-      return;
+      setReview({ batch, source, pageCount, pages });
+      setConfirmed(false);
+      savePlan.current = null;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не вдалося перевірити імпорт.');
+    } finally {
+      setPreparing(false);
+      setProgress('');
     }
-
-    setWarnings(collectedWarnings);
-    await onImported(products);
-    setJsonText('');
-    handleClose();
   };
 
-  const handleBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
-    if (event.target === event.currentTarget) handleClose();
+  const save = async () => {
+    if (!review || !confirmed || busy) return;
+    setError(null);
+    setSaving(true);
+    try {
+      validatePackagingLinks(review.batch.products);
+      savePlan.current ??= createPackagingSavePlan(review.batch.products, review.source);
+      setStartedSave(true);
+      await onImported(savePlan.current, setProgress);
+      setJsonText('');
+      setPdfFile(null);
+      setReview(null);
+      setConfirmed(false);
+      setStartedSave(false);
+      savePlan.current = null;
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не вдалося зберегти імпорт.');
+    } finally {
+      setSaving(false);
+      setProgress('');
+    }
   };
 
-  // Keyboard equivalent of the backdrop click, for the rare case the dialog
-  // root itself holds focus (e.g. right after showModal(), before focus moves
-  // to a child). Escape already closes via the native `cancel` event above.
-  const handleBackdropKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
-    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-      handleClose();
-    }
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!busy) void (review ? save() : prepareReview());
   };
 
   return (
     <dialog
       ref={dialogRef}
-      onCancel={(e) => {
-        e.preventDefault();
+      onCancel={(event) => {
+        event.preventDefault();
         handleClose();
       }}
-      onClick={handleBackdropClick}
-      onKeyDown={handleBackdropKeyDown}
       aria-labelledby="packaged-json-title"
-      className="max-h-[92vh] w-[min(96vw,64rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
+      className="m-auto max-h-[92vh] w-[min(96vw,64rem)] rounded-md border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-900/40"
     >
-      <form
-        onSubmit={(event) => void handleSubmit(event)}
-        className="flex max-h-[92vh] flex-col overflow-hidden"
-      >
+      <form onSubmit={submit} className="flex max-h-[92vh] flex-col overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <div>
             <h2 id="packaged-json-title" className="text-base font-semibold text-slate-900">
-              Картка товару з JSON
+              Товари з JSON і PDF
             </h2>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {candidate
-                ? `Для позиції «${candidate.product_name}» з ${candidate.store}.`
-                : 'Підходить один товар, масив товарів або обʼєкт із полем products.'}
+            <p className="text-xs text-slate-600">
+              {review
+                ? 'Перевір фото та вибери відповідні назви в чеках.'
+                : 'Скопіюй запит для ШІ, додай той самий PDF і встав отриманий JSON.'}
             </p>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={submitting}
-            onClick={handleClose}
-            className="px-3"
-          >
+          <Button type="button" variant="ghost" disabled={busy} onClick={handleClose}>
             Закрити
           </Button>
         </div>
-
-        <div className="grid gap-4 overflow-y-auto p-4 md:grid-cols-2">
-          <section className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <label htmlFor="packaged-prompt" className="text-sm font-medium text-slate-800">
-                Prompt
+        <div className="space-y-4 overflow-y-auto p-4">
+          {!review ? (
+            <>
+              <div className="rounded border border-slate-200 p-3 text-sm text-slate-700">
+                Одна сторінка упаковки — один товар. Фото лицевого боку й звороту можуть бути на
+                різних сторінках. Сторінки чека позначаються окремо. Номери сторінок рахуються від
+                1, включно з чеком.
+              </div>
+              <label className="block space-y-1 text-sm font-medium">
+                <span>PDF із фотографіями (до 20 МБ, необов’язково для JSON без сторінок)</span>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  disabled={busy}
+                  className="block w-full text-sm"
+                  onChange={(event) => setPdfFile(event.target.files?.[0] ?? null)}
+                />
               </label>
-              <Button type="button" variant="secondary" onClick={() => void copy()}>
-                {copyState === 'copied'
-                  ? 'Скопійовано'
-                  : copyState === 'failed'
-                    ? 'Не вдалося скопіювати'
-                    : 'Скопіювати prompt'}
-              </Button>
-            </div>
-            <textarea
-              id="packaged-prompt"
-              readOnly
-              value={prompt}
-              rows={18}
-              className="min-h-80 w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-xs leading-5 text-slate-800"
-            />
-          </section>
-
-          <section className="space-y-2">
-            <label htmlFor="packaged-json" className="text-sm font-medium text-slate-800">
-              JSON
-            </label>
-            <textarea
-              id="packaged-json"
-              value={jsonText}
-              onChange={(event) => setJsonText(event.target.value)}
-              rows={18}
-              placeholder={EXAMPLE_PACKAGED_PRODUCT_JSON}
-              className="min-h-80 w-full resize-y rounded-md border border-slate-300 p-3 font-mono text-xs leading-5 text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-            />
-            {errors.length > 0 ? (
-              <div
-                role="alert"
-                className="space-y-1 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-800"
-              >
-                {errors.map((message) => (
-                  <p key={message}>{message}</p>
-                ))}
+              {pdfFile ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span>{pdfFile.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => setPdfFile(null)}
+                  >
+                    Прибрати PDF
+                  </Button>
+                </div>
+              ) : null}
+              <div className="grid gap-4 md:grid-cols-2">
+                <section className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor="packaged-prompt" className="text-sm font-medium">
+                      Запит для ШІ
+                    </label>
+                    <Button type="button" variant="secondary" onClick={() => void copy()}>
+                      {copyState === 'copied'
+                        ? 'Скопійовано'
+                        : copyState === 'failed'
+                          ? 'Не вдалося скопіювати'
+                          : 'Скопіювати запит'}
+                    </Button>
+                  </div>
+                  <textarea
+                    id="packaged-prompt"
+                    readOnly
+                    value={prompt}
+                    rows={15}
+                    className="w-full rounded border border-slate-300 bg-slate-50 p-3 font-mono text-xs"
+                  />
+                </section>
+                <section className="space-y-2">
+                  <label htmlFor="packaged-json" className="text-sm font-medium">
+                    JSON
+                  </label>
+                  <textarea
+                    id="packaged-json"
+                    value={jsonText}
+                    disabled={busy}
+                    onChange={(event) => setJsonText(event.target.value)}
+                    rows={15}
+                    placeholder={EXAMPLE_PACKAGED_PRODUCT_JSON}
+                    className="w-full rounded border border-slate-300 p-3 font-mono text-xs"
+                  />
+                </section>
               </div>
-            ) : null}
-            {warnings.length > 0 ? (
-              <div className="space-y-1 rounded-md border border-amber-200 bg-amber-50 p-2 text-sm text-amber-900">
-                <p className="font-medium">Попередження (не блокують збереження):</p>
-                {warnings.map((message) => (
-                  <p key={message}>{message}</p>
-                ))}
-              </div>
-            ) : null}
-          </section>
+            </>
+          ) : (
+            <>
+              <PackagingImportReview
+                batch={review.batch}
+                pages={review.pages}
+                pageCount={review.pageCount}
+                candidate={candidate}
+                disabled={busy || startedSave}
+                onChange={(products) => {
+                  setReview({ ...review, batch: { ...review.batch, products } });
+                  setConfirmed(false);
+                }}
+              />
+              {review.batch.warnings.length ? (
+                <div className="space-y-1 rounded bg-amber-50 p-3 text-sm text-amber-900">
+                  {review.batch.warnings.map((warning, i) => (
+                    <p key={i}>{warning}</p>
+                  ))}
+                </div>
+              ) : null}
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  disabled={busy || startedSave}
+                  onChange={(event) => setConfirmed(event.target.checked)}
+                />
+                Я перевірив сторінки, наявні картки та вибрані прив’язки. Сторінки без призначення
+                можна пропустити.
+              </label>
+            </>
+          )}
+          {error ? (
+            <p
+              role="alert"
+              className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            >
+              {error}
+            </p>
+          ) : null}
+          {error && startedSave ? (
+            <p className="text-sm text-amber-800">
+              Частину карток або фото вже могло бути збережено. Натисни «Повторити збереження»:
+              завершені кроки не дублюються. Не закривай цю сторінку до завершення. Прив’язки
+              виконуються після запису фото. Якщо потрібно змінити відповідності, перевір імпорт
+              заново; вже збережені картки залишаться в каталозі.
+            </p>
+          ) : null}
+          {progress ? (
+            <p role="status" className="text-sm text-teal-800">
+              {progress}
+            </p>
+          ) : null}
         </div>
-
         <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3">
-          <Button type="button" variant="ghost" disabled={submitting} onClick={handleClose}>
-            Скасувати
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? 'Зберігаю…' : 'Перевірити та зберегти'}
+          {review && (!startedSave || error) ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                setReview(null);
+                setConfirmed(false);
+                setError(null);
+                setStartedSave(false);
+                savePlan.current = null;
+              }}
+            >
+              {startedSave ? 'Перевірити імпорт заново' : 'Змінити JSON або PDF'}
+            </Button>
+          ) : null}
+          <Button type="submit" disabled={busy || (review != null && !confirmed)}>
+            {busy
+              ? 'Обробляю…'
+              : review
+                ? startedSave
+                  ? 'Повторити збереження'
+                  : 'Зберегти товари та фото'
+                : 'Перевірити JSON і PDF'}
           </Button>
         </div>
       </form>

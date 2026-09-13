@@ -6,7 +6,13 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules', 'src/routeTree.gen.ts', 'src/shared/types/database.types.ts'],
+    ignores: [
+      'dist',
+      'node_modules',
+      'public/pdfjs',
+      'src/routeTree.gen.ts',
+      'src/shared/types/database.types.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

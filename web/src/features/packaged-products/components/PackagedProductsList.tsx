@@ -12,7 +12,7 @@ type Props = Readonly<{ products: PackagedProductListRow[]; emptyMessage?: strin
 
 export function PackagedProductsList({
   products,
-  emptyMessage = 'Каталог порожній. Створи першу картку з вкладки «Сфотографувати».',
+  emptyMessage = 'Каталог порожній. Створи першу картку з вкладки «Без картки».',
 }: Props) {
   if (products.length === 0) {
     return (
@@ -48,6 +48,9 @@ export function PackagedProductsList({
               <p>
                 {product.photos_count} фото · {product.store_labels_count} назв у чеках
               </p>
+              {product.photos_count === 0 ? (
+                <p className="font-medium text-amber-700">Фото ще не додано</p>
+              ) : null}
             </div>
           </Link>
         </li>

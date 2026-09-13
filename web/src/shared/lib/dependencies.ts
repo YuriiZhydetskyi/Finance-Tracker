@@ -14,3 +14,6 @@ export type { IParseReceiptService, ParseReceiptInput } from './parse-receipt';
 
 export { photoStorage, packagingPhotoStorage, extensionFor } from './photo-storage';
 export type { IPhotoStorage, UploadedPhoto } from './photo-storage';
+
+export { openPackagingPdf } from './pdf/render-packaging-pdf';
+export type { PackagingPdf } from './pdf/render-packaging-pdf';

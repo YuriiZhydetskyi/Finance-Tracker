@@ -17,6 +17,9 @@ export const FAMILY_HINT_LIMIT = 200;
 export const VARIANT_HINT_LIMIT = 200;
 
 export const EXAMPLE_PACKAGED_PRODUCT_JSON = `{
+  "schema_version": 1,
+  "receipt_pages": [1],
+  "products": [{
   "name": "Pringles Original 165 г",
   "brand": "Pringles",
   "barcode": "5053990101658",
@@ -42,7 +45,10 @@ export const EXAMPLE_PACKAGED_PRODUCT_JSON = `{
   "allergens": ["gluten"],
   "allergen_traces": ["milk"],
   "ingredients_text": "Kartoffelflocken, Pflanzenöle (Sonnenblume, Mais), Maismehl",
-  "notes": null
+  "notes": null,
+  "source_pages": [{"page": 2, "kind": "front"}, {"page": 3, "kind": "back"}],
+  "receipt_matches": [{"store": "REWE", "receipt_label": "Originals", "store_product_code": null, "receipt_date": null, "receipt_page": 1}]
+  }]
 }`;
 
 function candidateHint(candidate: PackagingCandidateRow): string[] {
@@ -73,14 +79,35 @@ export function buildPackagedProductPrompt(
     .join('; ');
 
   return [
-    'Проаналізуй додані фотографії упаковки ОДНОГО продукту і поверни лише валідний JSON.',
+    'Проаналізуй PDF із чеком та фотографіями упаковок одного або кількох товарів і поверни лише валідний JSON.',
     'Без markdown, без коментарів, без пояснень.',
     'Фото можуть містити лицевий бік, зворот, таблицю харчової цінності, склад і штрихкод,',
     'зокрема сторінками одного PDF.',
-    'Якщо у вкладенні явно КІЛЬКА РІЗНИХ продуктів — поверни JSON-масив таких обʼєктів.',
+    'Поверни один обʼєкт schema_version: 1, receipt_pages та products, як у прикладі нижче.',
     '',
     'JSON має відповідати цій формі:',
     EXAMPLE_PACKAGED_PRODUCT_JSON,
+    '',
+    'Правила PDF та відповідностей:',
+    '- receipt_pages: фактичні номери сторінок із чеком, або [] якщо чека немає.',
+    '- Нумерація ВСІХ сторінок починається з 1, включно з чеком, обкладинкою та порожніми сторінками.',
+    '- source_pages кожного товару: лише сторінки його упаковки, з page та kind:',
+    '  front | back | nutrition | ingredients | barcode | other. На одну сторінку — один kind.',
+    '- Якщо зворот містить і склад, і таблицю харчової цінності, постав kind: "back" один раз.',
+    '- Одна сторінка упаковки належить лише одному товару. Не використовуй receipt_pages як source_pages.',
+    '- Різні боки тієї самої упаковки обʼєднай в один товар. Різні смаки й розміри — окремі товари.',
+    '- Не копіюй номери сторінок або штрихкод із прикладу: перелічуй лише те, що є у вкладенні.',
+    '- Якщо одна сторінка містить кілька різних товарів, не призначай її навмання. Залиш source_pages: []',
+    '  та поясни в notes, що потрібно рознести фото на окремі сторінки. Імпорт такого PDF потребує виправлення.',
+    '- receipt_matches: необовʼязкові ПРИПУЩЕННЯ про відповідність назви в чеку упаковці.',
+    '  store — надрукований магазин; receipt_label — ДОСЛІВНИЙ текст позиції, навіть "Originals";',
+    '  store_product_code — лише надрукований код або null; receipt_date — надрукована дата YYYY-MM-DD або null;',
+    '  receipt_page — сторінка з цією позицією з receipt_pages або null, якщо це надана підказка з бази.',
+    '- Якщо звʼязок сумнівний, залиш receipt_matches: []. Ніколи не вигадуй ID товарів чи чеків.',
+    '- Збіг дати чи перебування в одному PDF — лише додатковий контекст, а не доказ відповідності.',
+    '  Дата створення/експорту PDF не є датою зйомки або покупки. Не підміняй одну іншою.',
+    '- Дані чека тут потрібні лише для зіставлення; не додавай фінансові рядки як картки упаковок.',
+    '- Для окремих фото без PDF поверни receipt_pages: [], source_pages: []; фото можна додати в картку пізніше.',
     '',
     'Правила транскрибування:',
     '- Бери значення з упаковки. Не згадуй товар із памʼяті, не шукай його в інших джерелах,',
