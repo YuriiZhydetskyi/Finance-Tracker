@@ -54,3 +54,6 @@ coverage/
 
 # Claude Code local settings (may contain personal allowlist with secrets)
 .claude/settings.local.json
+
+# Local analysis artifacts (live DB snapshots with personal purchase data)
+output/
