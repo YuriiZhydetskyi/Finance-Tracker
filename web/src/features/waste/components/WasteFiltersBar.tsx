@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Input } from '@/shared/ui/Input';
 import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
-import { useDebounce } from '@/shared/hooks/use-debounce';
+import { useDebouncedUrlDraft } from '@/shared/hooks/use-debounced-url-draft';
 import type { WasteSearchInput } from '../waste-search';
 
 type Props = {
@@ -14,43 +14,14 @@ type Props = {
 export function WasteFiltersBar({ search, categoryOptions, activeCount }: Props) {
   const navigate = useNavigate();
 
-  // Two debounced text inputs — name (q) and store. Both follow the same
-  // local-draft + ownPushRef pattern as RecentFiltersBar.
-  const [nameDraft, setNameDraft] = useState(search.q ?? '');
-  const debouncedName = useDebounce(nameDraft, 300);
-  const nameOwnPushRef = useRef<string | undefined>(search.q);
-
-  const [storeDraft, setStoreDraft] = useState(search.store ?? '');
-  const debouncedStore = useDebounce(storeDraft, 300);
-  const storeOwnPushRef = useRef<string | undefined>(search.store);
-
-  useEffect(() => {
-    if (nameOwnPushRef.current === search.q) return;
-    nameOwnPushRef.current = search.q;
-    setNameDraft(search.q ?? '');
-  }, [search.q]);
-
-  useEffect(() => {
-    if (storeOwnPushRef.current === search.store) return;
-    storeOwnPushRef.current = search.store;
-    setStoreDraft(search.store ?? '');
-  }, [search.store]);
-
-  useEffect(() => {
-    const normalized = debouncedName || undefined;
-    if (normalized === (search.q ?? undefined)) return;
-    nameOwnPushRef.current = normalized;
-    void navigate({ to: '/waste', search: { ...search, q: normalized } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedName]);
-
-  useEffect(() => {
-    const normalized = debouncedStore || undefined;
-    if (normalized === (search.store ?? undefined)) return;
-    storeOwnPushRef.current = normalized;
-    void navigate({ to: '/waste', search: { ...search, store: normalized } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedStore]);
+  const [nameDraft, setNameDraft] = useDebouncedUrlDraft({
+    value: search.q,
+    onCommit: (q) => void navigate({ to: '/waste', search: { ...search, q } }),
+  });
+  const [storeDraft, setStoreDraft] = useDebouncedUrlDraft({
+    value: search.store,
+    onCommit: (store) => void navigate({ to: '/waste', search: { ...search, store } }),
+  });
 
   const update = (patch: Partial<WasteSearchInput>) => {
     void navigate({ to: '/waste', search: { ...search, ...patch } });

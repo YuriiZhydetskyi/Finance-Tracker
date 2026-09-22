@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { cn } from '@/shared/ui/cn';
@@ -9,7 +9,11 @@ import {
   type StatsPeriod,
 } from '../stats-period';
 import type { StatsDateRange } from '../api/stats.types';
-import { loadStatsPreferences, saveStatsPreferences } from '../stats-preferences';
+import {
+  loadStatsDateRange,
+  loadStatsPreferences,
+  saveStatsPreferences,
+} from '../stats-preferences';
 
 const OPTIONS: { value: StatsPeriod; label: string }[] = [
   { value: 'all-time', label: 'За весь час' },
@@ -31,17 +35,13 @@ export function StatsPeriodPicker({ onChange }: Props) {
     () => loadStatsPreferences().customRange ?? { dateFrom: '', dateTo: '' },
   );
 
+  const [restoredRange] = useState(loadStatsDateRange);
+  // Emits the restored choice once on mount so any parent learns the saved
+  // range from the picker itself; useEffectEvent keeps it from re-firing when
+  // the parent passes a new onChange.
+  const emitRestoredRange = useEffectEvent(() => onChange(restoredRange));
   useEffect(() => {
-    onChange(
-      period === 'custom'
-        ? customRange.dateFrom && customRange.dateTo && isValidCustomRange(customRange)
-          ? customRange
-          : null
-        : periodToDateRange(period),
-    );
-    // The route's state setter is stable. This effect only restores the saved
-    // choice after the picker mounts, not after every interaction.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    emitRestoredRange();
   }, []);
 
   const selectPeriod = (nextPeriod: StatsPeriod) => {

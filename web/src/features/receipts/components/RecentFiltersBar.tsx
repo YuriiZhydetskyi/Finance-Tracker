@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Input } from '@/shared/ui/Input';
 import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
-import { useDebounce } from '@/shared/hooks/use-debounce';
+import { useDebouncedUrlDraft } from '@/shared/hooks/use-debounced-url-draft';
 import type { RecentSearchInput } from '../recent-search';
 
 type Props = {
@@ -13,31 +13,10 @@ type Props = {
 
 export function RecentFiltersBar({ search, paidByOptions, activeCount }: Props) {
   const navigate = useNavigate();
-  const [storeDraft, setStoreDraft] = useState(search.q ?? '');
-  const debouncedStore = useDebounce(storeDraft, 300);
-  // Tracks the value we last pushed to the URL ourselves so the sync-effect
-  // below can ignore our own round-trip and only react to *external* URL
-  // changes (clear-all button, browser back/forward, manual URL edit).
-  const ownPushRef = useRef<string | undefined>(search.q);
-
-  useEffect(() => {
-    if (ownPushRef.current === search.q) return;
-    ownPushRef.current = search.q;
-    setStoreDraft(search.q ?? '');
-  }, [search.q]);
-
-  useEffect(() => {
-    const normalized = debouncedStore || undefined;
-    if (normalized === (search.q ?? undefined)) return;
-    ownPushRef.current = normalized;
-    void navigate({
-      to: '/recent',
-      search: { ...search, q: normalized, saved: undefined },
-    });
-    // Omit search/navigate from deps: search is a fresh object every render
-    // (would defeat the debounce), navigate is stable enough in practice.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedStore]);
+  const [storeDraft, setStoreDraft] = useDebouncedUrlDraft({
+    value: search.q,
+    onCommit: (q) => void navigate({ to: '/recent', search: { ...search, q, saved: undefined } }),
+  });
 
   const update = (patch: Partial<RecentSearchInput>) => {
     void navigate({
