@@ -147,6 +147,7 @@ try {
   await db.exec(taxonomy.slice(triggerStart, triggerEnd));
   await db.exec(await readMigration('20260908160458_purchase_correction_rules.sql'));
   await db.exec(await readMigration('20260922100000_save_receipt_bundle.sql'));
+  await db.exec(await readMigration('20260922100001_apply_product_match_rule_single_lookup.sql'));
 
   await db.exec(`
     insert into public.categories (name, group_name) values ('Інше', 'Інше'), ('Молочне', 'Продукти')

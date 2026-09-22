@@ -108,6 +108,15 @@ try {
     'utf8',
   );
   await db.exec(migration);
+  await db.exec(
+    await readFile(
+      new URL(
+        '../supabase/migrations/20260922100001_apply_product_match_rule_single_lookup.sql',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  );
 
   const rls = await db.query(`
     select c.relrowsecurity, exists (
