@@ -39,22 +39,23 @@
 Міграції з кроків 1 і 6.6 написано, але **ще не застосовано** до linked
 Supabase, а `database.types.ts` не регенеровано. Виклик RPC тимчасово
 типізовано локально в `web/src/features/receipts/api/receipt-bundle.ts`
-(`TODO(types)`). Фронтенд без цих міграцій не зможе зберігати чеки.
+(`TODO(types)`). Міграції та обидві Edge Functions тепер деплоїть job
+`deploy-backend` перед фронтендом (див. [deploy.md](deploy.md), «Автодеплой
+бекенду»), тож окремий ручний `db push` не потрібен.
 
-1. `npx supabase db push` — застосувати
-   `20260922100000_save_receipt_bundle.sql` і
+1. Налаштувати Environment `production` і три секрети за розділом
+   «Автодеплой бекенду» в [deploy.md](deploy.md).
+2. Локально перевірити `npx supabase migration list`: у Remote мають бути всі
+   міграції, крім `20260922100000_save_receipt_bundle.sql` і
    `20260922100001_apply_product_match_rule_single_lookup.sql`.
-2. Регенерувати `web/src/shared/types/database.types.ts` (UTF-8 рецепт у
-   [deploy.md](deploy.md), «Common operations»).
-3. Прибрати локальний тип і каст `TODO(types)` у `receipt-bundle.ts`, прогнати
-   `npm run lint && npm run typecheck && npm run test`.
+3. Merge `refactor/2026-09` у `main` і підтвердити `deploy-backend` в Actions.
+   Він застосує обидві міграції й задеплоїть функції з новими шляхами `_shared`,
+   після чого піде фронтенд.
 4. Ручний smoke: зберегти новий чек на `/manual` і відредагувати наявний на
    `/edit/$id` (позиції, product, ціни).
-5. Задеплоїти обидві Edge Functions — шляхи імпорту змінились через `_shared`:
-   `npx supabase functions deploy parse-receipt` і
-   `npx supabase functions deploy process-receipt-imports`.
-6. Лише після цього merge у `main` (push у `main` деплоїть фронтенд на
-   Cloudflare Pages).
+5. Регенерувати `web/src/shared/types/database.types.ts` (UTF-8 рецепт у
+   [deploy.md](deploy.md), «Common operations»), прибрати локальний тип і каст
+   `TODO(types)` у `receipt-bundle.ts`, прогнати гейти й закомітити.
 
 ---
 
@@ -163,7 +164,7 @@ Cloudflare deployment не був частиною цього release.
 - **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages. $0/місяць.
 - **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/_shared/receipt-ai/providers/` (спільні для обох Edge Functions). Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
 - **Стан:** live на Cloudflare Pages (`<your-app>.pages.dev`), CI/CD через GitHub Actions (`pr-checks.yml` на PR, `deploy.yml` на push у `main`; обидва включають Deno-перевірки Edge Functions). Сторінки: `/photo`, `/imports` (фоновий імпорт до 200 файлів), `/pending`, `/manual`, `/recent`, `/edit/$id`, `/stats`, `/waste`, `/reconcile`, `/packaged-products`. Дві Edge Functions: `parse-receipt` (синхронний OCR) і `process-receipt-imports` (PGMQ + pg_cron воркер). Міграції та функції деплояться вручну (`npx supabase db push`, `npx supabase functions deploy`).
-- **Наступне:** завершити чеклист «Перед merge / deploy» з розділу «Рефакторинг 2026-09» вище (дві незастосовані міграції, регенерація типів, deploy обох функцій), потім merge `refactor/2026-09` у `main`.
+- **Наступне:** чеклист «Перед merge / deploy» з розділу «Рефакторинг 2026-09» вище: налаштувати Environment `production` і секрети, merge `refactor/2026-09`, підтвердити `deploy-backend`, регенерувати типи.
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 

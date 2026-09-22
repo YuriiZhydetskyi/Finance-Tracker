@@ -1,29 +1,26 @@
-name: Deploy to Cloudflare Pages
+name: Deploy
 
-# Bypasses Cloudflare's broken GitHub-app UI: this workflow runs the same
-# checks the dev runs locally (lint + typecheck + test) and then publishes
-# `web/dist/` to Cloudflare Pages via the wrangler CLI.
+# Bypasses Cloudflare's broken GitHub-app UI. Three jobs run in order:
+#   1. checks          — lint, typecheck, tests, Deno checks. No secrets.
+#   2. deploy-backend  — Supabase migrations + Edge Functions. Runs in the
+#                        `production` environment, which requires a manual
+#                        approval in the Actions tab before it starts.
+#   3. deploy-frontend — build + Cloudflare Pages. Waits for the backend, so
+#                        the frontend can never be ahead of the database schema.
 #
-# Required GitHub secrets:
-#   CLOUDFLARE_API_TOKEN  — API token with `Account → Cloudflare Pages → Edit`
-#                           permission (create at dash.cloudflare.com →
-#                           My Profile → API Tokens → Create Token).
-#   CLOUDFLARE_ACCOUNT_ID — your Cloudflare Account ID
-#                           (right sidebar of any account-scoped page).
-#   VITE_SUPABASE_URL     — Supabase REST URL, e.g. https://<project>.supabase.co.
-#                           Vite inlines it into the bundle at build time.
-#                           Public — RLS + JWT do real authorization.
-#   VITE_SUPABASE_ANON_KEY — Supabase anon (public) key. Same story — public
-#                            by design. The service_role key is NOT used here.
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   — `Account → Cloudflare Pages → Edit` API token.
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account id.
+#   VITE_SUPABASE_URL      — public; Vite inlines it into the bundle.
+#   VITE_SUPABASE_ANON_KEY — public by design; RLS + JWT do authorization.
 #
-# Supabase migrations (`npx supabase db push`) and Edge Functions
-# (`npx supabase functions deploy parse-receipt` / `process-receipt-imports`)
-# are deployed manually today — see docs/deploy.md. This workflow only checks
-# the functions with Deno. TODO: automating those deploys here would need
-# these additional GitHub secrets:
-#   SUPABASE_ACCESS_TOKEN — personal access token for the Supabase CLI.
-#   SUPABASE_PROJECT_ID   — project ref for `supabase link --project-ref`.
-#   SUPABASE_DB_PASSWORD  — database password required by `supabase db push`.
+# `production` environment secrets (Settings → Environments → production),
+# only exposed to deploy-backend after approval:
+#   SUPABASE_ACCESS_TOKEN  — dedicated CI token with an expiry date.
+#   SUPABASE_PROJECT_ID    — project ref for `supabase link`.
+#   SUPABASE_DB_PASSWORD   — database password for `supabase db push`.
+#
+# Setup and rotation: docs/deploy.md, section "Автодеплой бекенду".
 
 on:
   push:
@@ -31,16 +28,15 @@ on:
   workflow_dispatch: # manual trigger via Actions tab
 
 concurrency:
-  group: pages-deploy-${{ github.ref }}
+  group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,6 +82,58 @@ jobs:
           # never reach Supabase — adapters are mocked via vi.mock.
           VITE_SUPABASE_URL: https://test.supabase.co
           VITE_SUPABASE_ANON_KEY: test-anon-key-placeholder-not-used
+
+  deploy-backend:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Keep in sync with the `supabase` devDependency in package-lock.json.
+          version: 2.98.2
+
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Apply migrations
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD" --yes
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy parse-receipt --project-ref "$SUPABASE_PROJECT_ID" --use-api --yes
+          supabase functions deploy process-receipt-imports --project-ref "$SUPABASE_PROJECT_ID" --use-api --yes
+
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
 
       - name: Build
         run: npm --workspace web run build

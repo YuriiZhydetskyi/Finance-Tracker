@@ -204,11 +204,12 @@ What's NOT covered automatically:
 
 None of these belong in source. Never echo them into chat logs.
 
-| Where                                                   | Names                                                                                          | Purpose                                           |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `web/.env.local` (gitignored)                           | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`                                                  | local dev (`npm run dev` / local `npm run build`) |
-| GitHub repo secrets                                     | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | CI build + deploy                                 |
-| Supabase Edge Function secrets (`supabase secrets set`) | `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `RECEIPT_IMPORT_CRON_TOKEN`                             | AI providers; cron token for the import worker    |
+| Where                                                   | Names                                                                                          | Purpose                                            |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `web/.env.local` (gitignored)                           | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`                                                  | local dev (`npm run dev` / local `npm run build`)  |
+| GitHub repo secrets                                     | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | CI build + deploy                                  |
+| GitHub Environment `production` (approval required)     | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD`                         | `deploy-backend` job: `db push` + functions deploy |
+| Supabase Edge Function secrets (`supabase secrets set`) | `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `RECEIPT_IMPORT_CRON_TOKEN`                             | AI providers; cron token for the import worker     |
 
 The cron token must match the copy in Vault that pg_cron sends — see [supabase/functions/process-receipt-imports/README.md](supabase/functions/process-receipt-imports/README.md) and ADR-0016.
 
