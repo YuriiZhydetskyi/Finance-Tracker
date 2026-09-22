@@ -3,6 +3,7 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
 import { Button } from '@/shared/ui/Button';
 import { cn } from '@/shared/ui/cn';
+import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
 import { CreateCategoryDialog } from '@/features/categories';
 import type { ManualFormValues } from '../schemas/manual-form';
 import { computeRowTotal } from '../utils/totals';
@@ -15,11 +16,6 @@ type Props = {
   taxonomy?: ProductTaxonomy;
   onRemove: () => void;
 };
-
-const SELECT_CLASS =
-  'flex h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900';
-
-const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
 
 function nullableSelectValue(value: unknown): string | null {
   return typeof value === 'string' && value !== '' ? value : null;
