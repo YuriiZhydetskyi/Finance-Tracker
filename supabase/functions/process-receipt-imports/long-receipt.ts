@@ -1,4 +1,8 @@
-import type { BulkParsedDocument, BulkReceiptChunk, ParsedItem } from '../parse-receipt/types.ts';
+import type {
+  BulkParsedDocument,
+  BulkReceiptChunk,
+  ParsedItem,
+} from '../_shared/receipt-ai/types.ts';
 import { validateBulkDocument } from './domain.ts';
 
 export const LONG_RECEIPT_CHUNK_SIZE = 40;

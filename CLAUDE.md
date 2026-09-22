@@ -106,7 +106,11 @@ finance-tracker/
 ├── packages/domain/src/           # vendor-free: money, ulid, time, consumed-by, schemas (Zod), factories, pair-detector + tests
 ├── supabase/
 │   ├── migrations/                # 3 timestamped SQL files: schema, storage bucket, stats views
-│   ├── functions/parse-receipt/   # Deno Edge Function: handler + index + config + providers/ + prompts/
+│   ├── functions/
+│   │   ├── _shared/receipt-ai/    # shared AI code: types, taxonomy, time-evidence, providers/, prompts/
+│   │   ├── _shared/domain/        # GENERATED copy of domain files (npm run sync:edge-domain) — do not edit
+│   │   ├── parse-receipt/         # Deno Edge Function: handler + index + config
+│   │   └── process-receipt-imports/ # Deno worker for bulk receipt imports
 │   └── seed.sql                   # 20 categories
 ├── .github/workflows/deploy.yml   # CI: lint + typecheck + test + build + wrangler pages deploy
 ├── docs/                          # this file's siblings (architecture, data-model, deploy, ADRs, etc.)

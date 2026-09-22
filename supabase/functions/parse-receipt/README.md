@@ -9,15 +9,25 @@ parse-receipt/
 ├── index.ts                  # Deno entry: 3 lines.
 ├── handler.ts                # Pure (Request) => Promise<Response> — runtime-portable.
 ├── config.ts                 # Deno-only: env loading, Supabase client, isAllowed callback.
-├── deno.json                 # Imports map: @supabase/supabase-js → npm:.
+└── deno.json                 # Imports map: @supabase/supabase-js → npm:.
+
+_shared/receipt-ai/           # Shared with process-receipt-imports (Supabase `_shared` convention).
 ├── types.ts                  # ParsedReceipt + AiContext (mirror of @finance-tracker/domain).
+├── taxonomy.ts               # Sanitizes AI category/taxonomy suggestions.
+├── time-evidence.ts          # Canonicalizes receipt time from printed evidence.
 ├── providers/
 │   ├── ai-provider.ts        # IAiProvider strategy interface.
 │   ├── gemini-provider.ts    # Implementation using `responseJsonSchema`.
 │   └── anthropic-provider.ts # Implementation using `tool_use` forcing.
 └── prompts/
-    └── receipt-prompt.ts     # buildPrompt + buildSchema — ports of legacy Gemini.js verbatim.
+    ├── receipt-prompt.ts     # buildPrompt + buildSchema — ports of legacy Gemini.js verbatim.
+    ├── bulk-import-prompt.ts # Bulk-import prompts (used by process-receipt-imports).
+    └── bulk-import-wire.ts   # Bulk-import wire format helpers.
+
+_shared/domain/               # GENERATED copy of packages/domain files (scripts/sync-edge-domain.mjs).
 ```
+
+Tests for `_shared/` run from its own Vitest workspace (`_shared/package.json`), not from `parse-receipt/`.
 
 ## Endpoint
 
@@ -105,4 +115,4 @@ If we ever need server-side validation, the cheapest path is to inline a hand-wr
 
 ## Drift discipline
 
-The prompt + schema in `prompts/receipt-prompt.ts` MUST stay byte-equal to legacy `legacy/apps-script/src/Gemini.js`. The legacy code is the rollback path; if they diverge, swapping back becomes risky. When updating the prompt, update both files in the same commit.
+The prompt + schema in `../_shared/receipt-ai/prompts/receipt-prompt.ts` MUST stay byte-equal to legacy `legacy/apps-script/src/Gemini.js`. The legacy code is the rollback path; if they diverge, swapping back becomes risky. When updating the prompt, update both files in the same commit.

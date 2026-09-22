@@ -1,4 +1,13 @@
-import { roundMoney, roundQty, type ParsedReceipt } from '@finance-tracker/domain';
+import {
+  amountAppearsInText,
+  hasExplicitMultiplier,
+  hasWeightOrVolume,
+  integerAppearsInText,
+  mergeAccountingPairs,
+  roundMoney,
+  roundQty,
+  type ParsedReceipt,
+} from '@finance-tracker/domain';
 
 const MONEY_TOLERANCE = 0.02;
 const ROW_KINDS = new Set(['item', 'deposit', 'discount', 'refund', 'cancellation']);
@@ -322,92 +331,4 @@ function validateSourceOrdinals(rawItems: unknown[], required: boolean, issues: 
       issues.push('Пропущено source_ordinal ' + String(ordinal) + '.');
     }
   }
-}
-
-function mergeAccountingPairs(items: ParsedReceipt['items']): ParsedReceipt['items'] {
-  const result = items.map((item) => ({ ...item }));
-  const removed = new Set<number>();
-  const groups = new Map<string, number[]>();
-  result.forEach((item, index) => {
-    const key = normalize(item.product_name);
-    groups.set(key, [...(groups.get(key) ?? []), index]);
-  });
-
-  for (const indices of groups.values()) {
-    const positives = indices.filter((index) => (result[index]?.unit_price_orig ?? 0) > 0);
-    const negatives = indices.filter((index) => (result[index]?.unit_price_orig ?? 0) < 0);
-    const claimed = new Set<number>();
-    claimPairs(result, positives, negatives, claimed, removed, 'cancellation');
-    claimPairs(result, positives, negatives, claimed, removed, 'discount');
-  }
-  return result.filter((_, index) => !removed.has(index));
-}
-
-function claimPairs(
-  items: ParsedReceipt['items'],
-  positiveIndices: number[],
-  negativeIndices: number[],
-  claimed: Set<number>,
-  removed: Set<number>,
-  pass: 'cancellation' | 'discount',
-): void {
-  for (const negativeIndex of negativeIndices) {
-    if (claimed.has(negativeIndex)) continue;
-    const negative = items[negativeIndex];
-    if (!negative) continue;
-    const negativeTotal = roundMoney(Math.abs(negative.qty * negative.unit_price_orig));
-    const positiveIndex = positiveIndices.find((index) => {
-      const positive = items[index];
-      if (!positive || claimed.has(index) || Math.abs(positive.qty - negative.qty) > 0.001) {
-        return false;
-      }
-      const positiveTotal = roundMoney(Math.abs(positive.qty * positive.unit_price_orig));
-      return pass === 'cancellation'
-        ? positiveTotal === negativeTotal
-        : positiveTotal > negativeTotal;
-    });
-    if (positiveIndex == null) continue;
-    const positive = items[positiveIndex];
-    if (!positive) continue;
-    claimed.add(positiveIndex);
-    claimed.add(negativeIndex);
-    removed.add(negativeIndex);
-    if (pass === 'cancellation') {
-      positive.unit_price_orig = 0;
-      positive.discount_orig = 0;
-    } else {
-      positive.discount_orig = roundMoney(Math.abs(negative.unit_price_orig));
-    }
-  }
-}
-
-function normalize(value: string): string {
-  return value
-    .normalize('NFKC')
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-}
-
-function amountAppearsInText(text: string, amount: number): boolean {
-  const absolute = Math.abs(roundMoney(amount)).toFixed(2);
-  const compactText = text.replace(/\s/g, '');
-  return [absolute, absolute.replace('.', ',')].some((variant) => compactText.includes(variant));
-}
-
-function integerAppearsInText(text: string, value: number): boolean {
-  return new RegExp('(?:^|\\D)' + String(value) + '(?:\\D|$)', 'u').test(text);
-}
-
-function hasExplicitMultiplier(text: string, qty: number): boolean {
-  const rawQty = String(roundQty(qty)).replace('.', '[.,]');
-  return new RegExp(
-    '(?:^|\\s)(?:' + rawQty + '\\s*(?:x|×|stk\\.?|st\\.?|pcs)|(?:x|×)\\s*' + rawQty + ')(?:\\s|$)',
-    'iu',
-  ).test(text);
-}
-
-function hasWeightOrVolume(text: string): boolean {
-  return /(?:^|\s)\d+(?:[.,]\d+)?\s*(?:kg|g|l|ml)(?:\s|$)/iu.test(text);
 }

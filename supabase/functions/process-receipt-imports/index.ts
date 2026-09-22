@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { AnthropicProvider } from '../parse-receipt/providers/anthropic-provider.ts';
-import { AiProviderError } from '../parse-receipt/providers/ai-provider.ts';
-import { GeminiProvider } from '../parse-receipt/providers/gemini-provider.ts';
+import { AnthropicProvider } from '../_shared/receipt-ai/providers/anthropic-provider.ts';
+import { AiProviderError } from '../_shared/receipt-ai/providers/ai-provider.ts';
+import { GeminiProvider } from '../_shared/receipt-ai/providers/gemini-provider.ts';
 import {
   EMPTY_PRODUCT_TAXONOMY,
   sanitizeParsedReceiptTaxonomy,
-} from '../parse-receipt/taxonomy.ts';
+} from '../_shared/receipt-ai/taxonomy.ts';
 import type {
   AiCallResult,
   AiCallTrace,
@@ -13,7 +13,7 @@ import type {
   BulkParseMode,
   BulkParsedDocument,
   BulkReceiptChunk,
-} from '../parse-receipt/types.ts';
+} from '../_shared/receipt-ai/types.ts';
 import {
   auditReceiptEvidence,
   checkReceiptArticleCount,

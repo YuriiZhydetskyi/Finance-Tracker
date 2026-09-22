@@ -11,10 +11,10 @@
 //   SUPABASE_ANON_KEY
 
 import { createClient } from '@supabase/supabase-js';
-import { GeminiProvider } from './providers/gemini-provider.ts';
-import { AnthropicProvider } from './providers/anthropic-provider.ts';
+import { GeminiProvider } from '../_shared/receipt-ai/providers/gemini-provider.ts';
+import { AnthropicProvider } from '../_shared/receipt-ai/providers/anthropic-provider.ts';
 import type { HandlerDeps } from './handler.ts';
-import type { ProductTaxonomyContext } from './types.ts';
+import type { ProductTaxonomyContext } from '../_shared/receipt-ai/types.ts';
 
 function requireEnv(name: string): string {
   const v = Deno.env.get(name);
