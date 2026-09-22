@@ -6,7 +6,7 @@
 
 Перехід зі старого стеку (Google Apps Script + Google Sheets + Alpine.js) на новий (React + Vite + Tailwind + TanStack Query + Supabase + Cloudflare Pages).
 
-- **`/legacy/apps-script/`** — старий працюючий додаток. Заморожений; зберігається для довідки і emergency rollback. Див. [`legacy/apps-script/README.md`](legacy/apps-script/README.md).
+- Старий Apps Script додаток видалено у вересні 2026 після завершення 90-денного вікна відкату (останній коміт, що його містить: `875bb9b`).
 - **`/web/`** — новий React-додаток (будується).
 - **`/packages/domain/`** — спільний TS-пакет із бізнес-логікою (Zod схеми, фабрики, ULID, pair detector). Імпортується і клієнтом, і Edge Function.
 - **`/supabase/`** — Supabase workspace (міграції БД, Edge Functions, seed).

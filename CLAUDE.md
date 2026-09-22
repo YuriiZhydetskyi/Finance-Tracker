@@ -13,7 +13,7 @@ Before making non-trivial changes, read in order:
 5. **[docs/deploy.md](docs/deploy.md)** — operational runbook: secrets, env vars, deploy procedure, troubleshooting.
 6. **[docs/extending.md](docs/extending.md)** — numbered recipes for common extensions (add category, swap AI provider, add column, etc.).
 
-The legacy Apps Script app is archived at [legacy/apps-script/](legacy/apps-script/) — frozen 2026-05-07, kept for emergency rollback up to 90 days post-cutover. Do not edit.
+Legacy Apps Script app removed in September 2026 after its 90-day rollback window ended (last commit containing it: `875bb9b`).
 
 ## Common commands
 
@@ -113,8 +113,7 @@ finance-tracker/
 │   │   └── process-receipt-imports/ # Deno worker for bulk receipt imports
 │   └── seed.sql                   # 20 categories
 ├── .github/workflows/deploy.yml   # CI: lint + typecheck + test + build + wrangler pages deploy
-├── docs/                          # this file's siblings (architecture, data-model, deploy, ADRs, etc.)
-└── legacy/apps-script/            # frozen 2026-05-07; do not edit
+└── docs/                          # this file's siblings (architecture, data-model, deploy, ADRs, etc.)
 ```
 
 ## Ports & adapters — discipline

@@ -103,7 +103,7 @@ Cloudflare deployment не був частиною цього release.
 
 ## TL;DR
 
-- **Старий стек (Apps Script + Sheets + Alpine.js)** заархівовано в [`legacy/apps-script/`](../legacy/apps-script/) — досі білдиться (164 тести), залишається для emergency rollback.
+- **Старий стек (Apps Script + Sheets + Alpine.js)** видалено з репо у вересні 2026 після завершення 90-денного вікна відкату (останній коміт, що його містить: `875bb9b`).
 - **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages (deploy у Phase 10). $0/місяць.
 - **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/<fn>/providers/`. Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
 - **Прогрес:** 10 з 11 фаз готові. Live на Cloudflare Pages (`<your-app>.pages.dev`); CI/CD через GitHub Actions (`.github/workflows/deploy.yml`). Усі 3 міграції застосовані до live Supabase (`supabase db push`); `database.types.ts` регенеровано з canonical джерела; `parse-receipt` Edge Function задеплоєна з secrets для Gemini + Anthropic. Auth (magic link) + `/manual` + `/recent` + `/edit/$id` + `/photo` + `/stats` працюють end-to-end проти live стека.
@@ -156,7 +156,6 @@ ESLint 9.x (не 10) — `eslint-plugin-react@7.37.5` ще не оновився
 
 ```
 finance-tracker/
-├── legacy/apps-script/         ← старий додаток, frozen (164 тести зелені)
 ├── docs/                       ← ADR-и + цей файл
 ├── web/                        ← React + Vite + Tailwind app
 │   ├── src/
@@ -213,10 +212,10 @@ finance-tracker/
 
 ### ✅ Phase 0 — Archive (2026-05-07)
 
-- Перенесено `src/`, `tests/`, `.clasp.json`, `eslint.config.mjs`, `package*.json`, `tsconfig.json` у [`legacy/apps-script/`](../legacy/apps-script/) через `git mv` (історія збережена як `R` rename).
+- Перенесено `src/`, `tests/`, `.clasp.json`, `eslint.config.mjs`, `package*.json`, `tsconfig.json` у `legacy/apps-script/` через `git mv` (історія збережена як `R` rename). Папку видалено у вересні 2026 (останній коміт, що її містить: `875bb9b`).
 - Старий `node_modules` видалено з кореня.
 - Legacy досі білдиться: `npm --prefix legacy/apps-script run lint && typecheck && test` → 164/164 зелені.
-- Створено [`legacy/apps-script/README.md`](../legacy/apps-script/README.md) з інструкцією, як reactivate.
+- Створено `legacy/apps-script/README.md` з інструкцією, як reactivate.
 
 ### ✅ Phase 1 — Scaffold (2026-05-07)
 

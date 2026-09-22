@@ -6,7 +6,6 @@ coverage
 .vite
 .turbo
 package-lock.json
-legacy
 docs/decisions
 conversation.md
 supabase/functions/_shared/domain

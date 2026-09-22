@@ -115,4 +115,4 @@ If we ever need server-side validation, the cheapest path is to inline a hand-wr
 
 ## Drift discipline
 
-The prompt + schema in `../_shared/receipt-ai/prompts/receipt-prompt.ts` MUST stay byte-equal to legacy `legacy/apps-script/src/Gemini.js`. The legacy code is the rollback path; if they diverge, swapping back becomes risky. When updating the prompt, update both files in the same commit.
+The prompt + schema used to be kept byte-equal to the legacy Apps Script `Gemini.js` as a rollback path. The legacy app was removed in September 2026 (last commit containing it: `875bb9b`), so `../_shared/receipt-ai/prompts/receipt-prompt.ts` is now the only source of truth.

@@ -1,5 +1,5 @@
 // Resize an image File/Blob to a max edge length, re-encode as JPEG.
-// Direct port of legacy/apps-script/src/ui/photo.html `compressImage` (1600px,
+// Direct port of the legacy Apps Script photo.html `compressImage` (1600px,
 // q=0.8). Returns a Blob ready for upload to Supabase Storage.
 //
 // Browser-only: uses HTMLImageElement, HTMLCanvasElement, URL.createObjectURL.

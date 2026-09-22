@@ -312,16 +312,6 @@ npx supabase functions deploy process-receipt-imports --no-verify-jwt
 `SUPABASE_URL`, Gemini й Anthropic keys автоматично/явно доступні тільки Edge Function і ніколи не
 додаються у `VITE_*`.
 
-## Posthumous: рекавері легасі за 90 днів
+## Posthumous: рекавері легасі
 
-До 2026-08-06 Apps Script проект (scriptId у `legacy/apps-script/.clasp.json`) лишається інтактним. Якщо новий стек серйозно ламається і fix зайняв би довше за прийнятну downtime:
-
-```powershell
-cd legacy/apps-script
-npm install
-npm run push     # clasp push на оригінальний project
-```
-
-Потім у Apps Script editor → Deploy → New deployment → Web app → отримаєш legacy URL. Поділись з обома користувачами. Sheet-дані не торкані; новий Postgres-state лишається паралельно.
-
-Після 2026-08-06 Apps Script проект можна архівувати або видалити. Кодова база у `legacy/apps-script/` залишається у репі назавжди — це історичний референс.
+90-денне вікно відкату на Apps Script завершилось 2026-08-06. Код старого додатку видалено з репо у вересні 2026 (останній коміт, що його містить: `875bb9b`). Для довідки: `git checkout 875bb9b -- legacy/apps-script`.
