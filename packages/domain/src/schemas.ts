@@ -8,7 +8,10 @@
 import { z } from 'zod';
 import { isValidConsumedBy } from './consumed-by';
 import { ULID_REGEX } from './ulid';
-import { ProductClassificationSchema } from './product-taxonomy';
+import {
+  ProductClassificationColumnsSchema,
+  ProductClassificationSchema,
+} from './product-taxonomy';
 import {
   EU_ALLERGENS,
   NUTRI_SCORES,
@@ -78,7 +81,7 @@ export const ItemSchema = z
     id: ULID_SCHEMA,
     receipt_id: ULID_SCHEMA,
     product_id: ULID_SCHEMA.nullable(),
-    ...ProductClassificationSchema.shape,
+    ...ProductClassificationColumnsSchema.shape,
     product_name: z.string().min(1, 'product_name is required'),
     raw_product_name: z.string().min(1, 'raw_product_name is required'),
     store_product_code: z.string().nullable(),
@@ -140,9 +143,9 @@ export type Item = z.infer<typeof ItemSchema>;
 
 export const ProductSchema = z
   .object({
-    ...ProductClassificationSchema.shape,
-    brand: z.string().trim().min(1).nullable().optional(),
-    is_organic: z.boolean().nullable().optional(),
+    ...ProductClassificationColumnsSchema.shape,
+    brand: z.string().trim().min(1).nullable().default(null),
+    is_organic: z.boolean().nullable().default(null),
     id: ULID_SCHEMA,
     name: z.string().min(1, 'name is required'),
     store: z.string().min(1, 'store is required'),
@@ -462,7 +465,7 @@ export function addPackagedProductInvariantIssues(
 
 export const PackagedProductSchema = z
   .object({
-    ...ProductClassificationSchema.shape,
+    ...ProductClassificationColumnsSchema.shape,
     ...PACKAGED_PRODUCT_NUTRITION_SHAPE,
     id: ULID_SCHEMA,
     name: z.string().trim().min(1, 'name is required'),
