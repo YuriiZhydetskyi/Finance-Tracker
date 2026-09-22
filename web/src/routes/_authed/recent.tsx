@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
-import { useAppUsers, RequireAuth } from '@/features/auth';
+import { useAppUsers } from '@/features/auth';
 import {
   countActiveFilters,
   EmptyReceiptsState,
@@ -12,18 +12,10 @@ import {
   useReceipts,
 } from '@/features/receipts';
 
-export const Route = createFileRoute('/recent')({
-  component: RecentPage,
+export const Route = createFileRoute('/_authed/recent')({
+  component: RecentList,
   validateSearch: RecentSearchSchema,
 });
-
-function RecentPage() {
-  return (
-    <RequireAuth>
-      <RecentList />
-    </RequireAuth>
-  );
-}
 
 function RecentList() {
   const search = Route.useSearch() ?? {};

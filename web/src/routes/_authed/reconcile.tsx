@@ -8,7 +8,7 @@ import {
   type StatementTransactionInput,
   type ToFixEntry,
 } from '@finance-tracker/domain';
-import { RequireAuth, useAppUsers } from '@/features/auth';
+import { useAppUsers } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useReceipts } from '@/features/receipts';
 import {
@@ -30,17 +30,9 @@ import {
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 
-export const Route = createFileRoute('/reconcile')({
-  component: ReconcilePage,
+export const Route = createFileRoute('/_authed/reconcile')({
+  component: Reconcile,
 });
-
-function ReconcilePage() {
-  return (
-    <RequireAuth>
-      <Reconcile />
-    </RequireAuth>
-  );
-}
 
 type Session = { owner: string; txns: NormalizedStatementTxn[] };
 

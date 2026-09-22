@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { RequireAuth } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { formatMoney } from '@/shared/utils/format-money';
@@ -14,18 +13,10 @@ import {
   type WasteItemRow,
 } from '@/features/waste';
 
-export const Route = createFileRoute('/waste')({
-  component: WastePage,
+export const Route = createFileRoute('/_authed/waste')({
+  component: WasteList,
   validateSearch: WasteSearchSchema,
 });
-
-function WastePage() {
-  return (
-    <RequireAuth>
-      <WasteList />
-    </RequireAuth>
-  );
-}
 
 // Sum wasted-EUR across the items currently in view. Grouping by currency
 // would be more rigorous, but EUR is the canonical audit currency on

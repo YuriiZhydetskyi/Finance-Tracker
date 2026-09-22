@@ -112,16 +112,16 @@
    └── index.ts                            (barrel)
    ```
 
-6. **Route.** Створи `web/src/routes/subscriptions.tsx` за патерном `recent.tsx`:
+6. **Route.** Створи `web/src/routes/_authed/subscriptions.tsx` за патерном `_authed/recent.tsx` (layout `_authed` сам обгортає сторінку в `<RequireAuth>`):
 
    ```tsx
-   export const Route = createFileRoute('/subscriptions')({
-     component: SubscriptionsPage,
+   export const Route = createFileRoute('/_authed/subscriptions')({
+     component: SubscriptionsList,
      validateSearch: z.object({}).optional(),
    });
    ```
 
-7. **Home button.** Додай `<Link to="/subscriptions">` у `web/src/routes/index.tsx`.
+7. **Home button.** Додай `<Link to="/subscriptions">` у `web/src/routes/_authed/index.tsx`.
 
 8. **Тести.** Vitest для query hooks (`vi.mock('@/shared/lib/supabase-client')`), для mutations, для form component.
 
@@ -357,35 +357,28 @@ Reference: будь-який існуючий порт у `web/src/shared/lib/<a
 
 **Сценарій:** Хочеш окрему сторінку `/products` для пошуку товару у каталозі.
 
-Reference: [`web/src/routes/recent.tsx`](../web/src/routes/recent.tsx) як простий приклад list-сторінки; [`/photo`](../web/src/routes/photo.tsx) як state-machine приклад.
+Reference: [`web/src/routes/_authed/recent.tsx`](../web/src/routes/_authed/recent.tsx) як простий приклад list-сторінки; [`/photo`](../web/src/routes/_authed/photo.tsx) як state-machine приклад.
 
-1. **Route file.** TanStack Router file-based — створи `web/src/routes/products.tsx`:
+1. **Route file.** TanStack Router file-based — захищені сторінки створюються у `web/src/routes/_authed/`. Створи `web/src/routes/_authed/products.tsx`:
 
    ```tsx
    import { createFileRoute } from '@tanstack/react-router';
    import { z } from 'zod';
-   import { RequireAuth } from '@/features/auth';
    import { ProductsList } from '@/features/products';
 
-   export const Route = createFileRoute('/products')({
-     component: ProductsPage,
+   export const Route = createFileRoute('/_authed/products')({
+     component: ProductsList,
      validateSearch: z.object({ q: z.string().optional() }).optional(),
    });
-
-   function ProductsPage() {
-     return (
-       <RequireAuth>
-         <ProductsList />
-       </RequireAuth>
-     );
-   }
    ```
+
+   Pathless layout [`routes/_authed.tsx`](../web/src/routes/_authed.tsx) обгортає всі дочірні роути в `<RequireAuth>` — вручну обгортати не треба. Сегмент `_authed` не входить в URL: сторінка доступна за `/products`, а `<Link to="/products">` / `navigate({ to: '/products' })` лишаються без змін. Поза `_authed/` кладеш лише публічні роути (як `auth.callback.tsx`).
 
    `tsr generate` (запускається через `npm run typecheck` / `build`) автоматично реєструє маршрут у `routeTree.gen.ts`.
 
 2. **Feature folder.** Якщо ще нема `web/src/features/products/components/` — створи. Для `useProducts` хук уже існує.
 
-3. **Home button.** Додай `<Link to="/products">` у [`web/src/routes/index.tsx`](../web/src/routes/index.tsx).
+3. **Home button.** Додай `<Link to="/products">` у [`web/src/routes/_authed/index.tsx`](../web/src/routes/_authed/index.tsx).
 
 4. **Header nav (опційно).** Якщо хочеш у global nav — `web/src/features/auth/components/Header.tsx` (якщо такий є — поточно sign-out тільки).
 

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
-import { RequireAuth } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
@@ -28,18 +27,10 @@ const PackagedProductsSearchSchema = z
   })
   .optional();
 
-export const Route = createFileRoute('/packaged-products')({
-  component: PackagedProductsPage,
+export const Route = createFileRoute('/_authed/packaged-products')({
+  component: PackagedProductsFlow,
   validateSearch: PackagedProductsSearchSchema,
 });
-
-function PackagedProductsPage() {
-  return (
-    <RequireAuth>
-      <PackagedProductsFlow />
-    </RequireAuth>
-  );
-}
 
 function PackagedProductsFlow() {
   const search = Route.useSearch();

@@ -1,17 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { RequireAuth } from '@/features/auth';
 import { BulkImportForm, useImportBatches } from '@/features/imports';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 
-export const Route = createFileRoute('/imports')({ component: ImportsPage });
-
-function ImportsPage() {
-  return (
-    <RequireAuth>
-      <ImportsContent />
-    </RequireAuth>
-  );
-}
+export const Route = createFileRoute('/_authed/imports')({ component: ImportsContent });
 
 function ImportsContent() {
   const batches = useImportBatches();

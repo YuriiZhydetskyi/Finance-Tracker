@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { z } from 'zod';
-import { RequireAuth } from '@/features/auth';
 import { usePendingParses } from '@/features/pending-parses';
 import { usePackagingCandidatesCount } from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
@@ -11,23 +10,13 @@ const HomeSearchSchema = z
   })
   .optional();
 
-export const Route = createFileRoute('/')({
-  component: HomePage,
+export const Route = createFileRoute('/_authed/')({
+  component: HomeNav,
   validateSearch: HomeSearchSchema,
 });
 
-function HomePage() {
-  const search = Route.useSearch();
-  const savedId = search?.saved;
-
-  return (
-    <RequireAuth>
-      <HomeNav savedId={savedId} />
-    </RequireAuth>
-  );
-}
-
-function HomeNav({ savedId }: { savedId?: string | undefined }) {
+function HomeNav() {
+  const savedId = Route.useSearch()?.saved;
   const pendingQuery = usePendingParses();
   const pendingCount = pendingQuery.data?.length ?? 0;
   const packagingQuery = usePackagingCandidatesCount();

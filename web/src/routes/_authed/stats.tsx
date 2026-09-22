@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { useState, type ReactNode } from 'react';
-import { RequireAuth } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import {
@@ -41,18 +40,10 @@ const StatsSearchSchema = z.object({
 });
 const EMPTY_FILTER_OPTIONS = { categories: [], stores: [] };
 
-export const Route = createFileRoute('/stats')({
-  component: StatsPage,
+export const Route = createFileRoute('/_authed/stats')({
+  component: StatsDashboard,
   validateSearch: StatsSearchSchema,
 });
-
-function StatsPage() {
-  return (
-    <RequireAuth>
-      <StatsDashboard />
-    </RequireAuth>
-  );
-}
 
 type SectionProps = {
   title: string;

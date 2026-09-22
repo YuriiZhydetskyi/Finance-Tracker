@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { RequireAuth } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import { BatchReviewCarousel, useBatchParser } from '@/features/photo';
@@ -16,18 +15,10 @@ import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 
 const PendingSearchSchema = z.object({}).optional();
 
-export const Route = createFileRoute('/pending')({
-  component: PendingPage,
+export const Route = createFileRoute('/_authed/pending')({
+  component: PendingFlow,
   validateSearch: PendingSearchSchema,
 });
-
-function PendingPage() {
-  return (
-    <RequireAuth>
-      <PendingFlow />
-    </RequireAuth>
-  );
-}
 
 function PendingFlow() {
   const categoriesQuery = useCategories();

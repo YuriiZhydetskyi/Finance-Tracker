@@ -1,22 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
-import { RequireAuth } from '@/features/auth';
 import { useReceipt, EditReceiptForm, ReceiptPhoto } from '@/features/receipts';
 
-export const Route = createFileRoute('/edit/$id')({
-  component: EditPage,
+export const Route = createFileRoute('/_authed/edit/$id')({
+  component: EditView,
 });
 
-function EditPage() {
+function EditView() {
   const { id } = Route.useParams();
-  return (
-    <RequireAuth>
-      <EditView id={id} />
-    </RequireAuth>
-  );
-}
-
-function EditView({ id }: { id: string }) {
   const query = useReceipt(id);
 
   return (

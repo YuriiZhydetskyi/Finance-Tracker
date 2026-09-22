@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { RequireAuth } from '@/features/auth';
 import { useCategories } from '@/features/categories';
 import { useProducts } from '@/features/products';
 import {
@@ -20,18 +19,10 @@ const PhotoSearchSchema = z
   })
   .optional();
 
-export const Route = createFileRoute('/photo')({
-  component: PhotoPage,
+export const Route = createFileRoute('/_authed/photo')({
+  component: PhotoFlow,
   validateSearch: PhotoSearchSchema,
 });
-
-function PhotoPage() {
-  return (
-    <RequireAuth>
-      <PhotoFlow />
-    </RequireAuth>
-  );
-}
 
 function PhotoFlow() {
   const categoriesQuery = useCategories();
