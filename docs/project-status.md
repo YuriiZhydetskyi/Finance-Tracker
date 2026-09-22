@@ -2,17 +2,61 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
-**Атомарне збереження чека (2026-09-22, локально):** `useSaveReceiptMutation` і
-`useUpdateReceiptMutation` пишуть чек, позиції, нові/оновлені products і знімки
-цін одним викликом RPC `save_receipt_bundle` в одній транзакції (контракт —
-[data-model.md](data-model.md), «RPC `save_receipt_bundle`»). Міграцію
-`20260922100000_save_receipt_bundle.sql` написано, але **ще не застосовано** до
-linked Supabase, а `database.types.ts` не регенеровано: виклик RPC тимчасово
+## Рефакторинг 2026-09
+
+Гілка `refactor/2026-09`, план —
+[refactoring-plan-2026-09.md](refactoring-plan-2026-09.md). Виконані кроки:
+
+- **6.1 / 6.4 / 6.7 / 6.8** — retry у `query-client.ts` тепер розпізнає auth-помилки
+  PostgREST (`isAuthError`), прибрано дублі стилів, один Supabase-клієнт на запит у
+  `parse-receipt/config.ts`, уніфіковано ключ запиту `useStatsByStore`.
+- **Крок 4** — pathless layout `web/src/routes/_authed.tsx` монтує
+  `<RequireAuth>` один раз замість обгортки в кожному роуті.
+- **Крок 2** — спільний код Edge Functions у `supabase/functions/_shared/`
+  (`receipt-ai/` + згенерована копія `domain/`), `receipt-evidence.ts` у
+  `packages/domain`, скрипт `scripts/sync-edge-domain.mjs`.
+- **Крок 3** — воркер `process-receipt-imports` розрізано на модулі з
+  інʼєкцією залежностей (`job-processor`, `attempts`, `job-context`,
+  `job-failure`, `constants` тощо).
+- **6.2 / 6.3** — спільний хук `useDebouncedUrlDraft` для фільтрів `/recent`
+  і `/waste`; `StatsPeriodPicker` без `eslint-disable` (виклик на mount
+  лишився через `useEffectEvent`, бо на нього спираються тести).
+- **6.5** — класифікаційні колонки в схемах мають `default(null)`, тож фабрики
+  повертають звичайні `Item`/`Product`/`PackagedProduct` без widening.
+- **6.9** — видалено архівний `legacy/apps-script/`.
+- **Крок 1** — атомарне збереження чека: `useSaveReceiptMutation` і
+  `useUpdateReceiptMutation` пишуть чек, позиції, нові/оновлені products і
+  знімки цін одним викликом RPC `save_receipt_bundle` в одній транзакції
+  (контракт — [data-model.md](data-model.md), «RPC `save_receipt_bundle`»).
+- **6.6** — тригер `apply_product_match_rule()` шукає правило одним запитом
+  замість двох.
+- **Крок 5** — CI (`pr-checks.yml`, `deploy.yml`) запускає `deno check` для
+  обох функцій, `deno lint supabase/functions` і `npm run check:edge-domain`;
+  `CLAUDE.md` звірено з кодом.
+
+### Перед merge / deploy
+
+Міграції з кроків 1 і 6.6 написано, але **ще не застосовано** до linked
+Supabase, а `database.types.ts` не регенеровано. Виклик RPC тимчасово
 типізовано локально в `web/src/features/receipts/api/receipt-bundle.ts`
-(`TODO(types)`). До деплою фронтенду потрібні `npx supabase db push` і
-регенерація типів; після неї прибрати локальний тип і каст. Так само чекає на
-`db push` міграція `20260922100001_apply_product_match_rule_single_lookup.sql`
-(тригер `apply_product_match_rule` шукає правило одним запитом замість двох).
+(`TODO(types)`). Фронтенд без цих міграцій не зможе зберігати чеки.
+
+1. `npx supabase db push` — застосувати
+   `20260922100000_save_receipt_bundle.sql` і
+   `20260922100001_apply_product_match_rule_single_lookup.sql`.
+2. Регенерувати `web/src/shared/types/database.types.ts` (UTF-8 рецепт у
+   [deploy.md](deploy.md), «Common operations»).
+3. Прибрати локальний тип і каст `TODO(types)` у `receipt-bundle.ts`, прогнати
+   `npm run lint && npm run typecheck && npm run test`.
+4. Ручний smoke: зберегти новий чек на `/manual` і відредагувати наявний на
+   `/edit/$id` (позиції, product, ціни).
+5. Задеплоїти обидві Edge Functions — шляхи імпорту змінились через `_shared`:
+   `npx supabase functions deploy parse-receipt` і
+   `npx supabase functions deploy process-receipt-imports`.
+6. Лише після цього merge у `main` (push у `main` деплоїть фронтенд на
+   Cloudflare Pages).
+
+---
 
 **JSON + PDF упаковок (локальні зміни 2026-09-13):** імпорт приймає номери
 сторінок для кожного товару, показує JPEG і вимагає підтвердження відповідностей
@@ -116,16 +160,16 @@ Cloudflare deployment не був частиною цього release.
 ## TL;DR
 
 - **Старий стек (Apps Script + Sheets + Alpine.js)** видалено з репо у вересні 2026 після завершення 90-денного вікна відкату (останній коміт, що його містить: `875bb9b`).
-- **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages (deploy у Phase 10). $0/місяць.
-- **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/<fn>/providers/`. Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
-- **Прогрес:** 10 з 11 фаз готові. Live на Cloudflare Pages (`<your-app>.pages.dev`); CI/CD через GitHub Actions (`.github/workflows/deploy.yml`). Усі 3 міграції застосовані до live Supabase (`supabase db push`); `database.types.ts` регенеровано з canonical джерела; `parse-receipt` Edge Function задеплоєна з secrets для Gemini + Anthropic. Auth (magic link) + `/manual` + `/recent` + `/edit/$id` + `/photo` + `/stats` працюють end-to-end проти live стека.
-- **Наступне:** manual end-to-end smoke з обома користувачами (Phase 10 фінал) → за потреби фіксити баги що випливуть → опціонально Phase 11 (Playwright E2E) + Phase 12 (daily backup).
+- **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages. $0/місяць.
+- **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/_shared/receipt-ai/providers/` (спільні для обох Edge Functions). Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
+- **Стан:** live на Cloudflare Pages (`<your-app>.pages.dev`), CI/CD через GitHub Actions (`pr-checks.yml` на PR, `deploy.yml` на push у `main`; обидва включають Deno-перевірки Edge Functions). Сторінки: `/photo`, `/imports` (фоновий імпорт до 200 файлів), `/pending`, `/manual`, `/recent`, `/edit/$id`, `/stats`, `/waste`, `/reconcile`, `/packaged-products`. Дві Edge Functions: `parse-receipt` (синхронний OCR) і `process-receipt-imports` (PGMQ + pg_cron воркер). Міграції та функції деплояться вручну (`npx supabase db push`, `npx supabase functions deploy`).
+- **Наступне:** завершити чеклист «Перед merge / deploy» з розділу «Рефакторинг 2026-09» вище (дві незастосовані міграції, регенерація типів, deploy обох функцій), потім merge `refactor/2026-09` у `main`.
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 
 **Operational runbook:** [deploy.md](deploy.md) — як деплоїти, додавати env vars, ротувати ключі, troubleshooting. Цей файл (project-status.md) — про "що зроблено і де ми зараз"; deploy.md — про "як підтримувати працююче".
 
-**Інші актуальні docs під новий стек** (всі переписані у Phase 10): [architecture.md](architecture.md) — layers + 5 потоків даних + ports; [data-model.md](data-model.md) — Postgres DDL + RLS + views; [extending.md](extending.md) — 10 рецептів; [setup.md](setup.md) — bootstrap нової машини; [decisions/](decisions/) — 13 ADRs.
+**Інші актуальні docs під новий стек** (всі переписані у Phase 10): [architecture.md](architecture.md) — layers + 5 потоків даних + ports; [data-model.md](data-model.md) — Postgres DDL + RLS + views; [extending.md](extending.md) — 10 рецептів; [setup.md](setup.md) — bootstrap нової машини; [decisions/](decisions/) — 28 ADR.
 
 ---
 

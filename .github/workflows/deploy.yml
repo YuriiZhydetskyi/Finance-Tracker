@@ -15,6 +15,15 @@ name: Deploy to Cloudflare Pages
 #                           Public — RLS + JWT do real authorization.
 #   VITE_SUPABASE_ANON_KEY — Supabase anon (public) key. Same story — public
 #                            by design. The service_role key is NOT used here.
+#
+# Supabase migrations (`npx supabase db push`) and Edge Functions
+# (`npx supabase functions deploy parse-receipt` / `process-receipt-imports`)
+# are deployed manually today — see docs/deploy.md. This workflow only checks
+# the functions with Deno. TODO: automating those deploys here would need
+# these additional GitHub secrets:
+#   SUPABASE_ACCESS_TOKEN — personal access token for the Supabase CLI.
+#   SUPABASE_PROJECT_ID   — project ref for `supabase link --project-ref`.
+#   SUPABASE_DB_PASSWORD  — database password required by `supabase db push`.
 
 on:
   push:
@@ -44,6 +53,23 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Typecheck Edge Functions
+        run: |
+          deno check supabase/functions/parse-receipt/index.ts
+          deno check supabase/functions/process-receipt-imports/index.ts
+
+      - name: Lint Edge Functions
+        run: deno lint supabase/functions
+
+      # `npm run test` runs this too; the dedicated step gives a clearer failure.
+      - name: Check vendored domain copy
+        run: npm run check:edge-domain
 
       - name: Lint
         run: npm run lint
