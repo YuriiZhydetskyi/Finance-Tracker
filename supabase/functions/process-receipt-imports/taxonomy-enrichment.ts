@@ -2,6 +2,8 @@ import type { WorkerDeps } from './types.ts';
 
 type EnrichmentDeps = Pick<WorkerDeps, 'db' | 'log'>;
 
+type PreparedItemRow = Record<string, string | number | boolean | null>;
+
 type PreparedProductSuggestion = {
   product_name: string;
   store_product_code: string | null;
@@ -38,7 +40,7 @@ type ProductClassification = { family: string | null; variant: string | null };
 export async function enrichSavedImportTaxonomy(
   deps: EnrichmentDeps,
   receipt: Record<string, string | number | null>,
-  items: Record<string, string | number | boolean | null>[],
+  items: PreparedItemRow[],
 ): Promise<void> {
   const receiptId = typeof receipt.id === 'string' ? receipt.id : null;
   const store = typeof receipt.store === 'string' ? receipt.store : null;
@@ -60,9 +62,7 @@ export async function enrichSavedImportTaxonomy(
   await classifyItems(deps, savedItems, classificationByProductId);
 }
 
-function collectSuggestions(
-  items: Record<string, string | number | boolean | null>[],
-): Map<string, PreparedProductSuggestion> {
+function collectSuggestions(items: PreparedItemRow[]): Map<string, PreparedProductSuggestion> {
   const suggestions = new Map<string, PreparedProductSuggestion>();
   for (const raw of items) {
     const suggestion = toSuggestion(raw);
@@ -73,9 +73,7 @@ function collectSuggestions(
   return suggestions;
 }
 
-function toSuggestion(
-  raw: Record<string, string | number | boolean | null>,
-): PreparedProductSuggestion | null {
+function toSuggestion(raw: PreparedItemRow): PreparedProductSuggestion | null {
   const productName = typeof raw.product_name === 'string' ? raw.product_name : null;
   if (!productName) return null;
   const suggestion: PreparedProductSuggestion = {
