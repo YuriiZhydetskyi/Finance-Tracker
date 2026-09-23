@@ -10,7 +10,7 @@
 //           (normalized_name, unit_price, discount_orig, marker.kind).
 //           Identical rows collapse into one with summed qty and count.
 //
-// Originally a port of legacy/apps-script/src/ui/shared/pairDetector.html;
+// Originally a port of the legacy Apps Script pairDetector.html (removed; see 875bb9b);
 // extended in 2026-05 to handle 3+ groups (cancellation triples) and
 // aggregation of identical positives (e.g. 4 separately-rung kiwis).
 

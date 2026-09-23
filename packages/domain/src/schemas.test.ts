@@ -34,6 +34,8 @@ const validItem = (overrides: Partial<Item> = {}): Item => ({
   id: '01HM4N6RZZ7K2P9F8DZ7QWERAA',
   receipt_id: '01HM4N6RXX5K2P9F8DZ7QWERTY',
   product_id: null,
+  product_family_id: null,
+  product_variant_id: null,
   product_name: 'Bread',
   raw_product_name: 'Bread',
   store_product_code: null,

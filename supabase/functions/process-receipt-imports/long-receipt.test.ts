@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BulkReceiptChunk } from '../parse-receipt/types.ts';
+import type { BulkReceiptChunk } from '../_shared/receipt-ai/types.ts';
 import {
   LONG_RECEIPT_CHUNK_SIZE,
   isLongReceiptRetryCode,

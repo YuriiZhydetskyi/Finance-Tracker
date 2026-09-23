@@ -11,10 +11,17 @@
 //   primary.parse → on any error, log + retry on fallback → on second error,
 //   surface combined message as 502.
 
-import type { IAiProvider } from './providers/ai-provider.ts';
-import { EMPTY_PRODUCT_TAXONOMY, sanitizeParsedReceiptTaxonomy } from './taxonomy.ts';
-import type { AiContext, ParsedReceipt, ProductTaxonomyContext } from './types.ts';
-import { canonicalizeReceiptTime } from './time-evidence.ts';
+import type { IAiProvider } from '../_shared/receipt-ai/providers/ai-provider.ts';
+import {
+  EMPTY_PRODUCT_TAXONOMY,
+  sanitizeParsedReceiptTaxonomy,
+} from '../_shared/receipt-ai/taxonomy.ts';
+import type {
+  AiContext,
+  ParsedReceipt,
+  ProductTaxonomyContext,
+} from '../_shared/receipt-ai/types.ts';
+import { canonicalizeReceiptTime } from '../_shared/receipt-ai/time-evidence.ts';
 
 export type ParseRequestBody = {
   imageBase64: string;

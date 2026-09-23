@@ -24,7 +24,7 @@
 // The resolver dedupes within-batch creations via the `pendingBy*` maps so we
 // never insert two new products for one logical match.
 
-import { makeProduct } from '@finance-tracker/domain';
+import { makeProduct, type Product } from '@finance-tracker/domain';
 import type { ProductRow } from '@/features/products/api/use-products';
 
 export type ItemKey = {
@@ -54,7 +54,7 @@ export type ProductEnrichment = {
 
 export type ResolveProductsResult = {
   productIdByIndex: string[];
-  newProducts: ReturnType<typeof makeProduct>[];
+  newProducts: Product[];
   backfills: ProductBackfill[];
   enrichments: ProductEnrichment[];
 };
@@ -82,8 +82,8 @@ export function resolveProducts(args: {
     else byNameNoCode.set(p.name, p);
   }
 
-  const pendingByCode = new Map<string, ReturnType<typeof makeProduct>>();
-  const pendingByNameNoCode = new Map<string, ReturnType<typeof makeProduct>>();
+  const pendingByCode = new Map<string, Product>();
+  const pendingByNameNoCode = new Map<string, Product>();
   const backfillById = new Map<string, ProductBackfill>();
   const enrichmentById = new Map<string, ProductEnrichment>();
   const conflictingEnrichmentIds = new Set<string>();

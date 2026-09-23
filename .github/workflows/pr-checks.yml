@@ -21,7 +21,26 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm ci
+        # Dependency lifecycle scripts are not needed in CI (supabase binary
+        # download, husky hooks); skipping them narrows supply-chain exposure.
+        run: npm ci --ignore-scripts
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.x
+
+      - name: Typecheck Edge Functions
+        run: |
+          deno check supabase/functions/parse-receipt/index.ts
+          deno check supabase/functions/process-receipt-imports/index.ts
+
+      - name: Lint Edge Functions
+        run: deno lint supabase/functions
+
+      # `npm run test` runs this too; the dedicated step gives a clearer failure.
+      - name: Check vendored domain copy
+        run: npm run check:edge-domain
 
       - name: Verify frozen taxonomy backfill
         run: node scripts/product-taxonomy/verify-historical-backfill.mjs

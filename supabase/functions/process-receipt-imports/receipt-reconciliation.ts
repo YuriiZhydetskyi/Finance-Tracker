@@ -1,4 +1,4 @@
-import type { BulkParsedDocument, ParsedItem } from '../parse-receipt/types.ts';
+import type { BulkParsedDocument, ParsedItem } from '../_shared/receipt-ai/types.ts';
 import {
   auditReceiptEvidence,
   checkReceiptArticleCount,

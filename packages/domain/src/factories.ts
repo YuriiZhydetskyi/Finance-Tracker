@@ -10,7 +10,6 @@
 import { roundFxRate, roundMoney, roundQty } from './money';
 import { nowIso } from './time';
 import { ulid } from './ulid';
-import { ProductClassificationSchema } from './product-taxonomy';
 
 // Normalize a time-of-day input (HH:MM or HH:MM:SS, possibly null/undefined/'')
 // into the canonical HH:MM:SS string stored on Receipt. Empty string → null
@@ -88,10 +87,7 @@ export function makeReceipt(input: ReceiptInput): Receipt {
   return ReceiptSchema.parse(candidate);
 }
 
-export function makeItem(input: ItemInput): Item & {
-  product_family_id: string | null;
-  product_variant_id: string | null;
-} {
+export function makeItem(input: ItemInput): Item {
   const qty = roundQty(input.qty);
   const unit_price_orig = roundMoney(input.unit_price_orig);
   const discount_orig = roundMoney(input.discount_orig ?? 0);
@@ -104,10 +100,11 @@ export function makeItem(input: ItemInput): Item & {
   // to now() for newly-wasted items and null for clean ones.
   const wasted_at = wasted_qty > 0 ? (input.wasted_at ?? now) : null;
   const candidate: Item = {
-    ...ProductClassificationSchema.parse(input),
     id: ulid(),
     receipt_id: input.receipt_id,
     product_id: input.product_id ?? null,
+    product_family_id: input.product_family_id ?? null,
+    product_variant_id: input.product_variant_id ?? null,
     product_name: input.product_name,
     // Imports and manual entry start with the entered receipt label. Historical
     // corrections can later change product_name without losing this evidence.
@@ -128,25 +125,16 @@ export function makeItem(input: ItemInput): Item & {
     created_at: now,
     updated_at: now,
   };
-  const item = ItemSchema.parse(candidate);
-  return {
-    ...item,
-    product_family_id: item.product_family_id ?? null,
-    product_variant_id: item.product_variant_id ?? null,
-  };
+  return ItemSchema.parse(candidate);
 }
 
-export function makeProduct(input: ProductInput): Product & {
-  product_family_id: string | null;
-  product_variant_id: string | null;
-  brand: string | null;
-  is_organic: boolean | null;
-} {
+export function makeProduct(input: ProductInput): Product {
   const now = nowIso();
   const candidate: Product = {
-    ...ProductClassificationSchema.parse(input),
-    ...(input.brand !== undefined ? { brand: input.brand } : {}),
-    ...(input.is_organic !== undefined ? { is_organic: input.is_organic } : {}),
+    product_family_id: input.product_family_id ?? null,
+    product_variant_id: input.product_variant_id ?? null,
+    brand: input.brand ?? null,
+    is_organic: input.is_organic ?? null,
     id: ulid(),
     name: input.name,
     store: input.store,
@@ -158,14 +146,7 @@ export function makeProduct(input: ProductInput): Product & {
     created_at: now,
     updated_at: now,
   };
-  const product = ProductSchema.parse(candidate);
-  return {
-    ...product,
-    product_family_id: product.product_family_id ?? null,
-    product_variant_id: product.product_variant_id ?? null,
-    brand: product.brand ?? null,
-    is_organic: product.is_organic ?? null,
-  };
+  return ProductSchema.parse(candidate);
 }
 
 export function makeProductPrice(input: ProductPriceInput): ProductPrice {
@@ -317,12 +298,7 @@ function positiveIntOrNull(value: number | null | undefined): number | null {
   return rounded > 0 ? rounded : null;
 }
 
-// The classification keys are optional on the schema, but Postgres inserts under
-// `exactOptionalPropertyTypes` reject `undefined` for a `string | null` column —
-// the same widening makeProduct does for exactly the same reason.
-export function makePackagedProduct(
-  input: PackagedProductInput,
-): PackagedProduct & { product_family_id: string | null; product_variant_id: string | null } {
+export function makePackagedProduct(input: PackagedProductInput): PackagedProduct {
   const now = nowIso();
   const barcode = trimToNull(input.barcode);
   const grams = Object.fromEntries(
@@ -330,7 +306,8 @@ export function makePackagedProduct(
   ) as Record<(typeof NUTRIENT_GRAM_KEYS)[number], number | null>;
 
   const candidate: PackagedProduct = {
-    ...ProductClassificationSchema.parse(input),
+    product_family_id: input.product_family_id ?? null,
+    product_variant_id: input.product_variant_id ?? null,
     id: ulid(),
     name: input.name.trim(),
     brand: trimToNull(input.brand),
@@ -356,12 +333,7 @@ export function makePackagedProduct(
     updated_at: now,
   };
 
-  const product = PackagedProductSchema.parse(candidate);
-  return {
-    ...product,
-    product_family_id: product.product_family_id ?? null,
-    product_variant_id: product.product_variant_id ?? null,
-  };
+  return PackagedProductSchema.parse(candidate);
 }
 
 export function makePackagedProductPhoto(input: PackagedProductPhotoInput): PackagedProductPhoto {
@@ -394,7 +366,7 @@ export function makePackagedProductPhoto(input: PackagedProductPhotoInput): Pack
 export function packagedProductFromImport(
   raw: PackagedProductImport,
   extras: { import_source: PackagedProductImportSource; raw_import_json?: unknown },
-): ReturnType<typeof makePackagedProduct> {
+): PackagedProduct {
   const barcodeText = raw.barcode == null ? null : String(raw.barcode);
   const barcode = barcodeText == null ? null : normalizeBarcode(barcodeText);
   const unit = trimToNull(raw.package_unit);

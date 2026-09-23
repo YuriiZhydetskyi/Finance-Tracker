@@ -317,6 +317,56 @@ create table public.products (
 
 ---
 
+## RPC `save_receipt_bundle`
+
+Міграція `20260922100000_save_receipt_bundle.sql`. Єдиний шлях запису чека з
+браузера: `/manual`, `/photo`, `/pending` (через `useSaveReceiptMutation`) і
+`/edit/$id` (через `useUpdateReceiptMutation`). Раніше ці хуки робили 5–7
+послідовних PostgREST-запитів із ручним відкатом (save) або взагалі без
+відкату (edit); тепер усе відбувається в одній транзакції.
+
+```sql
+public.save_receipt_bundle(
+  p_receipt             jsonb,                   -- Receipt (усі колонки receipts)
+  p_items               jsonb,                   -- Item[] + price_id (ULID знімка ціни)
+  p_new_products        jsonb default '[]',      -- Product[] для створення
+  p_product_backfills   jsonb default '[]',      -- { id, store_product_code }[]
+  p_product_enrichments jsonb default '[]',      -- { id, product_family_id?, product_variant_id?, brand?, is_organic? }[]
+  p_replace             boolean default false
+) returns jsonb                                  -- { receipt_id, items_count }
+```
+
+- `security invoker`, `set search_path = ''`: RLS (`is_allowed_user()`)
+  застосовується до викликача, як для прямих запитів. `execute` мають лише
+  `authenticated` і `service_role`.
+- Порядок: нові products → backfill кодів → enrichment → receipt → items →
+  `product_prices`. Будь-яка помилка (FK, check, RLS) відкочує все, включно зі
+  щойно створеними products.
+- **Insert** (`p_replace = false`): `INSERT receipts`.
+- **Replace** (`p_replace = true`): `UPDATE receipts` (усі колонки, крім `id` і
+  `created_at`) → `DELETE product_prices` → `DELETE items` для цього чека. Якщо
+  чека немає — помилка `P0002`. `UPDATE` іде до вставки позицій, бо тригер
+  `apply_product_match_rule()` читає `receipts.source` і пропускає правила для
+  `edit`.
+- Enrichment: ключ присутній зі значенням `null` → колонка стає `null`;
+  ключ відсутній → значення не змінюється.
+- Знімки цін будуються з рядків `items` **після** BEFORE-тригерів (правило
+  може переписати `product_id`): один рядок на позицію з непорожнім
+  `product_id`, `price_net = round(unit_price_orig - discount_orig, 2)`,
+  `id` = `price_id` з клієнта.
+
+**Чому product resolution на клієнті.** Вибір продукту (link / backfill коду /
+create) — чиста функція `resolve-products.ts`, покрита юніт-тестами й спільна
+для save і edit. RPC лише записує готовий результат, тож логіка не
+дублюється в plpgsql. Гонка між двома одночасними збереженнями того самого
+нового продукту закінчиться порушенням унікального індексу й відкотом усього
+чека — користувач повторює збереження.
+
+SQL-тест на PGlite: `node scripts/test-save-receipt-bundle-sql.mjs`
+(`npm run test:save-receipt-bundle-sql`).
+
+---
+
 ## Таксономія товарів
 
 Таксономія має три рівні деталізації для різних задач:

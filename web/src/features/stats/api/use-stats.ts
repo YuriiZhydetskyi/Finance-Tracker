@@ -164,7 +164,7 @@ export function useStatsByStore(
   options?: { enabled?: boolean },
 ) {
   return useQuery<StatsByStoreRow[]>({
-    queryKey: [...statsByStoreQueryKey, { ...range, ...filters, limit }],
+    queryKey: [...statsByStoreQueryKey, range, filters, limit],
     enabled: options?.enabled ?? true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('stats_by_store', {

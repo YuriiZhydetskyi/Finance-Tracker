@@ -13,6 +13,12 @@ export const ProductClassificationSchema = z
     path: ['product_variant_id'],
   });
 
+// For persisted entities: the columns always exist and are null when unset.
+export const ProductClassificationColumnsSchema = z.object({
+  product_family_id: TAXONOMY_ID_SCHEMA.nullable().default(null),
+  product_variant_id: TAXONOMY_ID_SCHEMA.nullable().default(null),
+});
+
 export const ProductFamilySchema = z.object({
   id: TAXONOMY_ID_SCHEMA,
   name_uk: z.string().trim().min(1),

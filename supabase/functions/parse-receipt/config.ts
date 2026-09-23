@@ -11,10 +11,10 @@
 //   SUPABASE_ANON_KEY
 
 import { createClient } from '@supabase/supabase-js';
-import { GeminiProvider } from './providers/gemini-provider.ts';
-import { AnthropicProvider } from './providers/anthropic-provider.ts';
+import { GeminiProvider } from '../_shared/receipt-ai/providers/gemini-provider.ts';
+import { AnthropicProvider } from '../_shared/receipt-ai/providers/anthropic-provider.ts';
 import type { HandlerDeps } from './handler.ts';
-import type { ProductTaxonomyContext } from './types.ts';
+import type { ProductTaxonomyContext } from '../_shared/receipt-ai/types.ts';
 
 function requireEnv(name: string): string {
   const v = Deno.env.get(name);
@@ -31,24 +31,24 @@ export function loadDeps(): HandlerDeps {
   const primary = new GeminiProvider({ apiKey: geminiApiKey });
   const fallback = new AnthropicProvider({ apiKey: anthropicApiKey });
 
+  function callerClient(authHeader: string) {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+
   // The allowlist check uses the caller's JWT against Postgres so RLS does the
   // work for us. `is_allowed_user()` is the SQL helper defined in the initial
   // migration; it returns true iff `auth.jwt()->>'email'` is in `app_users`.
   const isAllowed = async (authHeader: string): Promise<boolean> => {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data, error } = await supabase.rpc('is_allowed_user');
+    const { data, error } = await callerClient(authHeader).rpc('is_allowed_user');
     if (error) throw new Error(error.message);
     return data === true;
   };
 
   const loadTaxonomy = async (authHeader: string): Promise<ProductTaxonomyContext> => {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supabase = callerClient(authHeader);
     const [families, variants] = await Promise.all([
       supabase.from('product_families').select('id, name_uk, name_en, name_de').order('id'),
       supabase

@@ -1,5 +1,13 @@
-import type { BulkParsedDocument, ParsedItem } from '../parse-receipt/types.ts';
-import { canonicalizeReceiptTime } from '../parse-receipt/time-evidence.ts';
+import type { BulkParsedDocument, ParsedItem } from '../_shared/receipt-ai/types.ts';
+import { canonicalizeReceiptTime } from '../_shared/receipt-ai/time-evidence.ts';
+import {
+  amountAppearsInText,
+  hasExplicitMultiplier,
+  hasWeightOrVolume,
+  integerAppearsInText,
+  mergeAccountingPairs,
+  normalizeReceiptText,
+} from '../_shared/domain/receipt-evidence.ts';
 
 export type FinalizedReceipt = {
   receipt: Record<string, string | number | null>;
@@ -438,14 +446,14 @@ function reassignMultiplierToNextRow(
     (fragment) =>
       !hasExplicitMultiplier(fragment, current.qty) &&
       amountAppearsInText(fragment, current.printed_line_total_orig!) &&
-      normalize(fragment).includes(normalize(current.product_name)),
+      normalizeReceiptText(fragment).includes(normalizeReceiptText(current.product_name)),
   );
   if (multiplierFragments.length !== 1 || productFragments.length !== 1 || !next.raw_text) {
     return null;
   }
   if (
     !amountAppearsInText(next.raw_text, next.printed_line_total_orig) ||
-    !normalize(next.raw_text).includes(normalize(next.product_name))
+    !normalizeReceiptText(next.raw_text).includes(normalizeReceiptText(next.product_name))
   ) {
     return null;
   }
@@ -621,7 +629,7 @@ export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArith
   ) {
     return null;
   }
-  const normalizedItems = mergePairs(parsed.items);
+  const normalizedItems = mergeAccountingPairs(parsed.items);
   const computedTotal = round(
     normalizedItems.reduce((sum, item) => {
       const qty = round(item.qty, 3);
@@ -655,7 +663,7 @@ export function checkReceiptArticleCount(
   ) {
     return null;
   }
-  const normalizedItems = mergePairs(parsed.items);
+  const normalizedItems = mergeAccountingPairs(parsed.items);
   const computedCount = normalizedItems.reduce((sum, item) => {
     if (item.unit_price_orig <= 0) return sum;
     if (item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty)) {
@@ -669,100 +677,6 @@ export function checkReceiptArticleCount(
     missingCount: parsed.article_count - computedCount,
     matches: parsed.article_count === computedCount,
   };
-}
-
-function mergePairs(items: ParsedItem[]): ParsedItem[] {
-  const result = items.map((item) => ({ ...item }));
-  const removed = new Set<number>();
-  const groups = groupItemIndices(result);
-
-  for (const indices of groups.values()) {
-    const positives = indices.filter((index) => isSignedPrice(result[index], 1));
-    const negatives = indices.filter((index) => isSignedPrice(result[index], -1));
-    const claimed = new Set<number>();
-
-    // Exact cancellations must claim first; otherwise a cancellation could be
-    // consumed as a partial discount. Both passes share the same claimed set.
-    claimPairPass(result, positives, negatives, claimed, removed, 'cancellation');
-    claimPairPass(result, positives, negatives, claimed, removed, 'discount');
-  }
-  return result.filter((_, index) => !removed.has(index));
-}
-
-function groupItemIndices(items: ParsedItem[]): Map<string, number[]> {
-  const groups = new Map<string, number[]>();
-  items.forEach((item, index) => {
-    const key = normalize(item.product_name);
-    if (!key) return;
-    const indices = groups.get(key);
-    if (indices) indices.push(index);
-    else groups.set(key, [index]);
-  });
-  return groups;
-}
-
-type PairPass = 'cancellation' | 'discount';
-
-function claimPairPass(
-  items: ParsedItem[],
-  positiveIndices: number[],
-  negativeIndices: number[],
-  claimed: Set<number>,
-  removed: Set<number>,
-  pass: PairPass,
-): void {
-  for (const negativeIndex of negativeIndices) {
-    if (claimed.has(negativeIndex)) continue;
-    const negative = items[negativeIndex];
-    if (!negative) continue;
-    const positiveIndex = positiveIndices.find((candidateIndex) =>
-      isPairCandidate(items[candidateIndex], negative, claimed.has(candidateIndex), pass),
-    );
-    if (positiveIndex === undefined) continue;
-    const positive = items[positiveIndex];
-    if (!positive) continue;
-
-    claimed.add(positiveIndex);
-    claimed.add(negativeIndex);
-    removed.add(negativeIndex);
-    if (pass === 'cancellation') {
-      positive.unit_price_orig = 0;
-      positive.discount_orig = 0;
-    } else {
-      positive.discount_orig = round(Math.abs(negative.unit_price_orig), 2);
-    }
-  }
-}
-
-function isPairCandidate(
-  positive: ParsedItem | undefined,
-  negative: ParsedItem,
-  alreadyClaimed: boolean,
-  pass: PairPass,
-): boolean {
-  if (!positive || alreadyClaimed || Math.abs(positive.qty - negative.qty) > 0.001) return false;
-  const positiveTotal = grossLineTotal(positive);
-  const negativeTotal = grossLineTotal(negative);
-  return pass === 'cancellation' ? positiveTotal === negativeTotal : positiveTotal > negativeTotal;
-}
-
-function grossLineTotal(item: ParsedItem): number {
-  return round(Math.abs(item.qty * item.unit_price_orig), 2);
-}
-
-function isSignedPrice(item: ParsedItem | undefined, sign: 1 | -1): boolean {
-  return sign * (item?.unit_price_orig ?? 0) > 0;
-}
-
-const INVISIBLE_CHARS = /[\u200B-\u200D\uFEFF]/g;
-
-function normalize(value: string): string {
-  return value
-    .normalize('NFKC')
-    .replace(INVISIBLE_CHARS, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
 }
 
 function round(value: number, decimals: number): number {
@@ -803,28 +717,4 @@ function parseArticleCount(value: unknown): number | null {
     throw new Error('AI result has invalid article_count');
   }
   return value;
-}
-
-function amountAppearsInText(text: string, amount: number): boolean {
-  const absolute = Math.abs(round(amount, 2)).toFixed(2);
-  const variants = [absolute, absolute.replace('.', ',')];
-  const compactText = text.replace(/\s/g, '');
-  return variants.some((variant) => compactText.includes(variant));
-}
-
-function integerAppearsInText(text: string, value: number): boolean {
-  return new RegExp(String.raw`(?:^|\D)${String(value)}(?:\D|$)`, 'u').test(text);
-}
-
-function hasExplicitMultiplier(text: string, qty: number): boolean {
-  const rawQty = String(round(qty, 3)).replace('.', '[.,]');
-  const quantityPattern = new RegExp(
-    `(?:^|\\s)(?:${rawQty}\\s*(?:x|×|stk\\.?|st\\.?|pcs)|(?:x|×)\\s*${rawQty})(?:\\s|$)`,
-    'iu',
-  );
-  return quantityPattern.test(text);
-}
-
-function hasWeightOrVolume(text: string): boolean {
-  return /(?:^|\s)\d+(?:[.,]\d+)?\s*(?:kg|g|l|ml)(?:\s|$)/iu.test(text);
 }

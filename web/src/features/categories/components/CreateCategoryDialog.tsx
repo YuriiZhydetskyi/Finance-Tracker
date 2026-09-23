@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
+import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
 import { useCategories } from '../api/use-categories';
 import { useCreateCategoryMutation } from '../api/use-create-category-mutation';
 
@@ -9,11 +10,6 @@ type Props = {
   onClose: () => void;
   onCreated: (name: string) => void;
 };
-
-const SELECT_CLASS =
-  'flex h-10 w-full rounded-md border border-slate-300 bg-white px-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900';
-
-const FIELD_LABEL_CLASS = 'text-xs font-medium text-slate-600';
 
 const NEW_GROUP_VALUE = '__new__';
 

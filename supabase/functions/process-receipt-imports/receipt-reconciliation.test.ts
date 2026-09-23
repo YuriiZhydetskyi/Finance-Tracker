@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BulkParsedDocument, ParsedItem } from '../parse-receipt/types.ts';
+import type { BulkParsedDocument, ParsedItem } from '../_shared/receipt-ai/types.ts';
 import { validateBulkDocument } from './domain.ts';
 import {
   reconcileIndependentReceipt,

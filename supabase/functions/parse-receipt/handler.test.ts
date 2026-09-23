@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createHandler, type HandlerDeps } from './handler.ts';
-import type { IAiProvider } from './providers/ai-provider.ts';
-import type { AiContext, ParsedReceipt } from './types.ts';
+import type { IAiProvider } from '../_shared/receipt-ai/providers/ai-provider.ts';
+import type { AiContext, ParsedReceipt } from '../_shared/receipt-ai/types.ts';
 
 // ── Stubs ────────────────────────────────────────────────────────────────────
 

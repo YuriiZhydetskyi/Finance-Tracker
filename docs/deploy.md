@@ -166,7 +166,7 @@ Studio → Authentication → URL Configuration:
 git push origin main
 ```
 
-GitHub Actions tab покаже job. ~2 хв: lint+typecheck+test+build+deploy. Якщо хоч один gate червоний — deploy не йде, продакшн залишається на попередній версії.
+GitHub Actions покаже три jobs: `checks` → `deploy-backend` → `deploy-frontend`. `deploy-backend` чекає на ваше підтвердження (кнопка «Review deployments» → «Approve and deploy»). Якщо хоч один gate червоний або ви відхилили deploy — нічого не деплоїться, продакшн лишається на попередній версії. Деталі — розділ «Автодеплой бекенду» нижче.
 
 ### Manual deploy (без push, через UI)
 
@@ -183,6 +183,59 @@ wrangler pages deploy dist --project-name=finance-tracker --branch=main
 ```
 
 Це створить **preview deployment** з URL виду `https://abc1234.<your-app>.pages.dev` — production не торкає. Щоб задеплоїти у production minus CI: `--branch=main`.
+
+---
+
+## Автодеплой бекенду
+
+Міграції та обидві Edge Functions деплоїть job `deploy-backend` у
+[deploy.yml](../.github/workflows/deploy.yml). Фронтенд деплоїться лише після
+нього, тож він ніколи не випередить схему БД.
+
+**Чому секрети не в коді й не на рівні репо.** Секрети Supabase лежать у
+GitHub Environment `production`. GitHub віддає їх лише job-у з
+`environment: production` і лише після ручного підтвердження. Workflow із PR
+(включно з форками публічного репо) їх не бачить.
+
+### Одноразове налаштування
+
+1. **Environment:** GitHub → Settings → Environments → New environment →
+   `production`. Увімкнути **Required reviewers** і додати себе. У
+   **Deployment branches and tags** обрати «Selected branches» → `main`.
+2. **CI-токен Supabase:** supabase.com/dashboard/account/tokens → Generate new
+   token, назва `github-actions-finance-tracker`, термін дії 90 днів. Токен дає
+   доступ до всього акаунта, тому окремий від особистого і з терміном дії.
+3. **Секрети середовища** (Environments → `production` → Add secret):
+   - `SUPABASE_ACCESS_TOKEN` — токен із кроку 2;
+   - `SUPABASE_PROJECT_ID` — project ref (Settings → General);
+   - `SUPABASE_DB_PASSWORD` — пароль БД (Settings → Database; якщо невідомий —
+     «Reset database password» і оновити всюди, де він використовувався).
+4. **Перевірка історії міграцій** перед першим автоматичним запуском, локально:
+
+   ```bash
+   npx supabase migration list
+   ```
+
+   Усі міграції, крім ще не застосованих нових, мають бути в колонці Remote.
+   Якщо є розбіжність у старих версіях, `db push` у CI впаде — розберіться
+   локально до merge.
+
+### Ротація
+
+- Токен: згенерувати новий, оновити `SUPABASE_ACCESS_TOKEN`, видалити старий у
+  дашборді. Нагадування — за тиждень до закінчення терміну.
+- Пароль БД: Reset у дашборді → оновити `SUPABASE_DB_PASSWORD`.
+
+### Що робить job
+
+`supabase link` → `supabase db push --yes` (застосовує лише нові міграції,
+повторний запуск — no-op) → `supabase functions deploy` для `parse-receipt` і
+`process-receipt-imports` (`--use-api`, без Docker). Секрети самих функцій
+(`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `RECEIPT_IMPORT_CRON_TOKEN`) job не
+чіпає: вони вже живуть у Supabase.
+
+Підтвердження потрібне на кожен push у `main`, навіть якщо змінились лише
+документи.
 
 ---
 
@@ -312,16 +365,6 @@ npx supabase functions deploy process-receipt-imports --no-verify-jwt
 `SUPABASE_URL`, Gemini й Anthropic keys автоматично/явно доступні тільки Edge Function і ніколи не
 додаються у `VITE_*`.
 
-## Posthumous: рекавері легасі за 90 днів
+## Posthumous: рекавері легасі
 
-До 2026-08-06 Apps Script проект (scriptId у `legacy/apps-script/.clasp.json`) лишається інтактним. Якщо новий стек серйозно ламається і fix зайняв би довше за прийнятну downtime:
-
-```powershell
-cd legacy/apps-script
-npm install
-npm run push     # clasp push на оригінальний project
-```
-
-Потім у Apps Script editor → Deploy → New deployment → Web app → отримаєш legacy URL. Поділись з обома користувачами. Sheet-дані не торкані; новий Postgres-state лишається паралельно.
-
-Після 2026-08-06 Apps Script проект можна архівувати або видалити. Кодова база у `legacy/apps-script/` залишається у репі назавжди — це історичний референс.
+90-денне вікно відкату на Apps Script завершилось 2026-08-06. Код старого додатку видалено з репо у вересні 2026 (останній коміт, що його містить: `875bb9b`). Для довідки: `git checkout 875bb9b -- legacy/apps-script`.

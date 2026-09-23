@@ -2,6 +2,63 @@
 
 > Точка входу для нової сесії. Коротко: що є, що далі, на що дивитись першим. Оновлюється у кінці кожної фази.
 
+## Рефакторинг 2026-09
+
+Гілка `refactor/2026-09`, план —
+[refactoring-plan-2026-09.md](refactoring-plan-2026-09.md). Виконані кроки:
+
+- **6.1 / 6.4 / 6.7 / 6.8** — retry у `query-client.ts` тепер розпізнає auth-помилки
+  PostgREST (`isAuthError`), прибрано дублі стилів, один Supabase-клієнт на запит у
+  `parse-receipt/config.ts`, уніфіковано ключ запиту `useStatsByStore`.
+- **Крок 4** — pathless layout `web/src/routes/_authed.tsx` монтує
+  `<RequireAuth>` один раз замість обгортки в кожному роуті.
+- **Крок 2** — спільний код Edge Functions у `supabase/functions/_shared/`
+  (`receipt-ai/` + згенерована копія `domain/`), `receipt-evidence.ts` у
+  `packages/domain`, скрипт `scripts/sync-edge-domain.mjs`.
+- **Крок 3** — воркер `process-receipt-imports` розрізано на модулі з
+  інʼєкцією залежностей (`job-processor`, `attempts`, `job-context`,
+  `job-failure`, `constants` тощо).
+- **6.2 / 6.3** — спільний хук `useDebouncedUrlDraft` для фільтрів `/recent`
+  і `/waste`; `StatsPeriodPicker` без `eslint-disable` (виклик на mount
+  лишився через `useEffectEvent`, бо на нього спираються тести).
+- **6.5** — класифікаційні колонки в схемах мають `default(null)`, тож фабрики
+  повертають звичайні `Item`/`Product`/`PackagedProduct` без widening.
+- **6.9** — видалено архівний `legacy/apps-script/`.
+- **Крок 1** — атомарне збереження чека: `useSaveReceiptMutation` і
+  `useUpdateReceiptMutation` пишуть чек, позиції, нові/оновлені products і
+  знімки цін одним викликом RPC `save_receipt_bundle` в одній транзакції
+  (контракт — [data-model.md](data-model.md), «RPC `save_receipt_bundle`»).
+- **6.6** — тригер `apply_product_match_rule()` шукає правило одним запитом
+  замість двох.
+- **Крок 5** — CI (`pr-checks.yml`, `deploy.yml`) запускає `deno check` для
+  обох функцій, `deno lint supabase/functions` і `npm run check:edge-domain`;
+  `CLAUDE.md` звірено з кодом.
+
+### Перед merge / deploy
+
+Міграції з кроків 1 і 6.6 написано, але **ще не застосовано** до linked
+Supabase, а `database.types.ts` не регенеровано. Виклик RPC тимчасово
+типізовано локально в `web/src/features/receipts/api/receipt-bundle.ts`
+(`TODO(types)`). Міграції та обидві Edge Functions тепер деплоїть job
+`deploy-backend` перед фронтендом (див. [deploy.md](deploy.md), «Автодеплой
+бекенду»), тож окремий ручний `db push` не потрібен.
+
+1. Налаштувати Environment `production` і три секрети за розділом
+   «Автодеплой бекенду» в [deploy.md](deploy.md).
+2. Локально перевірити `npx supabase migration list`: у Remote мають бути всі
+   міграції, крім `20260922100000_save_receipt_bundle.sql` і
+   `20260922100001_apply_product_match_rule_single_lookup.sql`.
+3. Merge `refactor/2026-09` у `main` і підтвердити `deploy-backend` в Actions.
+   Він застосує обидві міграції й задеплоїть функції з новими шляхами `_shared`,
+   після чого піде фронтенд.
+4. Ручний smoke: зберегти новий чек на `/manual` і відредагувати наявний на
+   `/edit/$id` (позиції, product, ціни).
+5. Регенерувати `web/src/shared/types/database.types.ts` (UTF-8 рецепт у
+   [deploy.md](deploy.md), «Common operations»), прибрати локальний тип і каст
+   `TODO(types)` у `receipt-bundle.ts`, прогнати гейти й закомітити.
+
+---
+
 **JSON + PDF упаковок (локальні зміни 2026-09-13):** імпорт приймає номери
 сторінок для кожного товару, показує JPEG і вимагає підтвердження відповідностей
 із назвами в чеках. Порядок масиву більше не визначає прив’язку. Наявні картки
@@ -103,17 +160,17 @@ Cloudflare deployment не був частиною цього release.
 
 ## TL;DR
 
-- **Старий стек (Apps Script + Sheets + Alpine.js)** заархівовано в [`legacy/apps-script/`](../legacy/apps-script/) — досі білдиться (164 тести), залишається для emergency rollback.
-- **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages (deploy у Phase 10). $0/місяць.
-- **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/<fn>/providers/`. Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
-- **Прогрес:** 10 з 11 фаз готові. Live на Cloudflare Pages (`<your-app>.pages.dev`); CI/CD через GitHub Actions (`.github/workflows/deploy.yml`). Усі 3 міграції застосовані до live Supabase (`supabase db push`); `database.types.ts` регенеровано з canonical джерела; `parse-receipt` Edge Function задеплоєна з secrets для Gemini + Anthropic. Auth (magic link) + `/manual` + `/recent` + `/edit/$id` + `/photo` + `/stats` працюють end-to-end проти live стека.
-- **Наступне:** manual end-to-end smoke з обома користувачами (Phase 10 фінал) → за потреби фіксити баги що випливуть → опціонально Phase 11 (Playwright E2E) + Phase 12 (daily backup).
+- **Старий стек (Apps Script + Sheets + Alpine.js)** видалено з репо у вересні 2026 після завершення 90-денного вікна відкату (останній коміт, що його містить: `875bb9b`).
+- **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages. $0/місяць.
+- **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/_shared/receipt-ai/providers/` (спільні для обох Edge Functions). Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
+- **Стан:** live на Cloudflare Pages (`<your-app>.pages.dev`), CI/CD через GitHub Actions (`pr-checks.yml` на PR, `deploy.yml` на push у `main`; обидва включають Deno-перевірки Edge Functions). Сторінки: `/photo`, `/imports` (фоновий імпорт до 200 файлів), `/pending`, `/manual`, `/recent`, `/edit/$id`, `/stats`, `/waste`, `/reconcile`, `/packaged-products`. Дві Edge Functions: `parse-receipt` (синхронний OCR) і `process-receipt-imports` (PGMQ + pg_cron воркер). Міграції та функції деплояться вручну (`npx supabase db push`, `npx supabase functions deploy`).
+- **Наступне:** чеклист «Перед merge / deploy» з розділу «Рефакторинг 2026-09» вище: налаштувати Environment `production` і секрети, merge `refactor/2026-09`, підтвердити `deploy-backend`, регенерувати типи.
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 
 **Operational runbook:** [deploy.md](deploy.md) — як деплоїти, додавати env vars, ротувати ключі, troubleshooting. Цей файл (project-status.md) — про "що зроблено і де ми зараз"; deploy.md — про "як підтримувати працююче".
 
-**Інші актуальні docs під новий стек** (всі переписані у Phase 10): [architecture.md](architecture.md) — layers + 5 потоків даних + ports; [data-model.md](data-model.md) — Postgres DDL + RLS + views; [extending.md](extending.md) — 10 рецептів; [setup.md](setup.md) — bootstrap нової машини; [decisions/](decisions/) — 13 ADRs.
+**Інші актуальні docs під новий стек** (всі переписані у Phase 10): [architecture.md](architecture.md) — layers + 5 потоків даних + ports; [data-model.md](data-model.md) — Postgres DDL + RLS + views; [extending.md](extending.md) — 10 рецептів; [setup.md](setup.md) — bootstrap нової машини; [decisions/](decisions/) — 28 ADR.
 
 ---
 
@@ -156,7 +213,6 @@ ESLint 9.x (не 10) — `eslint-plugin-react@7.37.5` ще не оновився
 
 ```
 finance-tracker/
-├── legacy/apps-script/         ← старий додаток, frozen (164 тести зелені)
 ├── docs/                       ← ADR-и + цей файл
 ├── web/                        ← React + Vite + Tailwind app
 │   ├── src/
@@ -213,10 +269,10 @@ finance-tracker/
 
 ### ✅ Phase 0 — Archive (2026-05-07)
 
-- Перенесено `src/`, `tests/`, `.clasp.json`, `eslint.config.mjs`, `package*.json`, `tsconfig.json` у [`legacy/apps-script/`](../legacy/apps-script/) через `git mv` (історія збережена як `R` rename).
+- Перенесено `src/`, `tests/`, `.clasp.json`, `eslint.config.mjs`, `package*.json`, `tsconfig.json` у `legacy/apps-script/` через `git mv` (історія збережена як `R` rename). Папку видалено у вересні 2026 (останній коміт, що її містить: `875bb9b`).
 - Старий `node_modules` видалено з кореня.
 - Legacy досі білдиться: `npm --prefix legacy/apps-script run lint && typecheck && test` → 164/164 зелені.
-- Створено [`legacy/apps-script/README.md`](../legacy/apps-script/README.md) з інструкцією, як reactivate.
+- Створено `legacy/apps-script/README.md` з інструкцією, як reactivate.
 
 ### ✅ Phase 1 — Scaffold (2026-05-07)
 

@@ -197,10 +197,12 @@ React SPA → Supabase
    │ fxRateProvider.getRateLive(currency, date) → fx_rate_eur (1.0 для EUR; NBU live для UAH)
    │ computeGrandTotal(items) → total_orig
    │ makeReceipt({ ...input, fx_rate_eur, total_orig }) → factory builds id/total_eur/validates
-   │ items.map(it => makeItem({ ...it, receipt_id, fx_rate_eur }))
-   │ supabase.from('receipts').insert(receipt) → throw on error
-   │ supabase.from('items').insert(items) → on error: best-effort delete receipt
-   │ qc.invalidateQueries({ queryKey: receiptsQueryKey })
+   │ fetchStoreProducts(store) → resolveProducts(...) (link / backfill / create — чиста TS-логіка)
+   │ buildReceiptBundle(...) → makeItem(...) + price_id для кожної позиції
+   │ supabase.rpc('save_receipt_bundle', { ..., p_replace: false })
+   │   одна транзакція: products → backfills/enrichments → receipt → items → product_prices
+   │   помилка на будь-якому кроці → нічого не записано
+   │ qc.invalidateQueries({ queryKey: receiptsQueryKey }) + productsQueryKey
    ▼
 [11. catch path для save failure]
    │ photoStorage.remove(path).catch(noop) — orphan blob cleanup
@@ -254,15 +256,16 @@ React SPA → Supabase
    │   ├─ if currency or date змінилися: fxRateProvider.getRateLive(newCurrency, newDate)
    │   │   else: keep existing.fx_rate_eur (audit trail preserved)
    │   ├─ applyReceiptPatch(existing, { ...input, source: 'edit' })
-   │   ├─ supabase.from('receipts').update(...)
-   │   ├─ supabase.from('items').delete().eq('receipt_id', id)  ← wholesale replace
-   │   └─ supabase.from('items').insert(newItems)
-   │ qc.invalidateQueries({ queryKey: [receiptsQueryKey, receiptQueryKey(id)] })
+   │   ├─ fetchStoreProducts(patched.store) → buildReceiptBundle(...)
+   │   └─ supabase.rpc('save_receipt_bundle', { ..., p_replace: true })  ← wholesale replace
+   │        одна транзакція: products → UPDATE receipts → DELETE product_prices/items
+   │        → INSERT items → INSERT product_prices
+   │ qc.invalidateQueries({ queryKey: [receiptsQueryKey, receiptQueryKey(id), productsQueryKey] })
    ▼
 [4. navigate({ to: '/recent', search: { saved: id } })]
 ```
 
-**Items wholesale replace** — UPDATE → DELETE → INSERT, не diff-merge. Простіше, відповідає user mental model ("я редагую цілий чек"), без транзакцій (Supabase JS не підтримує). Failure між DELETE і INSERT → orphan empty receipt; documented як Studio cleanup path.
+**Items wholesale replace** — UPDATE → DELETE → INSERT, не diff-merge. Простіше, відповідає user mental model ("я редагую цілий чек"). Усе виконується всередині RPC `save_receipt_bundle` в одній транзакції: якщо будь-який крок падає, попередня версія чека, позицій і цінових знімків лишається без змін. `UPDATE receipts` іде ДО вставки позицій, бо тригер `apply_product_match_rule()` читає `receipts.source` і не застосовує правила до `edit`-чеків. Контракт — у [data-model.md](data-model.md), розділ «RPC `save_receipt_bundle`».
 
 ### Потік 4: delete
 
