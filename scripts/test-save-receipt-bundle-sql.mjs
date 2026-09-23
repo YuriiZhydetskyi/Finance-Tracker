@@ -244,29 +244,30 @@ try {
   // 3. insert atomicity: second item references a missing product -> nothing persists.
   const atomicReceiptId = ULID('R2');
   await assert.rejects(
-    saveBundle({
-      receipt: receipt({ id: atomicReceiptId }),
-      items: [
-        item(ULID('I4'), { receipt_id: atomicReceiptId, product_id: ULID('PRODMILK') }),
-        item(ULID('I5'), { receipt_id: atomicReceiptId, product_id: ULID('MISSING') }),
-      ],
-      newProducts: [
-        {
-          id: ULID('PRODNEW'),
-          name: 'Butter',
-          store: 'REWE',
-          store_product_code: null,
-          category: 'Молочне',
-          unit: null,
-          unit_size: null,
-          notes: null,
-          product_family_id: null,
-          product_variant_id: null,
-          brand: null,
-          is_organic: null,
-        },
-      ],
-    }),
+    () =>
+      saveBundle({
+        receipt: receipt({ id: atomicReceiptId }),
+        items: [
+          item(ULID('I4'), { receipt_id: atomicReceiptId, product_id: ULID('PRODMILK') }),
+          item(ULID('I5'), { receipt_id: atomicReceiptId, product_id: ULID('MISSING') }),
+        ],
+        newProducts: [
+          {
+            id: ULID('PRODNEW'),
+            name: 'Butter',
+            store: 'REWE',
+            store_product_code: null,
+            category: 'Молочне',
+            unit: null,
+            unit_size: null,
+            notes: null,
+            product_family_id: null,
+            product_variant_id: null,
+            brand: null,
+            is_organic: null,
+          },
+        ],
+      }),
     /foreign key/i,
   );
   assert.equal(
@@ -285,14 +286,15 @@ try {
 
   // 4. replace atomicity: the same failure leaves the previous items and snapshots in place.
   await assert.rejects(
-    saveBundle({
-      receipt: receipt({ source: 'edit', store: 'Broken' }),
-      items: [
-        item(ULID('I6'), { product_id: ULID('PRODMILK') }),
-        item(ULID('I7'), { product_id: ULID('MISSING') }),
-      ],
-      replace: true,
-    }),
+    () =>
+      saveBundle({
+        receipt: receipt({ source: 'edit', store: 'Broken' }),
+        items: [
+          item(ULID('I6'), { product_id: ULID('PRODMILK') }),
+          item(ULID('I7'), { product_id: ULID('MISSING') }),
+        ],
+        replace: true,
+      }),
     /foreign key/i,
   );
   const survivors = await db.query('select id from public.items where receipt_id = $1', [
@@ -431,7 +433,7 @@ try {
 
   // Replace of an unknown receipt fails instead of silently inserting items.
   await assert.rejects(
-    saveBundle({ receipt: receipt({ id: ULID('NOPE') }), items: [], replace: true }),
+    () => saveBundle({ receipt: receipt({ id: ULID('NOPE') }), items: [], replace: true }),
     /not found/,
   );
 

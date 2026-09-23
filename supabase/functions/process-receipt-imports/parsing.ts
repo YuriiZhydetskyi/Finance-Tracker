@@ -48,6 +48,23 @@ export type ParseRun = {
   analysisRun: number;
 };
 
+/** The document a provider reads. */
+export type ParseDocument = {
+  base64: string;
+  ctx: AiContext;
+  forceReceipt: boolean;
+};
+
+/** Which provider runs, under which attempt stage and settings. */
+export type ProviderRequest = {
+  stage: Exclude<AttemptStage, 'worker'>;
+  provider: BulkProvider;
+  settings: Record<string, unknown>;
+  /** The caller records the attempt outcome itself after further checks. */
+  deferOutcome?: boolean;
+  mode?: BulkParseMode;
+};
+
 export async function parseForDelivery(
   run: ParseRun,
   base64: string,
@@ -58,15 +75,14 @@ export async function parseForDelivery(
   const usePrimary = role === 'primary';
   const result = await invokeProvider(
     run,
-    usePrimary ? 'primary_parse' : 'fallback_parse',
-    usePrimary ? run.deps.primary : run.deps.fallback,
-    base64,
-    ctx,
-    forceReceipt,
-    false,
-    usePrimary
-      ? { thinking_level: 'high', media_resolution: 'MEDIA_RESOLUTION_HIGH' }
-      : anthropicSettings(FALLBACK_MODEL, 'fallback'),
+    { base64, ctx, forceReceipt },
+    {
+      stage: usePrimary ? 'primary_parse' : 'fallback_parse',
+      provider: usePrimary ? run.deps.primary : run.deps.fallback,
+      settings: usePrimary
+        ? { thinking_level: 'high', media_resolution: 'MEDIA_RESOLUTION_HIGH' }
+        : anthropicSettings(FALLBACK_MODEL, 'fallback'),
+    },
   );
   return result.parsed;
 }
@@ -137,13 +153,13 @@ export async function loadStoredReceiptChunks(
   if (error) throw new Error('Attempt query failed');
   return (data ?? []).map((attempt) => {
     if (!attempt.settings || typeof attempt.settings !== 'object') {
-      throw new Error('AI result stored chunk metadata is invalid');
+      throw new TypeError('AI result stored chunk metadata is invalid');
     }
     const settings = attempt.settings as Record<string, unknown>;
     const requestedStart = Number(settings.chunk_start_ordinal);
     const maxItems = Number(settings.chunk_max_items);
     if (!Number.isInteger(requestedStart) || !Number.isInteger(maxItems)) {
-      throw new Error('AI result stored chunk metadata is invalid');
+      throw new TypeError('AI result stored chunk metadata is invalid');
     }
     return validateBulkReceiptChunk(attempt.result_json, requestedStart, maxItems);
   });
@@ -223,14 +239,14 @@ export async function independentlyVerify(
     // physical-row audit prompt: no primary rows, totals or mismatch amount.
     const result = await invokeProvider(
       run,
-      'independent_check',
-      provider,
-      base64,
-      ctx,
-      forceReceipt,
-      true,
-      settings,
-      'verification',
+      { base64, ctx, forceReceipt },
+      {
+        stage: 'independent_check',
+        provider,
+        settings,
+        deferOutcome: true,
+        mode: 'verification',
+      },
     );
     const reconciliation = reconcileIndependentReceipt(parsed, result.parsed);
     await run.attempts.finishAttempt(result.attempt, reconciliation.status, {
@@ -265,19 +281,19 @@ export async function independentlyVerify(
 
 export async function invokeProvider(
   run: ParseRun,
-  stage: Exclude<AttemptStage, 'worker'>,
-  provider: BulkProvider,
-  base64: string,
-  ctx: AiContext,
-  forceReceipt: boolean,
-  deferOutcome: boolean,
-  settings: Record<string, unknown>,
-  mode: BulkParseMode = 'standard',
+  document: ParseDocument,
+  request: ProviderRequest,
 ): Promise<ProviderInvocation> {
   const { attempts, job, analysisRun } = run;
+  const { stage, provider, settings, deferOutcome = false, mode = 'standard' } = request;
   const attempt = await attempts.startAttempt(job, analysisRun, stage, provider.name, settings);
   try {
-    const result = await provider.parseBulkDetailed(base64, ctx, forceReceipt, mode);
+    const result = await provider.parseBulkDetailed(
+      document.base64,
+      document.ctx,
+      document.forceReceipt,
+      mode,
+    );
     const parsed = validateBulkDocument(result.value);
     if (!deferOutcome) {
       await attempts.finishAttempt(

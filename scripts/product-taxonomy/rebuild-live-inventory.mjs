@@ -1,13 +1,18 @@
 import { execFile as execFileCallback } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFile = promisify(execFileCallback);
+const outputRoot = resolve(process.cwd(), 'output');
 const outputPath = resolve(
   process.cwd(),
   process.argv[2] ?? 'output/product-taxonomy/live-inventory.json',
 );
+// The snapshot holds live purchase data; keep it inside the gitignored output/.
+if (!outputPath.startsWith(outputRoot + sep)) {
+  throw new Error(`Output path must be inside ${outputRoot}: ${outputPath}`);
+}
 
 const query = String.raw`
   with item_rows as (
@@ -118,7 +123,7 @@ if (stderr.trim()) process.stderr.write(stderr);
 
 const response = JSON.parse(stdout);
 if (!Array.isArray(response.rows)) {
-  throw new Error('Supabase CLI did not return a rows array. The inventory was not written.');
+  throw new TypeError('Supabase CLI did not return a rows array. The inventory was not written.');
 }
 
 await mkdir(dirname(outputPath), { recursive: true });

@@ -39,7 +39,7 @@ export function integerAppearsInText(text: string, value: number): boolean {
 export function hasExplicitMultiplier(text: string, qty: number): boolean {
   const rawQty = String(roundQty(qty)).replace('.', '[.,]');
   const quantityPattern = new RegExp(
-    `(?:^|\\s)(?:${rawQty}\\s*(?:x|×|stk\\.?|st\\.?|pcs)|(?:x|×)\\s*${rawQty})(?:\\s|$)`,
+    String.raw`(?:^|\s)(?:${rawQty}\s*(?:x|×|stk\.?|st\.?|pcs)|(?:x|×)\s*${rawQty})(?:\s|$)`,
     'iu',
   );
   return quantityPattern.test(text);

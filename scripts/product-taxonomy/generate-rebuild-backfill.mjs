@@ -9,6 +9,22 @@ const batches = ['a', 'b', 'c'];
 const identifier = /^[a-z][a-z0-9_]*$/;
 const statuses = new Set(['ready', 'review', 'excluded']);
 
+// Default Array#sort order (UTF-16 code units), spelled out so the generated
+// files stay byte-identical across runs and locales.
+function compareCodeUnits(left, right) {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
+const STATUS_LABELS = { ready: 'Готово', review: 'Уточнити' };
+
+function organicLabel(isOrganic) {
+  if (isOrganic === true) return 'Bio';
+  if (isOrganic === false) return 'Звичайний';
+  return '—';
+}
+
 function sql(value) {
   if (value === null) return 'null';
   if (typeof value === 'boolean') return value ? 'true' : 'false';
@@ -55,7 +71,7 @@ function normalizeEntity(entity) {
       typeof normalizedId === 'string' && /^\d/.test(normalizedId)
         ? `v_${normalizedId}`
         : normalizedId,
-    aliases: [...new Set(entity.aliases ?? [])].sort(),
+    aliases: [...new Set(entity.aliases ?? [])].sort(compareCodeUnits),
   };
 }
 
@@ -89,7 +105,7 @@ function mergeEntity(existing, incoming, type, key, translationChoices) {
         incoming.name_en,
         incoming.name_de,
       ]),
-    ].sort(),
+    ].sort(compareCodeUnits),
   };
 }
 
@@ -182,13 +198,8 @@ function markdownFor({ inventory, proposals }) {
       const source = byName.get(proposal.normalized_name);
       const name =
         source?.item_names?.[0] ?? source?.product_names?.[0] ?? proposal.normalized_name;
-      const status =
-        proposal.status === 'ready'
-          ? 'Готово'
-          : proposal.status === 'review'
-            ? 'Уточнити'
-            : 'Виключено';
-      return `| ${name} | ${proposal.family?.name_uk ?? '—'} | ${proposal.variant?.name_uk ?? '—'} | ${proposal.brand ?? '—'} | ${proposal.is_organic === true ? 'Bio' : proposal.is_organic === false ? 'Звичайний' : '—'} | ${status} | ${proposal.rationale} | ${evidenceText(source)} |`;
+      const status = STATUS_LABELS[proposal.status] ?? 'Виключено';
+      return `| ${name} | ${proposal.family?.name_uk ?? '—'} | ${proposal.variant?.name_uk ?? '—'} | ${proposal.brand ?? '—'} | ${organicLabel(proposal.is_organic)} | ${status} | ${proposal.rationale} | ${evidenceText(source)} |`;
     })
     .sort((a, b) => a.localeCompare(b, 'uk'));
   return `# Новий backfill таксономії товарів\n\nЗгенеровано з read-only зрізу live БД. Backfill застосовує лише рядки «Готово»; «Уточнити» та «Виключено» не потрапляють до SQL.\n\n| Назва | Сімейство | Варіант | Бренд | Bio | Статус | Підстава | До трьох чеків-джерел |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n`;
@@ -261,8 +272,8 @@ for (const proposal of proposals) {
   }
 }
 assert.deepEqual(
-  [...proposalNames].sort(),
-  [...inventoryNames].sort(),
+  [...proposalNames].sort(compareCodeUnits),
+  [...inventoryNames].sort(compareCodeUnits),
   'Proposal coverage does not match live inventory',
 );
 

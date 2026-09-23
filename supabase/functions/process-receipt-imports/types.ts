@@ -15,8 +15,8 @@ export type ImportFile = {
   storage_path: string | null;
   mime_type: string;
   force_receipt: boolean;
-  manual_json: unknown | null;
-  parsed_json: unknown | null;
+  manual_json: unknown;
+  parsed_json: unknown;
 };
 export type AttemptStage =
   | 'primary_parse'
