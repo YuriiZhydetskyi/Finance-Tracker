@@ -7,7 +7,6 @@ import {
   type Receipt,
   type ReceiptInput,
 } from '@finance-tracker/domain';
-import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/shared/lib/supabase-client';
 import { wrapError } from '@/shared/utils/wrap-error';
 import type { ProductRow } from '@/features/products/api/use-products';
@@ -32,22 +31,6 @@ export type ReceiptBundle = {
   backfills: ResolveProductsResult['backfills'];
   enrichments: ResolveProductsResult['enrichments'];
 };
-
-export type SaveReceiptBundleArgs = {
-  p_receipt: Receipt;
-  p_items: BundleItem[];
-  p_new_products: ReceiptBundle['newProducts'];
-  p_product_backfills: ReceiptBundle['backfills'];
-  p_product_enrichments: ReceiptBundle['enrichments'];
-  p_replace: boolean;
-};
-
-// TODO(types): remove once database.types.ts is regenerated after
-// migration 20260922100000_save_receipt_bundle.sql is applied.
-type SaveReceiptBundleRpc = (
-  fn: 'save_receipt_bundle',
-  args: SaveReceiptBundleArgs,
-) => PromiseLike<{ data: unknown; error: PostgrestError | null }>;
 
 const PRODUCT_COLUMNS =
   'id, name, store, store_product_code, category, product_family_id, product_variant_id, brand, is_organic';
@@ -115,9 +98,7 @@ export async function saveReceiptBundle(args: {
   bundle: ReceiptBundle;
   replace: boolean;
 }): Promise<{ receipt_id: string; items_count: number }> {
-  // Bound at call time so vi.mock replacements of supabase.rpc are honoured.
-  const callSaveReceiptBundle = supabase.rpc.bind(supabase) as unknown as SaveReceiptBundleRpc;
-  const { data, error } = await callSaveReceiptBundle('save_receipt_bundle', {
+  const { data, error } = await supabase.rpc('save_receipt_bundle', {
     p_receipt: args.receipt,
     p_items: args.bundle.items,
     p_new_products: args.bundle.newProducts,
