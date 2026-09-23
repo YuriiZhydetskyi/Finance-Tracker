@@ -16,9 +16,11 @@ name: Deploy
 #
 # `production` environment secrets (Settings → Environments → production),
 # only exposed to deploy-backend after approval:
-#   SUPABASE_ACCESS_TOKEN  — dedicated CI token with an expiry date.
-#   SUPABASE_PROJECT_ID    — project ref for `supabase link`.
-#   SUPABASE_DB_PASSWORD   — database password for `supabase db push`.
+#   SUPABASE_ACCESS_TOKEN  — project-scoped CI token with an expiry date;
+#                            only `supabase functions deploy` uses it.
+#   SUPABASE_PROJECT_ID    — project ref.
+#   SUPABASE_DB_PASSWORD   — database password; `supabase db push` connects
+#                            with it directly through the session pooler.
 #
 # Setup and rotation: docs/deploy.md, section "Автодеплой бекенду".
 
@@ -96,6 +98,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      # Session pooler host from Dashboard → Connect; region-specific, not secret.
+      SUPABASE_POOLER_HOST: aws-1-eu-central-1.pooler.supabase.com
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -106,11 +110,16 @@ jobs:
           # Keep in sync with the `supabase` devDependency in package-lock.json.
           version: 2.98.2
 
-      - name: Link project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
-
+      # No `supabase link`: it fetches the revealed service_role key, which this
+      # job must never hold. db push connects straight to Postgres through the
+      # session pooler (GitHub runners have no IPv6 for the direct host).
       - name: Apply migrations
-        run: supabase db push --password "$SUPABASE_DB_PASSWORD" --yes
+        run: |
+          password="$(jq -rn --arg value "$SUPABASE_DB_PASSWORD" '$value | @uri')"
+          db_url="postgresql://postgres.${SUPABASE_PROJECT_ID}:${password}@${SUPABASE_POOLER_HOST}:5432/postgres"
+          echo "::add-mask::${password}"
+          echo "::add-mask::${db_url}"
+          supabase db push --db-url "$db_url" --yes
 
       - name: Deploy Edge Functions
         run: |
