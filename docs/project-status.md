@@ -34,28 +34,31 @@
   обох функцій, `deno lint supabase/functions` і `npm run check:edge-domain`;
   `CLAUDE.md` звірено з кодом.
 
-### Перед merge / deploy
+### Deploy (2026-09-23) — завершено
 
-Міграції з кроків 1 і 6.6 написано, але **ще не застосовано** до linked
-Supabase, а `database.types.ts` не регенеровано. Виклик RPC тимчасово
-типізовано локально в `web/src/features/receipts/api/receipt-bundle.ts`
-(`TODO(types)`). Міграції та обидві Edge Functions тепер деплоїть job
-`deploy-backend` перед фронтендом (див. [deploy.md](deploy.md), «Автодеплой
-бекенду»), тож окремий ручний `db push` не потрібен.
+`refactor/2026-09` (PR #77) і виправлення деплою `fix/deploy-without-link`
+(PR #80) змерджено в `main`. Обидві міграції застосовано до linked Supabase,
+обидві Edge Functions задеплоєно, фронтенд оновлено на Cloudflare Pages.
 
-1. Налаштувати Environment `production` і три секрети за розділом
-   «Автодеплой бекенду» в [deploy.md](deploy.md).
-2. Локально перевірити `npx supabase migration list`: у Remote мають бути всі
-   міграції, крім `20260922100000_save_receipt_bundle.sql` і
-   `20260922100001_apply_product_match_rule_single_lookup.sql`.
-3. Merge `refactor/2026-09` у `main` і підтвердити `deploy-backend` в Actions.
-   Він застосує обидві міграції й задеплоїть функції з новими шляхами `_shared`,
-   після чого піде фронтенд.
-4. Ручний smoke: зберегти новий чек на `/manual` і відредагувати наявний на
-   `/edit/$id` (позиції, product, ціни).
-5. Регенерувати `web/src/shared/types/database.types.ts` (UTF-8 рецепт у
-   [deploy.md](deploy.md), «Common operations»), прибрати локальний тип і каст
-   `TODO(types)` у `receipt-bundle.ts`, прогнати гейти й закомітити.
+Перший запуск `deploy-backend` падав на `supabase link`: CLI 2.98.2 читає
+розкриті API-ключі проєкту (включно з `service_role`), а токен CI мав лише
+project-scoped права без «API Key Secrets». Виправлення — прибрати `link` і
+підключати `db push` напряму через session pooler
+(`SUPABASE_POOLER_HOST` у [deploy.yml](../.github/workflows/deploy.yml)) з
+паролем БД; `functions deploy` і так не потребував `link`. Токену CI тепер
+досить одного права — **Edge Functions: Read-write**.
+
+`database.types.ts` регенеровано з linked-проєкту; тимчасовий тип-каст
+`TODO(types)` у `receipt-bundle.ts` прибрано — виклик
+`supabase.rpc('save_receipt_bundle', ...)` типізується напряму згенерованим
+`Database['public']['Functions']`. Усі гейти (lint, typecheck, 894 тести,
+3 SQL-скрипти на PGlite, `check:edge-domain`) зелені після цього.
+
+Лишається опційно: токен CI було згенеровано з ширшими правами (Database,
+Migrations, Connection Pooling, Organizations, Project Settings, API Keys),
+ніж зрештою знадобилось після виправлення. Можна перевипустити його лише з
+Edge Functions: Read-write і оновити секрет `SUPABASE_ACCESS_TOKEN` — не
+терміново, поточний токен працює й спливає сам за розкладом.
 
 ---
 
@@ -164,7 +167,7 @@ Cloudflare deployment не був частиною цього release.
 - **Новий стек:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router + Supabase (Postgres + Auth + Storage + Edge Functions) + Cloudflare Pages. $0/місяць.
 - **Архітектура:** Ports & Adapters lite — vendor-coupled код тільки у `web/src/shared/lib/<area>/` адаптерах і `supabase/functions/_shared/receipt-ai/providers/` (спільні для обох Edge Functions). Domain-логіка — окремий vendor-free TS пакет `packages/domain/` (порт `Domain.js`).
 - **Стан:** live на Cloudflare Pages (`<your-app>.pages.dev`), CI/CD через GitHub Actions (`pr-checks.yml` на PR, `deploy.yml` на push у `main`; обидва включають Deno-перевірки Edge Functions). Сторінки: `/photo`, `/imports` (фоновий імпорт до 200 файлів), `/pending`, `/manual`, `/recent`, `/edit/$id`, `/stats`, `/waste`, `/reconcile`, `/packaged-products`. Дві Edge Functions: `parse-receipt` (синхронний OCR) і `process-receipt-imports` (PGMQ + pg_cron воркер). Міграції та функції деплояться вручну (`npx supabase db push`, `npx supabase functions deploy`).
-- **Наступне:** чеклист «Перед merge / deploy» з розділу «Рефакторинг 2026-09» вище: налаштувати Environment `production` і секрети, merge `refactor/2026-09`, підтвердити `deploy-backend`, регенерувати типи.
+- **Наступне:** опційна ротація токена CI на мінімальні права (Edge Functions: Read-write), розділ «Deploy (2026-09-23)» у «Рефакторинг 2026-09» вище. Сам деплой (рефакторинг, обидві міграції, обидві функції, фронтенд, регенерація типів) завершено.
 
 Повний план з SOLID/GRASP/DRY обґрунтуванням, версіями і фазами — `~/.claude/plans/modular-swinging-blossom.md` (на машині розробника).
 

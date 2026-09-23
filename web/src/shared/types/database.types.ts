@@ -1238,6 +1238,17 @@ export type Database = {
         Args: { p_file_id: string; p_receipt_id: string };
         Returns: undefined;
       };
+      save_receipt_bundle: {
+        Args: {
+          p_items: Json;
+          p_new_products?: Json;
+          p_product_backfills?: Json;
+          p_product_enrichments?: Json;
+          p_receipt: Json;
+          p_replace?: boolean;
+        };
+        Returns: Json;
+      };
       schedule_receipt_import_retry: {
         Args: {
           p_delay_seconds?: number;
