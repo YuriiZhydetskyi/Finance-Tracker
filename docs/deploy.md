@@ -203,8 +203,12 @@ GitHub Environment `production`. GitHub віддає їх лише job-у з
    `production`. Увімкнути **Required reviewers** і додати себе. У
    **Deployment branches and tags** обрати «Selected branches» → `main`.
 2. **CI-токен Supabase:** supabase.com/dashboard/account/tokens → Generate new
-   token, назва `github-actions-finance-tracker`, термін дії 90 днів. Токен дає
-   доступ до всього акаунта, тому окремий від особистого і з терміном дії.
+   token, назва `github-actions-finance-tracker`, термін дії 90 днів.
+   Resource access → **Project** → організація → FinanceTracker. Токен потрібен
+   лише для `supabase functions deploy`, тому достатньо одного права:
+   **Application services → Edge Functions: Read-write**. Решта — None.
+   Не використовуйте `supabase link` у CI: він читає розкриті API-ключі
+   (включно з `service_role`) і вимагає права «API Key Secrets».
 3. **Секрети середовища** (Environments → `production` → Add secret):
    - `SUPABASE_ACCESS_TOKEN` — токен із кроку 2;
    - `SUPABASE_PROJECT_ID` — project ref (Settings → General);
@@ -228,8 +232,10 @@ GitHub Environment `production`. GitHub віддає їх лише job-у з
 
 ### Що робить job
 
-`supabase link` → `supabase db push --yes` (застосовує лише нові міграції,
-повторний запуск — no-op) → `supabase functions deploy` для `parse-receipt` і
+`supabase db push --db-url … --yes` напряму через session pooler
+(`SUPABASE_POOLER_HOST` у workflow; раннери GitHub не мають IPv6 для прямого
+хоста) — застосовує лише нові міграції, повторний запуск — no-op. Пароль
+URL-кодується і маскується в логах. Далі `supabase functions deploy` для `parse-receipt` і
 `process-receipt-imports` (`--use-api`, без Docker). Секрети самих функцій
 (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `RECEIPT_IMPORT_CRON_TOKEN`) job не
 чіпає: вони вже живуть у Supabase.
