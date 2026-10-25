@@ -5,7 +5,7 @@ Scheduled background worker з ADR-0016. Браузер його напряму 
 - `pg_cron` викликає функцію з окремим випадковим cron token, збереженим у Vault.
 - Один виклик забирає одне PGMQ message з visibility timeout п’ять хвилин, щоб не конкурувати за
   AI latency budget усередині одного Edge Function invocation.
-- Один provider працює на одну доставку queue message: Gemini 3.7 Flash — перший, Sonnet 5 —
+- Один provider працює на одну доставку queue message: Gemini 3.8 Flash — перший, Sonnet 5.5 —
   fallback на наступній доставці.
 - Bulk parse повертає row-level evidence. Якщо результат Gemini не проходить arithmetic або
   evidence gate, Sonnet незалежно читає оригінал без primary total чи primary items. Якщо Sonnet

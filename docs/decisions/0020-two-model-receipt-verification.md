@@ -85,4 +85,37 @@ parsing не залежить від наявності інших content block
 - [Claude model IDs and versioning](https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions)
 - [ADR-0016](0016-durable-background-receipt-imports.md)
 - [process-receipt-imports/index.ts](../../supabase/functions/process-receipt-imports/index.ts)
-- [anthropic-provider.ts](../../supabase/functions/parse-receipt/providers/anthropic-provider.ts)
+- [anthropic-provider.ts](../../supabase/functions/_shared/receipt-ai/providers/anthropic-provider.ts)
+
+## Changelog
+
+### 2026-10-25 — `claude-sonnet-5` → `claude-sonnet-5-5`, Gemini → `gemini-3.8-flash`
+
+Role policy з цього ADR (і з ADR-0021) не змінюється: Gemini primary, Sonnet — fallback та єдиний
+незалежний verifier. Змінюються лише model ID (`FALLBACK_MODEL`, `DEFAULT_MODEL`) і форма
+Anthropic-запиту, бо Sonnet 5.5 (ті самі $2/$10 за MTok, той самий tokenizer) відхиляє три
+налаштування з секції 2:
+
+- `thinking: { type: "disabled" }` дає 400. Використано `thinking: { type: "between_tools" }` —
+  найнижче thinking-налаштування моделі, без додаткових полів і лише з effort `high` або нижче;
+  `output_config.effort` задано явно як `high` (було неявне `high` за замовчуванням Sonnet 5).
+  Це зберігає попередню no-thinking поведінку й увесь `max_tokens` для structured result. Adaptive
+  thinking з `low` effort лишається кандидатом на окремий експеримент на реальних чеках; без
+  вимірювання на Aldi/EDEKA/Amazon він не вмикався, щоб не міняти точність і вартість разом з
+  версією моделі.
+- Forced `tool_choice: { type: "tool", name }` дає 400. Запит іде з `tool_choice: { type: "auto",
+  disable_parallel_tool_use: true }` і явною інструкцією викликати `record_receipt` рівно один раз.
+  Відповідь без цього `tool_use` (`end_turn` без tool call → `missing_output`, `refusal` →
+  `incomplete_response` з категорією в повідомленні, інший `stop_reason` → `incomplete_response`)
+  відхиляється як provider error; `max_tokens` так само не приймається. `tool_use` шукається за
+  `type` і `name`, тому thinking/progress-note блоки перед ним ігноруються.
+- Non-default sampling parameters дають 400 — як і раніше, не передаються.
+
+`strict: true` на `record_receipt` свідомо не додано: схеми не відповідають обмеженням strict mode
+(немає `additionalProperties: false`, є `minimum`, а bulk-схема має ~20 полів з union-типами при
+ліміті 16 на запит), тому запит міг би повертати 400. Раніше (forced tool use без strict) гарантії
+валідності JSON також не було, тож регресії немає; усі arithmetic/evidence gates і runtime
+validation працюють без змін. Interactive `max_tokens` піднято з 4096 до 8192 як запас для progress
+notes перед tool call; ліміт — стеля, а не витрата.
+
+Gemini: `gemini-3.7-flash` → `gemini-3.8-flash`, див. changelog [ADR-0003](0003-gemini-with-provider-abstraction.md).

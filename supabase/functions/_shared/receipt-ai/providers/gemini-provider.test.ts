@@ -60,13 +60,13 @@ function mediaPart(body: Record<string, unknown>): Record<string, unknown> {
   return contents[0]!.parts[1]!;
 }
 
-describe('GeminiProvider — Gemini 3.7 request configuration', () => {
-  it('uses Gemini 3.7, supported thinking configuration, and High for receipt images', async () => {
+describe('GeminiProvider — Gemini 3.8 request configuration', () => {
+  it('uses Gemini 3.8, supported thinking configuration, and High for receipt images', async () => {
     const provider = new GeminiProvider({ apiKey: 'k' });
     await provider.parse('AAA', ctx('image/jpeg'));
 
     const request = lastRequest();
-    expect(request.url).toContain('/gemini-3.7-flash:generateContent');
+    expect(request.url).toContain('/gemini-3.8-flash:generateContent');
     expect(mediaPart(request.body)).toMatchObject({
       inline_data: { mime_type: 'image/jpeg', data: 'AAA' },
       media_resolution: { level: 'MEDIA_RESOLUTION_HIGH' },
@@ -123,7 +123,7 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
     expect(String(contents[0]!.parts[0]!.text)).toContain('Never derive article_count');
     expect(result.trace).toMatchObject({
       provider: 'gemini',
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.8-flash',
       stopReason: 'STOP',
       inputTokens: 120,
       outputTokens: 40,
@@ -180,7 +180,7 @@ describe('GeminiProvider — Gemini 3.7 request configuration', () => {
 
     await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
       code: 'timeout',
-      trace: expect.objectContaining({ provider: 'gemini', model: 'gemini-3.7-flash' }),
+      trace: expect.objectContaining({ provider: 'gemini', model: 'gemini-3.8-flash' }),
     });
   });
 });

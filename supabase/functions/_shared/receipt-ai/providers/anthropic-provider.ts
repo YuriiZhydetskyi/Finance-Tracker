@@ -19,11 +19,13 @@ import type {
 import { AiProviderError, type IAiProvider } from './ai-provider.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-sonnet-5';
+const DEFAULT_MODEL = 'claude-sonnet-5-5';
 const ANTHROPIC_VERSION = '2023-06-01';
-const INTERACTIVE_MAX_TOKENS = 4096;
+const INTERACTIVE_MAX_TOKENS = 8192;
 const BULK_MAX_TOKENS = 8192;
 const TOOL_NAME = 'record_receipt';
+const TOOL_INSTRUCTION = `Return the result only by calling the ${TOOL_NAME} tool exactly once with the complete data. Do not answer in plain text.`;
+const EFFORT = 'high';
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 const BULK_REQUEST_TIMEOUT_MS = 75_000;
 
@@ -119,11 +121,16 @@ export class AnthropicProvider implements IAiProvider {
     const body = {
       model,
       max_tokens: maxTokens,
-      // Sonnet 5 enables adaptive thinking by default. Receipt extraction needs
-      // the output budget for the forced structured result, so preserve the
-      // previous no-thinking behavior explicitly. Sampling parameters are not
-      // accepted by Sonnet 5 and are intentionally omitted.
-      thinking: { type: 'disabled' },
+      // Sonnet 5.5 answers 400 to `thinking: disabled` and to a forced
+      // tool_choice, and to any non-default sampling parameter (omitted on
+      // purpose). `between_tools` is its thinking-off setting (effort must be
+      // `high` or lower), so the output budget stays with the structured
+      // result. The tool call is steered by TOOL_INSTRUCTION under `auto`;
+      // `strict` is absent because the receipt schemas exceed its limits (16
+      // union-typed fields, `minimum`, no `additionalProperties: false`), and
+      // a missing tool_use block is rejected below instead.
+      thinking: { type: 'between_tools' },
+      output_config: { effort: EFFORT },
       tools: [
         {
           name: TOOL_NAME,
@@ -131,11 +138,11 @@ export class AnthropicProvider implements IAiProvider {
           input_schema: schema,
         },
       ],
-      tool_choice: { type: 'tool', name: TOOL_NAME, disable_parallel_tool_use: true },
+      tool_choice: { type: 'auto', disable_parallel_tool_use: true },
       messages: [
         {
           role: 'user',
-          content: [mediaBlock, { type: 'text', text: prompt }],
+          content: [mediaBlock, { type: 'text', text: `${prompt}\n\n${TOOL_INSTRUCTION}` }],
         },
       ],
     };
@@ -173,6 +180,21 @@ export class AnthropicProvider implements IAiProvider {
 
     const wrapper: unknown = await res.json();
     const trace = traceFromResponse(wrapper, responseTrace);
+    if (trace.stopReason === 'refusal') {
+      const category = refusalCategory(wrapper);
+      throw new AiProviderError(
+        'incomplete_response',
+        `Anthropic declined the request${category ? ` (${category})` : ''}.`,
+        trace,
+      );
+    }
+    if (trace.stopReason === 'end_turn') {
+      throw new AiProviderError(
+        'missing_output',
+        'Anthropic answered without calling the receipt tool.',
+        trace,
+      );
+    }
     if (trace.stopReason !== 'tool_use') {
       throw new AiProviderError(
         'incomplete_response',
@@ -206,6 +228,14 @@ function traceFromResponse(wrapper: unknown, base: AiCallTrace): AiCallTrace {
   };
 }
 
+function refusalCategory(wrapper: unknown): string | null {
+  if (!wrapper || typeof wrapper !== 'object') return null;
+  const details = (wrapper as { stop_details?: { category?: unknown } | null }).stop_details;
+  return typeof details?.category === 'string' ? details.category : null;
+}
+
+// Thinking and progress-note blocks precede the tool call, so match by type
+// and name rather than position.
 function extractToolInput(wrapper: unknown): Record<string, unknown> | null {
   if (!wrapper || typeof wrapper !== 'object') return null;
   const blocks = (wrapper as { content?: unknown[] }).content;

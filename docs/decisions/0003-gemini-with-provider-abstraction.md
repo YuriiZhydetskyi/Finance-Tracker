@@ -2,7 +2,7 @@
 
 - Status: accepted (revised)
 - Date: 2026-05-04
-- Revised: 2026-08-31 — primary модель `gemini-3.7-flash`; параметри міграції та деталізації input описані в Changelog.
+- Revised: 2026-10-25 — primary модель `gemini-3.8-flash`; параметри міграції та деталізації input описані в Changelog.
 
 ## Context and Problem Statement
 
@@ -10,14 +10,14 @@
 
 ## Considered Options
 
-1. **Google Gemini Flash** (`gemini-3.7-flash`) через AI Studio API + тонкий switch (AiClient.js) з заглушками для OpenAI/Anthropic.
+1. **Google Gemini Flash** (`gemini-3.8-flash`) через AI Studio API + тонкий switch (AiClient.js) з заглушками для OpenAI/Anthropic.
 2. **Azure Document Intelligence** prebuilt receipt model.
 3. **Azure Document Intelligence** custom-trained моделі для 4 знайомих магазинів.
 4. **OpenAI GPT-4o** як основний.
 
 ## Decision Outcome
 
-Обрано **Gemini Flash** (`gemini-3.7-flash`) з тонкою провайдер-абстракцією.
+Обрано **Gemini Flash** (`gemini-3.8-flash`) з тонкою провайдер-абстракцією.
 
 `AiClient.js` — це switch на 3 рядки:
 
@@ -53,11 +53,12 @@ function parseReceipt(imageBytes, ctx) {
 - **AI matching не панацея**: продукт може бути неправильно зматчений до існуючого. Мітигація: 3-state pill в UI ([linked / new / null]) дає override.
 
 ### Поточні параметри Gemini
-- Модель: `gemini-3.7-flash`.
-- API: `generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent`.
+- Модель: `gemini-3.8-flash`.
+- API: `generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`.
 - Auth: API key з AI Studio зберігається як server-only Edge Function secret `GEMINI_API_KEY` (не в коді) та передається як `x-goog-api-key` header.
-- `thinkingLevel`: `low` для high-throughput receipt extraction; deprecated sampling parameters,
-  зокрема `temperature`, не передаються.
+- `thinkingLevel`: `low` для interactive receipt extraction, `high` для unattended bulk-import
+  (ADR-0021); `minimal` не використовується і на 3.8 Flash не підтримується. Deprecated sampling
+  parameters, зокрема `temperature`, не передаються.
 - Response MIME: `application/json` через `generationConfig.responseMimeType` + `responseJsonSchema` для structured output.
 - Для receipt-зображень передається рекомендований per-part `MEDIA_RESOLUTION_HIGH` (1120 visual tokens). Для PDF — `MEDIA_RESOLUTION_MEDIUM` (560 visual tokens + native text), рекомендований рівень для стандартного OCR.
 
@@ -92,3 +93,13 @@ function parseReceipt(imageBytes, ctx) {
 **Чому:**
 - Користувач підтвердив актуальну модель при старті Phase 2.
 - Sync return — чесніший контракт того, що реально відбувається на сервері. Менше плутанини при дебагу.
+
+### 2026-10-25 — `gemini-3.7-flash` → `gemini-3.8-flash`
+
+**Що змінилось:**
+- Модель: `gemini-3.7-flash` → **`gemini-3.8-flash`** (GA 2026-09-02). Google позначив 3.7 Flash deprecated 2026-10-08 і автоматично маршрутизує запити на 3.8, тож production фактично вже працював на 3.8, а attempt log усе ще записував 3.7. Тепер model ID у запиті, trace і `receipt_import_attempts.model` збігається з реальною моделлю.
+- Request shape не змінюється: `generationConfig.thinkingConfig.thinkingLevel` (`low`/`high`), per-part `media_resolution` (`MEDIA_RESOLUTION_MEDIUM`/`HIGH`), `responseMimeType` + `responseJsonSchema`. Документація 3.8 Flash підтримує `low`/`medium`/`high`; прибрано лише `minimal` (400), який ми не використовуємо.
+
+**Чому:**
+- Залишати deprecated model ID означає покладатися на тимчасовий alias і мати неправдивий audit trail.
+- `gemini-4-argon` (більша flagship reasoning-модель покоління Gemini 4) свідомо не розглядалась: це окреме рішення про вартість/latency, а не заміна deprecated ID.

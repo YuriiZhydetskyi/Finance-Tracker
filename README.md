@@ -19,7 +19,7 @@
 - **Frontend:** React 19 + Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router → Cloudflare Pages
 - **Backend platform:** Supabase (Postgres + Auth + Storage + Edge Functions)
 - **Domain:** TypeScript + Zod (shared package)
-- **AI:** Gemini 3 Flash (primary) + Claude Sonnet 4.6 (fallback) — proxied via Edge Function
+- **AI:** Gemini 3.8 Flash (primary) + Claude Sonnet 5.5 (fallback) — proxied via Edge Function
 - **FX:** NBU live rates for UAH (no key required, called directly from browser)
 
 ## Documentation

@@ -1,6 +1,6 @@
 # parse-receipt — Supabase Edge Function
 
-Wraps Gemini 3.7 Flash (primary) + Claude Sonnet 5 (fallback) for receipt-photo OCR. Verifies the caller's JWT belongs to an allowlisted email (via `app_users` + `is_allowed_user()` RPC) before spending tokens. Sonnet requests omit sampling parameters and explicitly disable adaptive thinking so the output budget remains available for the forced structured receipt result.
+Wraps Gemini 3.8 Flash (primary) + Claude Sonnet 5.5 (fallback) for receipt-photo OCR. Verifies the caller's JWT belongs to an allowlisted email (via `app_users` + `is_allowed_user()` RPC) before spending tokens. Sonnet requests omit sampling parameters and use `thinking: { type: "between_tools" }` (Sonnet 5.5 rejects `disabled`) with `output_config.effort: "high"`, so the output budget remains available for the structured receipt result. The `record_receipt` tool is requested with `tool_choice: auto` plus an explicit instruction, because Sonnet 5.5 rejects forced tool choice; an answer without that tool call, or a `refusal`, is surfaced as a provider error and the caller falls through as before.
 
 ## Layout
 
