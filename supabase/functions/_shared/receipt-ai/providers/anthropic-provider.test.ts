@@ -42,24 +42,32 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function lastRequestBody(): {
+type RequestBody = {
   model: string;
   max_tokens: number;
   temperature?: number;
-  thinking: { type: string };
+  thinking: Record<string, unknown>;
+  output_config: { effort: string };
+  tool_choice: Record<string, unknown>;
   messages: Array<{ content: Array<Record<string, unknown>> }>;
-  tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
-} {
+  tools: Array<{
+    name: string;
+    strict?: boolean;
+    input_schema: { properties: Record<string, unknown>; required: string[] };
+  }>;
+};
+
+function lastRequestBody(): RequestBody {
   expect(fetchMock).toHaveBeenCalled();
   const init = fetchMock.mock.calls[0]![1] as RequestInit;
-  return JSON.parse(init.body as string) as {
-    model: string;
-    max_tokens: number;
-    temperature?: number;
-    thinking: { type: string };
-    messages: Array<{ content: Array<Record<string, unknown>> }>;
-    tools: Array<{ input_schema: { properties: Record<string, unknown>; required: string[] } }>;
-  };
+  return JSON.parse(init.body as string) as RequestBody;
+}
+
+function jsonResponse(payload: unknown): Response {
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 describe('AnthropicProvider — content block dispatch', () => {
@@ -137,7 +145,7 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(prompt).not.toContain('Previous extraction');
     expect(result.trace).toMatchObject({
       provider: 'anthropic',
-      model: 'claude-sonnet-5',
+      model: 'claude-sonnet-5-5',
       stopReason: 'tool_use',
       inputTokens: 140,
       outputTokens: 60,
@@ -281,15 +289,115 @@ describe('AnthropicProvider — content block dispatch', () => {
     expect(lastRequestBody().max_tokens).toBe(20_000);
   });
 
-  it('uses Sonnet 5 without sampling parameters or adaptive thinking', async () => {
+  it.each([
+    ['interactive', (provider: AnthropicProvider) => provider.parse('AAA', ctx('image/jpeg'))],
+    [
+      'bulk',
+      (provider: AnthropicProvider) => provider.parseBulkDetailed('PDF', ctx('application/pdf')),
+    ],
+  ])(
+    'sends the Sonnet 5.5 request shape on the %s path: between_tools, explicit effort, auto tool choice',
+    async (_path, call) => {
+      const provider = new AnthropicProvider({ apiKey: 'k' });
+
+      await call(provider);
+
+      const body = lastRequestBody();
+      expect(body.model).toBe('claude-sonnet-5-5');
+      expect(body.thinking).toEqual({ type: 'between_tools' });
+      expect(body.output_config).toEqual({ effort: 'high' });
+      expect(body.tool_choice).toEqual({ type: 'auto', disable_parallel_tool_use: true });
+      expect(body.tools).toHaveLength(1);
+      expect(body.tools[0]!.name).toBe('record_receipt');
+      expect(body).not.toHaveProperty('temperature');
+      expect(body).not.toHaveProperty('top_p');
+      expect(body).not.toHaveProperty('top_k');
+      const prompt = String(body.messages[0]!.content[1]!.text);
+      expect(prompt).toContain('calling the record_receipt tool exactly once');
+    },
+  );
+
+  it('does not mark the receipt tool strict because its schemas exceed strict-mode limits', async () => {
     const provider = new AnthropicProvider({ apiKey: 'k' });
 
-    await provider.parseBulkDetailed('PDF-BYTES', ctx('application/pdf'));
+    await provider.parseBulkDetailed('PDF', ctx('application/pdf'));
 
-    const body = lastRequestBody();
-    expect(body.model).toBe('claude-sonnet-5');
-    expect(body).not.toHaveProperty('temperature');
-    expect(body.thinking).toEqual({ type: 'disabled' });
+    expect(lastRequestBody().tools[0]).not.toHaveProperty('strict');
+  });
+
+  it('gives the interactive path the same output ceiling as a default bulk call', async () => {
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await provider.parse('AAA', ctx('image/jpeg'));
+
+    expect(lastRequestBody().max_tokens).toBe(8192);
+  });
+
+  it('skips thinking and progress-note blocks that precede the tool call', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        ...sampleToolUse,
+        content: [
+          { type: 'thinking', thinking: '', signature: 'sig' },
+          { type: 'text', text: 'Reading the receipt now.' },
+          ...sampleToolUse.content,
+        ],
+      }),
+    );
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await expect(provider.parse('AAA', ctx('image/jpeg'))).resolves.toMatchObject({
+      store: 'Lidl',
+      total_orig: 1.5,
+    });
+  });
+
+  it('rejects a plain-text answer because auto tool choice does not guarantee a call', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 140, output_tokens: 20 },
+        content: [{ type: 'text', text: 'The receipt total is 1.50 EUR.' }],
+      }),
+    );
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await expect(provider.parse('AAA', ctx('image/jpeg'))).rejects.toMatchObject({
+      code: 'missing_output',
+      trace: expect.objectContaining({ provider: 'anthropic', stopReason: 'end_turn' }),
+    });
+  });
+
+  it('rejects a tool_use stop that carries no record_receipt call', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        ...sampleToolUse,
+        content: [{ type: 'tool_use', name: 'something_else', input: { store: 'Lidl' } }],
+      }),
+    );
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await expect(provider.parse('AAA', ctx('image/jpeg'))).rejects.toMatchObject({
+      code: 'missing_output',
+    });
+  });
+
+  it('turns a safety refusal into a provider error instead of reading its content', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        stop_reason: 'refusal',
+        stop_details: { type: 'refusal', category: 'general_harms', explanation: null },
+        usage: { input_tokens: 140, output_tokens: 0 },
+        content: [],
+      }),
+    );
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+
+    await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
+      code: 'incomplete_response',
+      message: expect.stringContaining('general_harms'),
+      trace: expect.objectContaining({ provider: 'anthropic', stopReason: 'refusal' }),
+    });
   });
 
   it('rejects max_tokens responses so truncated item arrays cannot be accepted', async () => {
@@ -314,7 +422,7 @@ describe('AnthropicProvider — content block dispatch', () => {
 
     await expect(provider.parseBulkDetailed('PDF', ctx('application/pdf'))).rejects.toMatchObject({
       code: 'timeout',
-      trace: expect.objectContaining({ provider: 'anthropic', model: 'claude-sonnet-5' }),
+      trace: expect.objectContaining({ provider: 'anthropic', model: 'claude-sonnet-5-5' }),
     });
   });
 });

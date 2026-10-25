@@ -11,7 +11,7 @@ import type {
 import { AiProviderError, type IAiProvider } from './ai-provider.ts';
 
 const GEMINI_API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const DEFAULT_MODEL = 'gemini-3.7-flash';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
 const INTERACTIVE_THINKING_LEVEL = 'low';
 const BULK_THINKING_LEVEL = 'high';
 const IMAGE_MEDIA_RESOLUTION = 'MEDIA_RESOLUTION_HIGH';
