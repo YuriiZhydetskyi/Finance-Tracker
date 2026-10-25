@@ -2,7 +2,7 @@
 //   - SaveReceiptInput (= ReceiptInput without fx_rate_eur and total_orig)
 //   - SaveItemInput[] (= ItemInput[] without fx_rate_eur and receipt_id)
 //
-// Currency is narrowed to the supported set (EUR/UAH) at the form layer so the
+// Currency is narrowed to the supported set (EUR/UAH/PLN) at the form layer so the
 // dropdown can't produce values that Fx provider would reject.
 
 import { z } from 'zod';
@@ -15,7 +15,7 @@ import {
   ULID_SCHEMA,
 } from '@finance-tracker/domain';
 
-export const SUPPORTED_CURRENCIES = ['EUR', 'UAH'] as const;
+export const SUPPORTED_CURRENCIES = ['EUR', 'UAH', 'PLN'] as const;
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
 // pair_marker is a UI-only hint produced by detectPairs() and read by ItemRow

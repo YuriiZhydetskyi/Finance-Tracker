@@ -370,31 +370,6 @@ describe('bulk import domain gate', () => {
     expect(evidence).toEqual({ ok: true, issues: [] });
   });
 
-  it('accepts an Aldi multi-buy row whose printed total is below N x unit price', () => {
-    const receipt = validateBulkDocument({
-      ...parsed,
-      store: 'Aldi Süd',
-      total_orig: 3.24,
-      total_raw_text: 'Zu zahlen 3,24',
-      items: [
-        row(
-          'Sardellenfilets',
-          3,
-          0.85,
-          1,
-          '306002 Sardellenfilets 3 x 0,85 2,49 A',
-          2.49,
-          'explicit_multiplier',
-        ),
-        row('Brot', 1, 0.75, 2, '100001 Brot 0,75 A', 0.75),
-      ],
-    });
-
-    expect(receipt.items[0]?.discount_orig).toBe(0.02);
-    expect(checkReceiptArithmetic(receipt)?.matches).toBe(true);
-    expect(auditReceiptEvidence(receipt)).toEqual({ ok: true, issues: [] });
-  });
-
   it('keeps a three-decimal fuel price so the line reproduces the printed total', () => {
     const receipt = validateBulkDocument({
       ...parsed,

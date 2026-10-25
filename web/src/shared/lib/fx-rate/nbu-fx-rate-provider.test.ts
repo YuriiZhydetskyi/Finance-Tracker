@@ -99,6 +99,15 @@ describe('nbuFxRateProvider.getRateLive', () => {
     expect(rate).toBeGreaterThan(0);
   });
 
+  it('crosses PLN through UAH on the same day', async () => {
+    mockFetch((url) => ({
+      ok: true,
+      json: () => [{ rate: url.includes('valcode=PLN') ? 11.5 : 46 }],
+    }));
+    const rate = await nbuFxRateProvider.getRateLive('PLN', '2026-05-04');
+    expect(rate).toBe(Math.round((11.5 / 46) * 1e6) / 1e6);
+  });
+
   it('skips negative rate', async () => {
     let calls = 0;
     mockFetch(() => {

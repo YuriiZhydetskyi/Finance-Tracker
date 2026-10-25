@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   amountAppearsInText,
-  applyMultiBuyPrice,
   hasExplicitMultiplier,
+  hasWeightedQuantity,
   hasWeightOrVolume,
   integerAppearsInText,
   mergeAccountingPairs,
@@ -58,6 +58,22 @@ describe('hasExplicitMultiplier', () => {
     expect(hasExplicitMultiplier('Äpfel 0,5 x 2,00', 0.5)).toBe(true);
   });
 
+  it('accepts the printed shapes seen on real receipts', () => {
+    expect(hasExplicitMultiplier('Barilla Spaghetti 4 * 0,69 2,76 B', 4)).toBe(true);
+    expect(hasExplicitMultiplier('But Plastik kaucja 3,000 x0,50 1,50', 3)).toBe(true);
+    expect(hasExplicitMultiplier('Świeca zapłonowa 80,00 4.00 szt. 320,00', 4)).toBe(true);
+    expect(hasExplicitMultiplier('EFECTA 95 CN27101245 (B)D(3) 22.09*6.86 151.54B', 22.09)).toBe(
+      true,
+    );
+    expect(hasExplicitMultiplier('CukKonafettoLuzKg 0,358 x23,90 10,35C', 0.358)).toBe(true);
+  });
+
+  it('does not match a different quantity or a number that merely ends in the quantity', () => {
+    expect(hasExplicitMultiplier('Barilla Spaghetti 4 * 0,69 2,76 B', 2)).toBe(false);
+    expect(hasExplicitMultiplier('Milk 12 x 1,50', 2)).toBe(false);
+    expect(hasExplicitMultiplier('Milk 2,50 x 1,50', 2)).toBe(false);
+  });
+
   it('rejects a bare number without a multiplier marker', () => {
     expect(hasExplicitMultiplier('Milk 1,50 2', 2)).toBe(false);
   });
@@ -86,71 +102,14 @@ describe('hasWeightOrVolume', () => {
   });
 });
 
-describe('applyMultiBuyPrice', () => {
-  const sardines = {
-    qty: 3,
-    unit_price_orig: 0.85,
-    discount_orig: 0,
-    raw_text: '306002 Sardellenfilets 3 x 0,85 2,49 A',
-    row_kind: 'item',
-    qty_evidence: 'explicit_multiplier',
-    printed_line_total_orig: 2.49,
-  };
-
-  it('turns the gap to the printed total into a per-unit discount', () => {
-    expect(applyMultiBuyPrice(sardines)).toMatchObject({ discount_orig: 0.02 });
+describe('hasWeightedQuantity', () => {
+  it('accepts a unit or a quantity-times-price form', () => {
+    expect(hasWeightedQuantity('Gouda mittelalt 0,229 kg 2,04 B', 0.229)).toBe(true);
+    expect(hasWeightedQuantity('Mięso Cielę 2,400 x28,48 68,35C', 2.4)).toBe(true);
   });
 
-  it('keeps a third decimal when the deal does not split into cents', () => {
-    const germini = {
-      ...sardines,
-      qty: 2,
-      unit_price_orig: 1.79,
-      raw_text: '644791 Germini 2 x 1,79 2,49 A',
-    };
-    expect(applyMultiBuyPrice(germini)).toMatchObject({ discount_orig: 0.545 });
-  });
-
-  it('leaves a row alone when the total is printed before the multiplier', () => {
-    // Aldi prints the next product's `N x unit` line after the previous total, so
-    // `total A N x unit` is ambiguous and must go to review instead.
-    const ambiguous = {
-      ...sardines,
-      qty: 2,
-      unit_price_orig: 1.79,
-      raw_text: '644791 Germini 2,49 A 2 x 1,79',
-    };
-    expect(applyMultiBuyPrice(ambiguous)).toBe(ambiguous);
-  });
-
-  it('leaves rows alone when the printed total already matches', () => {
-    const matching = { ...sardines, printed_line_total_orig: 2.55 };
-    expect(applyMultiBuyPrice(matching)).toBe(matching);
-  });
-
-  it('leaves rows alone when the row text does not show the multiplier or the total', () => {
-    const noMultiplier = { ...sardines, raw_text: '306002 Sardellenfilets 0,85 2,49 A' };
-    const noTotal = { ...sardines, raw_text: '306002 Sardellenfilets 3 x 0,85 A' };
-    expect(applyMultiBuyPrice(noMultiplier)).toBe(noMultiplier);
-    expect(applyMultiBuyPrice(noTotal)).toBe(noTotal);
-  });
-
-  it('does not claim a multiplier that sits on a separate printed line', () => {
-    const edeka = {
-      ...sardines,
-      qty: 2,
-      unit_price_orig: 1.79,
-      raw_text: 'Lie.Urk.Prot.Brot 2,99 A / 2 x 1,79 €',
-      printed_line_total_orig: 2.99,
-    };
-    expect(applyMultiBuyPrice(edeka)).toBe(edeka);
-  });
-
-  it('never overrides an existing discount or a total above the shelf price', () => {
-    const discounted = { ...sardines, discount_orig: 0.01 };
-    const surcharge = { ...sardines, printed_line_total_orig: 2.9 };
-    expect(applyMultiBuyPrice(discounted)).toBe(discounted);
-    expect(applyMultiBuyPrice(surcharge)).toBe(surcharge);
+  it('rejects a row with neither', () => {
+    expect(hasWeightedQuantity('Gouda mittelalt 2,04 B', 0.229)).toBe(false);
   });
 });
 

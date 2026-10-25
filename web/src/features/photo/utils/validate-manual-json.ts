@@ -1,7 +1,7 @@
 import {
   amountAppearsInText,
   hasExplicitMultiplier,
-  hasWeightOrVolume,
+  hasWeightedQuantity,
   integerAppearsInText,
   mergeAccountingPairs,
   roundMoney,
@@ -67,7 +67,7 @@ export function validateManualJsonReceipt(
   if (options.requireSavableReceipt) {
     if (!receipt.store?.trim()) issues.push('Не вказано продавця store.');
     if (!receipt.date) issues.push('Не вказано дату date.');
-    if (!['EUR', 'UAH'].includes(receipt.currency)) {
+    if (!['EUR', 'UAH', 'PLN'].includes(receipt.currency)) {
       issues.push('Валюта ' + receipt.currency + ' не підтримується для автоматичного збереження.');
     }
   }
@@ -216,7 +216,7 @@ function validateRowEvidence(
         ? Math.abs(item.qty - 1) <= 0.001
         : qtyEvidence === 'explicit_multiplier'
           ? hasExplicitMultiplier(rawText, item.qty)
-          : hasWeightOrVolume(rawText);
+          : hasWeightedQuantity(rawText, item.qty);
     if (!quantitySupported) {
       issues.push(
         'Рядок ' + String(rowNumber) + ': qty не підтверджується raw_text і qty_evidence.',

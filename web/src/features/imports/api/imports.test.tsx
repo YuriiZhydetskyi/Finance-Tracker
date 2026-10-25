@@ -49,12 +49,33 @@ function blobWithBytes(bytes: number[]): Blob {
   } as Blob;
 }
 
+const realSetTimeout = setTimeout;
+
+// Hashing runs on real async APIs, so timers may not exist yet when the clock first
+// advances; keep advancing until the mutation settles.
+async function settle(promise: PromiseLike<unknown>): Promise<void> {
+  let done = false;
+  const markDone = () => {
+    done = true;
+  };
+  void Promise.resolve(promise).then(markDone, markDone);
+  while (!done) {
+    await vi.advanceTimersByTimeAsync(10_000);
+    await new Promise((resolve) => realSetTimeout(resolve, 0));
+  }
+  await promise;
+}
+
 async function sha256Of(bytes: number[]): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 describe('useResumeImportUploads', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const queryClient = () =>
     new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
 
@@ -100,7 +121,7 @@ describe('useResumeImportUploads', () => {
   });
 
   it('retries a failed upload and treats an already stored object as uploaded', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const bytes = [4, 5, 6];
       prepareFileMock.mockResolvedValue({
@@ -129,8 +150,7 @@ describe('useResumeImportUploads', () => {
           ],
         });
       });
-      await vi.advanceTimersByTimeAsync(5_000);
-      await pending;
+      await settle(pending);
 
       expect(uploadToPathMock).toHaveBeenCalledTimes(2);
       expect(rpcMock).toHaveBeenCalledWith('queue_receipt_import_file', { p_file_id: 'file-1' });
@@ -141,10 +161,10 @@ describe('useResumeImportUploads', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
+  }, 30_000);
 
   it('marks the file failed when a hung upload times out on every attempt', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const bytes = [7, 8];
       prepareFileMock.mockResolvedValue({
@@ -171,8 +191,7 @@ describe('useResumeImportUploads', () => {
           ],
         });
       });
-      await vi.advanceTimersByTimeAsync(5 * 60_000);
-      await pending;
+      await settle(pending);
 
       expect(uploadToPathMock).toHaveBeenCalledTimes(3);
       expect(rpcMock).toHaveBeenCalledWith('mark_receipt_import_upload_failed', {
@@ -183,7 +202,7 @@ describe('useResumeImportUploads', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
+  }, 30_000);
 });
 
 it('queues validated JSON for the selected durable import file', async () => {

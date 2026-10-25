@@ -24,36 +24,44 @@ function formatNbuDate(date: Date): string {
   return `${y}${m}${d}`;
 }
 
-async function fetchNbuUahRate(dateIso: string): Promise<number> {
+async function fetchNbuRateOnDate(valcode: 'EUR' | 'PLN', date: Date): Promise<number | null> {
+  let response: Response;
+  try {
+    response = await fetch(`${NBU_URL}?valcode=${valcode}&date=${formatNbuDate(date)}&json`);
+  } catch {
+    return null;
+  }
+  if (!response.ok) return null;
+
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    return null;
+  }
+
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const row = data[0] as NbuRateRow;
+  return typeof row.rate === 'number' && row.rate > 0 ? row.rate : null;
+}
+
+// NBU quotes everything against UAH, so EUR per UAH is 1 / rate(EUR) and
+// EUR per PLN is rate(PLN) / rate(EUR) taken on the same day.
+async function fetchNbuRate(currency: 'UAH' | 'PLN', dateIso: string): Promise<number> {
   const target = new Date(`${dateIso}T00:00:00`);
   for (let i = 0; i < MAX_LOOKBACK_DAYS; i++) {
     const d = new Date(target);
     d.setDate(target.getDate() - i);
-    const url = `${NBU_URL}?valcode=EUR&date=${formatNbuDate(d)}&json`;
 
-    let response: Response;
-    try {
-      response = await fetch(url);
-    } catch {
-      continue;
-    }
-    if (!response.ok) continue;
-
-    let data: unknown;
-    try {
-      data = await response.json();
-    } catch {
-      continue;
-    }
-
-    if (!Array.isArray(data) || data.length === 0) continue;
-    const row = data[0] as NbuRateRow;
-    if (typeof row.rate !== 'number' || row.rate <= 0) continue;
-    return roundFxRate(1 / row.rate);
+    const eurRate = await fetchNbuRateOnDate('EUR', d);
+    if (eurRate === null) continue;
+    if (currency === 'UAH') return roundFxRate(1 / eurRate);
+    const plnRate = await fetchNbuRateOnDate('PLN', d);
+    if (plnRate !== null) return roundFxRate(plnRate / eurRate);
   }
 
   throw new Error(
-    `No NBU UAH rate found for ${dateIso} (or any of the ${String(MAX_LOOKBACK_DAYS)} prior days). ` +
+    `No NBU ${currency} rate found for ${dateIso} (or any of the ${String(MAX_LOOKBACK_DAYS)} prior days). ` +
       'NBU may be down or your date is too far in the past.',
   );
 }
@@ -61,9 +69,9 @@ async function fetchNbuUahRate(dateIso: string): Promise<number> {
 export const nbuFxRateProvider: IFxRateProvider = {
   async getRateLive(currency, dateIso) {
     if (currency === 'EUR') return 1.0;
-    if (currency === 'UAH') return fetchNbuUahRate(dateIso);
+    if (currency === 'UAH' || currency === 'PLN') return fetchNbuRate(currency, dateIso);
     throw new Error(
-      `FX lookup not supported for "${currency}". Only EUR (base) and UAH are supported. ` +
+      `FX lookup not supported for "${currency}". Only EUR (base), UAH and PLN are supported. ` +
         'Add another provider or extend nbu-fx-rate-provider.ts.',
     );
   },
