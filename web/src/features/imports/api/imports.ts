@@ -10,8 +10,20 @@ export type ImportBatch = Tables<'receipt_import_batches'>;
 export type ImportFile = Tables<'receipt_import_files'>;
 export type ImportAttempt = Tables<'receipt_import_attempts'>;
 export type ImportBatchSummary = ImportBatch & { progress: ImportProgressSummary };
+export type ImportOriginalFile = Pick<
+  ImportFile,
+  'id' | 'batch_id' | 'original_filename' | 'mime_type' | 'storage_path' | 'status'
+>;
+export type ImportUploadTarget = Pick<
+  ImportFile,
+  'id' | 'original_filename' | 'content_sha256' | 'storage_path'
+>;
+export type ResumeUploadsResult = { resumed: number; unmatched: number };
 
 const FILE_STATUS_PAGE_SIZE = 1_000;
+const UPLOAD_BASE_TIMEOUT_MS = 60_000;
+const UPLOAD_TIMEOUT_PER_MIB_MS = 20_000;
+const UPLOAD_RETRY_DELAYS_MS = [1_000, 3_000];
 
 export const importBatchesQueryKey = ['receipt-import-batches'] as const;
 export const importBatchQueryKey = (id: string) => ['receipt-import-batches', id] as const;
@@ -99,6 +111,7 @@ export function useImportBatch(id: string) {
       batch: ImportBatch;
       files: ImportFile[];
       attemptsByFile: Record<string, ImportAttempt[]>;
+      canonicalFiles: Record<string, ImportOriginalFile>;
     }> => {
       const [batchResult, filesResult] = await Promise.all([
         supabase.from('receipt_import_batches').select('*').eq('id', id).single(),
@@ -120,7 +133,24 @@ export function useImportBatch(id: string) {
           (attemptsByFile[attempt.file_id] ??= []).push(attempt);
         }
       }
-      return { batch: batchResult.data, files: filesResult.data, attemptsByFile };
+      // Duplicates are never uploaded; their original is the first file with the same hash.
+      const canonicalFiles: Record<string, ImportOriginalFile> = {};
+      const canonicalIds = [
+        ...new Set(
+          filesResult.data
+            .map((file) => file.duplicate_of_file_id)
+            .filter((canonicalId): canonicalId is string => canonicalId != null),
+        ),
+      ];
+      if (canonicalIds.length > 0) {
+        const { data: canonicals, error: canonicalError } = await supabase
+          .from('receipt_import_files')
+          .select('id, batch_id, original_filename, mime_type, storage_path, status')
+          .in('id', canonicalIds);
+        if (canonicalError) throw canonicalError;
+        for (const canonical of canonicals) canonicalFiles[canonical.id] = canonical;
+      }
+      return { batch: batchResult.data, files: filesResult.data, attemptsByFile, canonicalFiles };
     },
     refetchInterval: (query) => {
       const status = query.state.data?.batch.status;
@@ -175,16 +205,7 @@ export function useCreateImportBatch() {
         const entry = byId.get(registration.id);
         if (!entry || !registration.storage_path) return;
         try {
-          await photoStorage.uploadToPath(entry.blob, registration.storage_path);
-          const { error: queueError } = await supabase.rpc('queue_receipt_import_file', {
-            p_file_id: entry.id,
-          });
-          if (queueError) throw queueError;
-        } catch (error) {
-          await supabase.rpc('mark_receipt_import_upload_failed', {
-            p_file_id: entry.id,
-            p_error_message: error instanceof Error ? error.message : 'Upload failed',
-          });
+          await uploadAndQueueImportFile(entry.blob, entry.id, registration.storage_path);
         } finally {
           uploadedCount += 1;
           onProgress?.({ completed: uploadedCount, total: uploadable.length, phase: 'uploading' });
@@ -300,6 +321,111 @@ export function useSubmitImportFileJson(batchId: string) {
     onSuccess: async () =>
       queryClient.invalidateQueries({ queryKey: importBatchQueryKey(batchId) }),
   });
+}
+
+/**
+ * Resumes uploads that never reached Storage (tab closed, device asleep, network
+ * drop). The user re-selects the files; each one is matched to its registered
+ * row by content hash, so only the original bytes can fill a slot.
+ */
+export function useResumeImportUploads(batchId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      files,
+      targets,
+    }: {
+      files: File[];
+      targets: ImportUploadTarget[];
+    }): Promise<ResumeUploadsResult> => {
+      const targetsByHash = new Map(targets.map((target) => [target.content_sha256, target]));
+      let resumed = 0;
+      let unmatched = 0;
+      await mapLimit(files, 2, async (file) => {
+        let blob: Blob;
+        let sha256: string;
+        try {
+          const prepared = await prepareFile(file);
+          try {
+            blob = prepared.blob;
+            sha256 = await hashBlob(prepared.blob);
+          } finally {
+            if (prepared.previewUrl) URL.revokeObjectURL(prepared.previewUrl);
+          }
+        } catch {
+          unmatched += 1;
+          return;
+        }
+        const target = targetsByHash.get(sha256);
+        if (!target?.storage_path) {
+          unmatched += 1;
+          return;
+        }
+        targetsByHash.delete(sha256);
+        await uploadAndQueueImportFile(blob, target.id, target.storage_path);
+        resumed += 1;
+      });
+      return { resumed, unmatched };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: importBatchQueryKey(batchId) });
+      await queryClient.invalidateQueries({ queryKey: importBatchesQueryKey });
+    },
+  });
+}
+
+/**
+ * Upload errors are recorded on the file instead of thrown, so one bad file
+ * never aborts the rest of the batch.
+ */
+async function uploadAndQueueImportFile(
+  blob: Blob,
+  fileId: string,
+  storagePath: string,
+): Promise<void> {
+  try {
+    await uploadWithRetry(blob, storagePath);
+    const { error: queueError } = await supabase.rpc('queue_receipt_import_file', {
+      p_file_id: fileId,
+    });
+    if (queueError) throw queueError;
+  } catch (error) {
+    await supabase.rpc('mark_receipt_import_upload_failed', {
+      p_file_id: fileId,
+      p_error_message: error instanceof Error ? error.message : 'Upload failed',
+    });
+  }
+}
+
+// A request that hangs without failing would otherwise hold one of the two
+// upload slots forever and silently stall the rest of the batch.
+async function uploadWithRetry(blob: Blob, storagePath: string): Promise<void> {
+  const timeoutMs =
+    UPLOAD_BASE_TIMEOUT_MS + (blob.size / (1024 * 1024)) * UPLOAD_TIMEOUT_PER_MIB_MS;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await withTimeout(photoStorage.uploadToPath(blob, storagePath), timeoutMs);
+      return;
+    } catch (error) {
+      // A timed-out attempt may still land; the bytes are identical, so reuse them.
+      if (error instanceof Error && /already exists|duplicate/i.test(error.message)) return;
+      const delayMs = UPLOAD_RETRY_DELAYS_MS[attempt];
+      if (delayMs === undefined) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Upload timed out')), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function hashBlob(blob: Blob): Promise<string> {

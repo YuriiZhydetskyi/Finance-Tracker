@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   amountAppearsInText,
+  applyMultiBuyPrice,
   hasExplicitMultiplier,
   hasWeightOrVolume,
   integerAppearsInText,
@@ -71,6 +72,85 @@ describe('hasWeightOrVolume', () => {
 
   it('ignores rows without a unit', () => {
     expect(hasWeightOrVolume('Milk 2 x 1,50')).toBe(false);
+  });
+
+  it('accepts the fuel pump spellings of litres', () => {
+    expect(hasWeightOrVolume("50,12 L'ter SAULENNUMMER 4 *Super SB 105,70 EUR*")).toBe(true);
+    expect(hasWeightOrVolume('50,12 L’ter Super')).toBe(true);
+    expect(hasWeightOrVolume('50,12 Liter Super')).toBe(true);
+    expect(hasWeightOrVolume('50,12 Ltr Super')).toBe(true);
+  });
+
+  it('does not treat other words starting with l as a unit', () => {
+    expect(hasWeightOrVolume('2 Lachs 4,99')).toBe(false);
+  });
+});
+
+describe('applyMultiBuyPrice', () => {
+  const sardines = {
+    qty: 3,
+    unit_price_orig: 0.85,
+    discount_orig: 0,
+    raw_text: '306002 Sardellenfilets 3 x 0,85 2,49 A',
+    row_kind: 'item',
+    qty_evidence: 'explicit_multiplier',
+    printed_line_total_orig: 2.49,
+  };
+
+  it('turns the gap to the printed total into a per-unit discount', () => {
+    expect(applyMultiBuyPrice(sardines)).toMatchObject({ discount_orig: 0.02 });
+  });
+
+  it('keeps a third decimal when the deal does not split into cents', () => {
+    const germini = {
+      ...sardines,
+      qty: 2,
+      unit_price_orig: 1.79,
+      raw_text: '644791 Germini 2 x 1,79 2,49 A',
+    };
+    expect(applyMultiBuyPrice(germini)).toMatchObject({ discount_orig: 0.545 });
+  });
+
+  it('leaves a row alone when the total is printed before the multiplier', () => {
+    // Aldi prints the next product's `N x unit` line after the previous total, so
+    // `total A N x unit` is ambiguous and must go to review instead.
+    const ambiguous = {
+      ...sardines,
+      qty: 2,
+      unit_price_orig: 1.79,
+      raw_text: '644791 Germini 2,49 A 2 x 1,79',
+    };
+    expect(applyMultiBuyPrice(ambiguous)).toBe(ambiguous);
+  });
+
+  it('leaves rows alone when the printed total already matches', () => {
+    const matching = { ...sardines, printed_line_total_orig: 2.55 };
+    expect(applyMultiBuyPrice(matching)).toBe(matching);
+  });
+
+  it('leaves rows alone when the row text does not show the multiplier or the total', () => {
+    const noMultiplier = { ...sardines, raw_text: '306002 Sardellenfilets 0,85 2,49 A' };
+    const noTotal = { ...sardines, raw_text: '306002 Sardellenfilets 3 x 0,85 A' };
+    expect(applyMultiBuyPrice(noMultiplier)).toBe(noMultiplier);
+    expect(applyMultiBuyPrice(noTotal)).toBe(noTotal);
+  });
+
+  it('does not claim a multiplier that sits on a separate printed line', () => {
+    const edeka = {
+      ...sardines,
+      qty: 2,
+      unit_price_orig: 1.79,
+      raw_text: 'Lie.Urk.Prot.Brot 2,99 A / 2 x 1,79 €',
+      printed_line_total_orig: 2.99,
+    };
+    expect(applyMultiBuyPrice(edeka)).toBe(edeka);
+  });
+
+  it('never overrides an existing discount or a total above the shelf price', () => {
+    const discounted = { ...sardines, discount_orig: 0.01 };
+    const surcharge = { ...sardines, printed_line_total_orig: 2.9 };
+    expect(applyMultiBuyPrice(discounted)).toBe(discounted);
+    expect(applyMultiBuyPrice(surcharge)).toBe(surcharge);
   });
 });
 

@@ -6,6 +6,7 @@ import {
   mergeAccountingPairs,
   roundMoney,
   roundQty,
+  roundUnitPrice,
   type ParsedReceipt,
 } from '@finance-tracker/domain';
 
@@ -38,8 +39,8 @@ function formatMoney(value: number, currency: string): string {
 
 function itemTotal(item: ParsedReceipt['items'][number]): number {
   const qty = roundQty(item.qty);
-  const unitPrice = roundMoney(item.unit_price_orig);
-  const discount = roundMoney(item.discount_orig ?? 0);
+  const unitPrice = roundUnitPrice(item.unit_price_orig);
+  const discount = roundUnitPrice(item.discount_orig ?? 0);
   return roundMoney(qty * (unitPrice - discount));
 }
 

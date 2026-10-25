@@ -2,6 +2,7 @@ import type { BulkParsedDocument, ParsedItem } from '../_shared/receipt-ai/types
 import { canonicalizeReceiptTime } from '../_shared/receipt-ai/time-evidence.ts';
 import {
   amountAppearsInText,
+  applyMultiBuyPrice,
   hasExplicitMultiplier,
   hasWeightOrVolume,
   integerAppearsInText,
@@ -59,6 +60,7 @@ export type MultiplierReassociation = {
   details: Record<string, unknown> | null;
 };
 
+const UNIT_PRICE_DECIMALS = 3;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_TIME = /^\d{2}:\d{2}(:\d{2})?$/;
 
@@ -106,53 +108,56 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
     });
   }
 
-  const items: ParsedItem[] = row.items.map((item, index) => {
-    if (!item || typeof item !== 'object') throw new Error(`Invalid item ${String(index + 1)}`);
-    const it = item as Record<string, unknown>;
-    if (typeof it.product_name !== 'string' || !it.product_name.trim()) {
-      throw new Error(`Item ${String(index + 1)} has no name`);
-    }
-    if (typeof it.qty !== 'number' || !Number.isFinite(it.qty) || it.qty <= 0) {
-      throw new Error(`Item ${String(index + 1)} has invalid quantity`);
-    }
-    if (typeof it.unit_price_orig !== 'number' || !Number.isFinite(it.unit_price_orig)) {
-      throw new Error(`Item ${String(index + 1)} has invalid price`);
-    }
-    const discount = it.discount_orig;
-    if (discount != null && (typeof discount !== 'number' || discount < 0)) {
-      throw new Error(`Item ${String(index + 1)} has invalid discount`);
-    }
-    return {
-      product_name: it.product_name.trim(),
-      qty: it.qty,
-      unit_price_orig: it.unit_price_orig,
-      category_suggestion:
-        typeof it.category_suggestion === 'string' ? it.category_suggestion : null,
-      product_family_id: typeof it.product_family_id === 'string' ? it.product_family_id : null,
-      product_variant_id: typeof it.product_variant_id === 'string' ? it.product_variant_id : null,
-      brand: typeof it.brand === 'string' && it.brand.trim() ? it.brand.trim() : null,
-      is_organic: typeof it.is_organic === 'boolean' ? it.is_organic : null,
-      discount_orig: typeof discount === 'number' ? discount : 0,
-      product_code: typeof it.product_code === 'string' ? it.product_code : null,
-      product_url: trustedAmazonUrl(it.product_url, false),
-      product_image_url: trustedAmazonUrl(it.product_image_url, true),
-      source_ordinal:
-        typeof it.source_ordinal === 'number' && Number.isInteger(it.source_ordinal)
-          ? it.source_ordinal
-          : undefined,
-      raw_text: typeof it.raw_text === 'string' ? it.raw_text.trim().slice(0, 1000) : undefined,
-      row_kind: isRowKind(it.row_kind) ? it.row_kind : undefined,
-      qty_evidence: isQtyEvidence(it.qty_evidence) ? it.qty_evidence : undefined,
-      printed_line_total_orig:
-        it.printed_line_total_orig == null
-          ? null
-          : typeof it.printed_line_total_orig === 'number' &&
-              Number.isFinite(it.printed_line_total_orig)
-            ? it.printed_line_total_orig
+  const items: ParsedItem[] = row.items
+    .map((item, index): ParsedItem => {
+      if (!item || typeof item !== 'object') throw new Error(`Invalid item ${String(index + 1)}`);
+      const it = item as Record<string, unknown>;
+      if (typeof it.product_name !== 'string' || !it.product_name.trim()) {
+        throw new Error(`Item ${String(index + 1)} has no name`);
+      }
+      if (typeof it.qty !== 'number' || !Number.isFinite(it.qty) || it.qty <= 0) {
+        throw new Error(`Item ${String(index + 1)} has invalid quantity`);
+      }
+      if (typeof it.unit_price_orig !== 'number' || !Number.isFinite(it.unit_price_orig)) {
+        throw new Error(`Item ${String(index + 1)} has invalid price`);
+      }
+      const discount = it.discount_orig;
+      if (discount != null && (typeof discount !== 'number' || discount < 0)) {
+        throw new Error(`Item ${String(index + 1)} has invalid discount`);
+      }
+      return {
+        product_name: it.product_name.trim(),
+        qty: it.qty,
+        unit_price_orig: it.unit_price_orig,
+        category_suggestion:
+          typeof it.category_suggestion === 'string' ? it.category_suggestion : null,
+        product_family_id: typeof it.product_family_id === 'string' ? it.product_family_id : null,
+        product_variant_id:
+          typeof it.product_variant_id === 'string' ? it.product_variant_id : null,
+        brand: typeof it.brand === 'string' && it.brand.trim() ? it.brand.trim() : null,
+        is_organic: typeof it.is_organic === 'boolean' ? it.is_organic : null,
+        discount_orig: typeof discount === 'number' ? discount : 0,
+        product_code: typeof it.product_code === 'string' ? it.product_code : null,
+        product_url: trustedAmazonUrl(it.product_url, false),
+        product_image_url: trustedAmazonUrl(it.product_image_url, true),
+        source_ordinal:
+          typeof it.source_ordinal === 'number' && Number.isInteger(it.source_ordinal)
+            ? it.source_ordinal
             : undefined,
-      tax_class: it.tax_class === '1' || it.tax_class === '2' ? it.tax_class : null,
-    };
-  });
+        raw_text: typeof it.raw_text === 'string' ? it.raw_text.trim().slice(0, 1000) : undefined,
+        row_kind: isRowKind(it.row_kind) ? it.row_kind : undefined,
+        qty_evidence: isQtyEvidence(it.qty_evidence) ? it.qty_evidence : undefined,
+        printed_line_total_orig:
+          it.printed_line_total_orig == null
+            ? null
+            : typeof it.printed_line_total_orig === 'number' &&
+                Number.isFinite(it.printed_line_total_orig)
+              ? it.printed_line_total_orig
+              : undefined,
+        tax_class: it.tax_class === '1' || it.tax_class === '2' ? it.tax_class : null,
+      };
+    })
+    .map((item) => applyMultiBuyPrice(item));
 
   return canonicalizeReceiptTime({
     document_kind: documentKind,
@@ -528,8 +533,8 @@ export function prepareReceipt(
   if (normalized.length > 500) return { ok: false, reason: 'У документі забагато позицій.' };
   for (const item of normalized) {
     const qty = round(item.qty, 3);
-    const unitPrice = round(item.unit_price_orig, 2);
-    const discount = round(item.discount_orig ?? 0, 2);
+    const unitPrice = round(item.unit_price_orig, UNIT_PRICE_DECIMALS);
+    const discount = round(item.discount_orig ?? 0, UNIT_PRICE_DECIMALS);
     if (qty <= 0) return { ok: false, reason: `Кількість для «${item.product_name}» надто мала.` };
     if (unitPrice > 0 && discount > unitPrice) {
       return { ok: false, reason: `Знижка для «${item.product_name}» більша за ціну.` };
@@ -541,8 +546,8 @@ export function prepareReceipt(
   const receiptId = makeId();
   const items = normalized.map((item) => {
     const qty = round(item.qty, 3);
-    const unitPrice = round(item.unit_price_orig, 2);
-    const discount = round(item.discount_orig ?? 0, 2);
+    const unitPrice = round(item.unit_price_orig, UNIT_PRICE_DECIMALS);
+    const discount = round(item.discount_orig ?? 0, UNIT_PRICE_DECIMALS);
     const totalOrig = round(qty * (unitPrice - discount), 2);
     return {
       id: makeId(),
@@ -633,8 +638,8 @@ export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArith
   const computedTotal = round(
     normalizedItems.reduce((sum, item) => {
       const qty = round(item.qty, 3);
-      const unitPrice = round(item.unit_price_orig, 2);
-      const discount = round(item.discount_orig ?? 0, 2);
+      const unitPrice = round(item.unit_price_orig, UNIT_PRICE_DECIMALS);
+      const discount = round(item.discount_orig ?? 0, UNIT_PRICE_DECIMALS);
       return sum + round(qty * (unitPrice - discount), 2);
     }, 0),
     2,

@@ -4,6 +4,7 @@
 // See docs/data-model.md §Гроші.
 
 export const MONEY_DECIMALS = 2;
+export const UNIT_PRICE_DECIMALS = 3;
 export const QTY_DECIMALS = 3;
 export const FX_RATE_DECIMALS = 6;
 
@@ -14,6 +15,11 @@ function round(value: number, decimals: number): number {
 
 export function roundMoney(value: number): number {
   return round(value, MONEY_DECIMALS);
+}
+
+/** Per-unit price and per-unit discount: fuel is sold at 2.109 €/l, multi-buy deals split to 1.245. */
+export function roundUnitPrice(value: number): number {
+  return round(value, UNIT_PRICE_DECIMALS);
 }
 
 export function roundQty(value: number): number {

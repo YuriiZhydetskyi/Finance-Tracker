@@ -7,7 +7,7 @@
 // Storage / API layers must NOT round, parse consumed_by, or generate IDs
 // themselves — they go through these factories.
 
-import { roundFxRate, roundMoney, roundQty } from './money';
+import { roundFxRate, roundMoney, roundQty, roundUnitPrice } from './money';
 import { nowIso } from './time';
 import { ulid } from './ulid';
 
@@ -89,8 +89,8 @@ export function makeReceipt(input: ReceiptInput): Receipt {
 
 export function makeItem(input: ItemInput): Item {
   const qty = roundQty(input.qty);
-  const unit_price_orig = roundMoney(input.unit_price_orig);
-  const discount_orig = roundMoney(input.discount_orig ?? 0);
+  const unit_price_orig = roundUnitPrice(input.unit_price_orig);
+  const discount_orig = roundUnitPrice(input.discount_orig ?? 0);
   const total_orig = roundMoney(qty * (unit_price_orig - discount_orig));
   const total_eur = roundMoney(total_orig * input.fx_rate_eur);
   const wasted_qty = roundQty(input.wasted_qty ?? 0);
@@ -262,9 +262,9 @@ export function applyItemPatch(existing: Item, patch: ItemPatch, parentFxRate: n
   const merged: Item = { ...existing, ...patch };
   if (patch.qty !== undefined) merged.qty = roundQty(patch.qty);
   if (patch.unit_price_orig !== undefined)
-    merged.unit_price_orig = roundMoney(patch.unit_price_orig);
+    merged.unit_price_orig = roundUnitPrice(patch.unit_price_orig);
   if (patch.wasted_qty !== undefined) merged.wasted_qty = roundQty(patch.wasted_qty);
-  if (patch.discount_orig !== undefined) merged.discount_orig = roundMoney(patch.discount_orig);
+  if (patch.discount_orig !== undefined) merged.discount_orig = roundUnitPrice(patch.discount_orig);
   merged.total_orig = roundMoney(merged.qty * (merged.unit_price_orig - merged.discount_orig));
   merged.total_eur = roundMoney(merged.total_orig * parentFxRate);
   merged.updated_at = nowIso();

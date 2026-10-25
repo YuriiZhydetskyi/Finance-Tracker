@@ -13,9 +13,11 @@ import {
   useSubmitImportFileJson,
   type ImportAttempt,
   type ImportFile,
+  type ImportOriginalFile,
 } from '../api/imports';
 import { summarizeImportProgress } from '../api/import-progress';
 import { ImportFilePreview } from './ImportFilePreview';
+import { ImportUploadResume } from './ImportUploadResume';
 
 const STATUS_LABELS: Record<string, string> = {
   uploading: 'завантаження',
@@ -41,10 +43,13 @@ export function ImportBatchDetail({ id }: { id: string }) {
     return <ErrorDetails error={query.error} label="Не вдалося завантажити батч" />;
   if (!query.data) return null;
 
-  const { batch, files, attemptsByFile } = query.data;
+  const { batch, files, attemptsByFile, canonicalFiles } = query.data;
   const progress = summarizeImportProgress(files);
   const exceptions = files.filter((file) =>
     ['needs_review', 'duplicate', 'upload_failed'].includes(file.status),
+  );
+  const pendingUploads = files.filter(
+    (file) => (file.status === 'uploading' || file.status === 'upload_failed') && file.storage_path,
   );
 
   return (
@@ -63,7 +68,11 @@ export function ImportBatchDetail({ id }: { id: string }) {
           Збережено: {progress.saved} · у роботі: {progress.active} · винятків:{' '}
           {progress.exceptions} · відхилено: {progress.discarded}
         </p>
-        {progress.active > 0 ? (
+        {pendingUploads.length > 0 ? (
+          <p className="mt-1 text-slate-500">
+            Частина файлів ще не завантажена — вони не обробляться, доки не дійдуть до сховища.
+          </p>
+        ) : progress.active > 0 ? (
           <p className="mt-1 text-slate-500">
             Обробка триває у фоні. Цю вкладку вже можна закрити.
           </p>
@@ -71,6 +80,8 @@ export function ImportBatchDetail({ id }: { id: string }) {
           <p className="mt-1 text-slate-500">Фонова обробка завершена.</p>
         )}
       </div>
+
+      <ImportUploadResume batchId={id} targets={pendingUploads} />
 
       {exceptions.length === 0 ? (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
@@ -84,6 +95,7 @@ export function ImportBatchDetail({ id }: { id: string }) {
               key={file.id}
               file={file}
               attempts={attemptsByFile[file.id] ?? []}
+              canonical={canonicalOf(file, canonicalFiles)}
               categories={categories.data?.map((category) => category.name) ?? []}
               products={products.data ?? []}
               busy={
@@ -115,7 +127,7 @@ export function ImportBatchDetail({ id }: { id: string }) {
                   <span className="shrink-0">{STATUS_LABELS[file.status] ?? file.status}</span>
                 </summary>
                 <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
-                  <ImportFilePreview file={file} />
+                  <ImportOriginal file={file} canonical={canonicalOf(file, canonicalFiles)} />
                   <AttemptHistory attempts={attemptsByFile[file.id] ?? []} />
                 </div>
               </details>
@@ -127,9 +139,44 @@ export function ImportBatchDetail({ id }: { id: string }) {
   );
 }
 
+function canonicalOf(
+  file: ImportFile,
+  canonicalFiles: Record<string, ImportOriginalFile>,
+): ImportOriginalFile | undefined {
+  if (file.storage_path || !file.duplicate_of_file_id) return undefined;
+  return canonicalFiles[file.duplicate_of_file_id];
+}
+
+// A duplicate is never uploaded; it shares the bytes of the first file with the
+// same hash, so show that file's original instead of "unavailable".
+function ImportOriginal({
+  file,
+  canonical,
+}: {
+  file: ImportFile;
+  canonical: ImportOriginalFile | undefined;
+}) {
+  if (!canonical) return <ImportFilePreview file={file} />;
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-slate-600">
+        Той самий файл, що й{' '}
+        <Link to="/imports/$id" params={{ id: canonical.batch_id }} className="underline">
+          {canonical.original_filename}
+        </Link>
+        .
+      </p>
+      <ImportFilePreview
+        file={canonical.status === 'discarded' ? { ...canonical, storage_path: null } : canonical}
+      />
+    </div>
+  );
+}
+
 function ExceptionCard({
   file,
   attempts,
+  canonical,
   categories,
   products,
   busy,
@@ -140,6 +187,7 @@ function ExceptionCard({
 }: {
   file: ImportFile;
   attempts: ImportAttempt[];
+  canonical: ImportOriginalFile | undefined;
   categories: string[];
   products: { name: string }[];
   busy: boolean;
@@ -176,7 +224,7 @@ function ExceptionCard({
         )}
       </div>
       {file.error_message && <p className="text-sm text-slate-700">{file.error_message}</p>}
-      <ImportFilePreview file={file} />
+      <ImportOriginal file={file} canonical={canonical} />
       <AttemptHistory attempts={attempts} />
       {file.parsed_json && (
         <details>
