@@ -1,7 +1,10 @@
+import { Profiler } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { useForm, FormProvider } from 'react-hook-form';
+import userEvent from '@testing-library/user-event';
+import { useFieldArray, useForm, FormProvider } from 'react-hook-form';
 import { ItemRow } from './ItemRow';
+import { SummaryFooter } from './SummaryFooter';
 import type { ItemFormValues, ManualFormValues } from '../schemas/manual-form';
 
 function makeItem(overrides: Partial<ItemFormValues> = {}): ItemFormValues {
@@ -19,7 +22,13 @@ function makeItem(overrides: Partial<ItemFormValues> = {}): ItemFormValues {
   };
 }
 
-function Wrapper({ item }: { item: ItemFormValues }) {
+function Wrapper({
+  item,
+  extraItems = [],
+}: {
+  item: ItemFormValues;
+  extraItems?: ItemFormValues[];
+}) {
   const methods = useForm<ManualFormValues>({
     defaultValues: {
       date: '2026-05-08',
@@ -30,12 +39,19 @@ function Wrapper({ item }: { item: ItemFormValues }) {
       note: null,
       photo_url: null,
       raw_ocr_json: null,
-      items: [item],
+      items: [item, ...extraItems],
     },
   });
   return (
     <FormProvider {...methods}>
-      <ItemRow index={0} categories={['Бакалія', 'Алкоголь']} onRemove={vi.fn()} />
+      {methods.getValues('items').map((_, index) => (
+        <ItemRow
+          key={index}
+          index={index}
+          categories={['Бакалія', 'Алкоголь']}
+          onRemove={vi.fn()}
+        />
+      ))}
     </FormProvider>
   );
 }
@@ -311,5 +327,127 @@ describe('ItemRow — pair_marker visual treatment', () => {
       // 4 × 0.50 = 2.00 EUR.
       expect(screen.getByText(/Рядок:.*2,00/)).toBeInTheDocument();
     });
+  });
+});
+
+describe('ItemRow — label association', () => {
+  const FIELD_LABELS: [label: string, field: string][] = [
+    ['Товар', 'product_name'],
+    ['Категорія', 'category'],
+    ['К-сть', 'qty'],
+    ['Ціна', 'unit_price_orig'],
+    ['Товар · вид', 'product_family_id'],
+    ['Різновид', 'product_variant_id'],
+    ['Бренд', 'brand'],
+    ['Bio', 'is_organic'],
+    ['Хто', 'consumed_by'],
+    ['Знижка', 'discount_orig'],
+    ['Нотатка', 'note'],
+  ];
+
+  it.each(FIELD_LABELS)('label "%s" is bound to items.0.%s', (label, field) => {
+    render(<Wrapper item={makeItem()} />);
+    expect(screen.getByLabelText(label)).toHaveAttribute('name', `items.0.${field}`);
+  });
+
+  it('names the store product code input without a visible label', () => {
+    render(<Wrapper item={makeItem()} />);
+    expect(screen.getByLabelText('Код товару')).toHaveAttribute(
+      'name',
+      'items.0.store_product_code',
+    );
+  });
+
+  it('focuses the control when its label is clicked', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper item={makeItem()} />);
+
+    await user.click(screen.getByText('К-сть'));
+
+    expect(screen.getByLabelText('К-сть')).toHaveFocus();
+  });
+
+  it('keeps the control ids unique across repeated rows', () => {
+    render(<Wrapper item={makeItem()} extraItems={[makeItem({ product_name: 'Second' })]} />);
+
+    const quantities = screen.getAllByLabelText('К-сть');
+    expect(quantities.map((input) => input.getAttribute('name'))).toEqual([
+      'items.0.qty',
+      'items.1.qty',
+    ]);
+
+    const ids = Array.from(document.querySelectorAll('[id]')).map((element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('ItemRow — re-render isolation', () => {
+  function RowsHarness({ onRender }: { onRender: (id: string) => void }) {
+    const methods = useForm<ManualFormValues>({
+      defaultValues: {
+        date: '2026-05-08',
+        store: 'Edeka',
+        currency: 'EUR',
+        paid_by: 'mg@example.com',
+        source: 'manual',
+        note: null,
+        photo_url: null,
+        raw_ocr_json: null,
+        items: [makeItem({ product_name: 'First' }), makeItem({ product_name: 'Second' })],
+      },
+    });
+    const { fields } = useFieldArray({ control: methods.control, name: 'items' });
+    return (
+      <FormProvider {...methods}>
+        {fields.map((field, index) => (
+          <Profiler
+            key={field.id}
+            id={`row-${String(index)}`}
+            onRender={(id) => {
+              onRender(id);
+            }}
+          >
+            <ItemRow index={index} categories={['Бакалія']} onRemove={vi.fn()} />
+          </Profiler>
+        ))}
+        <Profiler
+          id="footer"
+          onRender={(id) => {
+            onRender(id);
+          }}
+        >
+          <SummaryFooter />
+        </Profiler>
+      </FormProvider>
+    );
+  }
+
+  async function typeInto(label: string, rowIndex: number, text: string) {
+    const user = userEvent.setup();
+    const input = screen.getAllByLabelText(label)[rowIndex];
+    if (!input) throw new Error(`No "${label}" control in row ${String(rowIndex)}`);
+    await user.clear(input);
+    await user.type(input, text);
+  }
+
+  it('re-renders only the edited row when a non-money field changes', async () => {
+    const rendered: string[] = [];
+    render(<RowsHarness onRender={(id) => rendered.push(id)} />);
+    rendered.length = 0;
+
+    await typeInto('Нотатка', 0, 'abc');
+
+    expect(new Set(rendered)).toEqual(new Set(['row-0']));
+  });
+
+  it('re-renders the edited row and the footer, not the other rows, when an amount changes', async () => {
+    const rendered: string[] = [];
+    render(<RowsHarness onRender={(id) => rendered.push(id)} />);
+    rendered.length = 0;
+
+    await typeInto('К-сть', 1, '2');
+
+    expect(new Set(rendered)).toEqual(new Set(['row-1', 'footer']));
+    expect(screen.getByText('Загалом').nextElementSibling).toHaveTextContent('15,00');
   });
 });

@@ -1,11 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockInstance } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PhotoPicker } from './PhotoPicker';
 
+let revokeObjectURL: MockInstance<typeof URL.revokeObjectURL>;
+
 beforeEach(() => {
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => 'blob://stub');
-  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+  revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+  revokeObjectURL.mockClear();
 });
 
 function makeFile(name: string): File {
@@ -42,6 +45,30 @@ describe('PhotoPicker', () => {
     await user.upload(input, makeFile('a.jpg'));
     const img = container.querySelector('img');
     expect(img?.getAttribute('src')).toBe('blob://stub');
+  });
+
+  it('revokes the preview URL when the picked photo is cleared', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<PhotoPicker onPicked={vi.fn()} />);
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await user.upload(input, makeFile('a.jpg'));
+    expect(container.querySelector('img')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Вибрати інше' }));
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob://stub');
+  });
+
+  it('revokes the preview URL on unmount', async () => {
+    const user = userEvent.setup();
+    const { container, unmount } = render(<PhotoPicker onPicked={vi.fn()} />);
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await user.upload(input, makeFile('a.jpg'));
+
+    unmount();
+
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob://stub');
   });
 
   it('input has multiple attribute', () => {

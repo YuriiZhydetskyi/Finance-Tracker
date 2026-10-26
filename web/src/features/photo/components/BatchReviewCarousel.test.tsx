@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -19,16 +20,26 @@ vi.mock('./PhotoReviewForm', () => ({
   }: {
     onCancel: () => void;
     onSaved?: (id: string) => void;
-  }) => (
-    <div data-testid="review-form">
-      <button type="button" onClick={onCancel}>
-        review-cancel
-      </button>
-      <button type="button" onClick={() => onSaved?.('R-stub')}>
-        review-save
-      </button>
-    </div>
-  ),
+  }) => {
+    const [draft, setDraft] = useState('');
+    return (
+      <div data-testid="review-form">
+        <input
+          aria-label="Чернетка"
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+          }}
+        />
+        <button type="button" onClick={onCancel}>
+          review-cancel
+        </button>
+        <button type="button" onClick={() => onSaved?.('R-stub')}>
+          review-save
+        </button>
+      </div>
+    );
+  },
 }));
 
 const fakeParsed: ParsedReceipt = {
@@ -304,5 +315,82 @@ describe('BatchReviewCarousel', () => {
     expect(screen.getByTestId('batch-summary')).toBeInTheDocument();
     expect(screen.getByText(/Збережено 1 з 2, у черзі 1/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /До черги/ })).toHaveAttribute('href', '/pending');
+  });
+
+  describe('visited slides stay mounted while hidden', () => {
+    const parsed = { kind: 'parsed', parsed: fakeParsed, pairResult: fakePairResult } as const;
+    const threeParsed = () => [makeItem('A', parsed), makeItem('B', parsed), makeItem('C', parsed)];
+
+    it('keeps the edits of a slide the user paged away from', async () => {
+      const user = userEvent.setup();
+      const items = threeParsed();
+      const { rerender } = render(<BatchReviewCarousel batch={makeBatch(items, 0).batch} />);
+      await user.type(screen.getByLabelText('Чернетка'), 'milk');
+
+      rerender(<BatchReviewCarousel batch={makeBatch(items, 1).batch} />);
+
+      const [first, second] = screen.getAllByLabelText('Чернетка');
+      expect(first).toHaveValue('milk');
+      expect(first).not.toBeVisible();
+      expect(second).toHaveValue('');
+      expect(second).toBeVisible();
+
+      rerender(<BatchReviewCarousel batch={makeBatch(items, 0).batch} />);
+
+      const [back, other] = screen.getAllByLabelText('Чернетка');
+      expect(back).toHaveValue('milk');
+      expect(back).toBeVisible();
+      expect(other).not.toBeVisible();
+    });
+
+    it('mounts only the slides that have been visited', () => {
+      const items = threeParsed();
+      const { rerender } = render(<BatchReviewCarousel batch={makeBatch(items, 0).batch} />);
+      expect(screen.getAllByTestId('review-form')).toHaveLength(1);
+
+      rerender(<BatchReviewCarousel batch={makeBatch(items, 2).batch} />);
+
+      expect(screen.getAllByTestId('review-form')).toHaveLength(2);
+    });
+
+    it('acts on the slide it belongs to, not on the current one', async () => {
+      const user = userEvent.setup();
+      const items = threeParsed();
+      const { batch, spies } = makeBatch(items, 0);
+      const { rerender } = render(<BatchReviewCarousel batch={batch} />);
+      const second = makeBatch(items, 1);
+      rerender(<BatchReviewCarousel batch={second.batch} />);
+
+      await user.click(screen.getByRole('button', { name: 'review-save' }));
+      await user.click(screen.getByRole('button', { name: 'review-cancel' }));
+
+      expect(second.spies.markSaved).toHaveBeenCalledExactlyOnceWith('B', 'R-stub');
+      expect(second.spies.removeItem).toHaveBeenCalledExactlyOnceWith('B');
+      expect(spies.markSaved).not.toHaveBeenCalled();
+    });
+
+    it('unmounts the slide of an item that was removed from the batch', () => {
+      const items = threeParsed();
+      const { rerender } = render(<BatchReviewCarousel batch={makeBatch(items, 0).batch} />);
+      rerender(<BatchReviewCarousel batch={makeBatch(items, 1).batch} />);
+      expect(screen.getAllByTestId('review-form')).toHaveLength(2);
+
+      rerender(<BatchReviewCarousel batch={makeBatch([items[1]!, items[2]!], 0).batch} />);
+
+      expect(screen.getAllByTestId('review-form')).toHaveLength(1);
+      expect(screen.getByTestId('review-form')).toBeVisible();
+    });
+
+    it('swaps a hidden slide to its saved state without keeping the form', () => {
+      const items = threeParsed();
+      const { rerender } = render(<BatchReviewCarousel batch={makeBatch(items, 0).batch} />);
+      rerender(<BatchReviewCarousel batch={makeBatch(items, 1).batch} />);
+
+      const saved = [makeItem('A', { kind: 'saved', receipt_id: 'R1' }), items[1]!, items[2]!];
+      rerender(<BatchReviewCarousel batch={makeBatch(saved, 1).batch} />);
+
+      expect(screen.getAllByTestId('review-form')).toHaveLength(1);
+      expect(screen.getByText('Збережено', { selector: 'div' })).not.toBeVisible();
+    });
   });
 });

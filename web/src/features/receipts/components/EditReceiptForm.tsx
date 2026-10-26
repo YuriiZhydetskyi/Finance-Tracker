@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type SubmitEvent } from 'react';
 import { FormProvider } from 'react-hook-form';
 import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router';
 import type { Item, Receipt } from '@finance-tracker/domain';
@@ -177,7 +177,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
     void navigate({ to: '/recent', search: { saved: receipt.id }, ignoreBlocker: true });
   });
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     void onSubmit(e);
   };
 

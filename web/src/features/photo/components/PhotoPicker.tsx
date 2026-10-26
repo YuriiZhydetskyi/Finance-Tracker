@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
+import { useObjectUrl } from '@/shared/hooks/use-object-url';
 
 type Props = {
   onPicked: (files: File[]) => void;
@@ -15,35 +16,28 @@ function isPreviewableImage(file: File): boolean {
 
 export function PhotoPicker({ onPicked, disabled }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const previewUrl = useObjectUrl(previewFile);
   const [pickedCount, setPickedCount] = useState(0);
   const [pickedName, setPickedName] = useState<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPickedCount(files.length);
     if (files.length === 1) {
       const only = files[0]!;
       setPickedName(only.name || null);
-      setPreviewUrl(isPreviewableImage(only) ? URL.createObjectURL(only) : null);
+      setPreviewFile(isPreviewableImage(only) ? only : null);
     } else {
       setPickedName(null);
-      setPreviewUrl(null);
+      setPreviewFile(null);
     }
     onPicked(files);
   }
 
   function reset() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
+    setPreviewFile(null);
     setPickedCount(0);
     setPickedName(null);
     if (inputRef.current) inputRef.current.value = '';
@@ -60,10 +54,10 @@ export function PhotoPicker({ onPicked, disabled }: Props) {
         disabled={disabled}
         className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800 disabled:opacity-50"
       />
-      {previewUrl ? (
+      {previewFile ? (
         <div className="space-y-2">
           <img
-            src={previewUrl}
+            src={previewUrl ?? undefined}
             alt="Прев'ю чека"
             className="max-h-72 w-auto rounded-md border border-slate-200 object-contain"
           />

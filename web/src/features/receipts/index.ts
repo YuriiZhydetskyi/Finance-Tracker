@@ -8,6 +8,7 @@ export { ReceiptPhoto } from './components/ReceiptPhoto';
 export { EmptyReceiptsState } from './components/EmptyReceiptsState';
 export { NoMatchingReceipts } from './components/NoMatchingReceipts';
 export { DuplicateWarningBanner } from './components/DuplicateWarningBanner';
+export { DuplicateReceiptsWarning } from './components/DuplicateReceiptsWarning';
 export { RecentFiltersBar } from './components/RecentFiltersBar';
 export { ItemsList } from './components/ItemsList';
 export { ItemRow } from './components/ItemRow';

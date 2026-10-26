@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { Activity, useEffect, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/shared/ui/Button';
 import { cn } from '@/shared/ui/cn';
@@ -61,6 +61,13 @@ export function BatchReviewCarousel({ batch, onPickMore }: Props) {
   const { state, retryItem, deferItem, removeItem, markSaved, goto, reset } = batch;
   const { items, currentIndex } = state;
   const current = items[currentIndex];
+
+  // A visited slide stays mounted (hidden) so its form keeps unsaved edits while the user pages
+  // away and back. Unvisited slides are not mounted, which bounds the number of live forms.
+  const [visitedIds, setVisitedIds] = useState<string[]>([]);
+  if (current && !visitedIds.includes(current.id)) {
+    setVisitedIds([...visitedIds, current.id]);
+  }
 
   const summary = useMemo(() => {
     const total = items.length;
@@ -183,14 +190,19 @@ export function BatchReviewCarousel({ batch, onPickMore }: Props) {
           ‹
         </Button>
         <div className="flex-1">
-          <Slide
-            key={current.id}
-            item={current}
-            onRemove={() => removeItem(current.id)}
-            onRetry={() => retryItem(current.id)}
-            onDefer={() => deferItem(current.id)}
-            onSaved={(receipt_id) => markSaved(current.id, receipt_id)}
-          />
+          {items
+            .filter((item) => visitedIds.includes(item.id))
+            .map((item) => (
+              <Activity key={item.id} mode={item.id === current.id ? 'visible' : 'hidden'}>
+                <Slide
+                  item={item}
+                  onRemove={() => removeItem(item.id)}
+                  onRetry={() => retryItem(item.id)}
+                  onDefer={() => deferItem(item.id)}
+                  onSaved={(receipt_id) => markSaved(item.id, receipt_id)}
+                />
+              </Activity>
+            ))}
         </div>
         <Button
           type="button"

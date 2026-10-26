@@ -1,5 +1,5 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { FormProvider, useWatch } from 'react-hook-form';
+import { useMemo, type SubmitEvent } from 'react';
+import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import {
   todayIso,
@@ -15,11 +15,9 @@ import { useCategoryNames } from '@/features/categories';
 import { useProductNames } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
-  computeGrandTotal,
-  DuplicateWarningBanner,
+  DuplicateReceiptsWarning,
   ReceiptFormFields,
   SUPPORTED_CURRENCIES,
-  useDuplicateReceipts,
   useReceiptForm,
   useSaveReceiptMutation,
   type ItemFormValues,
@@ -143,20 +141,6 @@ export function PhotoReviewForm({
   // two guards would ask twice.
   useLeaveGuard(methods.formState.isDirty && !onSaved);
 
-  const watchedStore = useWatch({ control: methods.control, name: 'store' });
-  const watchedDate = useWatch({ control: methods.control, name: 'date' });
-  const watchedTime = useWatch({ control: methods.control, name: 'time' });
-  const watchedItems = useWatch({ control: methods.control, name: 'items' });
-  const watchedTotal = useMemo(() => computeGrandTotal(watchedItems ?? []), [watchedItems]);
-  const [duplicatesDismissed, setDuplicatesDismissed] = useState(false);
-  const duplicatesQuery = useDuplicateReceipts({
-    store: watchedStore,
-    date: watchedDate,
-    time: watchedTime,
-    total_orig: watchedTotal,
-  });
-  const visibleDuplicates = duplicatesDismissed ? [] : (duplicatesQuery.data ?? []);
-
   const onSubmit = methods.handleSubmit(async (values) => {
     const receipt = {
       date: values.date,
@@ -216,7 +200,7 @@ export function PhotoReviewForm({
     }
   });
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     void onSubmit(e);
   };
 
@@ -266,10 +250,7 @@ export function PhotoReviewForm({
             </div>
           </details>
         </div>
-        <DuplicateWarningBanner
-          candidates={visibleDuplicates}
-          onDismiss={() => setDuplicatesDismissed(true)}
-        />
+        <DuplicateReceiptsWarning />
         <ReceiptFormFields
           itemsArray={itemsArray}
           categories={categoryNames}
