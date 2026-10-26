@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
@@ -14,7 +15,7 @@ type Props = {
 const NEW_GROUP_VALUE = '__new__';
 
 export function CreateCategoryDialog({ open, onClose, onCreated }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
+  const ref = useModalDialog(open);
   const categoriesQuery = useCategories();
   const createMutation = useCreateCategoryMutation();
 
@@ -28,13 +29,6 @@ export function CreateCategoryDialog({ open, onClose, onCreated }: Props) {
   const [groupChoice, setGroupChoice] = useState<string>(() => groups[0] ?? NEW_GROUP_VALUE);
   const [newGroupName, setNewGroupName] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
 
   const isCreatingNewGroup = groupChoice === NEW_GROUP_VALUE;
   const pending = createMutation.isPending;

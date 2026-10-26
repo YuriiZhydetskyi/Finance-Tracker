@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type SubmitEvent } from 'react';
 import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { openPackagingPdf } from '@/shared/lib/dependencies';
 import { Button } from '@/shared/ui/Button';
 import {
@@ -55,7 +56,7 @@ export function PackagedProductJsonImportDialog({
   onClose,
   onImported,
 }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useModalDialog(open);
   const savePlan = useRef<PackagingSavePlan | null>(null);
   const prompt = useMemo(
     () => buildPackagedProductPrompt(categories, taxonomy, candidate),
@@ -72,13 +73,6 @@ export function PackagedProductJsonImportDialog({
   const [progress, setProgress] = useState('');
   const { copyState, copy } = useCopyToClipboard(prompt);
   const busy = preparing || saving || submitting;
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
 
   const handleClose = () => {
     if (!busy) onClose();
@@ -152,7 +146,7 @@ export function PackagedProductJsonImportDialog({
     }
   };
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!busy) void (review ? save() : prepareReview());
   };

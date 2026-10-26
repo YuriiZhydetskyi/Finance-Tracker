@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import type { PackagedProductListRow } from '../api/use-packaged-products';
@@ -23,7 +24,7 @@ export function LinkStoreProductDialog({
   onClose,
   onLink,
 }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useModalDialog(open);
   // The search seeds from the candidate's brand so the obvious match is usually
   // already listed, but stays freely editable. Stored as an override plus a
   // render-time reset (React's "adjusting state when a prop changes" pattern)
@@ -36,13 +37,6 @@ export function LinkStoreProductDialog({
     setQueryOverride(null);
   }
   const query = queryOverride ?? candidate?.brand ?? '';
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
 
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();

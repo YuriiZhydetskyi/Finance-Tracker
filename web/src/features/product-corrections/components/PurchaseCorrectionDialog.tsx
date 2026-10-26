@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useCategories } from '@/features/categories';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { Input } from '@/shared/ui/Input';
@@ -26,17 +27,9 @@ function nullable(value: string): string | null {
  * the same normalized printed label on later imports.
  */
 export function PurchaseCorrectionDialog({ itemId, onClose }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useModalDialog(true);
   const purchaseQuery = useCorrectablePurchase(itemId);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog && !dialog.open) dialog.showModal();
-    return () => {
-      if (dialog?.open) dialog.close();
-    };
-  }, []);
 
   return (
     <dialog
