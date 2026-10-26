@@ -26,7 +26,8 @@ npm run build                        # tsr generate + tsc -b + vite build (web w
 npm run preview                      # serve the production build
 npm run lint                         # ESLint across all workspaces (lint:fix to autofix)
 npm run typecheck                    # tsr generate + tsc -b --noEmit across all workspaces
-npm run test                         # all Vitest workspaces + PGlite SQL scripts + check:edge-domain
+npm run test                         # test:unit + PGlite SQL scripts + check:edge-domain
+npm run test:unit                    # every Vitest workspace in one run (root vitest.config.mts, test.projects)
 npm run test:purchase-correction-sql # PGlite: purchase correction rules
 npm run test:packaged-products-sql   # PGlite: packaged products constraints, RLS, queue
 npm run test:save-receipt-bundle-sql # PGlite: save_receipt_bundle RPC
@@ -176,7 +177,7 @@ These rules live in `packages/domain/`:
 
 ## Testing strategy
 
-Vitest everywhere; Deno only for type/lint gates. `npm run test` runs (counts as of 2026-09-22 — 890 Vitest tests in 98 files):
+Vitest everywhere; Deno only for type/lint gates. The root `vitest.config.mts` lists every workspace under `test.projects`, so `npx vitest run` from the repo root covers all of them (each keeps its own config and its own `npm run test` script). `npm run test` runs (counts as of 2026-09-22 — 890 Vitest tests in 98 files):
 
 - **Domain unit** (`packages/domain`, 263 tests) — pure TS: schemas, factories, pair-detector, money, ulid, time, taxonomy, receipt evidence, bank statements, reconciliation.
 - **Web** (`web`, 528 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
@@ -203,7 +204,7 @@ What's NOT covered automatically:
 - **No barrels inside features.** Only at feature boundaries (`features/receipts/index.ts`); never inside `features/receipts/components/`.
 - **Documentation language:** Ukrainian. Code, comments, commit messages: English.
 - **Comments:** by default no comments. Add only when WHY is non-obvious (a hidden constraint, surprising behavior, workaround for a specific bug). Never explain WHAT — names already do.
-- **Pre-commit:** Husky + lint-staged auto-runs Prettier on staged files.
+- **Pre-commit:** Husky + lint-staged auto-runs Prettier on staged files; `pr-checks.yml` also runs `npm run format:check` on the whole repo. `.gitattributes` pins LF line endings (Prettier's `endOfLine: lf`), including on Windows checkouts.
 
 ## Required secrets / env vars
 

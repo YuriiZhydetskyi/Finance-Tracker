@@ -16,8 +16,7 @@ export type FinalizedReceipt = {
 };
 
 export type ValidationResult =
-  | { ok: true; value: FinalizedReceipt }
-  | { ok: false; reason: string };
+  { ok: true; value: FinalizedReceipt } | { ok: false; reason: string };
 
 export type ReceiptArithmeticCheck = {
   normalizedItems: ParsedItem[];

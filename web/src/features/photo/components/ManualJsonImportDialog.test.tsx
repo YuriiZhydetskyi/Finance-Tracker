@@ -1,25 +1,10 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ManualJsonImportDialog } from './ManualJsonImportDialog';
 
 const noop = () => {
   // intentionally empty
 };
-
-// jsdom doesn't implement <dialog> showModal/close. Stub them to act as
-// open-attribute toggles so the component's effect runs without errors.
-beforeAll(() => {
-  if (!HTMLDialogElement.prototype.showModal) {
-    HTMLDialogElement.prototype.showModal = function showModal() {
-      this.open = true;
-    };
-  }
-  if (!HTMLDialogElement.prototype.close) {
-    HTMLDialogElement.prototype.close = function close() {
-      this.open = false;
-    };
-  }
-});
 
 const validReceiptJson = JSON.stringify({
   store: 'Lidl',

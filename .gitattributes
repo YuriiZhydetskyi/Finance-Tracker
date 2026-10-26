@@ -1,0 +1,13 @@
+# Normalize line endings to LF everywhere (matches .editorconfig and .prettierrc.json),
+# including on Windows checkouts where core.autocrlf would otherwise produce CRLF.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary

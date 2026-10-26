@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import { PendingList } from './PendingList';
+import { QueryClientWrapper } from '@/test/query-client';
 import type { PendingParseRow } from '../api/use-pending-parses';
 
 vi.mock('@/shared/lib/dependencies', () => ({
@@ -13,11 +12,6 @@ vi.mock('@/shared/lib/dependencies', () => ({
     remove: vi.fn(),
   },
 }));
-
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-}
 
 const rows: PendingParseRow[] = [
   {
@@ -55,7 +49,7 @@ describe('PendingList', () => {
       discardingId: null,
       ...overrides,
     };
-    render(<PendingList {...props} />, { wrapper });
+    render(<PendingList {...props} />, { wrapper: QueryClientWrapper });
     return props;
   }
 

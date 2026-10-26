@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReceiptPhoto } from './ReceiptPhoto';
+import { renderWithQueryClient } from '@/test/query-client';
 
 const sign = vi.fn<(...args: unknown[]) => Promise<string>>();
 vi.mock('@/shared/lib/dependencies', () => ({
@@ -9,13 +9,7 @@ vi.mock('@/shared/lib/dependencies', () => ({
 }));
 
 function open(photoPath: string | null, photoUrl: string | null) {
-  return render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <ReceiptPhoto photoPath={photoPath} photoUrl={photoUrl} />
-    </QueryClientProvider>,
-  );
+  return renderWithQueryClient(<ReceiptPhoto photoPath={photoPath} photoUrl={photoUrl} />);
 }
 
 describe('receipt original photo', () => {

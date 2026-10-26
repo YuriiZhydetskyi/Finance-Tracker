@@ -66,9 +66,8 @@ function createFakeDb(options: {
     return builder;
   }
 
-  const rpc = vi.fn(
-    (name: string, args: Record<string, unknown> = {}): Promise<DbResult> =>
-      Promise.resolve(options.rpc?.(name, args) ?? { data: null, error: null }),
+  const rpc = vi.fn((name: string, args: Record<string, unknown> = {}): Promise<DbResult> =>
+    Promise.resolve(options.rpc?.(name, args) ?? { data: null, error: null }),
   );
   const download = vi.fn(() => Promise.resolve({ data: new Blob(['image']), error: null }));
   const createSignedUrl = vi.fn(() =>

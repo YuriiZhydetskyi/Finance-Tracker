@@ -166,20 +166,18 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     if (items.length === 0) return;
     dispatch({
       type: 'hydratePending',
-      items: items.map(
-        (it): HydratePendingInput => ({
-          id: crypto.randomUUID(),
-          fileName: it.fileName,
-          blob: it.blob,
-          previewUrl: isPdfPath(it.photoPath) ? null : URL.createObjectURL(it.blob),
-          paidBy: it.paidBy,
-          pendingParse: {
-            id: it.pendingId,
-            photoPath: it.photoPath,
-            baseAttempts: it.baseAttempts,
-          },
-        }),
-      ),
+      items: items.map((it): HydratePendingInput => ({
+        id: crypto.randomUUID(),
+        fileName: it.fileName,
+        blob: it.blob,
+        previewUrl: isPdfPath(it.photoPath) ? null : URL.createObjectURL(it.blob),
+        paidBy: it.paidBy,
+        pendingParse: {
+          id: it.pendingId,
+          photoPath: it.photoPath,
+          baseAttempts: it.baseAttempts,
+        },
+      })),
     });
   }, []);
 

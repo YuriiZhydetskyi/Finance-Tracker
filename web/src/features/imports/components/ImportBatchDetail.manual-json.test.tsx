@@ -70,19 +70,6 @@ vi.mock('../api/imports', () => ({
   useSubmitImportFileJson: () => ({ isPending: false, mutateAsync: submitJsonMock }),
 }));
 
-beforeAll(() => {
-  if (!HTMLDialogElement.prototype.showModal) {
-    HTMLDialogElement.prototype.showModal = function showModal() {
-      this.open = true;
-    };
-  }
-  if (!HTMLDialogElement.prototype.close) {
-    HTMLDialogElement.prototype.close = function close() {
-      this.open = false;
-    };
-  }
-});
-
 beforeEach(() => {
   submitJsonMock.mockReset();
   submitJsonMock.mockResolvedValue(undefined);

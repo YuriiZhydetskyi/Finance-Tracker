@@ -335,14 +335,14 @@ create table public.products (
 ```
 
 | Колонка              | Тип           | Nullable    | Приклад                                                             |
-| -------------------- | ------------- | ----------- | ------------------------------------------------------------------- | --------------- |
+| -------------------- | ------------- | ----------- | ------------------------------------------------------------------- |
 | `id`                 | text (ULID)   | ні          | `01HM4N6RPP3K2P9F8DZ7QWERTZ`                                        |
 | `name`               | text          | ні (UNIQUE) | `Pesto Barilla Genovese 190g`                                       |
 | `category`           | text (FK)     | ні          | `Бакалія`                                                           |
-| `product_family_id`  | text (FK)     | так         | стабільне сімейство товару                                          | `tomato`        |
-| `product_variant_id` | text          | так         | варіант у межах сімейства                                           | `cherry_tomato` |
-| `brand`              | text          | так         | явно надрукована марка, не просто магазин                           | `Barilla`       |
-| `is_organic`         | boolean       | так         | `true`/`false` лише коли ознаку можна встановити; `null` — невідомо | `false`         |
+| `product_family_id`  | text (FK)     | так         | стабільне сімейство товару, напр. `tomato`                          |
+| `product_variant_id` | text          | так         | варіант у межах сімейства, напр. `cherry_tomato`                    |
+| `brand`              | text          | так         | явно надрукована марка, не просто магазин, напр. `Barilla`          |
+| `is_organic`         | boolean       | так         | `true`/`false` лише коли ознаку можна встановити; `null` — невідомо |
 | `unit`               | enum          | так         | `g`                                                                 |
 | `unit_size`          | numeric(10,3) | так         | `190.000`                                                           |
 | `notes`              | text          | так         | `Улюблений бренд`                                                   |

@@ -24,8 +24,47 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
+    tsconfigPaths: true,
+  },
+  build: {
+    // Fits `heic-to` (~3.1 MB, the HEIC decoder fetched only when a HEIC file is picked) so the
+    // build stays quiet; the side effect is that no other chunk warns at 500 kB, so eyeball the
+    // build report after dependency bumps.
+    chunkSizeWarningLimit: 3200,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // Vendor code in its own chunks keeps their hashes stable across deploys that only
+          // touch app code. `includeDependenciesRecursively: false` stops a group from pulling
+          // its transitive deps in (react-chartjs-2 would drag `react` into `charts`).
+          groups: [
+            {
+              name: 'charts',
+              test: /node_modules[\\/](chart\.js|react-chartjs-2|@kurkle)[\\/]/,
+              includeDependenciesRecursively: false,
+            },
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              includeDependenciesRecursively: false,
+            },
+            {
+              name: 'supabase',
+              test: /node_modules[\\/]@supabase[\\/]/,
+            },
+            {
+              name: 'forms',
+              test: /node_modules[\\/](react-hook-form|@hookform|zod)[\\/]/,
+              includeDependenciesRecursively: false,
+            },
+            {
+              name: 'tanstack',
+              test: /node_modules[\\/]@tanstack[\\/]/,
+              includeDependenciesRecursively: false,
+            },
+          ],
+        },
+      },
     },
   },
   server: {

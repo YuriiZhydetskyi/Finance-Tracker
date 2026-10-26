@@ -54,13 +54,11 @@ export async function parseEmail(raw: Uint8Array): Promise<ParsedEmail> {
     }))
     .filter(({ bytes }) => isPdf(bytes) && bytes.byteLength <= MAX_PDF_BYTES)
     .slice(0, MAX_DOCUMENTS_PER_EMAIL)
-    .map(
-      ({ filename, bytes }, index): EmailDocument => ({
-        filename: safeFilename(filename, `${subject ?? 'email'} ${String(index + 1)}`, 'pdf'),
-        mimeType: 'application/pdf',
-        bytes,
-      }),
-    );
+    .map(({ filename, bytes }, index): EmailDocument => ({
+      filename: safeFilename(filename, `${subject ?? 'email'} ${String(index + 1)}`, 'pdf'),
+      mimeType: 'application/pdf',
+      bytes,
+    }));
 
   const documents = pdfs.length > 0 ? pdfs : bodyDocument(email, senderLabel, validSentAt, subject);
   return {

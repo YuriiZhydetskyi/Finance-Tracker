@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import type { ParsedReceipt } from '@finance-tracker/domain';
 import { useBatchParser } from './use-batch-parser';
+import { QueryClientWrapper } from '@/test/query-client';
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -55,11 +54,6 @@ beforeEach(() => {
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 });
 
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-}
-
 const fakeParsed = (store: string): ParsedReceipt => ({
   store,
   date: '2026-05-04',
@@ -86,7 +80,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d3.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -108,7 +102,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -133,7 +127,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -159,7 +153,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -191,7 +185,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -229,7 +223,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -274,7 +268,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -298,7 +292,7 @@ describe('useBatchParser', () => {
 
   it('addFiles with empty input is a no-op', async () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
     await act(async () => {
       await result.current.addFiles([]);
@@ -309,7 +303,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipt adds pasted JSON without calling the parser', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -325,7 +319,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipt numbers repeat pastes so carousel labels stay distinguishable', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -347,7 +341,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipts adds a whole array with sequential, non-colliding labels', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -366,7 +360,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipts continues numbering after prior manual pastes', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -385,7 +379,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipts with empty input is a no-op', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
     act(() => {
       result.current.addParsedReceipts([]);
