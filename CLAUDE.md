@@ -204,7 +204,7 @@ What's NOT covered automatically:
 - **No barrels inside features.** Only at feature boundaries (`features/receipts/index.ts`); never inside `features/receipts/components/`.
 - **Documentation language:** Ukrainian. Code, comments, commit messages: English.
 - **Comments:** by default no comments. Add only when WHY is non-obvious (a hidden constraint, surprising behavior, workaround for a specific bug). Never explain WHAT — names already do.
-- **Pre-commit:** Husky + lint-staged auto-runs Prettier on staged files.
+- **Pre-commit:** Husky + lint-staged auto-runs Prettier on staged files; `pr-checks.yml` also runs `npm run format:check` on the whole repo. `.gitattributes` pins LF line endings (Prettier's `endOfLine: lf`), including on Windows checkouts.
 
 ## Required secrets / env vars
 
