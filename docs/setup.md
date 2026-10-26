@@ -236,7 +236,7 @@ ESLint 9 flat config:
 
 `supabase/functions/parse-receipt/handler.test.ts` — handler.ts runtime-portable, тестується у Node.
 
-Запуск всього: `npm run test` (root). Per-workspace: `npx vitest run --root web` або `npx vitest run --root packages/domain`. Single file: `npx vitest run path/to/file.test.ts`.
+Запуск всього: `npm run test` (root); лише Vitest у всіх workspaces одним запуском — `npm run test:unit` (кореневий `vitest.config.mts` з `test.projects`). Per-workspace: `npx vitest run --root web` або `npx vitest run --root packages/domain`. Single file: `npx vitest run path/to/file.test.ts`.
 
 ## Що НЕ покрито тестами (чесні межі)
 
