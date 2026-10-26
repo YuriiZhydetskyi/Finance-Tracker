@@ -14,11 +14,9 @@ import {
 } from '@/features/photo';
 import { Button } from '@/shared/ui/Button';
 
-const PhotoSearchSchema = z
-  .object({
-    pasteJson: z.literal('1').optional(),
-  })
-  .optional();
+const PhotoSearchSchema = z.object({
+  pasteJson: z.literal('1').optional().catch(undefined),
+});
 
 export const Route = createFileRoute('/_authed/photo')({
   component: PhotoFlow,
@@ -28,7 +26,7 @@ export const Route = createFileRoute('/_authed/photo')({
 function PhotoFlow() {
   const categoryNames = useCategoryNames();
   const productList = useProductNameEntries();
-  const { pasteJson } = Route.useSearch() ?? {};
+  const { pasteJson } = Route.useSearch();
   const [jsonDialogOpen, setJsonDialogOpen] = useState(pasteJson === '1');
   const [importNotice, setImportNotice] = useState<string | null>(null);
   // Files picked but not yet assigned a payer. While set, the assignment step

@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_authed/recent')({
 });
 
 function RecentList() {
-  const search = Route.useSearch() ?? {};
+  const search = Route.useSearch();
   const navigate = useNavigate();
   const appUsersQuery = useAppUsers();
   const filters = searchToFilters(search);

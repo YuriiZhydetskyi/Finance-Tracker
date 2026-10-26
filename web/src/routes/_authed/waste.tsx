@@ -32,7 +32,7 @@ function sumWastedEur(rows: WasteItemRow[]): number {
 }
 
 function WasteList() {
-  const search = Route.useSearch() ?? {};
+  const search = Route.useSearch();
   const filters = searchToWasteFilters(search);
   const activeCount = countActiveWasteFilters(search);
   const itemsQuery = useWasteItems(filters);

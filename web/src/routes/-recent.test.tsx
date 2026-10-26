@@ -1,6 +1,6 @@
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Receipt } from '@finance-tracker/domain';
 import { routeTree } from '@/routeTree.gen';
 import { withAbortSignal } from '@/test/with-abort-signal';
@@ -55,10 +55,10 @@ async function resolveNext(data: Partial<Receipt>[]) {
   });
 }
 
-async function openRecent() {
+async function openRecent(url = '/recent') {
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/recent'] }),
+    history: createMemoryHistory({ initialEntries: [url] }),
   });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -69,6 +69,35 @@ async function openRecent() {
   await screen.findByText('Останні чеки');
   return router;
 }
+
+describe('/recent with a hand-edited URL', () => {
+  beforeEach(() => {
+    mocks.pending.length = 0;
+  });
+
+  it('ignores malformed params instead of failing the route', async () => {
+    await openRecent('/recent?from=yesterday&min=lots&q=Lidl');
+
+    expect(screen.getByLabelText('Магазин')).toHaveValue('Lidl');
+    expect(screen.getByLabelText('З дати')).toHaveValue('');
+    expect(screen.getByLabelText('Мін €')).toHaveValue(null);
+  });
+});
+
+describe('/recent filter edits', () => {
+  beforeEach(() => {
+    mocks.pending.length = 0;
+  });
+
+  it('merge into the live URL and replace the history entry', async () => {
+    const router = await openRecent('/recent?q=Lidl');
+
+    fireEvent.change(screen.getByLabelText('Макс €'), { target: { value: '50' } });
+
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ q: 'Lidl', max: 50 }));
+    expect(router.history.canGoBack()).toBe(false);
+  });
+});
 
 describe('/recent while the filters change', () => {
   beforeEach(() => {

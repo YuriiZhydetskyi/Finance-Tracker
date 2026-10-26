@@ -13,7 +13,7 @@ import {
 } from '@/features/pending-parses';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 
-const PendingSearchSchema = z.object({}).optional();
+const PendingSearchSchema = z.object({});
 
 export const Route = createFileRoute('/_authed/pending')({
   component: PendingFlow,

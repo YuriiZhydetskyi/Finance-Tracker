@@ -4,11 +4,9 @@ import { usePendingParses } from '@/features/pending-parses';
 import { usePackagingCandidatesCount } from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
 
-const HomeSearchSchema = z
-  .object({
-    saved: z.string().optional(),
-  })
-  .optional();
+const HomeSearchSchema = z.object({
+  saved: z.string().optional().catch(undefined),
+});
 
 export const Route = createFileRoute('/_authed/')({
   component: HomeNav,
@@ -16,7 +14,7 @@ export const Route = createFileRoute('/_authed/')({
 });
 
 function HomeNav() {
-  const savedId = Route.useSearch()?.saved;
+  const savedId = Route.useSearch().saved;
   const pendingQuery = usePendingParses();
   const pendingCount = pendingQuery.data?.length ?? 0;
   const packagingQuery = usePackagingCandidatesCount();

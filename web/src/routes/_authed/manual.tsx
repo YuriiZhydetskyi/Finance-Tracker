@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { ManualReceiptForm } from '@/features/receipts';
 
-const ManualSearchSchema = z.object({}).optional();
+const ManualSearchSchema = z.object({});
 
 export const Route = createFileRoute('/_authed/manual')({
   component: ManualPage,

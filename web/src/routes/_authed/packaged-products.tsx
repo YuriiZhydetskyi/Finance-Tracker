@@ -20,12 +20,10 @@ import { Input } from '@/shared/ui/Input';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import type { PackagingSavePlan } from '@/features/packaged-products/api/use-save-packaged-products-mutation';
 
-const PackagedProductsSearchSchema = z
-  .object({
-    tab: z.enum(['catalogue', 'queue']).optional(),
-    q: z.string().optional(),
-  })
-  .optional();
+const PackagedProductsSearchSchema = z.object({
+  tab: z.enum(['catalogue', 'queue']).optional().catch(undefined),
+  q: z.string().optional().catch(undefined),
+});
 
 export const Route = createFileRoute('/_authed/packaged-products')({
   component: PackagedProductsFlow,
@@ -35,8 +33,8 @@ export const Route = createFileRoute('/_authed/packaged-products')({
 function PackagedProductsFlow() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const tab = search?.tab ?? 'queue';
-  const query = search?.q ?? '';
+  const tab = search.tab ?? 'queue';
+  const query = search.q ?? '';
 
   const categoriesQuery = useCategories();
   const categoryNames = useCategoryNames();
