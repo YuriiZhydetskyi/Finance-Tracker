@@ -27,11 +27,11 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.12",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.2",
-    "prettier": "^3.8.3",
-    "supabase": "^2.98.2"
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "supabase": "^2.122.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs}": [
@@ -42,6 +42,6 @@
     ]
   },
   "engines": {
-    "node": ">=22.13"
+    "node": ">=24"
   }
 }

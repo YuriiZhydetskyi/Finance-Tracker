@@ -6,8 +6,8 @@
 
 ## Передумови
 
-- **Node.js ≥ 22 LTS** локально (`node --version`).
-- **npm** ≥ 10 (іде в комплекті з Node 22).
+- **Node.js ≥ 24 LTS** локально (`node --version`).
+- **npm** ≥ 10 (іде в комплекті з Node 24).
 - **Git** локально.
 - **Supabase project** — наразі один спільний `<your-project-ref>`. Якщо створюєш свій (наприклад для fork-а) — потрібен Supabase акаунт.
 - **API keys для Edge Function** (тільки для production deploy):
