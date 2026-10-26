@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, skipToken, useQuery } from '@tanstack/react-query';
 import type { IPhotoStorage } from '@/shared/lib/dependencies';
 
 /**
@@ -11,16 +11,27 @@ import type { IPhotoStorage } from '@/shared/lib/dependencies';
  */
 const SIGNED_URL_STALE_MS = 30 * 60_000;
 
+export const signedUrlQueryKey = (path: string | null, url: string | null) =>
+  ['signed-url', path, url] as const;
+
+export function signedUrlQueryOptions(
+  storage: IPhotoStorage,
+  path: string | null,
+  url: string | null,
+) {
+  return queryOptions({
+    queryKey: signedUrlQueryKey(path, url),
+    queryFn:
+      path || url ? () => (path ? storage.getSignedUrl(path) : Promise.resolve(url)) : skipToken,
+    staleTime: SIGNED_URL_STALE_MS,
+  });
+}
+
 export function useSignedUrl(
   storage: IPhotoStorage,
   path: string | null,
   url: string | null,
   enabled: boolean,
 ) {
-  return useQuery({
-    queryKey: ['signed-url', path, url],
-    enabled: enabled && Boolean(path ?? url),
-    staleTime: SIGNED_URL_STALE_MS,
-    queryFn: () => (path ? storage.getSignedUrl(path) : Promise.resolve(url)),
-  });
+  return useQuery({ ...signedUrlQueryOptions(storage, path, url), enabled });
 }

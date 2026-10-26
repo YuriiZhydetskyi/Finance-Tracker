@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen } from '@testing-library/react';
 import type { Receipt } from '@finance-tracker/domain';
 import { routeTree } from '@/routeTree.gen';
+import { withAbortSignal } from '@/test/with-abort-signal';
 
 type ReceiptsResult = { data: Partial<Receipt>[]; error: null };
 
@@ -18,11 +19,12 @@ vi.mock('@/shared/lib/supabase-client', () => {
     gte: () => chain,
     lte: () => chain,
     order: () => chain,
-    abortSignal: () => chain,
     limit: () =>
-      new Promise<ReceiptsResult>((resolve) => {
-        mocks.pending.push(resolve);
-      }),
+      withAbortSignal(
+        new Promise<ReceiptsResult>((resolve) => {
+          mocks.pending.push(resolve);
+        }),
+      ),
   };
   return { supabase: { from: () => chain } };
 });

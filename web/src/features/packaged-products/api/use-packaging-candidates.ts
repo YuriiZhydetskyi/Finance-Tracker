@@ -2,7 +2,7 @@
 // ranking needs a COUNT over items joined to receipts, which PostgREST cannot
 // express; the caller's RLS still applies to every table it touches.
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 import {
   packagedProductStoreLabelsQueryKey,
@@ -71,36 +71,43 @@ export type PackagingCandidateFilters = {
   limit?: number;
 };
 
-export function usePackagingCandidates(filters: PackagingCandidateFilters = {}) {
+export function packagingCandidatesQueryOptions(filters: PackagingCandidateFilters = {}) {
   const { query = '', categories, stores, limit = DEFAULT_LIMIT } = filters;
 
-  return useQuery<PackagingCandidateRow[]>({
+  return queryOptions({
     queryKey: [...packagingCandidatesQueryKey, query, categories ?? null, stores ?? null, limit],
-    placeholderData: keepPreviousData,
     staleTime: ONE_MIN,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('search_packaging_candidates', {
-        p_query: query,
-        p_limit: limit,
-        // exactOptionalPropertyTypes: an absent filter must be an absent key,
-        // never an explicit undefined.
-        ...(categories && categories.length > 0 ? { p_categories: categories } : {}),
-        ...(stores && stores.length > 0 ? { p_stores: stores } : {}),
-      });
+    queryFn: async ({ signal }): Promise<PackagingCandidateRow[]> => {
+      const { data, error } = await supabase
+        .rpc('search_packaging_candidates', {
+          p_query: query,
+          p_limit: limit,
+          // exactOptionalPropertyTypes: an absent filter must be an absent key,
+          // never an explicit undefined.
+          ...(categories && categories.length > 0 ? { p_categories: categories } : {}),
+          ...(stores && stores.length > 0 ? { p_stores: stores } : {}),
+        })
+        .abortSignal(signal);
       if (error) throw error;
       return (data ?? []).map((row) => toCandidate(row as Record<string, unknown>));
     },
   });
 }
 
-/** "Printed as X at REWE and Y at Aldi", with purchase counts and the latest price. */
-export function usePackagedProductStoreLabels(id: string) {
-  return useQuery<PackagedProductStoreLabelRow[]>({
+export function usePackagingCandidates(filters: PackagingCandidateFilters = {}) {
+  return useQuery({
+    ...packagingCandidatesQueryOptions(filters),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function packagedProductStoreLabelsQueryOptions(id: string) {
+  return queryOptions({
     queryKey: packagedProductStoreLabelsQueryKey(id),
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('packaged_product_store_labels', {
-        p_packaged_product_id: id,
-      });
+    queryFn: async ({ signal }): Promise<PackagedProductStoreLabelRow[]> => {
+      const { data, error } = await supabase
+        .rpc('packaged_product_store_labels', { p_packaged_product_id: id })
+        .abortSignal(signal);
       if (error) throw error;
       return (data ?? []).map((raw) => {
         const row = raw as Record<string, unknown>;
@@ -122,22 +129,30 @@ export function usePackagedProductStoreLabels(id: string) {
   });
 }
 
+/** "Printed as X at REWE and Y at Aldi", with purchase counts and the latest price. */
+export function usePackagedProductStoreLabels(id: string) {
+  return useQuery(packagedProductStoreLabelsQueryOptions(id));
+}
+
+export const packagingCandidatesCountQueryOptions = queryOptions({
+  queryKey: packagingCandidatesCountQueryKey,
+  staleTime: ONE_MIN,
+  queryFn: async ({ signal }): Promise<number> => {
+    const { count, error } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .is('packaged_product_id', null)
+      .eq('packaging_not_applicable', false)
+      .abortSignal(signal);
+    if (error) throw error;
+    return count ?? 0;
+  },
+});
+
 /**
  * Just the size of the queue, for the home-page badge. A HEAD count instead of
  * the ranking RPC so opening the home page never pays for the aggregate.
  */
 export function usePackagingCandidatesCount() {
-  return useQuery<number>({
-    queryKey: packagingCandidatesCountQueryKey,
-    staleTime: ONE_MIN,
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('products')
-        .select('id', { count: 'exact', head: true })
-        .is('packaged_product_id', null)
-        .eq('packaging_not_applicable', false);
-      if (error) throw error;
-      return count ?? 0;
-    },
-  });
+  return useQuery(packagingCandidatesCountQueryOptions);
 }

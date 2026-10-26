@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 
 // Items joined with receipts for the /waste page. Filters are applied
@@ -41,17 +41,10 @@ export type WasteItemRow = {
 
 export const wasteItemsQueryKey = ['waste-items'] as const;
 
-/**
- * All items eligible to be marked as spoilage, sorted by purchase date desc.
- * Cancellation/Pfand-refund rows (total_orig <= 0) are excluded server-side.
- * The PostgREST `!inner` join makes receipt filters (date/store) NOT NULL —
- * items orphaned from their receipt would be filtered out, but that should
- * never happen with our FK.
- */
-export function useWasteItems(filters: WasteFilters) {
-  return useQuery<WasteItemRow[]>({
+export function wasteItemsQueryOptions(filters: WasteFilters) {
+  return queryOptions({
     queryKey: [...wasteItemsQueryKey, { filters }] as const,
-    queryFn: async () => {
+    queryFn: async ({ signal }): Promise<WasteItemRow[]> => {
       const rows: WasteItemRow[] = [];
       // PostgREST caps every response. Fetch all pages before applying the
       // fully-wasted filter so a long history cannot hide matching purchases.
@@ -81,17 +74,28 @@ export function useWasteItems(filters: WasteFilters) {
           .order('receipt(date)', { ascending: false })
           .order('created_at', { ascending: false })
           .order('id', { ascending: false })
-          .range(offset, offset + pageSize - 1);
+          .range(offset, offset + pageSize - 1)
+          .abortSignal(signal)
+          .overrideTypes<WasteItemRow[], { merge: false }>();
         if (error) throw error;
-        const page = (data ?? []) as unknown as WasteItemRow[];
-        rows.push(...page);
-        if (page.length < pageSize) break;
+        rows.push(...data);
+        if (data.length < pageSize) break;
       }
       // Hide fully-wasted unless explicitly opted in. Cheap client-side filter:
       // there is no PostgREST expression for `wasted_qty == qty`.
       return filters.showFullyWasted ? rows : rows.filter((r) => r.wasted_qty < r.qty);
     },
-    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
+}
+
+/**
+ * All items eligible to be marked as spoilage, sorted by purchase date desc.
+ * Cancellation/Pfand-refund rows (total_orig <= 0) are excluded server-side.
+ * The PostgREST `!inner` join makes receipt filters (date/store) NOT NULL —
+ * items orphaned from their receipt would be filtered out, but that should
+ * never happen with our FK.
+ */
+export function useWasteItems(filters: WasteFilters) {
+  return useQuery({ ...wasteItemsQueryOptions(filters), placeholderData: keepPreviousData });
 }

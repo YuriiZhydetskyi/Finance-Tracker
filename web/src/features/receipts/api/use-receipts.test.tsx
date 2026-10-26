@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useReceipts, type ReceiptFilters } from './use-receipts';
+import { withAbortSignal } from '@/test/with-abort-signal';
 
 type DataRes = { data: unknown[] | null; error: { message: string } | null };
 
@@ -44,7 +45,7 @@ vi.mock('@/shared/lib/supabase-client', () => ({
         },
         limit: (n: number) => {
           captured.limit = n;
-          return finalThenMock();
+          return withAbortSignal(finalThenMock());
         },
       };
       return chain;

@@ -18,9 +18,10 @@ export function useOrphanTransactions() {
         .select('*')
         .eq('status', 'unmatched')
         .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .overrideTypes<StatementTransaction[], { merge: false }>();
       if (error) throw error;
-      return data as StatementTransaction[];
+      return data;
     },
     staleTime: 30_000,
   });

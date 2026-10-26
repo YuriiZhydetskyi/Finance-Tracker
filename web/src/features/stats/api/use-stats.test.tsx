@@ -11,18 +11,24 @@ import {
   useStatsSavingsByMonth,
   useStatsWasteByMonth,
 } from './use-stats';
+import { withAbortSignal } from '@/test/with-abort-signal';
 
 type Row = Record<string, unknown>;
 type RpcResult = { data: Row[] | null; error: { message: string } | null };
 
 const rpcMock = vi.fn<(name: string, args?: Record<string, unknown>) => Promise<RpcResult>>();
+const signals: AbortSignal[] = [];
 
 vi.mock('@/shared/lib/supabase-client', () => ({
-  supabase: { rpc: (name: string, args?: Record<string, unknown>) => rpcMock(name, args) },
+  supabase: {
+    rpc: (name: string, args?: Record<string, unknown>) =>
+      withAbortSignal(rpcMock(name, args), (signal) => signals.push(signal)),
+  },
 }));
 
 beforeEach(() => {
   rpcMock.mockReset();
+  signals.length = 0;
 });
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -97,6 +103,17 @@ describe('period-aware stats queries', () => {
       p_date_to: '2026-08-31',
       p_limit: 7,
     });
+  });
+
+  it('hands the query signal to the request so superseded periods are cancelled', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null });
+
+    const { result } = renderHook(() => useStatsByMonth(range, {}), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(signals).toHaveLength(1);
+    expect(signals[0]).toBeInstanceOf(AbortSignal);
   });
 
   it('surfaces database errors', async () => {

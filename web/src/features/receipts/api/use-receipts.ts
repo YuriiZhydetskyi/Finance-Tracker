@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import type { Receipt } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { receiptsQueryKey } from './receipts-query-keys';
@@ -14,6 +14,29 @@ export type ReceiptFilters = {
   amountMax?: number; // inclusive upper bound on total_eur
 };
 
+export function receiptsQueryOptions(filters?: ReceiptFilters, limit = DEFAULT_LIMIT) {
+  return queryOptions({
+    queryKey: [...receiptsQueryKey, { filters, limit }] as const,
+    queryFn: async ({ signal }): Promise<Receipt[]> => {
+      let q = supabase.from('receipts').select('*');
+      if (filters?.store) q = q.ilike('store', `%${filters.store}%`);
+      if (filters?.dateFrom) q = q.gte('date', filters.dateFrom);
+      if (filters?.dateTo) q = q.lte('date', filters.dateTo);
+      if (filters?.paidBy) q = q.eq('paid_by', filters.paidBy);
+      if (filters?.amountMin != null) q = q.gte('total_eur', filters.amountMin);
+      if (filters?.amountMax != null) q = q.lte('total_eur', filters.amountMax);
+      const { data, error } = await q
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit)
+        .abortSignal(signal);
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 30_000,
+  });
+}
+
 /**
  * Returns receipts for the current user (RLS-filtered), narrowed by optional
  * filters and sorted by date desc + created_at desc to break ties stably.
@@ -26,25 +49,9 @@ export function useReceipts(
   limit = DEFAULT_LIMIT,
   options?: { enabled?: boolean },
 ) {
-  return useQuery<Receipt[]>({
-    queryKey: [...receiptsQueryKey, { filters, limit }] as const,
+  return useQuery({
+    ...receiptsQueryOptions(filters, limit),
     enabled: options?.enabled ?? true,
     placeholderData: keepPreviousData,
-    queryFn: async () => {
-      let q = supabase.from('receipts').select('*');
-      if (filters?.store) q = q.ilike('store', `%${filters.store}%`);
-      if (filters?.dateFrom) q = q.gte('date', filters.dateFrom);
-      if (filters?.dateTo) q = q.lte('date', filters.dateTo);
-      if (filters?.paidBy) q = q.eq('paid_by', filters.paidBy);
-      if (filters?.amountMin != null) q = q.gte('total_eur', filters.amountMin);
-      if (filters?.amountMax != null) q = q.lte('total_eur', filters.amountMax);
-      const { data, error } = await q
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 30_000,
   });
 }
