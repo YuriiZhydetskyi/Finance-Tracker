@@ -18,6 +18,26 @@
     перегенерувати;
   - CSP у `web/public/_headers` працює в режимі report-only (див. [deploy.md](deploy.md)).
 
+## Порядок у React-шарі (2026-10-26)
+
+Гілка `chore/react-ui`.
+
+- **Модальні вікна.** Один хук `useModalDialog(open)` (`web/src/shared/hooks/`) замість
+  дубльованого `showModal()`/`close()` ефекту; `PurchaseCorrectionDialog` викликає його з
+  `true`. `ManualJsonImportDialog` і `DeleteConfirmDialog` ще на старому ефекті.
+- **Графіки статистики.** `aria-label` і текст-запасник у `<canvas>`; статичні `options`
+  винесено в константи, тож react-chartjs-2 більше не викликає `chart.update()` на кожен
+  рендер.
+- **Заголовки сторінок.** `<PageTitle>` (`shared/ui`) рендерить `<title>` React 19 для кожного
+  роуту; статичний `index.html` лишається запасним.
+- **Налаштування статистики.** `stats-preferences.ts` став підписним стором
+  (`useSyncExternalStore`, подія `storage` між вкладками, пам'ять на випадок заблокованого
+  сховища). Роут і обидва пікери читають один знімок, ефектів «знизу вгору» й `onChange`
+  більше немає (це замінило `useEffectEvent` у `StatsPeriodPicker`).
+- **Інше.** `z.number().finite()` і `z.string().url()` замінено на zod 4; `preconnect` до
+  Supabase в `index.html`; `require-trusted-types-for 'script'` у Report-Only CSP;
+  `@tanstack/eslint-plugin-query` і `-router` у `web/eslint.config.js`.
+
 ## Рефакторинг 2026-09
 
 Гілка `refactor/2026-09`, план —
@@ -36,7 +56,8 @@
   `job-failure`, `constants` тощо).
 - **6.2 / 6.3** — спільний хук `useDebouncedUrlDraft` для фільтрів `/recent`
   і `/waste`; `StatsPeriodPicker` без `eslint-disable` (виклик на mount
-  лишився через `useEffectEvent`, бо на нього спираються тести).
+  лишився через `useEffectEvent`, бо на нього спираються тести; у 2026-10 замінено
+  на `useSyncExternalStore`).
 - **6.5** — класифікаційні колонки в схемах мають `default(null)`, тож фабрики
   повертають звичайні `Item`/`Product`/`PackagedProduct` без widening.
 - **6.9** — видалено архівний `legacy/apps-script/`.
