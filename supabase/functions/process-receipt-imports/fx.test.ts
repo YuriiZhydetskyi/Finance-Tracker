@@ -31,6 +31,16 @@ describe('getFxRate', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it('crosses USD through UAH the same way', async () => {
+    const fetchImpl = vi.fn<typeof fetch>((input) =>
+      Promise.resolve(jsonResponse([{ rate: String(input).includes('valcode=USD') ? 41.2 : 46 }])),
+    );
+    await expect(getFxRate(fetchImpl, 'USD', '2026-09-01')).resolves.toBe(
+      Math.round((41.2 / 46) * 1e6) / 1e6,
+    );
+    expect(String(fetchImpl.mock.calls[1]?.[0])).toContain('valcode=USD&date=20260901&json');
+  });
+
   it('walks back one day per failed response and gives up after 7 attempts', async () => {
     const fetchImpl = vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse([], false)));
     await expect(getFxRate(fetchImpl, 'UAH', '2026-08-01')).rejects.toThrow('NBU rate unavailable');
@@ -40,7 +50,7 @@ describe('getFxRate', () => {
 
   it('rejects unsupported currencies and missing dates', async () => {
     const fetchImpl = vi.fn<typeof fetch>();
-    await expect(getFxRate(fetchImpl, 'USD', '2026-08-01')).rejects.toThrow(
+    await expect(getFxRate(fetchImpl, 'GBP', '2026-08-01')).rejects.toThrow(
       'Unsupported currency or date',
     );
     await expect(getFxRate(fetchImpl, 'UAH', null)).rejects.toThrow('Unsupported currency or date');

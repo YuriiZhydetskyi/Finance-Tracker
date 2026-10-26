@@ -36,12 +36,12 @@ export function integerAppearsInText(text: string, value: number): boolean {
 
 // Receipts print the same quantity as `2`, `2.00` or `3,000`, and the multiplier as
 // `x`, `×`, `*` or a unit word (Stk, szt), sometimes glued to the price (`3,000 x0,50`,
-// `22.09*6.86`).
+// `22.09*6.86`). Order emails label it instead (`Menge: 2`, `Qty: 2`).
 export function hasExplicitMultiplier(text: string, qty: number): boolean {
   const [integerPart = '0', fraction = ''] = String(roundQty(qty)).split('.');
   const printedQty = fraction ? `${integerPart}[.,]${fraction}0*` : `${integerPart}(?:[.,]0+)?`;
   const quantityPattern = new RegExp(
-    String.raw`(?:^|\s)(?:${printedQty}\s*(?:x|×|\*|stk\.?|st\.?|pcs|szt\.?)(?=\s|\d|$)|(?:x|×|\*)\s*${printedQty}(?=\s|$))`,
+    String.raw`(?:^|\s)(?:${printedQty}\s*(?:x|×|\*|stk\.?|st\.?|pcs|szt\.?)(?=\s|\d|$)|(?:x|×|\*)\s*${printedQty}(?=\s|$)|(?:menge|anzahl|qty|quantity|кількість)\s*:?\s*${printedQty}(?=\s|$|[,;)]))`,
     'iu',
   );
   return quantityPattern.test(text);

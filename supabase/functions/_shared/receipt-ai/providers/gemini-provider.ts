@@ -8,6 +8,7 @@ import type {
   BulkParsedDocument,
   ParsedReceipt,
 } from '../types.ts';
+import { decodeTextDocument, isTextDocument } from '../text-document.ts';
 import { AiProviderError, type IAiProvider } from './ai-provider.ts';
 
 const GEMINI_API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -90,18 +91,14 @@ export class GeminiProvider implements IAiProvider {
       thinkingLevel: options.thinkingLevel,
       mediaResolution: options.mediaResolution,
     };
+    const documentPart = isTextDocument(ctx.mimeType)
+      ? { text: decodeTextDocument(imageBase64) }
+      : {
+          inline_data: { mime_type: ctx.mimeType, data: imageBase64 },
+          media_resolution: { level: options.mediaResolution },
+        };
     const body = {
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inline_data: { mime_type: ctx.mimeType, data: imageBase64 },
-              media_resolution: { level: options.mediaResolution },
-            },
-          ],
-        },
-      ],
+      contents: [{ parts: [{ text: prompt }, documentPart] }],
       generationConfig: {
         thinkingConfig: { thinkingLevel: options.thinkingLevel },
         responseMimeType: 'application/json',

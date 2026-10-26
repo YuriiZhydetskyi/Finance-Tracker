@@ -513,7 +513,7 @@ export function prepareReceipt(
   ) {
     return { ok: false, reason: 'Час має невірний формат.' };
   }
-  if (!['EUR', 'UAH', 'PLN'].includes(parsed.currency)) {
+  if (!['EUR', 'UAH', 'PLN', 'USD'].includes(parsed.currency)) {
     return { ok: false, reason: `Валюта ${parsed.currency || 'невідома'} не підтримується.` };
   }
   if (parsed.total_orig == null || !Number.isFinite(parsed.total_orig)) {

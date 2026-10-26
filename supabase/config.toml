@@ -383,6 +383,11 @@ deno_version = 2
 [functions.process-receipt-imports]
 verify_jwt = false
 
+# Called by the owner's Gmail Apps Script with a per-user ingest token
+# (`Bearer fte_…`), which the handler checks against its stored SHA-256 hash.
+[functions.ingest-email-receipts]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

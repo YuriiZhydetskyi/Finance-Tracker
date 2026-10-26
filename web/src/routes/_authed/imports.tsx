@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { BulkImportForm, useImportBatches } from '@/features/imports';
+import { BulkImportForm, GmailImportSettings, useImportBatches } from '@/features/imports';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 
 export const Route = createFileRoute('/_authed/imports')({ component: ImportsContent });
@@ -16,6 +16,7 @@ function ImportsContent() {
         </p>
       </div>
       <BulkImportForm />
+      <GmailImportSettings />
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-slate-900">Останні батчі</h2>
         {batches.isError && <ErrorDetails error={batches.error} label="Не вдалося завантажити" />}
@@ -28,7 +29,10 @@ function ImportsContent() {
                 params={{ id: batch.id }}
                 className="flex justify-between rounded-md border border-slate-200 bg-white p-3 text-sm hover:bg-slate-50"
               >
-                <span>{new Date(batch.created_at).toLocaleString('uk-UA')}</span>
+                <span>
+                  {new Date(batch.created_at).toLocaleString('uk-UA')}
+                  {batch.email_source_id && <span className="ml-2 text-slate-500">· Gmail</span>}
+                </span>
                 <span className="text-right">
                   {batchStatusLabel(batch.status)} · завершено {batch.progress.completed}/
                   {batch.progress.total}

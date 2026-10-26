@@ -68,7 +68,7 @@ export function validateManualJsonReceipt(
   if (options.requireSavableReceipt) {
     if (!receipt.store?.trim()) issues.push('Не вказано продавця store.');
     if (!receipt.date) issues.push('Не вказано дату date.');
-    if (!['EUR', 'UAH', 'PLN'].includes(receipt.currency)) {
+    if (!['EUR', 'UAH', 'PLN', 'USD'].includes(receipt.currency)) {
       issues.push('Валюта ' + receipt.currency + ' не підтримується для автоматичного збереження.');
     }
   }

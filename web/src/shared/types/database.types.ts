@@ -69,6 +69,117 @@ export type Database = {
         };
         Relationships: [];
       };
+      email_import_messages: {
+        Row: {
+          batch_id: string | null;
+          created_at: string;
+          file_count: number;
+          id: string;
+          provider_message_id: string;
+          reason: string | null;
+          received_at: string | null;
+          sender: string | null;
+          source_id: string;
+          status: string;
+          subject: string | null;
+        };
+        Insert: {
+          batch_id?: string | null;
+          created_at?: string;
+          file_count?: number;
+          id: string;
+          provider_message_id: string;
+          reason?: string | null;
+          received_at?: string | null;
+          sender?: string | null;
+          source_id: string;
+          status: string;
+          subject?: string | null;
+        };
+        Update: {
+          batch_id?: string | null;
+          created_at?: string;
+          file_count?: number;
+          id?: string;
+          provider_message_id?: string;
+          reason?: string | null;
+          received_at?: string | null;
+          sender?: string | null;
+          source_id?: string;
+          status?: string;
+          subject?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'email_import_messages_batch_id_fkey';
+            columns: ['batch_id'];
+            isOneToOne: false;
+            referencedRelation: 'receipt_import_batches';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'email_import_messages_source_id_fkey';
+            columns: ['source_id'];
+            isOneToOne: false;
+            referencedRelation: 'email_import_sources';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      email_import_sources: {
+        Row: {
+          allowed_sender_domains: string[];
+          created_at: string;
+          id: string;
+          import_after: string;
+          last_used_at: string | null;
+          owner_email: string;
+          paid_by: string;
+          revoked_at: string | null;
+          token_hash: string;
+          token_hint: string;
+        };
+        Insert: {
+          allowed_sender_domains: string[];
+          created_at?: string;
+          id: string;
+          import_after: string;
+          last_used_at?: string | null;
+          owner_email: string;
+          paid_by: string;
+          revoked_at?: string | null;
+          token_hash: string;
+          token_hint: string;
+        };
+        Update: {
+          allowed_sender_domains?: string[];
+          created_at?: string;
+          id?: string;
+          import_after?: string;
+          last_used_at?: string | null;
+          owner_email?: string;
+          paid_by?: string;
+          revoked_at?: string | null;
+          token_hash?: string;
+          token_hint?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'email_import_sources_owner_email_fkey';
+            columns: ['owner_email'];
+            isOneToOne: false;
+            referencedRelation: 'app_users';
+            referencedColumns: ['email'];
+          },
+          {
+            foreignKeyName: 'email_import_sources_paid_by_fkey';
+            columns: ['paid_by'];
+            isOneToOne: false;
+            referencedRelation: 'app_users';
+            referencedColumns: ['email'];
+          },
+        ];
+      };
       items: {
         Row: {
           category: string;
@@ -738,6 +849,7 @@ export type Database = {
         Row: {
           completed_at: string | null;
           created_at: string;
+          email_source_id: string | null;
           id: string;
           paid_by: string;
           status: string;
@@ -747,6 +859,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null;
           created_at?: string;
+          email_source_id?: string | null;
           id: string;
           paid_by: string;
           status?: string;
@@ -756,13 +869,22 @@ export type Database = {
         Update: {
           completed_at?: string | null;
           created_at?: string;
+          email_source_id?: string | null;
           id?: string;
           paid_by?: string;
           status?: string;
           updated_at?: string;
           uploaded_by?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'receipt_import_batches_email_source_id_fkey';
+            columns: ['email_source_id'];
+            isOneToOne: false;
+            referencedRelation: 'email_import_sources';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       receipt_import_files: {
         Row: {
@@ -1071,6 +1193,17 @@ export type Database = {
       };
     };
     Functions: {
+      authenticate_email_import_source: {
+        Args: { p_token_hash: string };
+        Returns: {
+          allowed_sender_domains: string[];
+          id: string;
+          import_after: string;
+          messages_last_day: number;
+          owner_email: string;
+          paid_by: string;
+        }[];
+      };
       claim_receipt_import_jobs: {
         Args: { p_limit?: number };
         Returns: {
@@ -1135,6 +1268,15 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      create_email_import_source: {
+        Args: {
+          p_id: string;
+          p_import_after: string;
+          p_paid_by: string;
+          p_sender_domains: string[];
+        };
+        Returns: string;
+      };
       create_manual_receipt_import_batch: {
         Args: { p_batch_id: string; p_paid_by: string; p_receipts: Json };
         Returns: undefined;
@@ -1188,6 +1330,10 @@ export type Database = {
         Args: { p_error_message: string; p_file_id: string };
         Returns: undefined;
       };
+      normalize_email_sender_domains: {
+        Args: { p_domains: string[] };
+        Returns: string[];
+      };
       normalize_product_match_key: {
         Args: { p_value: string };
         Returns: string;
@@ -1226,6 +1372,15 @@ export type Database = {
         Args: { p_batch_id: string };
         Returns: undefined;
       };
+      register_email_import_message: {
+        Args: {
+          p_batch_id: string;
+          p_files: Json;
+          p_message: Json;
+          p_source_id: string;
+        };
+        Returns: Json;
+      };
       requeue_receipt_import_file: {
         Args: {
           p_file_id: string;
@@ -1238,6 +1393,11 @@ export type Database = {
         Args: { p_file_id: string; p_receipt_id: string };
         Returns: undefined;
       };
+      retry_email_import_message: {
+        Args: { p_message_id: string };
+        Returns: undefined;
+      };
+      revoke_email_import_source: { Args: { p_id: string }; Returns: undefined };
       save_receipt_bundle: {
         Args: {
           p_items: Json;
@@ -1322,6 +1482,10 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      set_email_import_sender_domains: {
+        Args: { p_id: string; p_sender_domains: string[] };
+        Returns: undefined;
       };
       stats_by_category: {
         Args: {

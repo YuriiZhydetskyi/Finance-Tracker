@@ -371,6 +371,34 @@ npx supabase functions deploy process-receipt-imports --no-verify-jwt
 `SUPABASE_URL`, Gemini й Anthropic keys автоматично/явно доступні тільки Edge Function і ніколи не
 додаються у `VITE_*`.
 
+## Увімкнути автоімпорт з Gmail
+
+Потрібні міграція `20261026150000_email_receipt_imports.sql` і функція
+`ingest-email-receipts`. CI деплоїть обидві у job `deploy-backend`; вручну:
+
+```powershell
+npx supabase db push
+npx supabase functions deploy ingest-email-receipts --no-verify-jwt
+npx supabase functions deploy process-receipt-imports --no-verify-jwt
+```
+
+Нових секретів немає. Функція використовує автоматичні `SUPABASE_URL` і
+`SUPABASE_SERVICE_ROLE_KEY`, а клієнта автентифікує ingest-токеном, хеш якого лежить у
+`email_import_sources`. `verify_jwt = false` задано в `supabase/config.toml`. Після міграції
+перегенеруй `database.types.ts`.
+
+`process-receipt-imports` треба передеплоїти разом із нею, бо воркер має вміти читати
+текстові документи (`text/plain`). Налаштування на боці Google описане в
+[gmail-import.md](gmail-import.md).
+
+## Заголовки безпеки
+
+`web/public/_headers` задає для Cloudflare Pages `nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy` і `Permissions-Policy`. CSP поки що працює в режимі
+`Content-Security-Policy-Report-Only`. Після деплою відкрий застосунок, пройди «Фото чек»,
+«Масовий імпорт», `/edit/$id` і «Статистику» та перевір консоль браузера на порушення CSP.
+Якщо їх немає, перейменуй заголовок на `Content-Security-Policy`.
+
 ## Posthumous: рекавері легасі
 
 90-денне вікно відкату на Apps Script завершилось 2026-08-06. Код старого додатку видалено з репо у вересні 2026 (останній коміт, що його містить: `875bb9b`). Для довідки: `git checkout 875bb9b -- legacy/apps-script`.

@@ -8,10 +8,10 @@
 export type IFxRateProvider = {
   /**
    * Resolve currency→EUR rate for the given date. Returns 1.0 for EUR (no fetch).
-   * For UAH and PLN (and any future supported currencies) — fetches live from the
+   * For UAH, PLN and USD (and any future supported currencies) — fetches live from the
    * provider, with provider-specific fallback (e.g. weekend walk-back).
    *
-   * @param currency ISO 4217 (e.g. 'EUR', 'UAH', 'PLN')
+   * @param currency ISO 4217 (e.g. 'EUR', 'UAH', 'PLN', 'USD')
    * @param dateIso  'YYYY-MM-DD'
    * @returns rate such that `total_eur = total_orig * rate` is correct
    * @throws if the currency is unsupported, or no rate could be resolved

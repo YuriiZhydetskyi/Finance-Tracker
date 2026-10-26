@@ -106,6 +106,18 @@ describe('AnthropicProvider — content block dispatch', () => {
     });
   });
 
+  it('sends an email body as a plain-text document with the email rules in the prompt', async () => {
+    const provider = new AnthropicProvider({ apiKey: 'k' });
+    await provider.parseBulkDetailed(btoa('Gesamtbetrag EUR 15,98'), ctx('text/plain'));
+    const body = lastRequestBody();
+    const [first, prompt] = body.messages[0]!.content;
+    expect(first).toMatchObject({
+      type: 'document',
+      source: { type: 'text', media_type: 'text/plain', data: 'Gesamtbetrag EUR 15,98' },
+    });
+    expect((prompt as { text: string }).text).toContain('plain text of an email');
+  });
+
   it('keeps the text prompt as the second content block in all cases', async () => {
     const provider = new AnthropicProvider({ apiKey: 'k' });
     await provider.parse('AAA', ctx('application/pdf'));

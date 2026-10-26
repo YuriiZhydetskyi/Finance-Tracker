@@ -57,3 +57,6 @@ coverage/
 
 # Local analysis artifacts (live DB snapshots with personal purchase data)
 output/
+
+# Real receipts dropped into the checkout for bulk import (public repo)
+/Receipts*/

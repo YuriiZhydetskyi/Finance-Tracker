@@ -69,6 +69,12 @@ describe('hasExplicitMultiplier', () => {
     expect(hasExplicitMultiplier('CukKonafettoLuzKg 0,358 x23,90 10,35C', 0.358)).toBe(true);
   });
 
+  it('accepts the labelled quantity of order emails', () => {
+    expect(hasExplicitMultiplier('Doppelherz Magnesium Menge: 2 EUR 15,98', 2)).toBe(true);
+    expect(hasExplicitMultiplier('Bands Qty: 3', 3)).toBe(true);
+    expect(hasExplicitMultiplier('Bands Menge: 12', 2)).toBe(false);
+  });
+
   it('does not match a different quantity or a number that merely ends in the quantity', () => {
     expect(hasExplicitMultiplier('Barilla Spaghetti 4 * 0,69 2,76 B', 2)).toBe(false);
     expect(hasExplicitMultiplier('Milk 12 x 1,50', 2)).toBe(false);

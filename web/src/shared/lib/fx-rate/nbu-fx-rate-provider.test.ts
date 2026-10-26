@@ -42,7 +42,7 @@ describe('nbuFxRateProvider.getRateLive', () => {
   });
 
   it('throws for unsupported currency', async () => {
-    await expect(nbuFxRateProvider.getRateLive('USD', '2026-05-04')).rejects.toThrow(
+    await expect(nbuFxRateProvider.getRateLive('GBP', '2026-05-04')).rejects.toThrow(
       /FX lookup not supported/,
     );
   });
@@ -97,6 +97,15 @@ describe('nbuFxRateProvider.getRateLive', () => {
     const rate = await nbuFxRateProvider.getRateLive('UAH', '2026-05-04');
     expect(calls).toBe(2);
     expect(rate).toBeGreaterThan(0);
+  });
+
+  it('crosses USD through UAH on the same day', async () => {
+    mockFetch((url) => ({
+      ok: true,
+      json: () => [{ rate: url.includes('valcode=USD') ? 41.2 : 46 }],
+    }));
+    const rate = await nbuFxRateProvider.getRateLive('USD', '2026-09-01');
+    expect(rate).toBe(Math.round((41.2 / 46) * 1e6) / 1e6);
   });
 
   it('crosses PLN through UAH on the same day', async () => {
