@@ -5,8 +5,8 @@ import type { ReactNode } from 'react';
 import type { Receipt } from '@finance-tracker/domain';
 import { useUpdateReceiptMutation } from './use-update-receipt-mutation';
 import type { SaveItemInput, SaveReceiptInput } from './use-save-receipt-mutation';
-import { receiptQueryKey, receiptsQueryKey } from './receipts-query-keys';
-import { productsQueryKey } from '@/features/products/api/use-products';
+import { receiptQueryKey } from './receipts-query-keys';
+import { expectReceiptDerivedInvalidation } from '@/test/expect-receipt-derived-invalidation';
 
 type DataRes = { data: unknown; error: { message: string } | null };
 
@@ -218,7 +218,7 @@ describe('useUpdateReceiptMutation', () => {
     expect(invalidateSpy).not.toHaveBeenCalled();
   });
 
-  it('invalidates receipts, the edited receipt and products on success', async () => {
+  it('invalidates every receipt-derived query and the edited receipt on success', async () => {
     const { Wrapper, invalidateSpy } = makeWrapper();
     const { result } = renderHook(() => useUpdateReceiptMutation(), { wrapper: Wrapper });
 
@@ -232,9 +232,8 @@ describe('useUpdateReceiptMutation', () => {
     });
 
     await waitFor(() => {
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: receiptsQueryKey });
+      expectReceiptDerivedInvalidation(invalidateSpy);
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: receiptQueryKey(RECEIPT_ID) });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: productsQueryKey });
     });
   });
 });

@@ -1,5 +1,5 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { FormProvider, useWatch } from 'react-hook-form';
+import { useMemo, type SubmitEvent } from 'react';
+import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import {
   todayIso,
@@ -9,16 +9,15 @@ import {
   type PairDetectionResult,
 } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
+import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNames } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
-  computeGrandTotal,
-  DuplicateWarningBanner,
+  DuplicateReceiptsWarning,
   ReceiptFormFields,
   SUPPORTED_CURRENCIES,
-  useDuplicateReceipts,
   useReceiptForm,
   useSaveReceiptMutation,
   type ItemFormValues,
@@ -93,8 +92,8 @@ export function PhotoReviewForm({
   onSaved,
 }: Props) {
   const navigate = useNavigate();
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productNames = useProductNames();
   const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
   const savePhoto = useSavePhotoReceiptMutation();
@@ -136,23 +135,11 @@ export function PhotoReviewForm({
     ...(presetPaidBy ? { paid_by: presetPaidBy } : {}),
   });
 
-  const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
-  const productNames = productsQuery.data?.map((p) => p.name) ?? [];
   const paidByOptions = appUsersQuery.data ?? [];
 
-  const watchedStore = useWatch({ control: methods.control, name: 'store' });
-  const watchedDate = useWatch({ control: methods.control, name: 'date' });
-  const watchedTime = useWatch({ control: methods.control, name: 'time' });
-  const watchedItems = useWatch({ control: methods.control, name: 'items' });
-  const watchedTotal = useMemo(() => computeGrandTotal(watchedItems ?? []), [watchedItems]);
-  const [duplicatesDismissed, setDuplicatesDismissed] = useState(false);
-  const duplicatesQuery = useDuplicateReceipts({
-    store: watchedStore,
-    date: watchedDate,
-    time: watchedTime,
-    total_orig: watchedTotal,
-  });
-  const visibleDuplicates = duplicatesDismissed ? [] : (duplicatesQuery.data ?? []);
+  // Inside the batch the page-level guard (useBatchLeaveGuard) already prompts, and
+  // two guards would ask twice.
+  useLeaveGuard(methods.formState.isDirty && !onSaved);
 
   const onSubmit = methods.handleSubmit(async (values) => {
     const receipt = {
@@ -205,11 +192,15 @@ export function PhotoReviewForm({
     if (onSaved) {
       onSaved(result.receipt_id);
     } else {
-      void navigate({ to: '/recent', search: { saved: result.receipt_id } });
+      void navigate({
+        to: '/recent',
+        search: { saved: result.receipt_id },
+        ignoreBlocker: true,
+      });
     }
   });
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     void onSubmit(e);
   };
 
@@ -259,10 +250,7 @@ export function PhotoReviewForm({
             </div>
           </details>
         </div>
-        <DuplicateWarningBanner
-          candidates={visibleDuplicates}
-          onDismiss={() => setDuplicatesDismissed(true)}
-        />
+        <DuplicateReceiptsWarning />
         <ReceiptFormFields
           itemsArray={itemsArray}
           categories={categoryNames}

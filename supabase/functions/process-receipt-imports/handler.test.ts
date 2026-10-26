@@ -5,9 +5,8 @@ import type { Job, WorkerDeps } from './types.ts';
 type RpcResult = { data: unknown; error: unknown };
 
 function makeDeps(claim: RpcResult = { data: [], error: null }) {
-  const rpc = vi.fn(
-    (name: string, _args?: unknown): Promise<RpcResult> =>
-      Promise.resolve(name === 'claim_receipt_import_jobs' ? claim : { data: null, error: null }),
+  const rpc = vi.fn((name: string, _args?: unknown): Promise<RpcResult> =>
+    Promise.resolve(name === 'claim_receipt_import_jobs' ? claim : { data: null, error: null }),
   );
   const deps = {
     db: { rpc } as unknown as WorkerDeps['db'],

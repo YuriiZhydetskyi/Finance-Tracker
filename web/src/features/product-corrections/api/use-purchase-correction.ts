@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ulid } from '@finance-tracker/domain';
-import { productsQueryKey, productTaxonomyQueryKey } from '@/features/products/api/use-products';
-import { receiptQueryKey, receiptsQueryKey } from '@/features/receipts/api/receipts-query-keys';
-import { wasteItemsQueryKey } from '@/features/waste';
+import { productTaxonomyQueryKey } from '@/features/products/api/use-products';
+import { invalidateReceiptDerivedQueries } from '@/features/receipts/api/invalidate-receipt-derived-queries';
+import { receiptQueryKey } from '@/features/receipts/api/receipts-query-keys';
 import { supabase } from '@/shared/lib/supabase-client';
 import { wrapError } from '@/shared/utils/wrap-error';
 
@@ -72,11 +72,8 @@ export function usePurchaseCorrectionMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: purchaseCorrectionQueryKey(vars.itemId) }),
         queryClient.invalidateQueries({ queryKey: receiptQueryKey(vars.receiptId) }),
-        queryClient.invalidateQueries({ queryKey: receiptsQueryKey }),
-        queryClient.invalidateQueries({ queryKey: productsQueryKey }),
         queryClient.invalidateQueries({ queryKey: productTaxonomyQueryKey }),
-        queryClient.invalidateQueries({ queryKey: wasteItemsQueryKey }),
-        queryClient.invalidateQueries({ queryKey: ['stats'] }),
+        invalidateReceiptDerivedQueries(queryClient),
       ]);
     },
   });

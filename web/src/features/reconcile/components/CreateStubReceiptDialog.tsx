@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useState, type SubmitEvent } from 'react';
 import type { StatementTransaction } from '@finance-tracker/domain';
 import { useCategories } from '@/features/categories';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { SELECT_CLASS } from '@/shared/ui/select-classes';
@@ -30,15 +31,7 @@ type Props = {
  * a different orphan opens it (no setState-in-effect).
  */
 export function CreateStubReceiptDialog({ orphan, onClose, onCreated }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const open = orphan != null;
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+  const dialogRef = useModalDialog(orphan != null);
 
   // No backdrop-click-to-close: it's a form, so accidental dismissal would lose
   // input, and a click handler on the <dialog> trips a11y (no keyboard equivalent).
@@ -106,7 +99,7 @@ function StubForm({
     return [...map.entries()];
   }, [categoriesQuery.data]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 

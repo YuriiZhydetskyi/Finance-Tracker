@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { NormalizedStatementTxn } from '@finance-tracker/domain';
 import { StatementImportDialog } from './StatementImportDialog';
@@ -6,20 +6,6 @@ import { StatementImportDialog } from './StatementImportDialog';
 const noop = () => {
   // intentionally empty
 };
-
-// jsdom doesn't implement <dialog> showModal/close — stub as open-attribute toggles.
-beforeAll(() => {
-  if (!HTMLDialogElement.prototype.showModal) {
-    HTMLDialogElement.prototype.showModal = function showModal() {
-      this.open = true;
-    };
-  }
-  if (!HTMLDialogElement.prototype.close) {
-    HTMLDialogElement.prototype.close = function close() {
-      this.open = false;
-    };
-  }
-});
 
 const OWNERS = ['a@example.com', 'b@example.com'];
 

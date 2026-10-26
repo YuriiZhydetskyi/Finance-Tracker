@@ -7,8 +7,7 @@ import {
   type SaveReceiptInput,
   type SaveItemInput,
 } from './use-save-receipt-mutation';
-import { receiptsQueryKey } from './receipts-query-keys';
-import { productsQueryKey } from '@/features/products/api/use-products';
+import { expectReceiptDerivedInvalidation } from '@/test/expect-receipt-derived-invalidation';
 
 type DataRes = { data: unknown; error: { message: string } | null };
 
@@ -391,7 +390,7 @@ describe('useSaveReceiptMutation', () => {
     expect(invalidateSpy).not.toHaveBeenCalled();
   });
 
-  it('invalidates receipts and products on success', async () => {
+  it('invalidates every receipt-derived query (stats, waste, packaging, products) on success', async () => {
     fxRateMock.mockResolvedValue(1.0);
     productsSelectMock.mockResolvedValue({ data: [], error: null });
     mockRpcSuccess();
@@ -404,8 +403,7 @@ describe('useSaveReceiptMutation', () => {
     });
 
     await waitFor(() => {
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: receiptsQueryKey });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: productsQueryKey });
+      expectReceiptDerivedInvalidation(invalidateSpy);
     });
   });
 });

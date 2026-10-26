@@ -42,6 +42,9 @@ coverage/
 # Vitest
 .vitest-cache/
 
+# ESLint
+.eslintcache
+
 # TanStack Router generated tree
 **/routeTree.gen.ts
 

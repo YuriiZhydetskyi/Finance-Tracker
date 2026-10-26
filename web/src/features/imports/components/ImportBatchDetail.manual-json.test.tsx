@@ -8,11 +8,11 @@ const { submitJsonMock, mutateMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/categories', () => ({
-  useCategories: () => ({ data: [{ name: 'Бакалія' }] }),
+  useCategoryNames: () => ['Бакалія'],
 }));
 
 vi.mock('@/features/products', () => ({
-  useProducts: () => ({ data: [{ name: 'Bread' }] }),
+  useProductNameEntries: () => [{ name: 'Bread' }],
 }));
 
 vi.mock('./ImportFilePreview', () => ({
@@ -69,19 +69,6 @@ vi.mock('../api/imports', () => ({
   useResolveImportFile: () => ({ isPending: false, mutate: mutateMock }),
   useSubmitImportFileJson: () => ({ isPending: false, mutateAsync: submitJsonMock }),
 }));
-
-beforeAll(() => {
-  if (!HTMLDialogElement.prototype.showModal) {
-    HTMLDialogElement.prototype.showModal = function showModal() {
-      this.open = true;
-    };
-  }
-  if (!HTMLDialogElement.prototype.close) {
-    HTMLDialogElement.prototype.close = function close() {
-      this.open = false;
-    };
-  }
-});
 
 beforeEach(() => {
   submitJsonMock.mockReset();

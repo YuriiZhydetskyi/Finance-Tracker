@@ -94,6 +94,7 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 Critical concept — від нього залежить куди класти змінні:
 
 - **Vite inline'ить `VITE_*` змінні у бандл при білді.** `import.meta.env.VITE_SUPABASE_URL` буквально замінюється на string у згенерованому JS. Це build-time substitution, не runtime lookup.
+- `web/index.html` підставляє `%VITE_SUPABASE_URL%` у `<link rel="preconnect">` тим самим механізмом. Якщо змінної немає на білді, Vite залишає літерал `%VITE_SUPABASE_URL%` (білд не падає, а `env.ts` усе одно зупинить застосунок на старті).
 - **Cloudflare Pages у direct-upload режимі нічого не білдить.** Він просто роздає статичні файли. Env vars у CF dashboard у цьому режимі не використовуються — змінні треба у середовищі того, хто білдить.
 
 | Контекст                   | Звідки беруться `VITE_*`                                      |
@@ -398,6 +399,8 @@ npx supabase functions deploy process-receipt-imports --no-verify-jwt
 `Content-Security-Policy-Report-Only`. Після деплою відкрий застосунок, пройди «Фото чек»,
 «Масовий імпорт», `/edit/$id` і «Статистику» та перевір консоль браузера на порушення CSP.
 Якщо їх немає, перейменуй заголовок на `Content-Security-Policy`.
+
+У Report-Only політику додано `require-trusted-types-for 'script'`. Перед перейменуванням на `Content-Security-Policy` перевір консоль на порушення Trusted Types (pdf.js, `heic-to`, Chart.js) або прибери цю директиву: в enforced-режимі вона ламає будь-який `innerHTML`/`eval`-подібний виклик без політики.
 
 ## Posthumous: рекавері легасі
 

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import { useReceipt, EditReceiptForm, ReceiptPhoto } from '@/features/receipts';
 
 export const Route = createFileRoute('/_authed/edit/$id')({
@@ -12,6 +13,7 @@ function EditView() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Редагувати чек</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Редагувати чек</h1>
         <p className="text-sm text-slate-600">

@@ -34,13 +34,14 @@ describe('WasteSearchSchema', () => {
     });
   });
 
-  it('rejects bad date format', () => {
-    expect(() => WasteSearchSchema.parse({ from: '01.03.2026' })).toThrow();
+  it('drops a malformed value instead of failing the whole URL', () => {
+    expect(WasteSearchSchema.parse({ from: '01.03.2026', q: 'milk' })).toEqual({ q: 'milk' });
+    expect(WasteSearchSchema.parse({ min: 'abc', max: '-3' })).toEqual({});
   });
 
   it('coerces numeric strings via z.coerce', () => {
     const parsed = WasteSearchSchema.parse({ min: '5.5' });
-    expect(parsed?.min).toBe(5.5);
+    expect(parsed.min).toBe(5.5);
   });
 });
 

@@ -10,6 +10,8 @@ export type ParseReceiptVars = {
   categories: string[];
   /** Known product names — soft hints, not enforced. Defaults to []. */
   products?: { name: string }[];
+  /** Aborts the request when the caller no longer needs the result. */
+  signal?: AbortSignal;
 };
 
 /**
@@ -19,13 +21,14 @@ export type ParseReceiptVars = {
  */
 export function useParseReceiptMutation() {
   return useMutation<ParsedReceipt, Error, ParseReceiptVars>({
-    mutationFn: async ({ blob, categories, products }) => {
+    mutationFn: async ({ blob, categories, products, signal }) => {
       const imageBase64 = await blobToBase64(blob);
       return parseReceiptService.parse({
         imageBase64,
         mimeType: blob.type || 'image/jpeg',
         categories,
         products: products ?? [],
+        ...(signal ? { signal } : {}),
       });
     },
   });

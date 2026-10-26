@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, skipToken, useQuery } from '@tanstack/react-query';
 import { roundMoney } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { receiptsQueryKey } from './receipts-query-keys';
@@ -25,6 +25,42 @@ export type DuplicateCheckInput = {
 const TOTAL_TOLERANCE = 0.01;
 const TIME_WINDOW_MINUTES = 10;
 
+export function duplicateReceiptsQueryOptions(input: DuplicateCheckInput) {
+  const { store, date, total_orig, excludeId } = input;
+
+  return queryOptions({
+    queryKey: [
+      ...receiptsQueryKey,
+      'duplicates',
+      { store, date, total_orig, time: input.time, excludeId },
+    ] as const,
+    staleTime: 30_000,
+    queryFn:
+      store?.trim() && date && typeof total_orig === 'number' && total_orig !== 0
+        ? async ({ signal }): Promise<DuplicateCandidate[]> => {
+            const lo = roundMoney(total_orig - TOTAL_TOLERANCE);
+            const hi = roundMoney(total_orig + TOTAL_TOLERANCE);
+            // Filters first, then ordering + limit. PostgREST is order-agnostic but
+            // chaining .neq after .limit confuses some thenable implementations.
+            let q = supabase
+              .from('receipts')
+              .select('id, store, date, time, total_orig, currency')
+              .eq('store', store)
+              .eq('date', date)
+              .gte('total_orig', lo)
+              .lte('total_orig', hi);
+            if (excludeId) q = q.neq('id', excludeId);
+            const { data, error } = await q
+              .order('created_at', { ascending: false })
+              .limit(3)
+              .abortSignal(signal);
+            if (error) throw error;
+            return (data ?? []).filter((row) => withinTimeWindow(row.time, input.time));
+          }
+        : skipToken,
+  });
+}
+
 /**
  * Reactively searches for receipts that look like the one currently being
  * entered — same store, same date, total within ±0.01, and (if both have time)
@@ -33,35 +69,7 @@ const TIME_WINDOW_MINUTES = 10;
  * Returns at most 3 candidates ordered by most recently created.
  */
 export function useDuplicateReceipts(input: DuplicateCheckInput) {
-  const enabled =
-    Boolean(input.store && input.store.trim().length > 0) &&
-    Boolean(input.date) &&
-    typeof input.total_orig === 'number' &&
-    input.total_orig !== 0;
-
-  return useQuery<DuplicateCandidate[]>({
-    queryKey: [...receiptsQueryKey, 'duplicates', input] as const,
-    enabled,
-    staleTime: 30_000,
-    queryFn: async () => {
-      const target = input.total_orig!;
-      const lo = roundMoney(target - TOTAL_TOLERANCE);
-      const hi = roundMoney(target + TOTAL_TOLERANCE);
-      // Filters first, then ordering + limit. PostgREST is order-agnostic but
-      // chaining .neq after .limit confuses some thenable implementations.
-      let q = supabase
-        .from('receipts')
-        .select('id, store, date, time, total_orig, currency')
-        .eq('store', input.store!)
-        .eq('date', input.date!)
-        .gte('total_orig', lo)
-        .lte('total_orig', hi);
-      if (input.excludeId) q = q.neq('id', input.excludeId);
-      const { data, error } = await q.order('created_at', { ascending: false }).limit(3);
-      if (error) throw error;
-      return (data ?? []).filter((row) => withinTimeWindow(row.time, input.time));
-    },
-  });
+  return useQuery(duplicateReceiptsQueryOptions(input));
 }
 
 // Both null/missing → keep candidate (no time signal). Both present → must be

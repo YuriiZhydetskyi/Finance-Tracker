@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import { useAppUsers } from '@/features/auth';
 import {
   countActiveFilters,
@@ -18,15 +19,17 @@ export const Route = createFileRoute('/_authed/recent')({
 });
 
 function RecentList() {
-  const search = Route.useSearch() ?? {};
+  const search = Route.useSearch();
   const navigate = useNavigate();
   const appUsersQuery = useAppUsers();
   const filters = searchToFilters(search);
   const activeCount = countActiveFilters(filters);
   const query = useReceipts(filters);
+  const isStale = query.isPlaceholderData;
 
   return (
     <div className="space-y-4">
+      <PageTitle>Останні чеки</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Останні чеки</h1>
         <p className="text-sm text-slate-600">
@@ -49,9 +52,12 @@ function RecentList() {
         activeCount={activeCount}
       />
 
-      {query.isLoading && <p className="text-sm text-slate-500">Завантажую...</p>}
+      {(query.isLoading || (isStale && query.data?.length === 0)) && (
+        <p className="text-sm text-slate-500">Завантажую...</p>
+      )}
       {query.isError && <ErrorDetails error={query.error} label="Не вдалося завантажити" />}
       {query.isSuccess &&
+        !isStale &&
         query.data.length === 0 &&
         (activeCount > 0 ? (
           <NoMatchingReceipts onClearFilters={() => void navigate({ to: '/recent', search: {} })} />
@@ -59,7 +65,10 @@ function RecentList() {
           <EmptyReceiptsState />
         ))}
       {query.isSuccess && query.data.length > 0 && (
-        <ul className="space-y-2">
+        <ul
+          aria-busy={isStale}
+          className={isStale ? 'space-y-2 opacity-60 transition-opacity' : 'space-y-2'}
+        >
           {query.data.map((r) => (
             <li key={r.id}>
               <ReceiptCard receipt={r} />

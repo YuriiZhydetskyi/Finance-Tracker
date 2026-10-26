@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppUsers, useCurrentUser } from '@/features/auth';
 import { Button } from '@/shared/ui/Button';
 import { SELECT_CLASS } from '@/shared/ui/select-classes';
+import { useObjectUrl } from '@/shared/hooks/use-object-url';
 import type { AddFileInput } from '../batch/use-batch-parser';
 
 type Props = {
@@ -15,6 +16,28 @@ function isPreviewableImage(file: File): boolean {
   if (t === 'application/pdf') return false;
   if (/\.(heic|heif|pdf)$/i.test(file.name)) return false;
   return t.startsWith('image/');
+}
+
+function FilePreview({ file }: { file: File }) {
+  const previewable = isPreviewableImage(file);
+  const preview = useObjectUrl(previewable ? file : null);
+
+  if (!previewable) {
+    return (
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50">
+        <span className="font-mono text-xs uppercase text-slate-500">PDF</span>
+      </div>
+    );
+  }
+  return preview ? (
+    <img
+      src={preview}
+      alt={file.name}
+      className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
+    />
+  ) : (
+    <div className="h-14 w-14 shrink-0 rounded-md border border-slate-200 bg-slate-50" />
+  );
 }
 
 /**
@@ -35,16 +58,6 @@ export function PhotoUploadAssign({ files, onConfirm, onCancel }: Props) {
   // loads — we just read `defaultPayer` at render time.
   const [overrides, setOverrides] = useState<Record<number, string>>({});
 
-  const previews = useMemo(
-    () => files.map((f) => (isPreviewableImage(f) ? URL.createObjectURL(f) : null)),
-    [files],
-  );
-  useEffect(() => {
-    return () => {
-      for (const url of previews) if (url) URL.revokeObjectURL(url);
-    };
-  }, [previews]);
-
   const ready = defaultPayer !== '';
 
   const handleConfirm = () => {
@@ -62,45 +75,32 @@ export function PhotoUploadAssign({ files, onConfirm, onCancel }: Props) {
       </div>
 
       <ul className="space-y-2">
-        {files.map((file, i) => {
-          const preview = previews[i];
-          return (
-            <li
-              key={`${file.name}-${i}`}
-              className="flex items-center gap-3 rounded-md border border-slate-200 bg-white p-3"
+        {files.map((file, i) => (
+          <li
+            key={`${file.name}-${i}`}
+            className="flex items-center gap-3 rounded-md border border-slate-200 bg-white p-3"
+          >
+            <FilePreview file={file} />
+            <span className="min-w-0 flex-1 truncate text-sm text-slate-700">
+              {file.name || `Фото ${i + 1}`}
+            </span>
+            <select
+              className={`${SELECT_CLASS} w-auto`}
+              aria-label={`Хто оплатив: ${file.name || `фото ${i + 1}`}`}
+              value={overrides[i] ?? defaultPayer}
+              onChange={(e) => {
+                const value = e.target.value;
+                setOverrides((prev) => ({ ...prev, [i]: value }));
+              }}
             >
-              {preview ? (
-                <img
-                  src={preview}
-                  alt={file.name}
-                  className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
-                />
-              ) : (
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50">
-                  <span className="font-mono text-xs uppercase text-slate-500">PDF</span>
-                </div>
-              )}
-              <span className="min-w-0 flex-1 truncate text-sm text-slate-700">
-                {file.name || `Фото ${i + 1}`}
-              </span>
-              <select
-                className={`${SELECT_CLASS} w-auto`}
-                aria-label={`Хто оплатив: ${file.name || `фото ${i + 1}`}`}
-                value={overrides[i] ?? defaultPayer}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setOverrides((prev) => ({ ...prev, [i]: value }));
-                }}
-              >
-                {options.map((email) => (
-                  <option key={email} value={email}>
-                    {email}
-                  </option>
-                ))}
-              </select>
-            </li>
-          );
-        })}
+              {options.map((email) => (
+                <option key={email} value={email}>
+                  {email}
+                </option>
+              ))}
+            </select>
+          </li>
+        ))}
       </ul>
 
       <div className="flex flex-wrap gap-2">

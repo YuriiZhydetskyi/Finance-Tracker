@@ -9,11 +9,11 @@ vi.mock('@/shared/lib/dependencies', () => ({
 }));
 
 vi.mock('@/features/categories', () => ({
-  useCategories: () => ({ data: [] }),
+  useCategoryNames: () => [],
 }));
 
 vi.mock('@/features/products', () => ({
-  useProducts: () => ({ data: [] }),
+  useProductNameEntries: () => [],
 }));
 
 vi.mock('../api/imports', () => ({

@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import type { ParsedReceipt } from '@finance-tracker/domain';
 import { useBatchParser } from './use-batch-parser';
+import { QueryClientWrapper } from '@/test/query-client';
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -21,7 +20,7 @@ function defer<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-const parseMock = vi.fn<(args: { blob: Blob }) => Promise<ParsedReceipt>>();
+const parseMock = vi.fn<(args: { blob: Blob; signal?: AbortSignal }) => Promise<ParsedReceipt>>();
 const createPendingMock = vi.fn();
 const incrementAttemptsMock = vi.fn();
 
@@ -55,11 +54,6 @@ beforeEach(() => {
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
 });
 
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-}
-
 const fakeParsed = (store: string): ParsedReceipt => ({
   store,
   date: '2026-05-04',
@@ -86,7 +80,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d3.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -101,6 +95,24 @@ describe('useBatchParser', () => {
     expect(statuses).toEqual(['parsing', 'queued', 'queued']);
   });
 
+  it('aborts the parse request that is still running when the page is left', async () => {
+    const d1 = defer<ParsedReceipt>();
+    parseMock.mockImplementationOnce(() => d1.promise);
+    const { result, unmount } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper: QueryClientWrapper,
+    });
+    await act(async () => {
+      await result.current.addFiles([addInput('a.jpg')]);
+    });
+    await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
+    const signal = parseMock.mock.calls[0]?.[0].signal;
+    expect(signal?.aborted).toBe(false);
+
+    unmount();
+
+    expect(signal?.aborted).toBe(true);
+  });
+
   it('advances to next queued item when current parse resolves', async () => {
     const d1 = defer<ParsedReceipt>();
     const d2 = defer<ParsedReceipt>();
@@ -108,7 +120,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -133,7 +145,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -159,7 +171,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -191,7 +203,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -229,7 +241,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -274,7 +286,7 @@ describe('useBatchParser', () => {
     parseMock.mockImplementationOnce(() => d2.promise);
 
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     await act(async () => {
@@ -298,7 +310,7 @@ describe('useBatchParser', () => {
 
   it('addFiles with empty input is a no-op', async () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
     await act(async () => {
       await result.current.addFiles([]);
@@ -309,7 +321,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipt adds pasted JSON without calling the parser', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -325,7 +337,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipt numbers repeat pastes so carousel labels stay distinguishable', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -347,7 +359,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipts adds a whole array with sequential, non-colliding labels', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -366,7 +378,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipts continues numbering after prior manual pastes', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
 
     act(() => {
@@ -385,7 +397,7 @@ describe('useBatchParser', () => {
 
   it('addParsedReceipts with empty input is a no-op', () => {
     const { result } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
     act(() => {
       result.current.addParsedReceipts([]);

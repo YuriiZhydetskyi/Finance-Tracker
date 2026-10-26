@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useState, type SubmitEvent } from 'react';
 import {
   BankStatementSchema,
   groupStatementDuplicates,
@@ -11,6 +11,7 @@ import { formatZodIssues } from '@/shared/utils/format-zod-issues';
 import { formatMoney } from '@/shared/utils/format-money';
 import { formatDate } from '@/shared/utils/format-date';
 import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { Button } from '@/shared/ui/Button';
 import { SELECT_CLASS } from '@/shared/ui/select-classes';
 import { buildStatementPrompt, STATEMENT_EXAMPLE_JSON } from '../reconcile-prompt';
@@ -31,7 +32,7 @@ export function StatementImportDialog({
   onClose,
   onReconcile,
 }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useModalDialog(open);
   const prompt = useMemo(() => buildStatementPrompt(categories), [categories]);
   const [owner, setOwner] = useState('');
   const [jsonText, setJsonText] = useState('');
@@ -57,13 +58,6 @@ export function StatementImportDialog({
       return next;
     });
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
   // Reset the owner on close so a second import (a different card) can't silently
   // reconcile against the previously-selected person.
   const handleClose = () => {
@@ -74,7 +68,7 @@ export function StatementImportDialog({
     onClose();
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 

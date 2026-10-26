@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
-import { BatchReviewCarousel, useBatchParser } from '@/features/photo';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNameEntries } from '@/features/products';
+import { BatchReviewCarousel, useBatchLeaveGuard, useBatchParser } from '@/features/photo';
 import {
   PendingList,
   fetchPendingBlob,
@@ -12,8 +12,9 @@ import {
   type PendingParseRow,
 } from '@/features/pending-parses';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 
-const PendingSearchSchema = z.object({}).optional();
+const PendingSearchSchema = z.object({});
 
 export const Route = createFileRoute('/_authed/pending')({
   component: PendingFlow,
@@ -21,21 +22,13 @@ export const Route = createFileRoute('/_authed/pending')({
 });
 
 function PendingFlow() {
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productList = useProductNameEntries();
   const pendingQuery = usePendingParses();
   const deletePending = useDeletePendingParseMutation();
 
-  const categoryNames = useMemo(
-    () => categoriesQuery.data?.map((c) => c.name) ?? [],
-    [categoriesQuery.data],
-  );
-  const productList = useMemo(
-    () => productsQuery.data?.map((p) => ({ name: p.name })) ?? [],
-    [productsQuery.data],
-  );
-
   const batch = useBatchParser({ categories: categoryNames, products: productList });
+  useBatchLeaveGuard(batch.state.items);
 
   const [preparing, setPreparing] = useState(false);
   const [prepError, setPrepError] = useState<Error | null>(null);
@@ -78,6 +71,7 @@ function PendingFlow() {
   if (hasBatch) {
     return (
       <div className="space-y-4">
+        <PageTitle>Повторне розпізнавання</PageTitle>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Повторне розпізнавання
@@ -93,6 +87,7 @@ function PendingFlow() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Чеки з помилками</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Чеки з помилками</h1>
         <p className="text-sm text-slate-600">

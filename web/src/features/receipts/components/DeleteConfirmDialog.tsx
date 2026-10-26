@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { Button } from '@/shared/ui/Button';
 
 type Props = {
@@ -9,14 +9,7 @@ type Props = {
 };
 
 export function DeleteConfirmDialog({ open, pending, onCancel, onConfirm }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+  const ref = useModalDialog(open);
 
   return (
     <dialog

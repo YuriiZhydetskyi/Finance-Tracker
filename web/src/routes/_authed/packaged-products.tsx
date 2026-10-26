@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
-import { useCategories } from '@/features/categories';
+import { useCategories, useCategoryNames } from '@/features/categories';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
   LinkStoreProductDialog,
@@ -18,14 +18,13 @@ import {
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import type { PackagingSavePlan } from '@/features/packaged-products/api/use-save-packaged-products-mutation';
 
-const PackagedProductsSearchSchema = z
-  .object({
-    tab: z.enum(['catalogue', 'queue']).optional(),
-    q: z.string().optional(),
-  })
-  .optional();
+const PackagedProductsSearchSchema = z.object({
+  tab: z.enum(['catalogue', 'queue']).optional().catch(undefined),
+  q: z.string().optional().catch(undefined),
+});
 
 export const Route = createFileRoute('/_authed/packaged-products')({
   component: PackagedProductsFlow,
@@ -35,10 +34,11 @@ export const Route = createFileRoute('/_authed/packaged-products')({
 function PackagedProductsFlow() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const tab = search?.tab ?? 'queue';
-  const query = search?.q ?? '';
+  const tab = search.tab ?? 'queue';
+  const query = search.q ?? '';
 
   const categoriesQuery = useCategories();
+  const categoryNames = useCategoryNames();
   const taxonomyQuery = useProductTaxonomy();
   const productsQuery = usePackagedProducts();
   const candidatesQuery = usePackagingCandidates({ query });
@@ -53,10 +53,6 @@ function PackagedProductsFlow() {
   const [importOpen, setImportOpen] = useState(false);
   const [linkFor, setLinkFor] = useState<PackagingCandidateRow | null>(null);
 
-  const categoryNames = useMemo(
-    () => categoriesQuery.data?.map((c) => c.name) ?? [],
-    [categoriesQuery.data],
-  );
   const taxonomy = useMemo(
     () => ({
       families: taxonomyQuery.data?.families ?? [],
@@ -101,6 +97,7 @@ function PackagedProductsFlow() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Пакований товар</PageTitle>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">Пакований товар</h1>
         <Button
@@ -177,20 +174,27 @@ function PackagedProductsFlow() {
           <p className="text-sm text-slate-500">Шукаю позиції без картки…</p>
         ) : candidatesQuery.isError ? (
           <ErrorDetails error={candidatesQuery.error} label="Не вдалося прочитати чергу" />
+        ) : candidatesQuery.isPlaceholderData && candidatesQuery.data.length === 0 ? (
+          <p className="text-sm text-slate-500">Шукаю позиції без картки…</p>
         ) : (
-          <PackagingCandidatesList
-            candidates={candidatesQuery.data}
-            catalogueReady={catalogueReady}
-            busyProductId={busyProductId}
-            onCreateCard={(candidate) => {
-              setImportFor(candidate);
-              setImportOpen(true);
-            }}
-            onLinkExisting={(candidate) => setLinkFor(candidate)}
-            onSkip={(candidate) =>
-              skipPackaging.mutate({ productIds: [candidate.product_id], notApplicable: true })
-            }
-          />
+          <div
+            aria-busy={candidatesQuery.isPlaceholderData}
+            className={candidatesQuery.isPlaceholderData ? 'opacity-60 transition-opacity' : ''}
+          >
+            <PackagingCandidatesList
+              candidates={candidatesQuery.data}
+              catalogueReady={catalogueReady}
+              busyProductId={busyProductId}
+              onCreateCard={(candidate) => {
+                setImportFor(candidate);
+                setImportOpen(true);
+              }}
+              onLinkExisting={(candidate) => setLinkFor(candidate)}
+              onSkip={(candidate) =>
+                skipPackaging.mutate({ productIds: [candidate.product_id], notApplicable: true })
+              }
+            />
+          </div>
         )
       ) : productsQuery.isPending ? (
         <p className="text-sm text-slate-500">Завантажую каталог…</p>

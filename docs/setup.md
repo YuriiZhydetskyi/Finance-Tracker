@@ -6,8 +6,8 @@
 
 ## Передумови
 
-- **Node.js ≥ 22 LTS** локально (`node --version`).
-- **npm** ≥ 10 (іде в комплекті з Node 22).
+- **Node.js ≥ 24 LTS** локально (`node --version`).
+- **npm** ≥ 10 (іде в комплекті з Node 24).
 - **Git** локально.
 - **Supabase project** — наразі один спільний `<your-project-ref>`. Якщо створюєш свій (наприклад для fork-а) — потрібен Supabase акаунт.
 - **API keys для Edge Function** (тільки для production deploy):
@@ -200,7 +200,7 @@ Pre-commit запускає Prettier через `lint-staged`. Lint+typecheck+te
 
 ## Лінтинг
 
-ESLint 9 flat config:
+ESLint 10 flat config:
 
 - `web/eslint.config.js` — React + TypeScript + React Hooks rules + `no-restricted-imports` для блокування прямого `supabase-client` за межами адаптерів і `**/api/**`.
 - `packages/domain/eslint.config.js` — TypeScript + блокує `react`, `supabase-js`, `vite` imports (vendor-free пакет).
@@ -236,7 +236,7 @@ ESLint 9 flat config:
 
 `supabase/functions/parse-receipt/handler.test.ts` — handler.ts runtime-portable, тестується у Node.
 
-Запуск всього: `npm run test` (root). Per-workspace: `npx vitest run --root web` або `npx vitest run --root packages/domain`. Single file: `npx vitest run path/to/file.test.ts`.
+Запуск всього: `npm run test` (root); лише Vitest у всіх workspaces одним запуском — `npm run test:unit` (кореневий `vitest.config.mts` з `test.projects`). Per-workspace: `npx vitest run --root web` або `npx vitest run --root packages/domain`. Single file: `npx vitest run path/to/file.test.ts`.
 
 ## Що НЕ покрито тестами (чесні межі)
 

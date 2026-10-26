@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
+import { statsCategoryDetailsQueryKey } from './use-stats';
 import { summarizeCategoryDetails, type StatsDetailItem } from '../category-details';
 import type { StatsDateRange, StatsFilters } from './stats.types';
 
@@ -27,10 +28,9 @@ async function fetchCategoryDetailsPage(
   return items;
 }
 
-export function useCategoryDetails(range: StatsDateRange, filters: StatsFilters, enabled: boolean) {
-  return useQuery({
-    queryKey: ['stats', 'category-details', range, filters],
-    enabled,
+export function categoryDetailsQueryOptions(range: StatsDateRange, filters: StatsFilters) {
+  return queryOptions({
+    queryKey: [...statsCategoryDetailsQueryKey, range, filters],
     staleTime: 5 * 60_000,
     queryFn: async ({ signal }) => {
       const items: StatsDetailItem[] = [];
@@ -47,5 +47,13 @@ export function useCategoryDetails(range: StatsDateRange, filters: StatsFilters,
       }
       return summarizeCategoryDetails(items);
     },
+  });
+}
+
+export function useCategoryDetails(range: StatsDateRange, filters: StatsFilters, enabled: boolean) {
+  return useQuery({
+    ...categoryDetailsQueryOptions(range, filters),
+    enabled,
+    placeholderData: keepPreviousData,
   });
 }

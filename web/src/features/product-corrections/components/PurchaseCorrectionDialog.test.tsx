@@ -46,14 +46,6 @@ vi.mock('@/features/products/api/use-products', () => ({
 }));
 
 describe('purchase classification correction', () => {
-  beforeAll(() => {
-    HTMLDialogElement.prototype.showModal = function () {
-      this.setAttribute('open', '');
-    };
-    HTMLDialogElement.prototype.close = function () {
-      this.removeAttribute('open');
-    };
-  });
   beforeEach(() => mutate.mockReset());
 
   it('corrects the item and opts into its store rule while preserving the printed evidence', async () => {

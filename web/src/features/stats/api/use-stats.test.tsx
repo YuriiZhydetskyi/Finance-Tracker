@@ -11,18 +11,24 @@ import {
   useStatsSavingsByMonth,
   useStatsWasteByMonth,
 } from './use-stats';
+import { withAbortSignal } from '@/test/with-abort-signal';
 
 type Row = Record<string, unknown>;
 type RpcResult = { data: Row[] | null; error: { message: string } | null };
 
 const rpcMock = vi.fn<(name: string, args?: Record<string, unknown>) => Promise<RpcResult>>();
+const signals: AbortSignal[] = [];
 
 vi.mock('@/shared/lib/supabase-client', () => ({
-  supabase: { rpc: (name: string, args?: Record<string, unknown>) => rpcMock(name, args) },
+  supabase: {
+    rpc: (name: string, args?: Record<string, unknown>) =>
+      withAbortSignal(rpcMock(name, args), (signal) => signals.push(signal)),
+  },
 }));
 
 beforeEach(() => {
   rpcMock.mockReset();
+  signals.length = 0;
 });
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -99,6 +105,17 @@ describe('period-aware stats queries', () => {
     });
   });
 
+  it('hands the query signal to the request so superseded periods are cancelled', async () => {
+    rpcMock.mockResolvedValue({ data: [], error: null });
+
+    const { result } = renderHook(() => useStatsByMonth(range, {}), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(signals).toHaveLength(1);
+    expect(signals[0]).toBeInstanceOf(AbortSignal);
+  });
+
   it('surfaces database errors', async () => {
     rpcMock.mockResolvedValue({ data: null, error: { message: 'denied' } });
 
@@ -122,5 +139,42 @@ describe('period-aware stats queries', () => {
       categories: ['Молочка', 'Хліб'],
       stores: ['Aldi', 'Lidl'],
     });
+  });
+
+  it('keeps the previous period on screen, flagged as placeholder, while a new period loads', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const stableWrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    rpcMock.mockResolvedValueOnce({
+      data: [{ month: '2026-08', total_eur: 10, receipts_count: 1 }],
+      error: null,
+    });
+
+    const { result, rerender } = renderHook(
+      ({ dateFrom }: { dateFrom: string }) => useStatsByMonth({ dateFrom }, {}),
+      { wrapper: stableWrapper, initialProps: { dateFrom: '2026-08-01' } },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.isPlaceholderData).toBe(false);
+
+    let resolveNext: (value: RpcResult) => void = () => undefined;
+    rpcMock.mockReturnValueOnce(
+      new Promise<RpcResult>((resolve) => {
+        resolveNext = resolve;
+      }),
+    );
+    rerender({ dateFrom: '2026-07-01' });
+
+    expect(result.current.isPlaceholderData).toBe(true);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toEqual([{ month: '2026-08', total_eur: 10, receipts_count: 1 }]);
+
+    resolveNext({
+      data: [{ month: '2026-07', total_eur: 5, receipts_count: 2 }],
+      error: null,
+    });
+    await waitFor(() => expect(result.current.isPlaceholderData).toBe(false));
+    expect(result.current.data).toEqual([{ month: '2026-07', total_eur: 5, receipts_count: 2 }]);
   });
 });

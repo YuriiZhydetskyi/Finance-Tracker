@@ -1,11 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type SubmitEvent } from 'react';
 import { FormProvider } from 'react-hook-form';
-import { useNavigate } from '@tanstack/react-router';
+import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router';
 import type { Item, Receipt } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
+import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNames, useProducts } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import { useReceiptForm, emptyItemRow } from '../hooks/use-receipt-form';
 import { useUpdateReceiptMutation } from '../api/use-update-receipt-mutation';
@@ -63,7 +64,10 @@ function toFormRow(item: Item): ItemFormValues {
 
 export function EditReceiptForm({ receipt, items }: Props) {
   const navigate = useNavigate();
-  const categoriesQuery = useCategories();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
+  const categoryNames = useCategoryNames();
+  const productNames = useProductNames();
   const productsQuery = useProducts();
   const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
@@ -88,8 +92,8 @@ export function EditReceiptForm({ receipt, items }: Props) {
     items: items.length > 0 ? items.map(toFormRow) : [emptyItemRow()],
   });
 
-  const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
-  const productNames = productsQuery.data?.map((p) => p.name) ?? [];
+  useLeaveGuard(methods.formState.isDirty);
+
   const allowlistEmails = appUsersQuery.data ?? [];
   // Preserve a legacy paid_by value (e.g. someone removed from the allowlist)
   // so editing an old receipt doesn't silently rewrite who paid.
@@ -170,11 +174,18 @@ export function EditReceiptForm({ receipt, items }: Props) {
         };
       }),
     });
-    void navigate({ to: '/recent', search: { saved: receipt.id } });
+    void navigate({ to: '/recent', search: { saved: receipt.id }, ignoreBlocker: true });
   });
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     void onSubmit(e);
+  };
+
+  // Returns to wherever the user came from (keeping that page's filters or scroll),
+  // and falls back to the list when the page was opened directly.
+  const leaveToList = (ignoreBlocker: boolean) => {
+    if (canGoBack) router.history.back({ ignoreBlocker });
+    else void navigate({ to: '/recent', ignoreBlocker });
   };
 
   const handleConfirmDelete = () => {
@@ -182,7 +193,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
       try {
         await remove.mutateAsync({ id: receipt.id });
         setConfirmOpen(false);
-        void navigate({ to: '/recent' });
+        leaveToList(true);
       } catch {
         setConfirmOpen(false);
       }
@@ -209,9 +220,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
               <Button
                 variant="ghost"
                 type="button"
-                onClick={() => {
-                  void navigate({ to: '/recent' });
-                }}
+                onClick={() => leaveToList(false)}
                 disabled={busy}
               >
                 Скасувати

@@ -1,34 +1,29 @@
 import { z } from 'zod';
 import type { WasteFilters } from './api/use-waste-items';
 
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
 // URL search params for /waste. Mirror of recent-search.ts but with the
 // per-item axes the Waste page needs (item-level category, name search,
 // "show fully wasted" toggle). All fields optional — a bare /waste URL
-// uses the defaults (last 60 days, hide fully-wasted).
+// uses the defaults (last 60 days, hide fully-wasted). A malformed value from
+// a hand-edited URL is dropped instead of failing the whole route.
 
-export const WasteSearchSchema = z
-  .object({
-    q: z.string().optional(), // item name ILIKE
-    category: z.string().optional(),
-    from: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    to: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-    store: z.string().optional(),
-    min: z.coerce.number().nonnegative().optional(),
-    max: z.coerce.number().nonnegative().optional(),
-    // When true, fully-wasted items stay in the list. Default is to hide
-    // them — once an item is fully accounted for, it's just visual noise.
-    showAll: z.coerce.boolean().optional(),
-  })
-  .optional();
+export const WasteSearchSchema = z.object({
+  q: z.string().optional().catch(undefined), // item name ILIKE
+  category: z.string().optional().catch(undefined),
+  from: isoDate.optional().catch(undefined),
+  to: isoDate.optional().catch(undefined),
+  store: z.string().optional().catch(undefined),
+  min: z.coerce.number().nonnegative().optional().catch(undefined),
+  max: z.coerce.number().nonnegative().optional().catch(undefined),
+  // When true, fully-wasted items stay in the list. Default is to hide
+  // them — once an item is fully accounted for, it's just visual noise.
+  showAll: z.coerce.boolean().optional().catch(undefined),
+});
 
 export type WasteSearchParams = z.infer<typeof WasteSearchSchema>;
-export type WasteSearchInput = NonNullable<WasteSearchParams>;
+export type WasteSearchInput = WasteSearchParams;
 
 export const DEFAULT_DATE_WINDOW_DAYS = 60;
 
@@ -49,26 +44,25 @@ export function defaultDateFrom(today: Date = new Date()): string {
  * Project URL search params into the filter shape useWasteItems accepts.
  * Only-defined keys to satisfy exactOptionalPropertyTypes.
  */
-export function searchToWasteFilters(search: WasteSearchInput | undefined): WasteFilters {
+export function searchToWasteFilters(search: WasteSearchInput): WasteFilters {
   const f: WasteFilters = {
     // Default windowing applies when 'from' is unset; an explicit empty 'from'
     // (cleared via filter bar UI by deleting the value) becomes undefined here,
     // i.e. user opted out of the window — show everything.
-    dateFrom: search?.from ?? defaultDateFrom(),
-    showFullyWasted: search?.showAll ?? false,
+    dateFrom: search.from ?? defaultDateFrom(),
+    showFullyWasted: search.showAll ?? false,
   };
-  if (search?.q) f.nameSearch = search.q;
-  if (search?.category) f.category = search.category;
-  if (search?.to) f.dateTo = search.to;
-  if (search?.store) f.storeSearch = search.store;
-  if (search?.min != null) f.priceMin = search.min;
-  if (search?.max != null) f.priceMax = search.max;
+  if (search.q) f.nameSearch = search.q;
+  if (search.category) f.category = search.category;
+  if (search.to) f.dateTo = search.to;
+  if (search.store) f.storeSearch = search.store;
+  if (search.min != null) f.priceMin = search.min;
+  if (search.max != null) f.priceMax = search.max;
   return f;
 }
 
 /** Count of "non-default" filters — drives the "Активні: N" hint. */
-export function countActiveWasteFilters(search: WasteSearchInput | undefined): number {
-  if (!search) return 0;
+export function countActiveWasteFilters(search: WasteSearchInput): number {
   return [
     search.q,
     search.category,

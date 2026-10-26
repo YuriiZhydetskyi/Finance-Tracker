@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import type { ReactNode } from 'react';
 import type { ParsedReceipt, PairDetectionResult } from '@finance-tracker/domain';
 import { PhotoReviewForm } from './PhotoReviewForm';
+import { QueryClientWrapper } from '@/test/query-client';
 
 type SavedReceipt = {
   receipt: {
@@ -28,11 +28,9 @@ const navigateMock = vi.fn();
 // validates env at module load. Replace with thin stubs that keep real
 // react-hook-form behaviour (useReceiptForm uses useForm under the hood).
 vi.mock('@/features/receipts', () => ({
-  computeGrandTotal: () => 1.49,
-  DuplicateWarningBanner: () => null,
+  DuplicateReceiptsWarning: () => null,
   ReceiptFormFields: ({ actions }: { actions: ReactNode }) => <div>{actions}</div>,
   SUPPORTED_CURRENCIES: ['EUR', 'UAH', 'USD'] as const,
-  useDuplicateReceipts: () => ({ data: [] }),
   useSaveReceiptMutation: () => ({
     mutateAsync: saveReceiptMock,
     isPending: false,
@@ -49,16 +47,18 @@ vi.mock('@/features/receipts', () => ({
   },
 }));
 
+vi.mock('@/shared/hooks/use-leave-guard', () => ({ useLeaveGuard: vi.fn() }));
+
 vi.mock('@/features/auth', () => ({
   useAppUsers: () => ({ data: [{ email: 'me@example.com' }] }),
 }));
 
 vi.mock('@/features/categories', () => ({
-  useCategories: () => ({ data: [{ name: 'Бакалія' }] }),
+  useCategoryNames: () => ['Бакалія'],
 }));
 
 vi.mock('@/features/products', () => ({
-  useProducts: () => ({ data: [{ name: 'Bread' }] }),
+  useProductNames: () => ['Bread'],
 }));
 
 vi.mock('@tanstack/react-router', () => ({
@@ -89,11 +89,6 @@ beforeEach(() => {
   savePendingMock.mockReset();
   navigateMock.mockReset();
 });
-
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-}
 
 const parsedReceipt: ParsedReceipt = {
   store: 'Lidl',
@@ -139,7 +134,7 @@ describe('PhotoReviewForm photoBlob branching', () => {
         photoBlob={null}
         onCancel={onCancel}
       />,
-      { wrapper },
+      { wrapper: QueryClientWrapper },
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Зберегти/i }));
@@ -171,7 +166,7 @@ describe('PhotoReviewForm photoBlob branching', () => {
         photoBlob={blob}
         onCancel={onCancel}
       />,
-      { wrapper },
+      { wrapper: QueryClientWrapper },
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Зберегти/i }));
@@ -201,7 +196,7 @@ describe('PhotoReviewForm photoBlob branching', () => {
         onCancel={onCancel}
         onSaved={onSaved}
       />,
-      { wrapper },
+      { wrapper: QueryClientWrapper },
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Зберегти/i }));

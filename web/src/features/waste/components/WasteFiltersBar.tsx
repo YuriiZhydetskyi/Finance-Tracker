@@ -12,20 +12,26 @@ type Props = {
 };
 
 export function WasteFiltersBar({ search, categoryOptions, activeCount }: Props) {
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: '/waste' });
+
+  // Filter edits replace the history entry so Back leaves the page instead of
+  // stepping through every keystroke-sized change.
+  const update = (patch: Partial<WasteSearchInput>) => {
+    void navigate({
+      to: '/waste',
+      search: (prev) => ({ ...prev, ...patch }),
+      replace: true,
+    });
+  };
 
   const [nameDraft, setNameDraft] = useDebouncedUrlDraft({
     value: search.q,
-    onCommit: (q) => void navigate({ to: '/waste', search: { ...search, q } }),
+    onCommit: (q) => update({ q }),
   });
   const [storeDraft, setStoreDraft] = useDebouncedUrlDraft({
     value: search.store,
-    onCommit: (store) => void navigate({ to: '/waste', search: { ...search, store } }),
+    onCommit: (store) => update({ store }),
   });
-
-  const update = (patch: Partial<WasteSearchInput>) => {
-    void navigate({ to: '/waste', search: { ...search, ...patch } });
-  };
 
   const clearAll = () => void navigate({ to: '/waste', search: {} });
 

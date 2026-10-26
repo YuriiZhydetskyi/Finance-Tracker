@@ -1,16 +1,9 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-} from 'react';
+import { useMemo, useState, type KeyboardEvent, type MouseEvent, type SubmitEvent } from 'react';
 import { ParsedReceiptSchema, type ParsedReceipt } from '@finance-tracker/domain';
 import { parseJsonText } from '@/shared/utils/parse-json-text';
 import { formatZodIssues } from '@/shared/utils/format-zod-issues';
 import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
+import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { Button } from '@/shared/ui/Button';
 import {
   validateManualJsonReceipt,
@@ -183,7 +176,7 @@ export function ManualJsonImportDialog({
   onClose,
   onImported,
 }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useModalDialog(open);
   const prompt = useMemo(
     () => buildPrompt(categories, products, validationOptions),
     [categories, products, validationOptions],
@@ -195,13 +188,6 @@ export function ManualJsonImportDialog({
   const [submitting, setSubmitting] = useState(false);
   const { copyState, copy, reset: resetCopy } = useCopyToClipboard(prompt);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
   // jsonText is intentionally preserved across close/reopen so an accidental
   // close doesn't wipe a paste the user is mid-way through validating.
   const handleClose = () => {
@@ -210,7 +196,7 @@ export function ManualJsonImportDialog({
     onClose();
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 

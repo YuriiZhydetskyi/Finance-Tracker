@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { photoStorage } from '@/shared/lib/dependencies';
+import { useSignedUrl } from '@/shared/hooks/use-signed-url';
 import { formatDate } from '@/shared/utils/format-date';
 import { isPdfPath } from '@/shared/utils/is-pdf-path';
 import { Button } from '@/shared/ui/Button';
@@ -16,13 +16,7 @@ type Props = {
 };
 
 function PendingThumbnail({ path }: { path: string }) {
-  const { data: signedUrl } = useQuery({
-    queryKey: ['pending-parse-thumb', path] as const,
-    queryFn: () => photoStorage.getSignedUrl(path),
-    // Signed URLs live 1h; refresh a bit earlier so the <img> never 403s.
-    staleTime: 50 * 60_000,
-    enabled: !isPdfPath(path),
-  });
+  const { data: signedUrl } = useSignedUrl(photoStorage, path, null, !isPdfPath(path));
 
   if (isPdfPath(path)) {
     return (

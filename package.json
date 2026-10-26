@@ -17,7 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present && npm run test:purchase-correction-sql && npm run test:packaged-products-sql && npm run test:save-receipt-bundle-sql && npm run test:email-imports-sql && npm run check:edge-domain",
+    "test": "npm run test:unit && npm run test:purchase-correction-sql && npm run test:packaged-products-sql && npm run test:save-receipt-bundle-sql && npm run test:email-imports-sql && npm run check:edge-domain",
+    "test:unit": "npm run router:gen --workspace @finance-tracker/web && vitest run",
     "test:purchase-correction-sql": "node scripts/test-purchase-correction-rules.mjs",
     "test:packaged-products-sql": "node scripts/test-packaged-products-sql.mjs",
     "test:save-receipt-bundle-sql": "node scripts/test-save-receipt-bundle-sql.mjs",
@@ -27,11 +28,12 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.12",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.2",
-    "prettier": "^3.8.3",
-    "supabase": "^2.98.2"
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "supabase": "^2.122.0",
+    "vitest": "^5.0.5"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs}": [
@@ -41,7 +43,12 @@
       "prettier --write"
     ]
   },
+  "overrides": {
+    "eslint-plugin-react": {
+      "eslint": "^10.13.0"
+    }
+  },
   "engines": {
-    "node": ">=22.13"
+    "node": ">=24.15"
   }
 }

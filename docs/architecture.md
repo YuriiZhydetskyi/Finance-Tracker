@@ -202,7 +202,7 @@ React SPA → Supabase
    │ supabase.rpc('save_receipt_bundle', { ..., p_replace: false })
    │   одна транзакція: products → backfills/enrichments → receipt → items → product_prices
    │   помилка на будь-якому кроці → нічого не записано
-   │ qc.invalidateQueries({ queryKey: receiptsQueryKey }) + productsQueryKey
+   │ invalidateReceiptDerivedQueries(qc) — receipts, products, усі ['stats', …], waste-items, packaging-candidates
    ▼
 [11. catch path для save failure]
    │ photoStorage.remove(path).catch(noop) — orphan blob cleanup
@@ -212,7 +212,7 @@ React SPA → Supabase
    │ Banner "Чек збережено: <id>" на /recent сторінці
 ```
 
-**Ризики таймауту на цьому потоці:** Gemini call 3–15с, Claude fallback +5–20с при failure. Edge Function default timeout у Supabase free-tier — 25с (платний — більше). Якщо реальний чек з 50+ items + AI спрацював повільно — можна впертись. Mitigation: client-side soft timeout 30с з retry-кнопкою на /photo (наразі не реалізовано, додати у Phase 11+ якщо помітимо).
+**Ризики таймауту на цьому потоці:** Gemini call 3–15с, Claude fallback +5–20с при failure. Edge Function default timeout у Supabase free-tier — 25с (платний — більше). Якщо реальний чек з 50+ items + AI спрацював повільно — можна впертись. Клієнт обриває запит через 140с (`PARSE_TIMEOUT_MS` у `edge-fn-parse-receipt.ts`, трохи менше за 150с wall-clock ліміт Edge Functions) і показує причину з тіла відповіді функції (наприклад, 502 від обох провайдерів); повторити можна кнопкою «Спробувати ще» в каруселі. Незавершений запит скасовується (`signal`), коли користувач покидає сторінку.
 
 ### Потік 2: stats query
 
@@ -260,7 +260,7 @@ React SPA → Supabase
    │   └─ supabase.rpc('save_receipt_bundle', { ..., p_replace: true })  ← wholesale replace
    │        одна транзакція: products → UPDATE receipts → DELETE product_prices/items
    │        → INSERT items → INSERT product_prices
-   │ qc.invalidateQueries({ queryKey: [receiptsQueryKey, receiptQueryKey(id), productsQueryKey] })
+   │ invalidateReceiptDerivedQueries(qc) + qc.invalidateQueries({ queryKey: receiptQueryKey(id) })
    ▼
 [4. navigate({ to: '/recent', search: { saved: id } })]
 ```
@@ -277,7 +277,7 @@ React SPA → Supabase
    │ supabase.from('receipts').delete().eq('id', id)
    │   FK on items: ON DELETE CASCADE → items видалені автоматично
    │ qc.removeQueries({ queryKey: receiptQueryKey(id) })
-   │ qc.invalidateQueries({ queryKey: receiptsQueryKey })
+   │ invalidateReceiptDerivedQueries(qc)
    ▼
 [3. navigate({ to: '/recent' })]
 ```

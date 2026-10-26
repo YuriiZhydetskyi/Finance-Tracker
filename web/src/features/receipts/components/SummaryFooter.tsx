@@ -1,5 +1,4 @@
 import { useFormContext, useWatch } from 'react-hook-form';
-import { useMemo } from 'react';
 import type { ManualFormValues } from '../schemas/manual-form';
 import { computeCategoryBreakdown, computeGrandTotal } from '../utils/totals';
 import { formatMoney } from '@/shared/utils/format-money';
@@ -7,11 +6,15 @@ import { cn } from '@/shared/ui/cn';
 
 export function SummaryFooter() {
   const { control } = useFormContext<ManualFormValues>();
-  const items = useWatch({ control, name: 'items' });
   const currency = useWatch({ control, name: 'currency' });
-
-  const grand = useMemo(() => computeGrandTotal(items ?? []), [items]);
-  const breakdown = useMemo(() => computeCategoryBreakdown(items ?? []), [items]);
+  const { grand, breakdown } = useWatch({
+    control,
+    name: 'items',
+    compute: (items) => ({
+      grand: computeGrandTotal(items ?? []),
+      breakdown: computeCategoryBreakdown(items ?? []),
+    }),
+  });
 
   return (
     <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">

@@ -18,11 +18,11 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 vi.mock('@/features/categories', () => ({
-  useCategories: () => ({ data: [] }),
+  useCategoryNames: () => [],
 }));
 
 vi.mock('@/features/products', () => ({
-  useProducts: () => ({ data: [] }),
+  useProductNameEntries: () => [],
 }));
 
 vi.mock('./ImportFilePreview', () => ({

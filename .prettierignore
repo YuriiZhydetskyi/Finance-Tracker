@@ -9,3 +9,4 @@ package-lock.json
 docs/decisions
 conversation.md
 supabase/functions/_shared/domain
+web/src/shared/types/database.types.ts

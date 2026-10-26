@@ -1,44 +1,29 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { FormProvider, useWatch } from 'react-hook-form';
+import type { SubmitEvent } from 'react';
+import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/shared/ui/Button';
+import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNames } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import { useReceiptForm } from '../hooks/use-receipt-form';
 import { useSaveReceiptMutation } from '../api/use-save-receipt-mutation';
-import { useDuplicateReceipts } from '../api/use-duplicate-receipts';
-import { computeGrandTotal } from '../utils/totals';
 import { ReceiptFormFields } from './ReceiptFormFields';
-import { DuplicateWarningBanner } from './DuplicateWarningBanner';
+import { DuplicateReceiptsWarning } from './DuplicateReceiptsWarning';
 
 export function ManualReceiptForm() {
   const { methods, itemsArray } = useReceiptForm();
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productNames = useProductNames();
   const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
   const save = useSaveReceiptMutation();
   const navigate = useNavigate();
 
-  const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
-  const productNames = productsQuery.data?.map((p) => p.name) ?? [];
-  const paidByOptions = appUsersQuery.data ?? [];
+  useLeaveGuard(methods.formState.isDirty);
 
-  const watchedStore = useWatch({ control: methods.control, name: 'store' });
-  const watchedDate = useWatch({ control: methods.control, name: 'date' });
-  const watchedTime = useWatch({ control: methods.control, name: 'time' });
-  const watchedItems = useWatch({ control: methods.control, name: 'items' });
-  const watchedTotal = useMemo(() => computeGrandTotal(watchedItems ?? []), [watchedItems]);
-  const [duplicatesDismissed, setDuplicatesDismissed] = useState(false);
-  const duplicatesQuery = useDuplicateReceipts({
-    store: watchedStore,
-    date: watchedDate,
-    time: watchedTime,
-    total_orig: watchedTotal,
-  });
-  const visibleDuplicates = duplicatesDismissed ? [] : (duplicatesQuery.data ?? []);
+  const paidByOptions = appUsersQuery.data ?? [];
 
   const onSubmit = methods.handleSubmit(async (values) => {
     const result = await save.mutateAsync({
@@ -75,20 +60,21 @@ export function ManualReceiptForm() {
         discount_orig: it.discount_orig ?? 0,
       })),
     });
-    void navigate({ to: '/recent', search: { saved: result.receipt_id } });
+    void navigate({
+      to: '/recent',
+      search: { saved: result.receipt_id },
+      ignoreBlocker: true,
+    });
   });
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     void onSubmit(e);
   };
 
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleFormSubmit} className="space-y-4">
-        <DuplicateWarningBanner
-          candidates={visibleDuplicates}
-          onDismiss={() => setDuplicatesDismissed(true)}
-        />
+        <DuplicateReceiptsWarning />
         <ReceiptFormFields
           itemsArray={itemsArray}
           categories={categoryNames}

@@ -5,7 +5,7 @@ const MoneySchema = z.string().regex(/^\d+(?:\.\d{1,2})? [A-Z]{3}$/);
 
 const AmazonItemSchema = z.object({
   title: z.string().min(1),
-  quantity: z.number().finite().positive(),
+  quantity: z.number().positive(),
   price: MoneySchema,
   asin: z.string().nullable(),
   product_link: z.string().nullable(),
@@ -16,7 +16,7 @@ const AmazonItemSchema = z.object({
 
 const AmazonOrderSchema = z.object({
   order_number: z.string().regex(/^\d{3}-\d{7}-\d{7}$/),
-  date: z.string().datetime(),
+  date: z.iso.datetime(),
   items: z.array(AmazonItemSchema),
   total: MoneySchema,
   gmail_total: MoneySchema.optional(),

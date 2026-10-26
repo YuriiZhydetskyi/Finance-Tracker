@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { UseFieldArrayReturn } from 'react-hook-form';
 import { Button } from '@/shared/ui/Button';
 import { ItemRow } from './ItemRow';
@@ -13,9 +14,11 @@ type Props = {
 };
 
 export function ItemsList({ itemsArray, categories, productNames, taxonomy }: Props) {
+  const productListId = useId();
+
   return (
     <div className="space-y-3">
-      <datalist id="products-datalist">
+      <datalist id={productListId}>
         {productNames.map((name) => (
           <option key={name} value={name} />
         ))}
@@ -25,6 +28,7 @@ export function ItemsList({ itemsArray, categories, productNames, taxonomy }: Pr
         <ItemRow
           key={field.id}
           index={index}
+          productListId={productListId}
           categories={categories}
           taxonomy={taxonomy}
           onRemove={() => {

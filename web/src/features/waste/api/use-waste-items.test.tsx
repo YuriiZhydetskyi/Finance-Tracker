@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWasteItems, type WasteItemRow } from './use-waste-items';
 
@@ -18,7 +18,13 @@ beforeEach(() => {
   vi.resetAllMocks();
   operations.length = 0;
   rpc.mockImplementation(() => {
-    const builder: Record<string, unknown> = { range };
+    const builder: Record<string, unknown> = {
+      range: (...args: unknown[]) => {
+        const result: unknown = range(...args);
+        const terminal = { overrideTypes: () => result };
+        return { ...terminal, abortSignal: () => terminal };
+      },
+    };
     for (const method of ['select', 'gt', 'eq', 'gte', 'lte', 'ilike', 'order']) {
       builder[method] = (...args: unknown[]) => {
         operations.push([method, ...args]);
@@ -30,7 +36,9 @@ beforeEach(() => {
 });
 
 function Wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const [client] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+  );
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 

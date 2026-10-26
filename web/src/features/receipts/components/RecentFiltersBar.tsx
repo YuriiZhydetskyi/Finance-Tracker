@@ -12,18 +12,22 @@ type Props = {
 };
 
 export function RecentFiltersBar({ search, paidByOptions, activeCount }: Props) {
-  const navigate = useNavigate();
-  const [storeDraft, setStoreDraft] = useDebouncedUrlDraft({
-    value: search.q,
-    onCommit: (q) => void navigate({ to: '/recent', search: { ...search, q, saved: undefined } }),
-  });
+  const navigate = useNavigate({ from: '/recent' });
 
+  // Filter edits replace the history entry so Back leaves the page instead of
+  // stepping through every keystroke-sized change.
   const update = (patch: Partial<RecentSearchInput>) => {
     void navigate({
       to: '/recent',
-      search: { ...search, ...patch, saved: undefined },
+      search: (prev) => ({ ...prev, ...patch, saved: undefined }),
+      replace: true,
     });
   };
+
+  const [storeDraft, setStoreDraft] = useDebouncedUrlDraft({
+    value: search.q,
+    onCommit: (q) => update({ q }),
+  });
 
   const clearAll = () => void navigate({ to: '/recent', search: {} });
 

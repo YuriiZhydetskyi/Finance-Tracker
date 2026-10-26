@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { PackagingCandidateRow } from '../types';
 import {
   matchesReceiptHint,
@@ -7,6 +7,7 @@ import {
 } from '../utils/packaging-import';
 import { usePackagingCandidates } from '../api/use-packaging-candidates';
 import { Input } from '@/shared/ui/Input';
+import { useObjectUrl } from '@/shared/hooks/use-object-url';
 
 const KIND_LABELS = {
   front: 'Лицевий бік',
@@ -18,18 +19,11 @@ const KIND_LABELS = {
 };
 
 function PagePreview({ blob, label }: { blob: Blob; label: string }) {
-  const image = useRef<HTMLImageElement>(null);
-  const link = useRef<HTMLAnchorElement>(null);
-  useEffect(() => {
-    const next = URL.createObjectURL(blob);
-    if (image.current) image.current.src = next;
-    if (link.current) link.current.href = next;
-    return () => URL.revokeObjectURL(next);
-  }, [blob]);
+  const url = useObjectUrl(blob);
   return (
     <figure className="w-36 rounded border border-slate-200 p-2">
-      <a ref={link} target="_blank" rel="noreferrer">
-        <img ref={image} alt={label} className="h-40 w-full object-contain" />
+      <a href={url ?? undefined} target="_blank" rel="noreferrer">
+        <img src={url ?? undefined} alt={label} className="h-40 w-full object-contain" />
       </a>
       <figcaption className="mt-1 text-xs text-slate-600">{label}</figcaption>
     </figure>
@@ -87,8 +81,13 @@ function ProductLinks({
           Не вдалося знайти позиції. Перевір мережу або збережи без прив’язки.
         </p>
       ) : null}
-      {candidates.isPending ? <p className="text-xs text-slate-500">Шукаю…</p> : null}
-      <div className="max-h-44 space-y-1 overflow-y-auto">
+      {candidates.isPending || candidates.isPlaceholderData ? (
+        <p className="text-xs text-slate-500">Шукаю…</p>
+      ) : null}
+      <div
+        aria-busy={candidates.isPlaceholderData}
+        className={`max-h-44 space-y-1 overflow-y-auto ${candidates.isPlaceholderData ? 'opacity-60' : ''}`}
+      >
         {rows.map((row) => (
           <label
             key={row.product_id}

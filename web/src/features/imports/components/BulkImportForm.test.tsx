@@ -11,17 +11,19 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigateMock,
 }));
 
+vi.mock('@/shared/hooks/use-leave-guard', () => ({ useLeaveGuard: vi.fn() }));
+
 vi.mock('@/features/auth', () => ({
   useCurrentUser: () => ({ data: { email: 'me@example.com' } }),
   useAppUsers: () => ({ data: ['me@example.com'] }),
 }));
 
 vi.mock('@/features/categories', () => ({
-  useCategories: () => ({ data: [{ name: 'Бакалія' }] }),
+  useCategoryNames: () => ['Бакалія'],
 }));
 
 vi.mock('@/features/products', () => ({
-  useProducts: () => ({ data: [] }),
+  useProductNameEntries: () => [],
 }));
 
 // Import the dialog directly: the feature barrel also exports photo upload
@@ -39,19 +41,6 @@ vi.mock('../api/imports', () => ({
     mutateAsync: createManualJsonBatchMock,
   }),
 }));
-
-beforeAll(() => {
-  if (!HTMLDialogElement.prototype.showModal) {
-    HTMLDialogElement.prototype.showModal = function showModal() {
-      this.open = true;
-    };
-  }
-  if (!HTMLDialogElement.prototype.close) {
-    HTMLDialogElement.prototype.close = function close() {
-      this.open = false;
-    };
-  }
-});
 
 beforeEach(() => {
   createManualJsonBatchMock.mockReset();
@@ -110,5 +99,6 @@ it('parses pasted Amazon email JSON and creates a durable batch', async () => {
   expect(navigateMock).toHaveBeenCalledWith({
     to: '/imports/$id',
     params: { id: 'batch-amazon' },
+    ignoreBlocker: true,
   });
 });
