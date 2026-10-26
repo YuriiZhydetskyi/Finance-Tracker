@@ -200,7 +200,7 @@ Pre-commit запускає Prettier через `lint-staged`. Lint+typecheck+te
 
 ## Лінтинг
 
-ESLint 9 flat config:
+ESLint 10 flat config:
 
 - `web/eslint.config.js` — React + TypeScript + React Hooks rules + `no-restricted-imports` для блокування прямого `supabase-client` за межами адаптерів і `**/api/**`.
 - `packages/domain/eslint.config.js` — TypeScript + блокує `react`, `supabase-js`, `vite` imports (vendor-free пакет).

@@ -193,28 +193,28 @@ Cloudflare deployment не був частиною цього release.
 
 ---
 
-## Стек (актуальні версії, May 2026)
+## Стек (актуальні версії, October 2026)
 
 ### Frontend (`web/`)
 
 | Пакет                                                  | Версія                  | Роль                                                           |
 | ------------------------------------------------------ | ----------------------- | -------------------------------------------------------------- |
-| react / react-dom                                      | 19.2.6                  | UI                                                             |
-| vite                                                   | 8.0.11                  | dev server + build (Rolldown bundler)                          |
-| @tailwindcss/vite + tailwindcss                        | 4.2.4                   | CSS-first без `tailwind.config.js`                             |
-| @tanstack/react-query                                  | 5.100.9                 | server state                                                   |
-| @tanstack/react-router                                 | 1.169.2                 | type-safe routing, file-based                                  |
-| @tanstack/router-plugin / -cli                         | 1.167.x / 1.166.x       | route generation                                               |
-| @supabase/supabase-js                                  | 2.105.3                 | Auth + DB + Storage клієнт                                     |
-| zod                                                    | 4.4.3                   | runtime validation + TS types                                  |
-| react-hook-form + @hookform/resolvers                  | 7.75.0 / 5.2.2          | форми                                                          |
-| chart.js + react-chartjs-2                             | 4.5.1 / 5.3.1           | дашборди (Phase 9)                                             |
+| react / react-dom                                      | 19.3.1                  | UI                                                             |
+| vite                                                   | 8.3.5                   | dev server + build (Rolldown bundler)                          |
+| @tailwindcss/vite + tailwindcss                        | 4.3.3                   | CSS-first без `tailwind.config.js`                             |
+| @tanstack/react-query                                  | 5.105.0                 | server state                                                   |
+| @tanstack/react-router                                 | 1.170.46                | type-safe routing, file-based                                  |
+| @tanstack/router-plugin / -cli                         | 1.168.x / 1.167.x       | route generation                                               |
+| @supabase/supabase-js                                  | 2.118.0                 | Auth + DB + Storage клієнт                                     |
+| zod                                                    | 4.6.7                   | runtime validation + TS types                                  |
+| react-hook-form + @hookform/resolvers                  | 7.91.0 / 6.0.0          | форми                                                          |
+| chart.js + react-chartjs-2                             | 4.6.1 / 5.3.1           | дашборди (Phase 9)                                             |
 | typescript                                             | 6.0.3                   | strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes |
-| vitest + @testing-library/react + jsdom                | 4.1.5 / 16.3.2 / 29.1.1 | тести                                                          |
-| eslint + typescript-eslint + react/react-hooks plugins | 9.39.4 / 8.59.2 / ...   | lint                                                           |
-| prettier + lint-staged + husky                         | 3.8.3 / 17.0.2 / 9.1.7  | format + pre-commit                                            |
+| vitest + @testing-library/react + jsdom                | 5.0.5 / 16.3.3 / 30.1.3 | тести                                                          |
+| eslint + typescript-eslint + react/react-hooks plugins | 10.13.0 / 8.72.0 / ...  | lint                                                           |
+| prettier + lint-staged + husky                         | 3.9.10 / 17.6.0 / 9.1.7 | format + pre-commit                                            |
 
-ESLint 9.x (не 10) — `eslint-plugin-react@7.37.5` ще не оновився під ESLint 10 peer dep. Як тільки оновиться — перейдемо.
+ESLint 10 з обгорткою `fixupPluginRules` (`@eslint/compat`) для `eslint-plugin-react@7.37.5`, який ще не заявляє підтримку ESLint 10. Коли плагін оновиться — прибрати обгортку та `overrides` у кореневому `package.json`.
 
 ### Backend / платформа
 
@@ -543,10 +543,10 @@ supabase functions serve parse-receipt --env-file supabase/.env.local           
 
 1. **PowerShell `>` редірект → UTF-16 LE з BOM.** Tools (TS / Vite / ESLint) хочуть UTF-8. Для `supabase gen types`: `[System.IO.File]::WriteAllText(path, ($output -join "`n"), [System.Text.UTF8Encoding]::new($false))` — UTF-8 без BOM.
 2. **TanStack Router `routeTree.gen.ts` — generated, gitignored.** Будь-який скрипт що тригерить tsc (typecheck, build) має спочатку викликати `tsr generate`. Реалізовано у `web/package.json` scripts.
-3. **ESLint 10 ще не сумісний з `eslint-plugin-react@7.37.5`** — peer dep. Сидимо на ESLint 9.39.4.
+3. **`eslint-plugin-react@7.37.5` ще не підтримує ESLint 10** — працюємо через `fixupPluginRules` + `overrides` у кореневому `package.json` (див. коментар у `web/eslint.config.js`).
 4. **TypeScript `baseUrl` deprecated у v6, видалиться у v7.** Для path mapping використовуємо лише `paths` (relatively resolved by tsconfig location).
 5. **Module augmentation вимагає `interface`, не `type`.** У `router.ts` додаємо `// eslint-disable-next-line @typescript-eslint/consistent-type-definitions`.
-6. **Supabase JS `auth.onAuthStateChange` callback може спрацювати кілька разів.** Наша обгортка у `supabase-auth-service.ts` ще додатково форсує initial fire через `getUser()` — гарантує що UI отримає state одразу при mount.
+6. **Supabase JS `auth.onAuthStateChange` callback може спрацювати кілька разів.** Наша обгортка у `supabase-auth-service.ts` бере початковий стан з `getSession()` і повторного `INITIAL_SESSION` (без мережевого `getUser()`), а підписка спільна для всіх споживачів.
 7. **Allowlist check ≠ auth check.** Можна бути signed-in, але не allowed. `<RequireAuth>` має 4 стани, не 2.
 8. **`exactOptionalPropertyTypes: true` + `Partial<T>` стрімкий gotcha.** `Partial<{items: T[]}>` НЕ еквівалентно `{items?: T[] | undefined}` — exact-mode не дозволяє `undefined` у властивості якщо тип не містить `undefined` явно. Фікс: завжди передавати масив (порожній або не-порожній), не `undefined`.
 9. **`jsdom` не реалізує native `<dialog>`.** Тести `<DeleteConfirmDialog>` стабають `HTMLDialogElement.prototype.showModal/close` у `beforeAll` — інакше `dialog.showModal()` кидає TypeError.
