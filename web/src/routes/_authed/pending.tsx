@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { useCategoryNames } from '@/features/categories';
 import { useProductNameEntries } from '@/features/products';
-import { BatchReviewCarousel, useBatchParser } from '@/features/photo';
+import { BatchReviewCarousel, useBatchLeaveGuard, useBatchParser } from '@/features/photo';
 import {
   PendingList,
   fetchPendingBlob,
@@ -27,6 +27,7 @@ function PendingFlow() {
   const deletePending = useDeletePendingParseMutation();
 
   const batch = useBatchParser({ categories: categoryNames, products: productList });
+  useBatchLeaveGuard(batch.state.items);
 
   const [preparing, setPreparing] = useState(false);
   const [prepError, setPrepError] = useState<Error | null>(null);

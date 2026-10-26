@@ -8,6 +8,7 @@ import {
   ManualJsonImportDialog,
   PhotoPicker,
   PhotoUploadAssign,
+  useBatchLeaveGuard,
   useBatchParser,
   type AddFileInput,
 } from '@/features/photo';
@@ -35,6 +36,7 @@ function PhotoFlow() {
   const [filesToAssign, setFilesToAssign] = useState<File[] | null>(null);
 
   const batch = useBatchParser({ categories: categoryNames, products: productList });
+  useBatchLeaveGuard(batch.state.items);
 
   const handleConfirmPayers = (inputs: AddFileInput[]) => {
     void batch.addFiles(inputs);

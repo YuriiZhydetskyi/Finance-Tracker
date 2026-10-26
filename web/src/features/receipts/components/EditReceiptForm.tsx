@@ -3,6 +3,7 @@ import { FormProvider } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import type { Item, Receipt } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
+import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
 import { useAppUsers } from '@/features/auth';
 import { useCategoryNames } from '@/features/categories';
 import { useProductNames, useProducts } from '@/features/products';
@@ -89,6 +90,8 @@ export function EditReceiptForm({ receipt, items }: Props) {
     items: items.length > 0 ? items.map(toFormRow) : [emptyItemRow()],
   });
 
+  useLeaveGuard(methods.formState.isDirty);
+
   const allowlistEmails = appUsersQuery.data ?? [];
   // Preserve a legacy paid_by value (e.g. someone removed from the allowlist)
   // so editing an old receipt doesn't silently rewrite who paid.
@@ -169,7 +172,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
         };
       }),
     });
-    void navigate({ to: '/recent', search: { saved: receipt.id } });
+    void navigate({ to: '/recent', search: { saved: receipt.id }, ignoreBlocker: true });
   });
 
   const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -181,7 +184,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
       try {
         await remove.mutateAsync({ id: receipt.id });
         setConfirmOpen(false);
-        void navigate({ to: '/recent' });
+        void navigate({ to: '/recent', ignoreBlocker: true });
       } catch {
         setConfirmOpen(false);
       }

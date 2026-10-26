@@ -11,6 +11,8 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigateMock,
 }));
 
+vi.mock('@/shared/hooks/use-leave-guard', () => ({ useLeaveGuard: vi.fn() }));
+
 vi.mock('@/features/auth', () => ({
   useCurrentUser: () => ({ data: { email: 'me@example.com' } }),
   useAppUsers: () => ({ data: ['me@example.com'] }),
@@ -110,5 +112,6 @@ it('parses pasted Amazon email JSON and creates a durable batch', async () => {
   expect(navigateMock).toHaveBeenCalledWith({
     to: '/imports/$id',
     params: { id: 'batch-amazon' },
+    ignoreBlocker: true,
   });
 });

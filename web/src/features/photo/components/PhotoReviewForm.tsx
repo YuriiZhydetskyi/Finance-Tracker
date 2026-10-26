@@ -9,6 +9,7 @@ import {
   type PairDetectionResult,
 } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
+import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
 import { useAppUsers } from '@/features/auth';
 import { useCategoryNames } from '@/features/categories';
 import { useProductNames } from '@/features/products';
@@ -138,6 +139,10 @@ export function PhotoReviewForm({
 
   const paidByOptions = appUsersQuery.data ?? [];
 
+  // Inside the batch the page-level guard (useBatchLeaveGuard) already prompts, and
+  // two guards would ask twice.
+  useLeaveGuard(methods.formState.isDirty && !onSaved);
+
   const watchedStore = useWatch({ control: methods.control, name: 'store' });
   const watchedDate = useWatch({ control: methods.control, name: 'date' });
   const watchedTime = useWatch({ control: methods.control, name: 'time' });
@@ -203,7 +208,11 @@ export function PhotoReviewForm({
     if (onSaved) {
       onSaved(result.receipt_id);
     } else {
-      void navigate({ to: '/recent', search: { saved: result.receipt_id } });
+      void navigate({
+        to: '/recent',
+        search: { saved: result.receipt_id },
+        ignoreBlocker: true,
+      });
     }
   });
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { ParsedReceipt } from '@finance-tracker/domain';
 import { useAppUsers, useCurrentUser } from '@/features/auth';
@@ -6,6 +6,7 @@ import { useCategoryNames } from '@/features/categories';
 import { useProductNameEntries } from '@/features/products';
 import { ManualJsonImportDialog } from '@/features/photo';
 import { Button } from '@/shared/ui/Button';
+import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { SELECT_CLASS } from '@/shared/ui/select-classes';
 import {
@@ -13,6 +14,10 @@ import {
   useCreateManualJsonImportBatch,
   type ImportProgress,
 } from '../api/imports';
+
+// Files are sent from this tab; leaving mid-upload strands the rest of the batch.
+const UPLOAD_LEAVE_MESSAGE =
+  'Файли ще завантажуються. Якщо вийти зараз, решта батча не завантажиться. Вийти?';
 
 export function BulkImportForm() {
   const navigate = useNavigate();
@@ -35,18 +40,12 @@ export function BulkImportForm() {
   const totalBytes = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files]);
   const isBusy = createBatch.isPending || createManualJsonBatch.isPending;
 
-  // Files are sent from this tab; leaving mid-upload strands the rest of the batch.
-  useEffect(() => {
-    if (!createBatch.isPending) return;
-    const warnBeforeLeaving = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warnBeforeLeaving);
-    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
-  }, [createBatch.isPending]);
+  useLeaveGuard(createBatch.isPending, UPLOAD_LEAVE_MESSAGE);
 
   const start = async () => {
     try {
       const batchId = await createBatch.mutateAsync({ files, paidBy, onProgress: setProgress });
-      await navigate({ to: '/imports/$id', params: { id: batchId } });
+      await navigate({ to: '/imports/$id', params: { id: batchId }, ignoreBlocker: true });
     } catch {
       // React Query exposes the error below; avoid an unhandled event-promise rejection.
     }
@@ -54,7 +53,7 @@ export function BulkImportForm() {
 
   const startManualJsonBatch = async (receipts: ParsedReceipt[]) => {
     const batchId = await createManualJsonBatch.mutateAsync({ receipts, paidBy });
-    await navigate({ to: '/imports/$id', params: { id: batchId } });
+    await navigate({ to: '/imports/$id', params: { id: batchId }, ignoreBlocker: true });
   };
 
   return (

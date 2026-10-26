@@ -49,6 +49,8 @@ vi.mock('@/features/receipts', () => ({
   },
 }));
 
+vi.mock('@/shared/hooks/use-leave-guard', () => ({ useLeaveGuard: vi.fn() }));
+
 vi.mock('@/features/auth', () => ({
   useAppUsers: () => ({ data: [{ email: 'me@example.com' }] }),
 }));
