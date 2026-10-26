@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useReceipt } from './use-receipt';
 
 type Res = { data: unknown; error: { message: string } | null };
@@ -49,7 +49,9 @@ beforeEach(() => {
 });
 
 function Wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const [queryClient] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+  );
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 

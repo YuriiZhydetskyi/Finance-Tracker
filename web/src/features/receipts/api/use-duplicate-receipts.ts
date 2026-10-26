@@ -29,7 +29,11 @@ export function duplicateReceiptsQueryOptions(input: DuplicateCheckInput) {
   const { store, date, total_orig, excludeId } = input;
 
   return queryOptions({
-    queryKey: [...receiptsQueryKey, 'duplicates', input] as const,
+    queryKey: [
+      ...receiptsQueryKey,
+      'duplicates',
+      { store, date, total_orig, time: input.time, excludeId },
+    ] as const,
     staleTime: 30_000,
     queryFn:
       store?.trim() && date && typeof total_orig === 'number' && total_orig !== 0
