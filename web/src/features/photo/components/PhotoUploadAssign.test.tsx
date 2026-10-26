@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockInstance } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PhotoUploadAssign } from './PhotoUploadAssign';
 
@@ -14,11 +14,16 @@ vi.mock('@/features/auth', () => ({
   useAppUsers: () => ({ data: auth.appUsers }),
 }));
 
+let createObjectURL: MockInstance<typeof URL.createObjectURL>;
+let revokeObjectURL: MockInstance<typeof URL.revokeObjectURL>;
+
 beforeEach(() => {
   auth.user = undefined;
   auth.appUsers = [];
-  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob://fake');
-  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+  createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob://fake');
+  revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+  createObjectURL.mockClear();
+  revokeObjectURL.mockClear();
 });
 
 function makeFile(name: string): File {
@@ -80,5 +85,24 @@ describe('PhotoUploadAssign', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Почати розпізнавання' })).toBeDisabled();
+  });
+
+  it('previews only images and revokes their object URLs on unmount', () => {
+    auth.user = { email: 'me@example.com' };
+    auth.appUsers = ['me@example.com'];
+    const files = [makeFile('a.jpg'), new File(['x'], 'scan.pdf', { type: 'application/pdf' })];
+
+    const { container, unmount } = render(
+      <PhotoUploadAssign files={files} onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+
+    expect(createObjectURL).toHaveBeenCalledExactlyOnceWith(files[0]);
+    expect(container.querySelector('img')).toHaveAttribute('src', 'blob://fake');
+    expect(screen.getByText('PDF')).toBeInTheDocument();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+
+    unmount();
+
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob://fake');
   });
 });
