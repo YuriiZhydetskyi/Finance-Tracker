@@ -12,6 +12,8 @@ import type { ProductTaxonomy } from '@/features/products/api/use-products';
 
 type Props = {
   index: number;
+  /** Id of the `<datalist>` with product name suggestions. */
+  productListId?: string;
   categories: string[];
   taxonomy?: ProductTaxonomy;
   onRemove: () => void;
@@ -41,6 +43,7 @@ function isTrustedAmazonUrl(value: string | null | undefined, image: boolean): v
 
 export function ItemRow({
   index,
+  productListId = 'products-datalist',
   categories,
   taxonomy = { families: [], variants: [] },
   onRemove,
@@ -128,7 +131,7 @@ export function ItemRow({
           <div className="flex gap-1">
             <Input
               id={fieldId('product-name')}
-              list="products-datalist"
+              list={productListId}
               placeholder="Назва"
               className="flex-1 min-w-0"
               {...register(`items.${index}.product_name`)}
