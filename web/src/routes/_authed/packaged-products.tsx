@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
-import { useCategories } from '@/features/categories';
+import { useCategories, useCategoryNames } from '@/features/categories';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
   LinkStoreProductDialog,
@@ -39,6 +39,7 @@ function PackagedProductsFlow() {
   const query = search?.q ?? '';
 
   const categoriesQuery = useCategories();
+  const categoryNames = useCategoryNames();
   const taxonomyQuery = useProductTaxonomy();
   const productsQuery = usePackagedProducts();
   const candidatesQuery = usePackagingCandidates({ query });
@@ -53,10 +54,6 @@ function PackagedProductsFlow() {
   const [importOpen, setImportOpen] = useState(false);
   const [linkFor, setLinkFor] = useState<PackagingCandidateRow | null>(null);
 
-  const categoryNames = useMemo(
-    () => categoriesQuery.data?.map((c) => c.name) ?? [],
-    [categoriesQuery.data],
-  );
   const taxonomy = useMemo(
     () => ({
       families: taxonomyQuery.data?.families ?? [],

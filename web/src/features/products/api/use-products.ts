@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 
 export type ProductRow = {
@@ -32,26 +32,47 @@ export type ProductTaxonomy = {
   }[];
 };
 
+const NO_NAMES: string[] = [];
+const NO_NAME_ENTRIES: { name: string }[] = [];
+
+const selectProductNames = (products: ProductRow[]) => products.map((p) => p.name);
+const selectProductNameEntries = (products: ProductRow[]) =>
+  products.map((p) => ({ name: p.name }));
+
+export const productsQueryOptions = queryOptions({
+  queryKey: productsQueryKey,
+  queryFn: async (): Promise<ProductRow[]> => {
+    const { data, error } = await supabase
+      .from('products')
+      .select(
+        'id, name, store, store_product_code, category, product_family_id, product_variant_id, brand, is_organic',
+      )
+      .order('name');
+    if (error) throw error;
+    return data;
+  },
+  staleTime: 5 * 60_000,
+});
+
 /**
  * Lightweight product list for autocomplete + save-time linking.
  * Returns id/name/store/store_product_code/category — store fields drive
  * the (name, store) match logic in the receipt save mutation. RLS-filtered.
  */
 export function useProducts() {
-  return useQuery<ProductRow[]>({
-    queryKey: productsQueryKey,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select(
-          'id, name, store, store_product_code, category, product_family_id, product_variant_id, brand, is_organic',
-        )
-        .order('name');
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 5 * 60_000,
-  });
+  return useQuery(productsQueryOptions);
+}
+
+/** Product names for autocomplete datalists; identity-stable until the list changes. */
+export function useProductNames(): string[] {
+  const { data } = useQuery({ ...productsQueryOptions, select: selectProductNames });
+  return data ?? NO_NAMES;
+}
+
+/** `{ name }` entries, the shape the receipt-parsing prompt takes as product hints. */
+export function useProductNameEntries(): { name: string }[] {
+  const { data } = useQuery({ ...productsQueryOptions, select: selectProductNameEntries });
+  return data ?? NO_NAME_ENTRIES;
 }
 
 /** Catalogue labels for manual review. Empty data is valid before the seed is applied. */

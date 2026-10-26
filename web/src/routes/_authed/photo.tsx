@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNameEntries } from '@/features/products';
 import {
   BatchReviewCarousel,
   ManualJsonImportDialog,
@@ -25,23 +25,14 @@ export const Route = createFileRoute('/_authed/photo')({
 });
 
 function PhotoFlow() {
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productList = useProductNameEntries();
   const { pasteJson } = Route.useSearch() ?? {};
   const [jsonDialogOpen, setJsonDialogOpen] = useState(pasteJson === '1');
   const [importNotice, setImportNotice] = useState<string | null>(null);
   // Files picked but not yet assigned a payer. While set, the assignment step
   // is shown; both the initial picker and the carousel's "+ Додати ще" feed it.
   const [filesToAssign, setFilesToAssign] = useState<File[] | null>(null);
-
-  const categoryNames = useMemo(
-    () => categoriesQuery.data?.map((c) => c.name) ?? [],
-    [categoriesQuery.data],
-  );
-  const productList = useMemo(
-    () => productsQuery.data?.map((p) => ({ name: p.name })) ?? [],
-    [productsQuery.data],
-  );
 
   const batch = useBatchParser({ categories: categoryNames, products: productList });
 

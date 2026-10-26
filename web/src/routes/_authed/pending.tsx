@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNameEntries } from '@/features/products';
 import { BatchReviewCarousel, useBatchParser } from '@/features/photo';
 import {
   PendingList,
@@ -21,19 +21,10 @@ export const Route = createFileRoute('/_authed/pending')({
 });
 
 function PendingFlow() {
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productList = useProductNameEntries();
   const pendingQuery = usePendingParses();
   const deletePending = useDeletePendingParseMutation();
-
-  const categoryNames = useMemo(
-    () => categoriesQuery.data?.map((c) => c.name) ?? [],
-    [categoriesQuery.data],
-  );
-  const productList = useMemo(
-    () => productsQuery.data?.map((p) => ({ name: p.name })) ?? [],
-    [productsQuery.data],
-  );
 
   const batch = useBatchParser({ categories: categoryNames, products: productList });
 

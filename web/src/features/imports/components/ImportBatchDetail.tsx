@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useCategories } from '@/features/categories';
+import { useCategoryNames } from '@/features/categories';
 import { ManualJsonImportDialog } from '@/features/photo';
-import { useProducts } from '@/features/products';
+import { useProductNameEntries } from '@/features/products';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import {
@@ -36,8 +36,8 @@ export function ImportBatchDetail({ id }: { id: string }) {
   const discard = useDiscardImportFile(id);
   const resolve = useResolveImportFile(id);
   const submitJson = useSubmitImportFileJson(id);
-  const categories = useCategories();
-  const products = useProducts();
+  const categoryNames = useCategoryNames();
+  const productList = useProductNameEntries();
   if (query.isLoading) return <p className="text-sm text-slate-500">Завантажую батч…</p>;
   if (query.isError)
     return <ErrorDetails error={query.error} label="Не вдалося завантажити батч" />;
@@ -96,8 +96,8 @@ export function ImportBatchDetail({ id }: { id: string }) {
               file={file}
               attempts={attemptsByFile[file.id] ?? []}
               canonical={canonicalOf(file, canonicalFiles)}
-              categories={categories.data?.map((category) => category.name) ?? []}
-              products={products.data ?? []}
+              categories={categoryNames}
+              products={productList}
               busy={
                 requeue.isPending || discard.isPending || resolve.isPending || submitJson.isPending
               }

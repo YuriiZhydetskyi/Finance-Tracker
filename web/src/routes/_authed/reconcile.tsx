@@ -9,7 +9,7 @@ import {
   type ToFixEntry,
 } from '@finance-tracker/domain';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
+import { useCategoryNames } from '@/features/categories';
 import { useReceipts } from '@/features/receipts';
 import {
   CreateStubReceiptDialog,
@@ -81,11 +81,7 @@ function isoMonthsAgo(months: number): string {
 function Reconcile() {
   const appUsersQuery = useAppUsers();
   const owners = useMemo(() => appUsersQuery.data ?? [], [appUsersQuery.data]);
-  const categoriesQuery = useCategories();
-  const categoryNames = useMemo(
-    () => (categoriesQuery.data ?? []).map((c) => c.name),
-    [categoriesQuery.data],
-  );
+  const categoryNames = useCategoryNames();
 
   const [dialogOpen, setDialogOpen] = useState(true);
   const [session, setSession] = useState<Session | null>(null);

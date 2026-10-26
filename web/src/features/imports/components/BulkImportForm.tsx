@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { ParsedReceipt } from '@finance-tracker/domain';
 import { useAppUsers, useCurrentUser } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNameEntries } from '@/features/products';
 import { ManualJsonImportDialog } from '@/features/photo';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
@@ -20,8 +20,8 @@ export function BulkImportForm() {
   const currentUser = useCurrentUser();
   const createBatch = useCreateImportBatch();
   const createManualJsonBatch = useCreateManualJsonImportBatch();
-  const categories = useCategories();
-  const products = useProducts();
+  const categoryNames = useCategoryNames();
+  const productList = useProductNameEntries();
   const [files, setFiles] = useState<File[]>([]);
   const [payerOverride, setPayerOverride] = useState('');
   const [progress, setProgress] = useState<ImportProgress | null>(null);
@@ -33,14 +33,6 @@ export function BulkImportForm() {
       ? currentUser.data.email
       : (options[0] ?? ''));
   const totalBytes = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files]);
-  const categoryNames = useMemo(
-    () => categories.data?.map((category) => category.name) ?? [],
-    [categories.data],
-  );
-  const productList = useMemo(
-    () => products.data?.map((product) => ({ name: product.name })) ?? [],
-    [products.data],
-  );
   const isBusy = createBatch.isPending || createManualJsonBatch.isPending;
 
   // Files are sent from this tab; leaving mid-upload strands the rest of the batch.

@@ -54,11 +54,11 @@ vi.mock('@/features/auth', () => ({
 }));
 
 vi.mock('@/features/categories', () => ({
-  useCategories: () => ({ data: [{ name: 'Бакалія' }] }),
+  useCategoryNames: () => ['Бакалія'],
 }));
 
 vi.mock('@/features/products', () => ({
-  useProducts: () => ({ data: [{ name: 'Bread' }] }),
+  useProductNames: () => ['Bread'],
 }));
 
 vi.mock('@tanstack/react-router', () => ({

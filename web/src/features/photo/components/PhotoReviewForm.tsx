@@ -10,8 +10,8 @@ import {
 } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNames } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
   computeGrandTotal,
@@ -93,8 +93,8 @@ export function PhotoReviewForm({
   onSaved,
 }: Props) {
   const navigate = useNavigate();
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productNames = useProductNames();
   const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
   const savePhoto = useSavePhotoReceiptMutation();
@@ -136,8 +136,6 @@ export function PhotoReviewForm({
     ...(presetPaidBy ? { paid_by: presetPaidBy } : {}),
   });
 
-  const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
-  const productNames = productsQuery.data?.map((p) => p.name) ?? [];
   const paidByOptions = appUsersQuery.data ?? [];
 
   const watchedStore = useWatch({ control: methods.control, name: 'store' });

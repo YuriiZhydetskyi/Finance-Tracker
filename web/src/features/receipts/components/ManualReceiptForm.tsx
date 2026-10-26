@@ -3,8 +3,8 @@ import { FormProvider, useWatch } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/shared/ui/Button';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNames } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import { useReceiptForm } from '../hooks/use-receipt-form';
 import { useSaveReceiptMutation } from '../api/use-save-receipt-mutation';
@@ -15,15 +15,13 @@ import { DuplicateWarningBanner } from './DuplicateWarningBanner';
 
 export function ManualReceiptForm() {
   const { methods, itemsArray } = useReceiptForm();
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productNames = useProductNames();
   const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
   const save = useSaveReceiptMutation();
   const navigate = useNavigate();
 
-  const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
-  const productNames = productsQuery.data?.map((p) => p.name) ?? [];
   const paidByOptions = appUsersQuery.data ?? [];
 
   const watchedStore = useWatch({ control: methods.control, name: 'store' });

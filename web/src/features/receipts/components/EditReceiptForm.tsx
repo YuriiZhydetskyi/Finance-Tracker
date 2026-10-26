@@ -4,8 +4,8 @@ import { useNavigate } from '@tanstack/react-router';
 import type { Item, Receipt } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNames, useProducts } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import { useReceiptForm, emptyItemRow } from '../hooks/use-receipt-form';
 import { useUpdateReceiptMutation } from '../api/use-update-receipt-mutation';
@@ -63,7 +63,8 @@ function toFormRow(item: Item): ItemFormValues {
 
 export function EditReceiptForm({ receipt, items }: Props) {
   const navigate = useNavigate();
-  const categoriesQuery = useCategories();
+  const categoryNames = useCategoryNames();
+  const productNames = useProductNames();
   const productsQuery = useProducts();
   const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
@@ -88,8 +89,6 @@ export function EditReceiptForm({ receipt, items }: Props) {
     items: items.length > 0 ? items.map(toFormRow) : [emptyItemRow()],
   });
 
-  const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
-  const productNames = productsQuery.data?.map((p) => p.name) ?? [];
   const allowlistEmails = appUsersQuery.data ?? [];
   // Preserve a legacy paid_by value (e.g. someone removed from the allowlist)
   // so editing an old receipt doesn't silently rewrite who paid.

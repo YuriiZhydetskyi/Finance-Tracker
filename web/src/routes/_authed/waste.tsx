@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { useCategories } from '@/features/categories';
+import { useCategoryNames } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { formatMoney } from '@/shared/utils/format-money';
 import {
@@ -37,11 +37,7 @@ function WasteList() {
   const activeCount = countActiveWasteFilters(search);
   const itemsQuery = useWasteItems(filters);
   const isStale = itemsQuery.isPlaceholderData;
-  const categoriesQuery = useCategories();
-  const categoryNames = useMemo(
-    () => categoriesQuery.data?.map((c) => c.name) ?? [],
-    [categoriesQuery.data],
-  );
+  const categoryNames = useCategoryNames();
 
   const wastedTotalEur = useMemo(() => sumWastedEur(itemsQuery.data ?? []), [itemsQuery.data]);
 
