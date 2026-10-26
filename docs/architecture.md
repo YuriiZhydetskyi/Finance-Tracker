@@ -212,7 +212,7 @@ React SPA → Supabase
    │ Banner "Чек збережено: <id>" на /recent сторінці
 ```
 
-**Ризики таймауту на цьому потоці:** Gemini call 3–15с, Claude fallback +5–20с при failure. Edge Function default timeout у Supabase free-tier — 25с (платний — більше). Якщо реальний чек з 50+ items + AI спрацював повільно — можна впертись. Mitigation: client-side soft timeout 30с з retry-кнопкою на /photo (наразі не реалізовано, додати у Phase 11+ якщо помітимо).
+**Ризики таймауту на цьому потоці:** Gemini call 3–15с, Claude fallback +5–20с при failure. Edge Function default timeout у Supabase free-tier — 25с (платний — більше). Якщо реальний чек з 50+ items + AI спрацював повільно — можна впертись. Клієнт обриває запит через 140с (`PARSE_TIMEOUT_MS` у `edge-fn-parse-receipt.ts`, трохи менше за 150с wall-clock ліміт Edge Functions) і показує причину з тіла відповіді функції (наприклад, 502 від обох провайдерів); повторити можна кнопкою «Спробувати ще» в каруселі. Незавершений запит скасовується (`signal`), коли користувач покидає сторінку.
 
 ### Потік 2: stats query
 

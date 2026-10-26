@@ -21,7 +21,7 @@ function defer<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-const parseMock = vi.fn<(args: { blob: Blob }) => Promise<ParsedReceipt>>();
+const parseMock = vi.fn<(args: { blob: Blob; signal?: AbortSignal }) => Promise<ParsedReceipt>>();
 const createPendingMock = vi.fn();
 const incrementAttemptsMock = vi.fn();
 
@@ -99,6 +99,24 @@ describe('useBatchParser', () => {
 
     const statuses = result.current.state.items.map((i) => i.status.kind);
     expect(statuses).toEqual(['parsing', 'queued', 'queued']);
+  });
+
+  it('aborts the parse request that is still running when the page is left', async () => {
+    const d1 = defer<ParsedReceipt>();
+    parseMock.mockImplementationOnce(() => d1.promise);
+    const { result, unmount } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
+      wrapper,
+    });
+    await act(async () => {
+      await result.current.addFiles([addInput('a.jpg')]);
+    });
+    await waitFor(() => expect(parseMock).toHaveBeenCalledTimes(1));
+    const signal = parseMock.mock.calls[0]?.[0].signal;
+    expect(signal?.aborted).toBe(false);
+
+    unmount();
+
+    expect(signal?.aborted).toBe(true);
   });
 
   it('advances to next queued item when current parse resolves', async () => {

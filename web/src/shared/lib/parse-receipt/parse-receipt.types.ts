@@ -9,6 +9,8 @@ export type ParseReceiptInput = {
   categories: string[];
   /** Known product names from prior receipts — soft hints to the model, not enforced. */
   products?: { name: string }[];
+  /** Cancels the in-flight request, e.g. when the page that asked for it is left. */
+  signal?: AbortSignal;
 };
 
 /**

@@ -43,6 +43,7 @@ export function useBatchParser(opts: UseBatchParserOptions) {
   const { categories, products } = opts;
 
   const inFlightRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   const itemsRef = useRef<BatchItem[]>([]);
   // Ids already handed off to the queue — guards the persist effect (which
   // re-runs on every render) from firing twice for the same failed item.
@@ -60,10 +61,12 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     const targetId = next.id;
     const targetBlob = next.blob;
     inFlightRef.current = true;
+    const controller = new AbortController();
+    abortRef.current = controller;
     dispatch({ type: 'parseStart', id: targetId });
 
     void parseMutation
-      .mutateAsync({ blob: targetBlob, categories, products })
+      .mutateAsync({ blob: targetBlob, categories, products, signal: controller.signal })
       .then((parsed) => {
         inFlightRef.current = false;
         dispatch({
@@ -134,6 +137,8 @@ export function useBatchParser(opts: UseBatchParserOptions) {
 
   useEffect(() => {
     return () => {
+      // Leaving the page drops the batch, so a parse still running has no one to serve.
+      abortRef.current?.abort();
       for (const it of itemsRef.current) {
         if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
       }
@@ -166,20 +171,18 @@ export function useBatchParser(opts: UseBatchParserOptions) {
     if (items.length === 0) return;
     dispatch({
       type: 'hydratePending',
-      items: items.map(
-        (it): HydratePendingInput => ({
-          id: crypto.randomUUID(),
-          fileName: it.fileName,
-          blob: it.blob,
-          previewUrl: isPdfPath(it.photoPath) ? null : URL.createObjectURL(it.blob),
-          paidBy: it.paidBy,
-          pendingParse: {
-            id: it.pendingId,
-            photoPath: it.photoPath,
-            baseAttempts: it.baseAttempts,
-          },
-        }),
-      ),
+      items: items.map((it): HydratePendingInput => ({
+        id: crypto.randomUUID(),
+        fileName: it.fileName,
+        blob: it.blob,
+        previewUrl: isPdfPath(it.photoPath) ? null : URL.createObjectURL(it.blob),
+        paidBy: it.paidBy,
+        pendingParse: {
+          id: it.pendingId,
+          photoPath: it.photoPath,
+          baseAttempts: it.baseAttempts,
+        },
+      })),
     });
   }, []);
 
