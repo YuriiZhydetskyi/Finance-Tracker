@@ -1,6 +1,21 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useStatsDateRange } from '../use-stats-preferences';
 import { StatsPeriodPicker } from './StatsPeriodPicker';
+
+function Harness() {
+  const range = useStatsDateRange();
+  return (
+    <>
+      <StatsPeriodPicker />
+      <output aria-label="Обраний діапазон">{JSON.stringify(range)}</output>
+    </>
+  );
+}
+
+function selectedRange(): unknown {
+  return JSON.parse(screen.getByLabelText('Обраний діапазон').textContent);
+}
 
 describe('StatsPeriodPicker', () => {
   beforeEach(() => {
@@ -8,25 +23,20 @@ describe('StatsPeriodPicker', () => {
   });
 
   it('does not request statistics until a complete custom range is selected', () => {
-    const onChange = vi.fn();
-    render(<StatsPeriodPicker onChange={onChange} />);
+    render(<Harness />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Свій період' }));
-    expect(onChange).toHaveBeenLastCalledWith(null);
+    expect(selectedRange()).toBeNull();
 
     fireEvent.change(screen.getByLabelText('З дати'), { target: { value: '2026-08-01' } });
-    expect(onChange).toHaveBeenLastCalledWith(null);
+    expect(selectedRange()).toBeNull();
 
     fireEvent.change(screen.getByLabelText('По дату'), { target: { value: '2026-08-31' } });
-    expect(onChange).toHaveBeenLastCalledWith({
-      dateFrom: '2026-08-01',
-      dateTo: '2026-08-31',
-    });
+    expect(selectedRange()).toEqual({ dateFrom: '2026-08-01', dateTo: '2026-08-31' });
   });
 
   it('shows an error instead of accepting an inverted custom range', () => {
-    const onChange = vi.fn();
-    render(<StatsPeriodPicker onChange={onChange} />);
+    render(<Harness />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Свій період' }));
     fireEvent.change(screen.getByLabelText('З дати'), { target: { value: '2026-08-31' } });
@@ -35,37 +45,53 @@ describe('StatsPeriodPicker', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Початкова дата має бути не пізніше кінцевої.',
     );
-    expect(onChange).toHaveBeenLastCalledWith(null);
+    expect(selectedRange()).toBeNull();
   });
 
-  it('restores the saved period when the page opens again', async () => {
-    const firstOnChange = vi.fn();
-    const first = render(<StatsPeriodPicker onChange={firstOnChange} />);
+  it('restores the saved period when the page opens again', () => {
+    const first = render(<Harness />);
     fireEvent.click(screen.getByRole('button', { name: 'За весь час' }));
-    expect(firstOnChange).toHaveBeenLastCalledWith({});
+    expect(selectedRange()).toEqual({});
     first.unmount();
 
-    const restoredOnChange = vi.fn();
-    render(<StatsPeriodPicker onChange={restoredOnChange} />);
+    render(<Harness />);
 
-    await waitFor(() => expect(restoredOnChange).toHaveBeenLastCalledWith({}));
+    expect(screen.getByRole('button', { name: 'За весь час' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(selectedRange()).toEqual({});
   });
 
   it('restores both custom dates and the active period after reopening', () => {
-    const first = render(<StatsPeriodPicker onChange={vi.fn()} />);
+    const first = render(<Harness />);
     fireEvent.click(screen.getByRole('button', { name: 'Свій період' }));
     fireEvent.change(screen.getByLabelText('З дати'), { target: { value: '2026-08-01' } });
     fireEvent.change(screen.getByLabelText('По дату'), { target: { value: '2026-08-31' } });
     first.unmount();
 
-    const onChange = vi.fn();
-    render(<StatsPeriodPicker onChange={onChange} />);
+    render(<Harness />);
     expect(screen.getByRole('button', { name: 'Свій період' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
     expect(screen.getByLabelText('З дати')).toHaveValue('2026-08-01');
     expect(screen.getByLabelText('По дату')).toHaveValue('2026-08-31');
-    expect(onChange).toHaveBeenLastCalledWith({ dateFrom: '2026-08-01', dateTo: '2026-08-31' });
+    expect(selectedRange()).toEqual({ dateFrom: '2026-08-01', dateTo: '2026-08-31' });
+  });
+
+  it('keeps every mounted picker on the same period', () => {
+    render(
+      <>
+        <StatsPeriodPicker />
+        <StatsPeriodPicker />
+      </>,
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Останній тиждень' })[0]!);
+
+    for (const button of screen.getAllByRole('button', { name: 'Останній тиждень' })) {
+      expect(button).toHaveAttribute('aria-pressed', 'true');
+    }
   });
 });
