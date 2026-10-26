@@ -90,10 +90,19 @@ function DetailsBody({ range, query, title, selection, onSelect }: DetailsBodyPr
     );
   }
   if (data.items_count === 0) {
-    return <p className="text-sm text-slate-500">За вибраними фільтрами покупок немає.</p>;
+    return query.isPlaceholderData ? (
+      <output className="text-sm text-slate-500" aria-live="polite">
+        Завантажую...
+      </output>
+    ) : (
+      <p className="text-sm text-slate-500">За вибраними фільтрами покупок немає.</p>
+    );
   }
   return (
-    <>
+    <div
+      aria-busy={query.isPlaceholderData}
+      className={`space-y-4 ${query.isPlaceholderData ? 'opacity-60 transition-opacity' : ''}`}
+    >
       <section className="rounded-md border border-slate-200 bg-white p-4">
         <p className="text-sm text-slate-600">
           Витрачено · {data.receipts_count} чеків · {data.items_count} позицій
@@ -168,7 +177,7 @@ function DetailsBody({ range, query, title, selection, onSelect }: DetailsBodyPr
           />
         ) : null}
       </div>
-    </>
+    </div>
   );
 }
 

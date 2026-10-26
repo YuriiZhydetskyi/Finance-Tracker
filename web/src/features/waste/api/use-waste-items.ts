@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 
 // Items joined with receipts for the /waste page. Filters are applied
@@ -91,6 +91,7 @@ export function useWasteItems(filters: WasteFilters) {
       // there is no PostgREST expression for `wasted_qty == qty`.
       return filters.showFullyWasted ? rows : rows.filter((r) => r.wasted_qty < r.qty);
     },
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
 }

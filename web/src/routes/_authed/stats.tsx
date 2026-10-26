@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { useState, type ReactNode } from 'react';
+import type { UseQueryResult } from '@tanstack/react-query';
 import { useCategories } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import {
@@ -50,18 +51,37 @@ type SectionProps = {
   subtitle?: string;
   children: ReactNode;
   height?: string;
+  isStale?: boolean;
 };
 
-function Section({ title, subtitle, children, height = 'h-72' }: SectionProps) {
+function Section({ title, subtitle, children, height = 'h-72', isStale = false }: SectionProps) {
   return (
     <section className="rounded-md border border-slate-200 bg-white p-4">
       <header className="mb-3">
         <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
         {subtitle ? <p className="text-xs text-slate-500">{subtitle}</p> : null}
       </header>
-      <div className={`relative ${height}`}>{children}</div>
+      <div
+        aria-busy={isStale}
+        className={`relative ${height} ${isStale ? 'opacity-60 transition-opacity' : ''}`}
+      >
+        {children}
+      </div>
     </section>
   );
+}
+
+// While the next period or filter set loads, the previous result stays on screen
+// (dimmed). Its emptiness says nothing about the new request, so an empty
+// placeholder renders as loading instead of "Поки що порожньо".
+function chartStateOf(query: UseQueryResult<unknown[]>) {
+  const isStale = query.isPlaceholderData;
+  return {
+    isLoading: query.isLoading || (isStale && query.data?.length === 0),
+    isError: query.isError,
+    error: query.error,
+    isEmpty: query.isSuccess && !isStale && query.data.length === 0,
+  };
 }
 
 function ChartState({
@@ -189,7 +209,10 @@ function StatsDashboard() {
       ) : (
         <>
           {periodReady && categoryQuery.isSuccess && groupRows.length > 0 ? (
-            <section className="rounded-md border border-slate-200 bg-white p-4">
+            <section
+              aria-busy={categoryQuery.isPlaceholderData}
+              className={`rounded-md border border-slate-200 bg-white p-4 ${categoryQuery.isPlaceholderData ? 'opacity-60 transition-opacity' : ''}`}
+            >
               <h2 className="text-sm font-semibold text-slate-900">По групах категорій</h2>
               <p className="text-xs text-slate-500">
                 Оберіть групу, щоб побачити магазини, категорії та сімейства товарів.
@@ -214,7 +237,9 @@ function StatsDashboard() {
                       : `Сума знижок по всіх позиціях · ${String(totalDiscountedItems)} позицій зі знижкою`}
                 </p>
               </div>
-              <span className="text-3xl font-semibold tabular-nums text-emerald-900">
+              <span
+                className={`text-3xl font-semibold tabular-nums text-emerald-900 ${savingsQuery.isPlaceholderData ? 'opacity-60' : ''}`}
+              >
                 {!periodReady || savingsQuery.isLoading ? '—' : formatMoney(totalSaved, 'EUR')}
               </span>
             </div>
@@ -232,33 +257,31 @@ function StatsDashboard() {
                       : `Сума зіпсованого · ${String(totalWastedItems)} позицій`}
                 </p>
               </div>
-              <span className="text-3xl font-semibold tabular-nums text-red-900">
+              <span
+                className={`text-3xl font-semibold tabular-nums text-red-900 ${wasteQuery.isPlaceholderData ? 'opacity-60' : ''}`}
+              >
                 {!periodReady || wasteQuery.isLoading ? '—' : formatMoney(totalWasted, 'EUR')}
               </span>
             </div>
           </section>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Section title="По місяцях" subtitle={periodLabel}>
-              <ChartState
-                isLoading={monthQuery.isLoading}
-                isError={monthQuery.isError}
-                error={monthQuery.error}
-                isEmpty={monthQuery.isSuccess && monthQuery.data.length === 0}
-                isPeriodIncomplete={!periodReady}
-              >
+            <Section
+              title="По місяцях"
+              subtitle={periodLabel}
+              isStale={monthQuery.isPlaceholderData}
+            >
+              <ChartState {...chartStateOf(monthQuery)} isPeriodIncomplete={!periodReady}>
                 <ByMonthChart rows={monthQuery.data ?? []} />
               </ChartState>
             </Section>
 
-            <Section title="Заощаджено по місяцях" subtitle={`Сума знижок у EUR · ${periodLabel}`}>
-              <ChartState
-                isLoading={savingsQuery.isLoading}
-                isError={savingsQuery.isError}
-                error={savingsQuery.error}
-                isEmpty={savingsQuery.isSuccess && savingsRows.length === 0}
-                isPeriodIncomplete={!periodReady}
-              >
+            <Section
+              title="Заощаджено по місяцях"
+              subtitle={`Сума знижок у EUR · ${periodLabel}`}
+              isStale={savingsQuery.isPlaceholderData}
+            >
+              <ChartState {...chartStateOf(savingsQuery)} isPeriodIncomplete={!periodReady}>
                 <SavingsByMonthChart rows={savingsRows} />
               </ChartState>
             </Section>
@@ -266,26 +289,19 @@ function StatsDashboard() {
             <Section
               title="Викинули по місяцях"
               subtitle={`Сума зіпсованого у EUR · ${periodLabel}`}
+              isStale={wasteQuery.isPlaceholderData}
             >
-              <ChartState
-                isLoading={wasteQuery.isLoading}
-                isError={wasteQuery.isError}
-                error={wasteQuery.error}
-                isEmpty={wasteQuery.isSuccess && wasteRows.length === 0}
-                isPeriodIncomplete={!periodReady}
-              >
+              <ChartState {...chartStateOf(wasteQuery)} isPeriodIncomplete={!periodReady}>
                 <WasteByMonthChart rows={wasteRows} />
               </ChartState>
             </Section>
 
-            <Section title="По користувачах" subtitle={`Хто скільки сплатив · ${periodLabel}`}>
-              <ChartState
-                isLoading={userQuery.isLoading}
-                isError={userQuery.isError}
-                error={userQuery.error}
-                isEmpty={userQuery.isSuccess && userQuery.data.length === 0}
-                isPeriodIncomplete={!periodReady}
-              >
+            <Section
+              title="По користувачах"
+              subtitle={`Хто скільки сплатив · ${periodLabel}`}
+              isStale={userQuery.isPlaceholderData}
+            >
+              <ChartState {...chartStateOf(userQuery)} isPeriodIncomplete={!periodReady}>
                 <ByUserChart rows={userQuery.data ?? []} />
               </ChartState>
             </Section>
@@ -294,14 +310,9 @@ function StatsDashboard() {
               title="По категоріях"
               subtitle={`Натисніть на категорію для деталей · ${periodLabel}`}
               height="h-auto"
+              isStale={categoryQuery.isPlaceholderData}
             >
-              <ChartState
-                isLoading={categoryQuery.isLoading}
-                isError={categoryQuery.isError}
-                error={categoryQuery.error}
-                isEmpty={categoryQuery.isSuccess && categoryQuery.data.length === 0}
-                isPeriodIncomplete={!periodReady}
-              >
+              <ChartState {...chartStateOf(categoryQuery)} isPeriodIncomplete={!periodReady}>
                 <div className="h-96">
                   <ByCategoryChart rows={categoryRows} onSelect={selectCategory} />
                 </div>
@@ -322,14 +333,9 @@ function StatsDashboard() {
               title="По магазинах"
               subtitle={`Топ-10 за загальною сумою · ${periodLabel}`}
               height="h-96"
+              isStale={storeQuery.isPlaceholderData}
             >
-              <ChartState
-                isLoading={storeQuery.isLoading}
-                isError={storeQuery.isError}
-                error={storeQuery.error}
-                isEmpty={storeQuery.isSuccess && storeQuery.data.length === 0}
-                isPeriodIncomplete={!periodReady}
-              >
+              <ChartState {...chartStateOf(storeQuery)} isPeriodIncomplete={!periodReady}>
                 <ByStoreChart rows={storeQuery.data ?? []} />
               </ChartState>
             </Section>

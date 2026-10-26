@@ -1,7 +1,7 @@
 // Stats queries call date-aware database functions. They use security invoker,
 // so the caller's RLS policies still apply to receipts and items.
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 import type {
   StatsByCategoryRow,
@@ -59,6 +59,7 @@ export function useStatsByMonth(
   return useQuery<StatsByMonthRow[]>({
     queryKey: [...statsByMonthQueryKey, range, filters],
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('stats_by_month', toRpcArgs(range, filters));
       if (error) throw error;
@@ -80,6 +81,7 @@ export function useStatsByCategory(
   return useQuery<StatsByCategoryRow[]>({
     queryKey: [...statsByCategoryQueryKey, range, filters],
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('stats_by_category', toRpcArgs(range, filters));
       if (error) throw error;
@@ -101,6 +103,7 @@ export function useStatsByUser(
   return useQuery<StatsByUserRow[]>({
     queryKey: [...statsByUserQueryKey, range, filters],
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('stats_by_user', toRpcArgs(range, filters));
       if (error) throw error;
@@ -122,6 +125,7 @@ export function useStatsSavingsByMonth(
   return useQuery<StatsSavingsByMonthRow[]>({
     queryKey: [...statsSavingsByMonthQueryKey, range, filters],
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data, error } = await supabase.rpc(
         'stats_savings_by_month',
@@ -146,6 +150,7 @@ export function useStatsWasteByMonth(
   return useQuery<StatsWasteByMonthRow[]>({
     queryKey: [...wasteByMonthQueryKey, range, filters],
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('stats_waste_by_month', toRpcArgs(range, filters));
       if (error) throw error;
@@ -168,6 +173,7 @@ export function useStatsByStore(
   return useQuery<StatsByStoreRow[]>({
     queryKey: [...statsByStoreQueryKey, range, filters, limit],
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('stats_by_store', {
         ...toRpcArgs(range, filters),

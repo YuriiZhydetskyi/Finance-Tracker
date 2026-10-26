@@ -2,7 +2,7 @@
 // ranking needs a COUNT over items joined to receipts, which PostgREST cannot
 // express; the caller's RLS still applies to every table it touches.
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 import {
   packagedProductStoreLabelsQueryKey,
@@ -76,6 +76,7 @@ export function usePackagingCandidates(filters: PackagingCandidateFilters = {}) 
 
   return useQuery<PackagingCandidateRow[]>({
     queryKey: [...packagingCandidatesQueryKey, query, categories ?? null, stores ?? null, limit],
+    placeholderData: keepPreviousData,
     staleTime: ONE_MIN,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('search_packaging_candidates', {

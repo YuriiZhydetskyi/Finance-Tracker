@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { Receipt } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { receiptsQueryKey } from './receipts-query-keys';
@@ -29,6 +29,7 @@ export function useReceipts(
   return useQuery<Receipt[]>({
     queryKey: [...receiptsQueryKey, { filters, limit }] as const,
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       let q = supabase.from('receipts').select('*');
       if (filters?.store) q = q.ilike('store', `%${filters.store}%`);

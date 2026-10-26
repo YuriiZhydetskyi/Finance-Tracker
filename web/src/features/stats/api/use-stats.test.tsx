@@ -123,4 +123,41 @@ describe('period-aware stats queries', () => {
       stores: ['Aldi', 'Lidl'],
     });
   });
+
+  it('keeps the previous period on screen, flagged as placeholder, while a new period loads', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const stableWrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    rpcMock.mockResolvedValueOnce({
+      data: [{ month: '2026-08', total_eur: 10, receipts_count: 1 }],
+      error: null,
+    });
+
+    const { result, rerender } = renderHook(
+      ({ dateFrom }: { dateFrom: string }) => useStatsByMonth({ dateFrom }, {}),
+      { wrapper: stableWrapper, initialProps: { dateFrom: '2026-08-01' } },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.isPlaceholderData).toBe(false);
+
+    let resolveNext: (value: RpcResult) => void = () => undefined;
+    rpcMock.mockReturnValueOnce(
+      new Promise<RpcResult>((resolve) => {
+        resolveNext = resolve;
+      }),
+    );
+    rerender({ dateFrom: '2026-07-01' });
+
+    expect(result.current.isPlaceholderData).toBe(true);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toEqual([{ month: '2026-08', total_eur: 10, receipts_count: 1 }]);
+
+    resolveNext({
+      data: [{ month: '2026-07', total_eur: 5, receipts_count: 2 }],
+      error: null,
+    });
+    await waitFor(() => expect(result.current.isPlaceholderData).toBe(false));
+    expect(result.current.data).toEqual([{ month: '2026-07', total_eur: 5, receipts_count: 2 }]);
+  });
 });

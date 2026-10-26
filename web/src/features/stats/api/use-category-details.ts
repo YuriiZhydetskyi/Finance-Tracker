@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 import { statsCategoryDetailsQueryKey } from './use-stats';
 import { summarizeCategoryDetails, type StatsDetailItem } from '../category-details';
@@ -32,6 +32,7 @@ export function useCategoryDetails(range: StatsDateRange, filters: StatsFilters,
   return useQuery({
     queryKey: [...statsCategoryDetailsQueryKey, range, filters],
     enabled,
+    placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
     queryFn: async ({ signal }) => {
       const items: StatsDetailItem[] = [];

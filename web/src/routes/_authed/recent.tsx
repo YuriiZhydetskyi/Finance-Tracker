@@ -24,6 +24,7 @@ function RecentList() {
   const filters = searchToFilters(search);
   const activeCount = countActiveFilters(filters);
   const query = useReceipts(filters);
+  const isStale = query.isPlaceholderData;
 
   return (
     <div className="space-y-4">
@@ -49,9 +50,12 @@ function RecentList() {
         activeCount={activeCount}
       />
 
-      {query.isLoading && <p className="text-sm text-slate-500">Завантажую...</p>}
+      {(query.isLoading || (isStale && query.data?.length === 0)) && (
+        <p className="text-sm text-slate-500">Завантажую...</p>
+      )}
       {query.isError && <ErrorDetails error={query.error} label="Не вдалося завантажити" />}
       {query.isSuccess &&
+        !isStale &&
         query.data.length === 0 &&
         (activeCount > 0 ? (
           <NoMatchingReceipts onClearFilters={() => void navigate({ to: '/recent', search: {} })} />
@@ -59,7 +63,10 @@ function RecentList() {
           <EmptyReceiptsState />
         ))}
       {query.isSuccess && query.data.length > 0 && (
-        <ul className="space-y-2">
+        <ul
+          aria-busy={isStale}
+          className={isStale ? 'space-y-2 opacity-60 transition-opacity' : 'space-y-2'}
+        >
           {query.data.map((r) => (
             <li key={r.id}>
               <ReceiptCard receipt={r} />

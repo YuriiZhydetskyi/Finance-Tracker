@@ -87,8 +87,13 @@ function ProductLinks({
           Не вдалося знайти позиції. Перевір мережу або збережи без прив’язки.
         </p>
       ) : null}
-      {candidates.isPending ? <p className="text-xs text-slate-500">Шукаю…</p> : null}
-      <div className="max-h-44 space-y-1 overflow-y-auto">
+      {candidates.isPending || candidates.isPlaceholderData ? (
+        <p className="text-xs text-slate-500">Шукаю…</p>
+      ) : null}
+      <div
+        aria-busy={candidates.isPlaceholderData}
+        className={`max-h-44 space-y-1 overflow-y-auto ${candidates.isPlaceholderData ? 'opacity-60' : ''}`}
+      >
         {rows.map((row) => (
           <label
             key={row.product_id}

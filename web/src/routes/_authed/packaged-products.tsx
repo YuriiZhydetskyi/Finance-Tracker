@@ -177,20 +177,27 @@ function PackagedProductsFlow() {
           <p className="text-sm text-slate-500">Шукаю позиції без картки…</p>
         ) : candidatesQuery.isError ? (
           <ErrorDetails error={candidatesQuery.error} label="Не вдалося прочитати чергу" />
+        ) : candidatesQuery.isPlaceholderData && candidatesQuery.data.length === 0 ? (
+          <p className="text-sm text-slate-500">Шукаю позиції без картки…</p>
         ) : (
-          <PackagingCandidatesList
-            candidates={candidatesQuery.data}
-            catalogueReady={catalogueReady}
-            busyProductId={busyProductId}
-            onCreateCard={(candidate) => {
-              setImportFor(candidate);
-              setImportOpen(true);
-            }}
-            onLinkExisting={(candidate) => setLinkFor(candidate)}
-            onSkip={(candidate) =>
-              skipPackaging.mutate({ productIds: [candidate.product_id], notApplicable: true })
-            }
-          />
+          <div
+            aria-busy={candidatesQuery.isPlaceholderData}
+            className={candidatesQuery.isPlaceholderData ? 'opacity-60 transition-opacity' : ''}
+          >
+            <PackagingCandidatesList
+              candidates={candidatesQuery.data}
+              catalogueReady={catalogueReady}
+              busyProductId={busyProductId}
+              onCreateCard={(candidate) => {
+                setImportFor(candidate);
+                setImportOpen(true);
+              }}
+              onLinkExisting={(candidate) => setLinkFor(candidate)}
+              onSkip={(candidate) =>
+                skipPackaging.mutate({ productIds: [candidate.product_id], notApplicable: true })
+              }
+            />
+          </div>
         )
       ) : productsQuery.isPending ? (
         <p className="text-sm text-slate-500">Завантажую каталог…</p>
