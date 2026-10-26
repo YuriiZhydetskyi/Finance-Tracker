@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import type { UseFieldArrayReturn } from 'react-hook-form';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { FIELD_LABEL_CLASS, SELECT_CLASS } from '@/shared/ui/select-classes';
@@ -42,7 +42,7 @@ export function ReceiptFormFields({
 }: Props) {
   const {
     register,
-    watch,
+    control,
     formState: { errors },
   } = useFormContext<ManualFormValues>();
 
@@ -50,7 +50,7 @@ export function ReceiptFormFields({
   const fieldId = (field: string) => `${idPrefix}-${field}`;
 
   const itemErrors = errors.items as { root?: { message?: string } } | undefined;
-  const merchantOrderId = watch('merchant_order_id');
+  const merchantOrderId = useWatch({ control, name: 'merchant_order_id' });
 
   return (
     <div className="space-y-4">

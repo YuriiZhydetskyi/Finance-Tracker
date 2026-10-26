@@ -28,11 +28,9 @@ const navigateMock = vi.fn();
 // validates env at module load. Replace with thin stubs that keep real
 // react-hook-form behaviour (useReceiptForm uses useForm under the hood).
 vi.mock('@/features/receipts', () => ({
-  computeGrandTotal: () => 1.49,
-  DuplicateWarningBanner: () => null,
+  DuplicateReceiptsWarning: () => null,
   ReceiptFormFields: ({ actions }: { actions: ReactNode }) => <div>{actions}</div>,
   SUPPORTED_CURRENCIES: ['EUR', 'UAH', 'USD'] as const,
-  useDuplicateReceipts: () => ({ data: [] }),
   useSaveReceiptMutation: () => ({
     mutateAsync: saveReceiptMock,
     isPending: false,

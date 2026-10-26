@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
 import { Button } from '@/shared/ui/Button';
 import { cn } from '@/shared/ui/cn';
@@ -48,7 +48,7 @@ export function ItemRow({
   const {
     register,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useFormContext<ManualFormValues>();
 
@@ -56,8 +56,8 @@ export function ItemRow({
   const idPrefix = useId();
   const fieldId = (field: string) => `${idPrefix}-${field}`;
 
-  const item = watch(`items.${index}`);
-  const currency = watch('currency');
+  const item = useWatch({ control, name: `items.${index}` });
+  const currency = useWatch({ control, name: 'currency' });
   const rowTotal = computeRowTotal(item);
   const itemErrors = errors.items?.[index];
   const priceIsNegative = (item?.unit_price_orig ?? 0) < 0;
