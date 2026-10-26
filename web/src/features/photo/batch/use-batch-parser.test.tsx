@@ -99,7 +99,7 @@ describe('useBatchParser', () => {
     const d1 = defer<ParsedReceipt>();
     parseMock.mockImplementationOnce(() => d1.promise);
     const { result, unmount } = renderHook(() => useBatchParser({ categories: [], products: [] }), {
-      wrapper,
+      wrapper: QueryClientWrapper,
     });
     await act(async () => {
       await result.current.addFiles([addInput('a.jpg')]);

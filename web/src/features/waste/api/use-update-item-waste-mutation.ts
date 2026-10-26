@@ -3,9 +3,8 @@ import { nowIso } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { wrapError } from '@/shared/utils/wrap-error';
 import { receiptsQueryKey, receiptQueryKey } from '@/features/receipts';
-import { statsByCategoryQueryKey } from '@/features/stats';
 import { wasteItemsQueryKey } from './use-waste-items';
-import { wasteByMonthQueryKey } from '@/features/stats/api/use-stats';
+import { statsByCategoryQueryKey, wasteByMonthQueryKey } from '@/features/stats/api/use-stats';
 
 export type UpdateItemWasteVars = {
   itemId: string;
