@@ -4,9 +4,8 @@
 //        node scripts/sync-edge-domain.mjs --check (exit 1 on drift)
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = path.resolve(import.meta.dirname, '..');
 const SOURCE = 'packages/domain/src';
 const TARGET = 'supabase/functions/_shared/domain';
 const FILES = ['money.ts', 'receipt-evidence.ts'];
