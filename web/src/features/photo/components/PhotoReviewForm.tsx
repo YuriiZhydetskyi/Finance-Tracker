@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type SubmitEvent } from 'react';
 import { FormProvider, useWatch } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -216,7 +216,7 @@ export function PhotoReviewForm({
     }
   });
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     void onSubmit(e);
   };
 
