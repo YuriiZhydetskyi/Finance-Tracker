@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import path from 'node:path';
@@ -10,6 +11,17 @@ const pkg = JSON.parse(
   readFileSync(path.resolve(import.meta.dirname, './package.json'), 'utf8'),
 ) as { version: string };
 
+// React Compiler is for the app source: tests, the generated route tree and workspace packages
+// gain nothing from it. These replace the plugin's default exclusions, so those are repeated.
+// Rolldown matches the filters against native paths, hence `[/\\]` separators (and no patterns
+// built from the absolute project path, which never match on Windows).
+const compilerExclude = [
+  /[/\\]node_modules[/\\]|^\0rolldown\/runtime\.js$/,
+  /[/\\]packages[/\\][^/\\]+[/\\]src[/\\]/,
+  /[/\\]src[/\\]test[/\\]/,
+  /\.(?:test|gen)\.[jt]sx?(?:$|\?)/,
+];
+
 export default defineConfig({
   plugins: [
     // Router plugin must come BEFORE react() per TanStack Router docs.
@@ -18,6 +30,7 @@ export default defineConfig({
       autoCodeSplitting: true,
     }),
     react(),
+    babel({ presets: [reactCompilerPreset()], exclude: compilerExclude }),
     tailwindcss(),
   ],
   define: {
