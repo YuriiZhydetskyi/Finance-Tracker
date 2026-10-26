@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
 import { Button } from '@/shared/ui/Button';
@@ -53,6 +53,8 @@ export function ItemRow({
   } = useFormContext<ManualFormValues>();
 
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
+  const idPrefix = useId();
+  const fieldId = (field: string) => `${idPrefix}-${field}`;
 
   const item = watch(`items.${index}`);
   const currency = watch('currency');
@@ -120,15 +122,19 @@ export function ItemRow({
 
       <div className="grid grid-cols-12 gap-2">
         <div className="col-span-12 sm:col-span-5">
-          <label className={FIELD_LABEL_CLASS}>Товар</label>
+          <label htmlFor={fieldId('product-name')} className={FIELD_LABEL_CLASS}>
+            Товар
+          </label>
           <div className="flex gap-1">
             <Input
+              id={fieldId('product-name')}
               list="products-datalist"
               placeholder="Назва"
               className="flex-1 min-w-0"
               {...register(`items.${index}.product_name`)}
             />
             <Input
+              aria-label="Код товару"
               placeholder="Код"
               title="Код товару у магазині (з чека)"
               className="w-20 shrink-0"
@@ -169,9 +175,15 @@ export function ItemRow({
         </div>
 
         <div className="col-span-6 sm:col-span-3">
-          <label className={FIELD_LABEL_CLASS}>Категорія</label>
+          <label htmlFor={fieldId('category')} className={FIELD_LABEL_CLASS}>
+            Категорія
+          </label>
           <div className="flex items-stretch gap-1">
-            <select className={SELECT_CLASS} {...register(`items.${index}.category`)}>
+            <select
+              id={fieldId('category')}
+              className={SELECT_CLASS}
+              {...register(`items.${index}.category`)}
+            >
               <option value="">—</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
@@ -199,8 +211,11 @@ export function ItemRow({
         </div>
 
         <div className="col-span-6 sm:col-span-2">
-          <label className={FIELD_LABEL_CLASS}>К-сть</label>
+          <label htmlFor={fieldId('qty')} className={FIELD_LABEL_CLASS}>
+            К-сть
+          </label>
           <Input
+            id={fieldId('qty')}
             type="number"
             step="0.001"
             min="0"
@@ -214,9 +229,12 @@ export function ItemRow({
         </div>
 
         <div className="col-span-6 sm:col-span-2">
-          <label className={FIELD_LABEL_CLASS}>Ціна</label>
+          <label htmlFor={fieldId('unit-price')} className={FIELD_LABEL_CLASS}>
+            Ціна
+          </label>
           {/* No min: negatives allowed for Pfand refunds, discount lines, cancellations. */}
           <Input
+            id={fieldId('unit-price')}
             type="number"
             step="0.001"
             inputMode="decimal"
@@ -229,8 +247,11 @@ export function ItemRow({
 
       <div className="mt-2 grid grid-cols-12 gap-2">
         <div className="col-span-12 sm:col-span-4">
-          <label className={FIELD_LABEL_CLASS}>Товар · вид</label>
+          <label htmlFor={fieldId('family')} className={FIELD_LABEL_CLASS}>
+            Товар · вид
+          </label>
           <select
+            id={fieldId('family')}
             className={SELECT_CLASS}
             {...register(`items.${index}.product_family_id`, {
               setValueAs: nullableSelectValue,
@@ -251,8 +272,11 @@ export function ItemRow({
           </select>
         </div>
         <div className="col-span-12 sm:col-span-4">
-          <label className={FIELD_LABEL_CLASS}>Різновид</label>
+          <label htmlFor={fieldId('variant')} className={FIELD_LABEL_CLASS}>
+            Різновид
+          </label>
           <select
+            id={fieldId('variant')}
             className={SELECT_CLASS}
             disabled={!item?.product_family_id}
             {...register(`items.${index}.product_variant_id`, {
@@ -273,8 +297,11 @@ export function ItemRow({
           </select>
         </div>
         <div className="col-span-6 sm:col-span-2">
-          <label className={FIELD_LABEL_CLASS}>Бренд</label>
+          <label htmlFor={fieldId('brand')} className={FIELD_LABEL_CLASS}>
+            Бренд
+          </label>
           <Input
+            id={fieldId('brand')}
             placeholder="—"
             {...register(`items.${index}.brand`, {
               setValueAs: (value) =>
@@ -288,8 +315,11 @@ export function ItemRow({
           />
         </div>
         <div className="col-span-6 sm:col-span-2">
-          <label className={FIELD_LABEL_CLASS}>Bio</label>
+          <label htmlFor={fieldId('organic')} className={FIELD_LABEL_CLASS}>
+            Bio
+          </label>
           <select
+            id={fieldId('organic')}
             className={SELECT_CLASS}
             {...register(`items.${index}.is_organic`, {
               setValueAs: organicSelectValue,
@@ -306,16 +336,25 @@ export function ItemRow({
           </select>
         </div>
         <div className="col-span-6 sm:col-span-3">
-          <label className={FIELD_LABEL_CLASS}>Хто</label>
-          <select className={SELECT_CLASS} {...register(`items.${index}.consumed_by`)}>
+          <label htmlFor={fieldId('consumed-by')} className={FIELD_LABEL_CLASS}>
+            Хто
+          </label>
+          <select
+            id={fieldId('consumed-by')}
+            className={SELECT_CLASS}
+            {...register(`items.${index}.consumed_by`)}
+          >
             <option value="his">Він</option>
             <option value="hers">Вона</option>
             <option value="shared">Спільне</option>
           </select>
         </div>
         <div className="col-span-3 sm:col-span-2">
-          <label className={FIELD_LABEL_CLASS}>Знижка</label>
+          <label htmlFor={fieldId('discount')} className={FIELD_LABEL_CLASS}>
+            Знижка
+          </label>
           <Input
+            id={fieldId('discount')}
             type="number"
             step="0.001"
             min="0"
@@ -326,8 +365,10 @@ export function ItemRow({
         </div>
         {/* "Зіпсовано" moved to /waste — set there per-item, not at receipt entry. */}
         <div className="col-span-12 sm:col-span-7">
-          <label className={FIELD_LABEL_CLASS}>Нотатка</label>
-          <Input placeholder="—" {...register(`items.${index}.note`)} />
+          <label htmlFor={fieldId('note')} className={FIELD_LABEL_CLASS}>
+            Нотатка
+          </label>
+          <Input id={fieldId('note')} placeholder="—" {...register(`items.${index}.note`)} />
         </div>
       </div>
 

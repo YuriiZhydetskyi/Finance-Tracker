@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import type { UseFieldArrayReturn } from 'react-hook-form';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/shared/ui/Input';
@@ -46,6 +46,9 @@ export function ReceiptFormFields({
     formState: { errors },
   } = useFormContext<ManualFormValues>();
 
+  const idPrefix = useId();
+  const fieldId = (field: string) => `${idPrefix}-${field}`;
+
   const itemErrors = errors.items as { root?: { message?: string } } | undefined;
   const merchantOrderId = watch('merchant_order_id');
 
@@ -59,23 +62,39 @@ export function ReceiptFormFields({
       <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
         <div className="grid grid-cols-12 gap-3">
           <div className="col-span-6 sm:col-span-2">
-            <label className={FIELD_LABEL_CLASS}>Дата</label>
-            <Input type="date" {...register('date')} />
+            <label htmlFor={fieldId('date')} className={FIELD_LABEL_CLASS}>
+              Дата
+            </label>
+            <Input id={fieldId('date')} type="date" {...register('date')} />
             {errors.date && <span className="text-xs text-red-600">{errors.date.message}</span>}
           </div>
           <div className="col-span-6 sm:col-span-2">
-            <label className={FIELD_LABEL_CLASS}>Час (опц.)</label>
-            <Input type="time" {...register('time', { setValueAs: emptyStringToNull })} />
+            <label htmlFor={fieldId('time')} className={FIELD_LABEL_CLASS}>
+              Час (опц.)
+            </label>
+            <Input
+              id={fieldId('time')}
+              type="time"
+              {...register('time', { setValueAs: emptyStringToNull })}
+            />
             {errors.time && <span className="text-xs text-red-600">{errors.time.message}</span>}
           </div>
           <div className="col-span-12 sm:col-span-4">
-            <label className={FIELD_LABEL_CLASS}>Магазин / опис</label>
-            <Input placeholder="Lidl, Amazon, оренда..." {...register('store')} />
+            <label htmlFor={fieldId('store')} className={FIELD_LABEL_CLASS}>
+              Магазин / опис
+            </label>
+            <Input
+              id={fieldId('store')}
+              placeholder="Lidl, Amazon, оренда..."
+              {...register('store')}
+            />
             {errors.store && <span className="text-xs text-red-600">{errors.store.message}</span>}
           </div>
           <div className="col-span-6 sm:col-span-2">
-            <label className={FIELD_LABEL_CLASS}>Валюта</label>
-            <select className={SELECT_CLASS} {...register('currency')}>
+            <label htmlFor={fieldId('currency')} className={FIELD_LABEL_CLASS}>
+              Валюта
+            </label>
+            <select id={fieldId('currency')} className={SELECT_CLASS} {...register('currency')}>
               {SUPPORTED_CURRENCIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -84,8 +103,10 @@ export function ReceiptFormFields({
             </select>
           </div>
           <div className="col-span-6 sm:col-span-2">
-            <label className={FIELD_LABEL_CLASS}>Оплатив</label>
-            <select className={SELECT_CLASS} {...register('paid_by')}>
+            <label htmlFor={fieldId('paid-by')} className={FIELD_LABEL_CLASS}>
+              Оплатив
+            </label>
+            <select id={fieldId('paid-by')} className={SELECT_CLASS} {...register('paid_by')}>
               {paidByOptions.map((email) => (
                 <option key={email} value={email}>
                   {email}
@@ -97,15 +118,20 @@ export function ReceiptFormFields({
             )}
           </div>
           <div className="col-span-12">
-            <label className={FIELD_LABEL_CLASS}>Адреса магазину (опц.)</label>
+            <label htmlFor={fieldId('store-address')} className={FIELD_LABEL_CLASS}>
+              Адреса магазину (опц.)
+            </label>
             <Input
+              id={fieldId('store-address')}
               placeholder="Hauptstr. 12, 80331 München"
               {...register('store_address', { setValueAs: emptyStringToNull })}
             />
           </div>
           <div className="col-span-12">
-            <label className={FIELD_LABEL_CLASS}>Нотатка (опц.)</label>
-            <Input placeholder="—" {...register('note')} />
+            <label htmlFor={fieldId('note')} className={FIELD_LABEL_CLASS}>
+              Нотатка (опц.)
+            </label>
+            <Input id={fieldId('note')} placeholder="—" {...register('note')} />
           </div>
         </div>
       </div>
