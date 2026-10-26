@@ -10,9 +10,14 @@ const signMock = vi.fn<(path: string, ttl: number) => Promise<SignResult>>();
 const removeMock = vi.fn<(paths: string[]) => Promise<RemoveResult>>();
 const getCurrentUserMock = vi.fn<() => Promise<{ email: string } | null>>();
 const fromMock = vi.fn<(bucket: string) => void>();
+const getSessionMock =
+  vi.fn<() => Promise<{ data: { session: { access_token: string } | null }; error: null }>>();
+const tusStartMock = vi.fn<() => void>();
+const tusOptions: Record<string, unknown>[] = [];
 
 vi.mock('../supabase-client', () => ({
   supabase: {
+    auth: { getSession: () => getSessionMock() },
     storage: {
       from: (bucket: string) => {
         fromMock(bucket);
@@ -23,6 +28,24 @@ vi.mock('../supabase-client', () => ({
         };
       },
     },
+  },
+}));
+
+vi.mock('tus-js-client', () => ({
+  Upload: class {
+    private readonly options: {
+      onProgress: (uploaded: number, total: number) => void;
+      onSuccess: () => void;
+    };
+    constructor(_blob: Blob, options: Record<string, unknown>) {
+      tusOptions.push(options);
+      this.options = options as never;
+    }
+    start() {
+      tusStartMock();
+      this.options.onProgress(3, 4);
+      this.options.onSuccess();
+    }
   },
 }));
 
@@ -38,6 +61,9 @@ beforeEach(() => {
   removeMock.mockReset();
   getCurrentUserMock.mockReset();
   fromMock.mockReset();
+  getSessionMock.mockReset();
+  tusStartMock.mockReset();
+  tusOptions.length = 0;
   getCurrentUserMock.mockResolvedValue({ email: 'you@example.com' });
 });
 
@@ -96,6 +122,46 @@ describe('supabasePhotoStorage.upload', () => {
     expect(removeMock).toHaveBeenCalledTimes(1);
     const [pathsRemoved] = removeMock.mock.calls[0]!;
     expect(pathsRemoved).toHaveLength(1);
+  });
+});
+
+describe('supabasePhotoStorage resumable upload', () => {
+  const OVER_THRESHOLD_BYTES = 6 * 1024 * 1024 + 1;
+
+  it('sends blobs over 6 MB through tus instead of the plain upload', async () => {
+    getSessionMock.mockResolvedValue({ data: { session: { access_token: 'jwt' } }, error: null });
+    const onProgress = vi.fn<(ratio: number) => void>();
+
+    await supabasePhotoStorage.uploadToPath(
+      new Blob([new Uint8Array(OVER_THRESHOLD_BYTES)], { type: 'application/pdf' }),
+      'you@example.com/2026/05/A.pdf',
+      onProgress,
+    );
+
+    expect(uploadMock).not.toHaveBeenCalled();
+    expect(tusStartMock).toHaveBeenCalledTimes(1);
+    expect(tusOptions[0]).toMatchObject({
+      endpoint: expect.stringContaining('/storage/v1/upload/resumable') as unknown,
+      headers: expect.objectContaining({ authorization: 'Bearer jwt' }) as unknown,
+      metadata: expect.objectContaining({
+        bucketName: 'receipts',
+        objectName: 'you@example.com/2026/05/A.pdf',
+        contentType: 'application/pdf',
+      }) as unknown,
+    });
+    expect(onProgress).toHaveBeenCalledWith(0.75);
+  });
+
+  it('refuses a resumable upload without a session', async () => {
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null });
+
+    await expect(
+      supabasePhotoStorage.uploadToPath(
+        new Blob([new Uint8Array(OVER_THRESHOLD_BYTES)], { type: 'application/pdf' }),
+        'p.pdf',
+      ),
+    ).rejects.toThrow(/no session/);
+    expect(tusStartMock).not.toHaveBeenCalled();
   });
 });
 

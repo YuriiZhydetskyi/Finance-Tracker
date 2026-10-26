@@ -4,8 +4,11 @@
 // can't decode them in Chromium-based browsers. PDFs pass through untouched —
 // both Gemini (inline_data) and Anthropic (document block) accept raw PDF bytes
 // and resizing them isn't possible in-browser without a full PDF stack.
+//
+// `heic-to` is a ~3 MB decoder, so it is imported on demand (own chunk, fetched only
+// when a HEIC file is picked). It is the `/csp` build because the app's CSP has no
+// 'unsafe-eval' and the default build compiles code with `new Function`.
 
-import { heicTo } from 'heic-to';
 import { resizeImage, type ResizeOptions } from './resize-image';
 
 const PDF_MAX_BYTES = 20 * 1024 * 1024;
@@ -51,6 +54,7 @@ export async function prepareFile(file: File, resize?: ResizeOptions): Promise<P
   if (HEIC_MIME.has(type) || HEIC_EXT.test(name)) {
     let jpegFromHeic: Blob;
     try {
+      const { heicTo } = await import('heic-to/csp');
       jpegFromHeic = await heicTo({ blob: file, type: 'image/jpeg', quality: 0.9 });
     } catch (e) {
       throw new Error(

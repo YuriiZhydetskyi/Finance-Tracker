@@ -1,5 +1,4 @@
 import { ulid } from '@finance-tracker/domain';
-import { Upload } from 'tus-js-client';
 import { supabase } from '../supabase-client';
 import { authService } from '../auth';
 import { env } from '../env';
@@ -80,6 +79,7 @@ export function createSupabasePhotoStorage(options: SupabasePhotoStorageOptions)
     const accessToken = data.session?.access_token;
     if (error || !accessToken) throw new Error('Cannot start resumable upload: no session.');
 
+    const { Upload } = await import('tus-js-client');
     await new Promise<void>((resolve, reject) => {
       const upload = new Upload(blob, {
         endpoint: resumableEndpoint(),

@@ -6,7 +6,7 @@ type HeicToArgs = { blob: Blob; type: string; quality?: number };
 const heicToMock = vi.fn<(args: HeicToArgs) => Promise<Blob>>();
 const resizeImageMock = vi.fn<(blob: Blob | File) => Promise<Blob>>();
 
-vi.mock('heic-to', () => ({
+vi.mock('heic-to/csp', () => ({
   heicTo: (args: HeicToArgs) => heicToMock(args),
 }));
 
