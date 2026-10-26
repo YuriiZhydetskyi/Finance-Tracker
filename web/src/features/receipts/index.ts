@@ -32,6 +32,7 @@ export type { UpdateReceiptVars, UpdateReceiptResult } from './api/use-update-re
 export { useDeleteReceiptMutation } from './api/use-delete-receipt-mutation';
 export type { DeleteReceiptVars } from './api/use-delete-receipt-mutation';
 export { receiptsQueryKey, receiptQueryKey } from './api/receipts-query-keys';
+export { invalidateReceiptDerivedQueries } from './api/invalidate-receipt-derived-queries';
 export { useDuplicateReceipts, withinTimeWindow } from './api/use-duplicate-receipts';
 export type { DuplicateCandidate, DuplicateCheckInput } from './api/use-duplicate-receipts';
 

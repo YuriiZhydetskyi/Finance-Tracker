@@ -1,9 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { makeReceipt } from '@finance-tracker/domain';
 import { fxRateProvider } from '@/shared/lib/dependencies';
-import { productsQueryKey } from '@/features/products/api/use-products';
 import { computeGrandTotal } from '../utils/totals';
-import { receiptsQueryKey } from './receipts-query-keys';
+import { invalidateReceiptDerivedQueries } from './invalidate-receipt-derived-queries';
 import {
   buildReceiptBundle,
   fetchStoreProducts,
@@ -62,11 +61,6 @@ export function useSaveReceiptMutation() {
 
       return saveReceiptBundle({ receipt, bundle, replace: false });
     },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: receiptsQueryKey }),
-        queryClient.invalidateQueries({ queryKey: productsQueryKey }),
-      ]);
-    },
+    onSuccess: () => invalidateReceiptDerivedQueries(queryClient),
   });
 }

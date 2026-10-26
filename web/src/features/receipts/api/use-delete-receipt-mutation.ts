@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 import { wrapError } from '@/shared/utils/wrap-error';
-import { receiptQueryKey, receiptsQueryKey } from './receipts-query-keys';
+import { invalidateReceiptDerivedQueries } from './invalidate-receipt-derived-queries';
+import { receiptQueryKey } from './receipts-query-keys';
 
 export type DeleteReceiptVars = { id: string };
 
@@ -19,7 +20,7 @@ export function useDeleteReceiptMutation() {
     },
     onSuccess: async (_result, { id }) => {
       queryClient.removeQueries({ queryKey: receiptQueryKey(id) });
-      await queryClient.invalidateQueries({ queryKey: receiptsQueryKey });
+      await invalidateReceiptDerivedQueries(queryClient);
     },
   });
 }

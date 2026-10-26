@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { applyReceiptPatch, type Receipt } from '@finance-tracker/domain';
 import { fxRateProvider } from '@/shared/lib/dependencies';
-import { productsQueryKey } from '@/features/products/api/use-products';
 import { computeGrandTotal } from '../utils/totals';
-import { receiptQueryKey, receiptsQueryKey } from './receipts-query-keys';
+import { invalidateReceiptDerivedQueries } from './invalidate-receipt-derived-queries';
+import { receiptQueryKey } from './receipts-query-keys';
 import {
   buildReceiptBundle,
   fetchStoreProducts,
@@ -81,9 +81,8 @@ export function useUpdateReceiptMutation() {
     },
     onSuccess: async (_result, { id }) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: receiptsQueryKey }),
+        invalidateReceiptDerivedQueries(queryClient),
         queryClient.invalidateQueries({ queryKey: receiptQueryKey(id) }),
-        queryClient.invalidateQueries({ queryKey: productsQueryKey }),
       ]);
     },
   });

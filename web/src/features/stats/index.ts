@@ -20,6 +20,7 @@ export {
   useStatsByStore,
   useStatsSavingsByMonth,
   useStatsWasteByMonth,
+  statsQueryKey,
   statsByMonthQueryKey,
   statsByCategoryQueryKey,
   statsByUserQueryKey,

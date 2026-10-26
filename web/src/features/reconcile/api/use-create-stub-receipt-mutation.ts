@@ -3,7 +3,7 @@ import { makeItem, makeReceipt } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
 import { fxRateProvider } from '@/shared/lib/dependencies';
 import { wrapError } from '@/shared/utils/wrap-error';
-import { receiptsQueryKey } from '@/features/receipts';
+import { invalidateReceiptDerivedQueries } from '@/features/receipts';
 
 export type CreateStubReceiptVars = {
   date: string;
@@ -82,8 +82,6 @@ export function useCreateStubReceiptMutation() {
 
       return { receipt_id: receipt.id };
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: receiptsQueryKey });
-    },
+    onSuccess: () => invalidateReceiptDerivedQueries(queryClient),
   });
 }

@@ -17,13 +17,15 @@ import type {
 
 const FIVE_MIN = 5 * 60_000;
 
-export const statsByMonthQueryKey = ['stats', 'by-month'] as const;
-export const statsByCategoryQueryKey = ['stats', 'by-category'] as const;
-export const statsByUserQueryKey = ['stats', 'by-user'] as const;
-export const statsByStoreQueryKey = ['stats', 'by-store'] as const;
-export const statsSavingsByMonthQueryKey = ['stats', 'savings-by-month'] as const;
-export const wasteByMonthQueryKey = ['stats', 'waste-by-month'] as const;
-export const statsFilterOptionsQueryKey = ['stats', 'filter-options'] as const;
+export const statsQueryKey = ['stats'] as const;
+export const statsByMonthQueryKey = [...statsQueryKey, 'by-month'] as const;
+export const statsByCategoryQueryKey = [...statsQueryKey, 'by-category'] as const;
+export const statsByUserQueryKey = [...statsQueryKey, 'by-user'] as const;
+export const statsByStoreQueryKey = [...statsQueryKey, 'by-store'] as const;
+export const statsSavingsByMonthQueryKey = [...statsQueryKey, 'savings-by-month'] as const;
+export const wasteByMonthQueryKey = [...statsQueryKey, 'waste-by-month'] as const;
+export const statsFilterOptionsQueryKey = [...statsQueryKey, 'filter-options'] as const;
+export const statsCategoryDetailsQueryKey = [...statsQueryKey, 'category-details'] as const;
 
 type RawNumericRow = Record<string, unknown>;
 
