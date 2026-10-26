@@ -1397,10 +1397,7 @@ export type Database = {
         Args: { p_message_id: string };
         Returns: undefined;
       };
-      revoke_email_import_source: {
-        Args: { p_id: string };
-        Returns: undefined;
-      };
+      revoke_email_import_source: { Args: { p_id: string }; Returns: undefined };
       save_receipt_bundle: {
         Args: {
           p_items: Json;
