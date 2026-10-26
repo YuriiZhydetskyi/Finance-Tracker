@@ -202,7 +202,7 @@ React SPA → Supabase
    │ supabase.rpc('save_receipt_bundle', { ..., p_replace: false })
    │   одна транзакція: products → backfills/enrichments → receipt → items → product_prices
    │   помилка на будь-якому кроці → нічого не записано
-   │ qc.invalidateQueries({ queryKey: receiptsQueryKey }) + productsQueryKey
+   │ invalidateReceiptDerivedQueries(qc) — receipts, products, усі ['stats', …], waste-items, packaging-candidates
    ▼
 [11. catch path для save failure]
    │ photoStorage.remove(path).catch(noop) — orphan blob cleanup
@@ -260,7 +260,7 @@ React SPA → Supabase
    │   └─ supabase.rpc('save_receipt_bundle', { ..., p_replace: true })  ← wholesale replace
    │        одна транзакція: products → UPDATE receipts → DELETE product_prices/items
    │        → INSERT items → INSERT product_prices
-   │ qc.invalidateQueries({ queryKey: [receiptsQueryKey, receiptQueryKey(id), productsQueryKey] })
+   │ invalidateReceiptDerivedQueries(qc) + qc.invalidateQueries({ queryKey: receiptQueryKey(id) })
    ▼
 [4. navigate({ to: '/recent', search: { saved: id } })]
 ```
@@ -277,7 +277,7 @@ React SPA → Supabase
    │ supabase.from('receipts').delete().eq('id', id)
    │   FK on items: ON DELETE CASCADE → items видалені автоматично
    │ qc.removeQueries({ queryKey: receiptQueryKey(id) })
-   │ qc.invalidateQueries({ queryKey: receiptsQueryKey })
+   │ invalidateReceiptDerivedQueries(qc)
    ▼
 [3. navigate({ to: '/recent' })]
 ```
