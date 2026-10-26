@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { FormProvider } from 'react-hook-form';
-import { useNavigate } from '@tanstack/react-router';
+import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router';
 import type { Item, Receipt } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
 import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
@@ -64,6 +64,8 @@ function toFormRow(item: Item): ItemFormValues {
 
 export function EditReceiptForm({ receipt, items }: Props) {
   const navigate = useNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   const categoryNames = useCategoryNames();
   const productNames = useProductNames();
   const productsQuery = useProducts();
@@ -179,12 +181,19 @@ export function EditReceiptForm({ receipt, items }: Props) {
     void onSubmit(e);
   };
 
+  // Returns to wherever the user came from (keeping that page's filters or scroll),
+  // and falls back to the list when the page was opened directly.
+  const leaveToList = (ignoreBlocker: boolean) => {
+    if (canGoBack) router.history.back({ ignoreBlocker });
+    else void navigate({ to: '/recent', ignoreBlocker });
+  };
+
   const handleConfirmDelete = () => {
     void (async () => {
       try {
         await remove.mutateAsync({ id: receipt.id });
         setConfirmOpen(false);
-        void navigate({ to: '/recent', ignoreBlocker: true });
+        leaveToList(true);
       } catch {
         setConfirmOpen(false);
       }
@@ -211,9 +220,7 @@ export function EditReceiptForm({ receipt, items }: Props) {
               <Button
                 variant="ghost"
                 type="button"
-                onClick={() => {
-                  void navigate({ to: '/recent' });
-                }}
+                onClick={() => leaveToList(false)}
                 disabled={busy}
               >
                 Скасувати
