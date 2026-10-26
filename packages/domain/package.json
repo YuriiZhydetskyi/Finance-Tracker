@@ -12,8 +12,8 @@
     }
   },
   "scripts": {
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
+    "lint": "eslint src --cache",
+    "lint:fix": "eslint src --cache --fix",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
@@ -22,8 +22,8 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
-    "eslint": "^9.39.5",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5"

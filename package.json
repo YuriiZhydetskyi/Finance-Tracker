@@ -41,6 +41,11 @@
       "prettier --write"
     ]
   },
+  "overrides": {
+    "eslint-plugin-react": {
+      "eslint": "^10.13.0"
+    }
+  },
   "engines": {
     "node": ">=24.15"
   }

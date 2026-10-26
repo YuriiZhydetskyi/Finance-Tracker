@@ -1,14 +1,14 @@
 import js from '@eslint/js';
+import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
-  { ignores: ['node_modules', 'dist'] },
+export default defineConfig(
+  globalIgnores(['node_modules', 'dist']),
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  tseslint.configs.recommendedTypeChecked,
   {
     files: ['**/*.ts'],
     languageOptions: {
-      ecmaVersion: 2022,
       sourceType: 'module',
       parserOptions: {
         project: ['./tsconfig.json'],

@@ -1,35 +1,35 @@
+import { fixupPluginRules } from '@eslint/compat';
 import js from '@eslint/js';
+import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
-export default tseslint.config(
-  {
-    ignores: [
-      'dist',
-      'node_modules',
-      'public/pdfjs',
-      'src/routeTree.gen.ts',
-      'src/shared/types/database.types.ts',
-    ],
-  },
+export default defineConfig(
+  globalIgnores([
+    'dist',
+    'node_modules',
+    'public/pdfjs',
+    'src/routeTree.gen.ts',
+    'src/shared/types/database.types.ts',
+  ]),
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
+  tseslint.configs.recommendedTypeChecked,
+  tseslint.configs.stylisticTypeChecked,
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 2022,
       sourceType: 'module',
-      globals: { ...globals.browser, ...globals.es2022 },
+      globals: globals.browser,
       parserOptions: {
         project: ['./tsconfig.app.json', './tsconfig.node.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
     plugins: {
-      react,
+      // eslint-plugin-react 7.37.5 calls context.getFilename(), removed in ESLint 10; drop the wrapper once a release declares ESLint 10 support.
+      react: fixupPluginRules(react),
       'react-hooks': reactHooks,
     },
     settings: {

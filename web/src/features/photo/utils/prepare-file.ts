@@ -55,6 +55,7 @@ export async function prepareFile(file: File, resize?: ResizeOptions): Promise<P
     } catch (e) {
       throw new Error(
         `Не вдалося прочитати HEIC/HEIF файл: ${e instanceof Error ? e.message : 'невідома помилка'}`,
+        { cause: e },
       );
     }
     const resized = await resizeImage(jpegFromHeic, resize);
