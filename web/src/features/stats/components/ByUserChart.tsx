@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ChartOptions } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import './chart-setup';
 import type { StatsByUserRow } from '../api/stats.types';
@@ -14,6 +15,14 @@ const PALETTE = [
   'rgba(190, 24, 93, 0.85)',
 ];
 
+const LABEL = 'Кругова діаграма: хто скільки сплатив, EUR';
+
+const OPTIONS: ChartOptions<'pie'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { position: 'bottom' } },
+};
+
 export function ByUserChart({ rows }: Props) {
   const data = useMemo(
     () => ({
@@ -28,14 +37,5 @@ export function ByUserChart({ rows }: Props) {
     [rows],
   );
 
-  return (
-    <Pie
-      data={data}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom' } },
-      }}
-    />
-  );
+  return <Pie data={data} options={OPTIONS} aria-label={LABEL} fallbackContent={LABEL} />;
 }

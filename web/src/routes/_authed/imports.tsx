@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { BulkImportForm, GmailImportSettings, useImportBatches } from '@/features/imports';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 
 export const Route = createFileRoute('/_authed/imports')({ component: ImportsContent });
 
@@ -8,6 +9,7 @@ function ImportsContent() {
   const batches = useImportBatches();
   return (
     <div className="space-y-6">
+      <PageTitle>Масовий імпорт</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Масовий імпорт</h1>
         <p className="text-sm text-slate-600">

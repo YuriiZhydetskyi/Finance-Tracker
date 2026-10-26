@@ -18,6 +18,7 @@ import {
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import type { PackagingSavePlan } from '@/features/packaged-products/api/use-save-packaged-products-mutation';
 
 const PackagedProductsSearchSchema = z.object({
@@ -96,6 +97,7 @@ function PackagedProductsFlow() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Пакований товар</PageTitle>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">Пакований товар</h1>
         <Button

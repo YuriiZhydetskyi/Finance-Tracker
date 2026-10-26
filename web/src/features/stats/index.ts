@@ -41,4 +41,4 @@ export type {
   StatsFilters,
 } from './api/stats.types';
 export { formatPeriodRange, periodToDateRange } from './stats-period';
-export { loadStatsDateRange, loadStatsFilters } from './stats-preferences';
+export { useStatsDateRange, useStatsFilters } from './use-stats-preferences';

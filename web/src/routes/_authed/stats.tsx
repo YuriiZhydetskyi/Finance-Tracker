@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useCategories } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import {
   ByCategoryChart,
   ByMonthChart,
@@ -18,8 +19,6 @@ import {
   type StatsSelection,
   WasteByMonthChart,
   formatPeriodRange,
-  loadStatsDateRange,
-  loadStatsFilters,
   useStatsByCategory,
   useStatsFilterOptions,
   useStatsByMonth,
@@ -27,8 +26,8 @@ import {
   useStatsByUser,
   useStatsSavingsByMonth,
   useStatsWasteByMonth,
-  type StatsDateRange,
-  type StatsFilters,
+  useStatsDateRange,
+  useStatsFilters,
 } from '@/features/stats';
 import { formatMoney } from '@/shared/utils/format-money';
 
@@ -145,8 +144,8 @@ function StatsDashboard() {
     void navigate({ search: next });
   };
   const categoriesQuery = useCategories();
-  const [dateRange, setDateRange] = useState<StatsDateRange | null>(loadStatsDateRange);
-  const [filters, setFilters] = useState<StatsFilters>(loadStatsFilters);
+  const dateRange = useStatsDateRange();
+  const filters = useStatsFilters();
   const periodReady = dateRange !== null;
   const queryRange = dateRange ?? {};
   const queryOptions = { enabled: periodReady && !showDetails };
@@ -176,19 +175,19 @@ function StatsDashboard() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Статистика</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Статистика</h1>
         <p className="text-sm text-slate-600">Усі суми у EUR.</p>
       </div>
 
-      <StatsPeriodPicker onChange={setDateRange} />
+      <StatsPeriodPicker />
       {filterOptionsQuery.isError ? (
         <ErrorDetails error={filterOptionsQuery.error} label="Не вдалося завантажити фільтри" />
       ) : null}
       <StatsFiltersPicker
         options={filterOptionsQuery.data ?? EMPTY_FILTER_OPTIONS}
         isLoading={filterOptionsQuery.isLoading}
-        onChange={setFilters}
       />
 
       {categoriesQuery.isError ? (

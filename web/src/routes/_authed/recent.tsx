@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import { useAppUsers } from '@/features/auth';
 import {
   countActiveFilters,
@@ -28,6 +29,7 @@ function RecentList() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Останні чеки</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Останні чеки</h1>
         <p className="text-sm text-slate-600">

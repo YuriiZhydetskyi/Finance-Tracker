@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/shared/ui/Button';
-import type { StatsFilterOptions, StatsFilters } from '../api/stats.types';
-import { loadStatsFilters, saveStatsPreferences } from '../stats-preferences';
+import type { StatsFilterOptions } from '../api/stats.types';
+import { saveStatsPreferences } from '../stats-preferences';
+import { useStatsFilters } from '../use-stats-preferences';
 
 type Selection = {
   categories: string[];
@@ -11,7 +12,6 @@ type Selection = {
 type Props = {
   options: StatsFilterOptions;
   isLoading: boolean;
-  onChange: (filters: StatsFilters) => void;
 };
 
 function sameValues(left: string[], right: string[]): boolean {
@@ -73,8 +73,8 @@ function FilterDropdown({
   );
 }
 
-export function StatsFiltersPicker({ options, isLoading, onChange }: Props) {
-  const [storedSelection, setStoredSelection] = useState<StatsFilters>(loadStatsFilters);
+export function StatsFiltersPicker({ options, isLoading }: Props) {
+  const storedSelection = useStatsFilters();
 
   const selection = useMemo<Selection>(
     () => ({
@@ -87,19 +87,10 @@ export function StatsFiltersPicker({ options, isLoading, onChange }: Props) {
     [options, storedSelection],
   );
 
-  useEffect(() => {
-    onChange(storedSelection);
-  }, [storedSelection, onChange]);
-
   const updateValues = (key: keyof Selection, values: string[] | undefined) => {
-    const next = { ...storedSelection };
-    if (values === undefined || (values.length > 0 && sameValues(values, options[key]))) {
-      delete next[key];
-    } else {
-      next[key] = values;
-    }
-    setStoredSelection(next);
-    saveStatsPreferences({ [key]: next[key] });
+    const everythingSelected =
+      values !== undefined && values.length > 0 && sameValues(values, options[key]);
+    saveStatsPreferences({ [key]: everythingSelected ? undefined : values });
   };
 
   const toggle = (key: keyof Selection, value: string) => {

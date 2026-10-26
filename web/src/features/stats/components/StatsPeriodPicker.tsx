@@ -1,4 +1,3 @@
-import { useEffect, useEffectEvent, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { cn } from '@/shared/ui/cn';
@@ -9,11 +8,8 @@ import {
   type StatsPeriod,
 } from '../stats-period';
 import type { StatsDateRange } from '../api/stats.types';
-import {
-  loadStatsDateRange,
-  loadStatsPreferences,
-  saveStatsPreferences,
-} from '../stats-preferences';
+import { saveStatsPreferences } from '../stats-preferences';
+import { useStatsPreferences } from '../use-stats-preferences';
 
 const OPTIONS: { value: StatsPeriod; label: string }[] = [
   { value: 'all-time', label: 'За весь час' },
@@ -23,48 +19,19 @@ const OPTIONS: { value: StatsPeriod; label: string }[] = [
   { value: 'custom', label: 'Свій період' },
 ];
 
-type Props = {
-  onChange: (range: StatsDateRange | null) => void;
-};
+const EMPTY_CUSTOM_RANGE: Required<StatsDateRange> = { dateFrom: '', dateTo: '' };
 
-export function StatsPeriodPicker({ onChange }: Props) {
-  const [period, setPeriod] = useState<StatsPeriod>(
-    () => loadStatsPreferences().period ?? 'last-3-months',
-  );
-  const [customRange, setCustomRange] = useState<Required<StatsDateRange>>(
-    () => loadStatsPreferences().customRange ?? { dateFrom: '', dateTo: '' },
-  );
-
-  const [restoredRange] = useState(loadStatsDateRange);
-  // Emits the restored choice once on mount so any parent learns the saved
-  // range from the picker itself; useEffectEvent keeps it from re-firing when
-  // the parent passes a new onChange.
-  const emitRestoredRange = useEffectEvent(() => onChange(restoredRange));
-  useEffect(() => {
-    emitRestoredRange();
-  }, []);
+export function StatsPeriodPicker() {
+  const preferences = useStatsPreferences();
+  const period = preferences.period ?? 'last-3-months';
+  const customRange = preferences.customRange ?? EMPTY_CUSTOM_RANGE;
 
   const selectPeriod = (nextPeriod: StatsPeriod) => {
-    setPeriod(nextPeriod);
     saveStatsPreferences({ period: nextPeriod });
-    if (nextPeriod === 'custom') {
-      onChange(
-        customRange.dateFrom && customRange.dateTo && isValidCustomRange(customRange)
-          ? customRange
-          : null,
-      );
-      return;
-    }
-    onChange(periodToDateRange(nextPeriod));
   };
 
   const updateCustomRange = (patch: Partial<Required<StatsDateRange>>) => {
-    const nextRange = { ...customRange, ...patch };
-    setCustomRange(nextRange);
-    saveStatsPreferences({ customRange: nextRange });
-    onChange(
-      nextRange.dateFrom && nextRange.dateTo && isValidCustomRange(nextRange) ? nextRange : null,
-    );
+    saveStatsPreferences({ customRange: { ...customRange, ...patch } });
   };
 
   const customError =
