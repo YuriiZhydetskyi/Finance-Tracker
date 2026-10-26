@@ -1,10 +1,20 @@
 import { useMemo } from 'react';
+import type { ChartOptions } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import './chart-setup';
 import type { StatsByMonthRow } from '../api/stats.types';
 
 type Props = {
   rows: StatsByMonthRow[];
+};
+
+const LABEL = 'Стовпчаста діаграма: витрати по місяцях, EUR';
+
+const OPTIONS: ChartOptions<'bar'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: { y: { beginAtZero: true } },
 };
 
 export function ByMonthChart({ rows }: Props) {
@@ -26,15 +36,5 @@ export function ByMonthChart({ rows }: Props) {
     [chronological],
   );
 
-  return (
-    <Bar
-      data={data}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } },
-      }}
-    />
-  );
+  return <Bar data={data} options={OPTIONS} aria-label={LABEL} fallbackContent={LABEL} />;
 }
