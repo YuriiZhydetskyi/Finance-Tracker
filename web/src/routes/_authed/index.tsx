@@ -1,6 +1,10 @@
+import { usePrefetchQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { z } from 'zod';
+import { categoriesQueryOptions } from '@/features/categories';
 import { usePendingParses } from '@/features/pending-parses';
+import { productsQueryOptions } from '@/features/products';
+import { receiptsQueryOptions, searchToFilters } from '@/features/receipts';
 import { usePackagingCandidatesCount } from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
 
@@ -15,6 +19,11 @@ export const Route = createFileRoute('/_authed/')({
 
 function HomeNav() {
   const savedId = Route.useSearch().saved;
+  // Warm what the screens one tap away open with: the unfiltered /recent list and
+  // the category and product lists every receipt form needs.
+  usePrefetchQuery(receiptsQueryOptions(searchToFilters({})));
+  usePrefetchQuery(categoriesQueryOptions);
+  usePrefetchQuery(productsQueryOptions);
   const pendingQuery = usePendingParses();
   const pendingCount = pendingQuery.data?.length ?? 0;
   const packagingQuery = usePackagingCandidatesCount();

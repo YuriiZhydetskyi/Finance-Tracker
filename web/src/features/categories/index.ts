@@ -1,6 +1,7 @@
 export {
   useCategories,
   useCategoryNames,
+  categoriesQueryOptions,
   categoriesQueryKey,
   type Category,
 } from './api/use-categories';

@@ -16,7 +16,7 @@ export { SummaryFooter } from './components/SummaryFooter';
 export { RecentSearchSchema, countActiveFilters, searchToFilters } from './recent-search';
 export type { RecentSearchParams, RecentSearchInput } from './recent-search';
 
-export { useReceipts } from './api/use-receipts';
+export { useReceipts, receiptsQueryOptions } from './api/use-receipts';
 export type { ReceiptFilters } from './api/use-receipts';
 export { useReceipt } from './api/use-receipt';
 export type { ReceiptBundle } from './api/use-receipt';
