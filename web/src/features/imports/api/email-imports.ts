@@ -14,9 +14,13 @@ const MESSAGE_LOG_LIMIT = 30;
 
 export const DEFAULT_SENDER_DOMAINS = [
   'amazon.de',
+  'anny.co',
   'anthropic.com',
+  'bett1.de',
   'edeka.de',
   'google.com',
+  'mybotshop.de',
+  'toogoodtogo.com',
   'uber.com',
 ];
 export const EMAIL_INGEST_URL = `${env.VITE_SUPABASE_URL.replace(/\/$/, '')}/functions/v1/ingest-email-receipts`;

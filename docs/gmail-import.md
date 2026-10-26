@@ -15,8 +15,9 @@
 
 1. Відкрий «Масовий імпорт», блок «Автоімпорт з Gmail».
 2. Обери платника, дату початку і дозволені домени. Типовий список: `amazon.de`,
-   `anthropic.com`, `edeka.de`, `google.com`, `uber.com`. Піддомени входять
-   автоматично (`edeka.de` охоплює `app.edeka.de`).
+   `anny.co`, `anthropic.com`, `bett1.de`, `edeka.de`, `google.com`, `mybotshop.de`,
+   `toogoodtogo.com`, `uber.com`. Піддомени входять автоматично (`edeka.de` охоплює
+   `app.edeka.de`).
 3. Натисни «Створити токен» і скопіюй `INGEST_URL` та `INGEST_TOKEN`. Токен показується
    лише один раз; якщо загубиться, відклич його і створи новий.
 
