@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useCurrentUser } from '@/features/auth';
+import { PageTitle } from '@/shared/ui/PageTitle';
 
 export const Route = createFileRoute('/auth/callback')({
   component: AuthCallbackPage,
@@ -23,6 +24,7 @@ function AuthCallbackPage() {
 
   return (
     <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-600">
+      <PageTitle>Вхід</PageTitle>
       {isLoading ? 'Завершуємо вхід...' : 'Перенаправляємо...'}
     </div>
   );

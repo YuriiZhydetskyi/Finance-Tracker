@@ -29,6 +29,7 @@ import {
 } from '@/features/reconcile';
 import { Button } from '@/shared/ui/Button';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 
 export const Route = createFileRoute('/_authed/reconcile')({
   component: Reconcile,
@@ -243,6 +244,7 @@ function Reconcile() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Звірка виписки</PageTitle>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Звірка виписки</h1>

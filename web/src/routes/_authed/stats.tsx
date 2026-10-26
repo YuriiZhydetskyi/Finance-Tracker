@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useCategories } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import {
   ByCategoryChart,
   ByMonthChart,
@@ -176,6 +177,7 @@ function StatsDashboard() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Статистика</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Статистика</h1>
         <p className="text-sm text-slate-600">Усі суми у EUR.</p>

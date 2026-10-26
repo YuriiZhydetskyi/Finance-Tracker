@@ -1,5 +1,5 @@
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { routeTree } from '@/routeTree.gen';
 
 vi.mock('@/features/auth', () => ({
@@ -25,5 +25,17 @@ describe('imports routing', () => {
 
     expect(await screen.findByText('Batch detail batch-123')).toBeInTheDocument();
     expect(screen.queryByText('New batch form')).not.toBeInTheDocument();
+  });
+
+  it('sets a page title for the route', async () => {
+    const router = createRouter({
+      routeTree,
+      history: createMemoryHistory({ initialEntries: ['/imports/batch-123'] }),
+    });
+
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('Batch detail batch-123');
+    await waitFor(() => expect(document.title).toBe('Пакет імпорту — Finance Tracker'));
   });
 });

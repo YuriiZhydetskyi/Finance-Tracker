@@ -13,6 +13,7 @@ import {
   type AddFileInput,
 } from '@/features/photo';
 import { Button } from '@/shared/ui/Button';
+import { PageTitle } from '@/shared/ui/PageTitle';
 
 const PhotoSearchSchema = z.object({
   pasteJson: z.literal('1').optional().catch(undefined),
@@ -43,6 +44,7 @@ function PhotoFlow() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Фото чек</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Фото чек</h1>
         <p className="text-sm text-slate-600">

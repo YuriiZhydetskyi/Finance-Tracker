@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCategoryNames } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 import { formatMoney } from '@/shared/utils/format-money';
 import {
   WasteFiltersBar,
@@ -43,6 +44,7 @@ function WasteList() {
 
   return (
     <div className="space-y-4 pb-16">
+      <PageTitle>Викинули</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Викинули</h1>
         <p className="text-sm text-slate-600">

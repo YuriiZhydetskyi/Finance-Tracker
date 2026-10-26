@@ -12,6 +12,7 @@ import {
   type PendingParseRow,
 } from '@/features/pending-parses';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
+import { PageTitle } from '@/shared/ui/PageTitle';
 
 const PendingSearchSchema = z.object({});
 
@@ -70,6 +71,7 @@ function PendingFlow() {
   if (hasBatch) {
     return (
       <div className="space-y-4">
+        <PageTitle>Повторне розпізнавання</PageTitle>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Повторне розпізнавання
@@ -85,6 +87,7 @@ function PendingFlow() {
 
   return (
     <div className="space-y-4">
+      <PageTitle>Чеки з помилками</PageTitle>
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Чеки з помилками</h1>
         <p className="text-sm text-slate-600">
