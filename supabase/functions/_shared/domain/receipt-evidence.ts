@@ -60,6 +60,32 @@ export function hasWeightedQuantity(text: string, qty: number): boolean {
   return hasWeightOrVolume(text) || hasExplicitMultiplier(text, qty);
 }
 
+export type ArticleCountLine = AccountingLine & {
+  qty_evidence?: string | undefined;
+  row_kind?: string | undefined;
+};
+
+/**
+ * Articles as the receipt prints them. A priced row counts once, or `qty` times when
+ * the row carries an explicit integer multiplier. Aldi also counts every returned
+ * deposit row (negative Pfand) as an article and none of the positive deposit rows;
+ * other stores keep counting positive deposit rows like any priced row.
+ */
+export function countPrintedArticles(
+  store: string | null | undefined,
+  items: readonly ArticleCountLine[],
+): number {
+  const isAldi = /\baldi\b/i.test(store ?? '');
+  return items.reduce((count, item) => {
+    const quantity =
+      item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty) ? item.qty : 1;
+    if (isAldi && item.row_kind === 'deposit') {
+      return item.unit_price_orig < 0 ? count + quantity : count;
+    }
+    return item.unit_price_orig > 0 ? count + quantity : count;
+  }, 0);
+}
+
 /** Cancellation pairs first, then partial discounts; returns a new array. */
 export function mergeAccountingPairs<T extends AccountingLine>(items: T[]): T[] {
   const result = items.map((item) => ({ ...item }));

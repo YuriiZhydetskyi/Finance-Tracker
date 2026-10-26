@@ -2,6 +2,7 @@ import type { BulkParsedDocument, ParsedItem } from '../_shared/receipt-ai/types
 import { canonicalizeReceiptTime } from '../_shared/receipt-ai/time-evidence.ts';
 import {
   amountAppearsInText,
+  countPrintedArticles,
   hasExplicitMultiplier,
   hasWeightedQuantity,
   integerAppearsInText,
@@ -664,13 +665,7 @@ export function checkReceiptArticleCount(
     return null;
   }
   const normalizedItems = mergeAccountingPairs(parsed.items);
-  const computedCount = normalizedItems.reduce((sum, item) => {
-    if (item.unit_price_orig <= 0) return sum;
-    if (item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty)) {
-      return sum + item.qty;
-    }
-    return sum + 1;
-  }, 0);
+  const computedCount = countPrintedArticles(parsed.store, normalizedItems);
   return {
     printedCount: parsed.article_count,
     computedCount,

@@ -1,5 +1,6 @@
 import {
   amountAppearsInText,
+  countPrintedArticles,
   hasExplicitMultiplier,
   hasWeightedQuantity,
   integerAppearsInText,
@@ -276,13 +277,7 @@ function validateArticleCount(
     return;
   }
 
-  const computedCount = items.reduce((count, item) => {
-    if (item.unit_price_orig <= 0) return count;
-    if (item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty)) {
-      return count + item.qty;
-    }
-    return count + 1;
-  }, 0);
+  const computedCount = countPrintedArticles(receipt.store, items);
 
   if (computedCount !== receipt.article_count) {
     issues.push(

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   amountAppearsInText,
   hasExplicitMultiplier,
+  countPrintedArticles,
   hasWeightedQuantity,
   hasWeightOrVolume,
   integerAppearsInText,
@@ -110,6 +111,48 @@ describe('hasWeightedQuantity', () => {
 
   it('rejects a row with neither', () => {
     expect(hasWeightedQuantity('Gouda mittelalt 2,04 B', 0.229)).toBe(false);
+  });
+});
+
+describe('countPrintedArticles', () => {
+  const item = { product_name: 'Milk', qty: 1, unit_price_orig: 1.5, row_kind: 'item' };
+  const returnedDeposit = {
+    product_name: 'Pfand',
+    qty: 1,
+    unit_price_orig: -1.75,
+    row_kind: 'deposit',
+  };
+  const chargedDeposit = {
+    product_name: 'Pfand',
+    qty: 2,
+    unit_price_orig: 0.15,
+    row_kind: 'deposit',
+    qty_evidence: 'explicit_multiplier',
+  };
+
+  it('counts a priced row once and a multiplier row qty times', () => {
+    const multiplied = { ...item, qty: 3, qty_evidence: 'explicit_multiplier' };
+    expect(countPrintedArticles('Lidl', [item, multiplied])).toBe(4);
+  });
+
+  it('ignores discounts and refunds', () => {
+    const discount = { ...item, unit_price_orig: -0.5, row_kind: 'discount' };
+    expect(countPrintedArticles('Lidl', [item, discount])).toBe(1);
+  });
+
+  it('keeps counting charged deposit rows and skips returned ones outside Aldi', () => {
+    expect(countPrintedArticles('EDEKA Straßfeld', [item, chargedDeposit, returnedDeposit])).toBe(
+      3,
+    );
+  });
+
+  it('counts returned deposit rows but not charged ones at Aldi', () => {
+    expect(countPrintedArticles('ALDI SÜD', [item, chargedDeposit, returnedDeposit])).toBe(2);
+    expect(countPrintedArticles('Aldi Süd', [item, returnedDeposit])).toBe(2);
+  });
+
+  it('does not treat other stores that merely contain the letters as Aldi', () => {
+    expect(countPrintedArticles('Baldiweg Markt', [item, returnedDeposit])).toBe(1);
   });
 });
 
