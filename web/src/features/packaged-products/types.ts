@@ -35,6 +35,8 @@ export type PackagedProductRow = {
   allergen_traces: EuAllergen[];
   ingredients_text: string | null;
   notes: string | null;
+  /** Reasons the card needs a manual check; empty means nothing to verify (ADR-0030). */
+  review_notes: string[];
   import_source: PackagedProductImportSource;
   created_at: string;
   updated_at: string;

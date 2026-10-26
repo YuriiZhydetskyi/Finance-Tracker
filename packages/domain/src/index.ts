@@ -13,4 +13,5 @@ export * from './bank-statement';
 export * from './reconcile-statement';
 export * from './product-taxonomy';
 export * from './nutrition';
+export * from './review-notes';
 export * from './receipt-evidence';

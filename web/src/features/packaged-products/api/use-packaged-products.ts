@@ -14,7 +14,7 @@ const FIVE_MIN = 5 * 60_000;
 // the column list when it is a literal type, and `raw_import_json` is deliberately
 // left out — it is an audit payload, not something any screen renders.
 // prettier-ignore
-const ROW_COLUMNS = 'id, name, brand, barcode, category, product_family_id, product_variant_id, is_organic, package_size, package_unit, package_count, serving_size, nutrition_basis, energy_kj, energy_kcal, fat_g, saturated_fat_g, carbohydrate_g, sugars_g, fibre_g, protein_g, salt_g, nutri_score, allergens, allergen_traces, ingredients_text, notes, import_source, created_at, updated_at';
+const ROW_COLUMNS = 'id, name, brand, barcode, category, product_family_id, product_variant_id, is_organic, package_size, package_unit, package_count, serving_size, nutrition_basis, energy_kj, energy_kcal, fat_g, saturated_fat_g, carbohydrate_g, sugars_g, fibre_g, protein_g, salt_g, nutri_score, allergens, allergen_traces, ingredients_text, notes, review_notes, import_source, created_at, updated_at';
 
 export type PackagedProductListRow = PackagedProductRow & {
   photos_count: number;

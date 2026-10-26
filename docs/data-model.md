@@ -469,6 +469,7 @@ create table public.packaged_products (
   allergen_traces     public.eu_allergen[] not null default '{}',
   ingredients_text    text,
   notes               text,
+  review_notes        text[] not null default '{}',    -- «Потрібна перевірка», ADR-0030
   import_source       text not null default 'manual-json',
   raw_import_json     jsonb,                           -- дослівний вхід імпорту
   created_at          timestamptz not null default now(),
@@ -486,6 +487,8 @@ create table public.packaged_products (
 - `saturated_fat_within_fat` і `sugars_within_carbohydrate` — із запасом `0.05` на округлення самої етикетки.
 - `package_size_unit_together` — обидва або жоден.
 - `variant_requires_family` + композитний FK на `product_variants(id, family_id)`, як у `products` та `items`.
+
+**`review_notes` — «Потрібна перевірка»** ([ADR-0030](decisions/0030-packaged-product-review-notes.md), міграція `20261026190000_packaged_product_review_notes.sql`). Причини, які власник має звірити з упаковкою; картка при цьому лишається придатною. Непорожній масив і є позначкою, окремого boolean чи індексу немає (каталог фільтрується в браузері). `NOT NULL default '{}'`: «нічого перевіряти» — завжди `{}`, ніколи `NULL`. CHECK `packaged_products_review_notes_valid` викликає чисту `immutable` функцію `is_valid_review_notes(text[])`: не більше 50 приміток на картку, кожна обрізана й завдовжки 1..300 символів, без `NULL`. Ліміт імпорту — 10 на товар (`PackagedProductImportSchema.review_notes`), тобто нижчий за ліміт картки, щоб злиття повторних імпортів не відкидало примітки. Позначення примітки перевіреною = запис масиву без неї; остання прибирає позначку. RLS і гранти таблиці не змінені. Константи й чисті функції (`normalizeReviewNotes`, `mergeReviewNotes`) — `packages/domain/src/review-notes.ts`.
 
 Грамові нутрієнти мають однакову точність `numeric(6,3)`: 3 dp потрібні для `salt 0.001 g`. Округлення — `roundNutrientGrams` (3 dp) і `roundEnergy` (1 dp) у `packages/domain/src/nutrition.ts`, застосовані у фабриці `makePackagedProduct`.
 

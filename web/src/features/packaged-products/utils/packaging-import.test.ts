@@ -100,6 +100,51 @@ describe('packaging document import contract', () => {
     for (const p of batch.products) p.link_product_ids = ['store-row'];
     expect(() => validatePackagingLinks(batch.products)).toThrow('двох товарів');
   });
+  describe('review_notes', () => {
+    it.each([
+      ['absent', {}],
+      ['null', { review_notes: null }],
+      ['empty', { review_notes: [] }],
+    ])('means nothing to check when %s', (_name, extra) => {
+      expect(parse({ ...product, ...extra }).products[0]?.parsed.review_notes).toEqual([]);
+    });
+    it('keeps trimmed notes per product and tolerates unknown extra fields', () => {
+      const batch = parse([
+        {
+          ...product,
+          review_notes: ['  Штрихкод розмитий ', 'Збіг із чеком неоднозначний'],
+          confidence: 'low',
+        },
+        { name: 'Paprika', category: 'Снеки' },
+      ]);
+      expect(batch.products[0]?.parsed.review_notes).toEqual([
+        'Штрихкод розмитий',
+        'Збіг із чеком неоднозначний',
+      ]);
+      expect(batch.products[1]?.parsed.review_notes).toEqual([]);
+    });
+    it('keeps the original object for the audit payload', () => {
+      const raw = { ...product, review_notes: ['  Штрихкод розмитий '] };
+      expect(parse(raw).products[0]?.raw).toEqual(raw);
+    });
+    it('names the product when the notes break the contract', () => {
+      expect(() =>
+        parse({
+          ...product,
+          review_notes: Array.from({ length: 11 }, (_, i) => `Причина ${String(i)}`),
+        }),
+      ).toThrow(/Товар 1.*review_notes/);
+      expect(() => parse({ ...product, review_notes: ['я'.repeat(301)] })).toThrow('review_notes');
+    });
+    it('does not change which existing card is reused', () => {
+      const batch = parsePackagingImport(
+        JSON.stringify({ ...product, review_notes: ['Нова причина'] }),
+        { ...context, existing: [{ id: 'old-card', name: 'Old name', barcode: product.barcode }] },
+      );
+      expect(batch.products[0]?.existing_product_id).toBe('old-card');
+      expect(batch.products[0]?.parsed.review_notes).toEqual(['Нова причина']);
+    });
+  });
   it('a nearby date alone cannot suggest an unrelated store label', () => {
     const row = {
       store: 'REWE',

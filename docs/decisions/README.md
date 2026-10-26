@@ -49,3 +49,4 @@
 | [0027](0027-packaged-product-catalogue.md) | Каталог пакованих товарів із харчовою цінністю | accepted | Schema / Storage / UI |
 | [0028](0028-packaging-pdf-evidence-import.md) | JSON із PDF-сторінками упаковок і підтвердженими прив’язками | accepted | Import / Storage / UI |
 | [0029](0029-gmail-receipts-via-owner-apps-script.md) | Чеки з Gmail через Apps Script в акаунті власника | accepted | Import / Security / Queue |
+| [0030](0030-packaged-product-review-notes.md) | Позначка «Потрібна перевірка» для карток упаковок | accepted | Schema / Import / UI |

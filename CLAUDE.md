@@ -9,7 +9,7 @@ Before making non-trivial changes, read in order:
 1. **[docs/project-status.md](docs/project-status.md)** — current state, pending deploy steps, lessons learned. The handoff doc.
 2. **[docs/architecture.md](docs/architecture.md)** — layers, request flows, ports & adapters, extension points.
 3. **[docs/data-model.md](docs/data-model.md)** — authoritative Postgres schema, RLS rules, RPC contracts, money/qty/fx conventions.
-4. **[docs/decisions/](docs/decisions/)** — 29 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import. Superseded ADRs are marked in the index.
+4. **[docs/decisions/](docs/decisions/)** — 30 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import; 0030 covers the packaged-product "needs manual check" notes. Superseded ADRs are marked in the index.
 5. **[docs/deploy.md](docs/deploy.md)** — operational runbook: secrets, env vars, deploy procedure, troubleshooting.
 6. **[docs/extending.md](docs/extending.md)** — numbered recipes for common extensions (add category, swap AI provider, add column, etc.).
 7. **[docs/refactoring-plan-2026-09.md](docs/refactoring-plan-2026-09.md)** — September 2026 refactoring plan and its status.
@@ -119,7 +119,7 @@ finance-tracker/
 │   └── styles/tailwind.css
 ├── packages/domain/src/           # vendor-free domain logic + tests
 ├── supabase/
-│   ├── migrations/                # 42 timestamped SQL files (see folder); key ones: initial_schema,
+│   ├── migrations/                # 45 timestamped SQL files (see folder); key ones: initial_schema,
 │   │                              # background_receipt_imports, multilingual_product_taxonomy,
 │   │                              # purchase_correction_rules, packaged_products, save_receipt_bundle
 │   ├── functions/

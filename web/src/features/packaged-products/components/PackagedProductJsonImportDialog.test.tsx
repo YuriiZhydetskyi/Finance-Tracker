@@ -69,6 +69,7 @@ function existingRow(overrides: Partial<PackagedProductListRow>): PackagedProduc
     allergen_traces: [],
     ingredients_text: null,
     notes: null,
+    review_notes: [],
     import_source: 'manual',
     created_at: '2026-09-01T00:00:00Z',
     updated_at: '2026-09-01T00:00:00Z',
@@ -223,6 +224,64 @@ describe('PackagedProductJsonImportDialog', () => {
   it('never tells the AI to convert a per-serving column', () => {
     renderDialog();
     expect(promptText()).toContain('НІКОЛИ не перераховуй порцію в 100 г');
+  });
+
+  it('tells the AI about the optional review_notes field', () => {
+    renderDialog();
+    const prompt = promptText();
+    expect(prompt).toContain('"review_notes": []');
+    expect(prompt).toContain('Правила перевірки (review_notes)');
+    expect(prompt).toContain('до 10 коротких рядків');
+  });
+
+  it('shows review notes before saving and keeps them in the save plan', async () => {
+    const { onImported } = renderDialog();
+    const payload = {
+      ...(JSON.parse(VALID_JSON) as object),
+      review_notes: ['  Штрихкод розмитий: перевір останні цифри ', 'Немає звороту'],
+    };
+    paste(JSON.stringify(payload));
+
+    expect(await screen.findByText('Штрихкод розмитий: перевір останні цифри')).toBeInTheDocument();
+    expect(screen.getByText('Немає звороту')).toBeInTheDocument();
+    expect(screen.getByText(/Примітки збережуться на новій картці/)).toBeInTheDocument();
+
+    await confirmSave();
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalled());
+    expect(onImported.mock.calls[0]?.[0][0]?.review_notes).toEqual([
+      'Штрихкод розмитий: перевір останні цифри',
+      'Немає звороту',
+    ]);
+    expect(onImported.mock.calls[0]?.[0][0]?.row?.review_notes).toEqual([
+      'Штрихкод розмитий: перевір останні цифри',
+      'Немає звороту',
+    ]);
+  });
+
+  it('explains that notes are merged into a reused card', async () => {
+    renderDialog({
+      existing: [existingRow({ barcode: '5053990101658', review_notes: ['Стара примітка'] })],
+    });
+    paste(JSON.stringify({ ...(JSON.parse(VALID_JSON) as object), review_notes: ['Нова'] }));
+
+    expect(await screen.findByText(/Нові примітки додадуться до наявних/)).toBeInTheDocument();
+  });
+
+  it('shows no review block when the product has no notes', async () => {
+    renderDialog();
+    paste(JSON.stringify({ ...(JSON.parse(VALID_JSON) as object), review_notes: null }));
+
+    await screen.findByLabelText(/Я перевірив сторінки/);
+    expect(screen.queryByText('Потрібна перевірка')).not.toBeInTheDocument();
+  });
+
+  it('rejects more than 10 notes before any PDF work', async () => {
+    const { onImported } = renderDialog();
+    const review_notes = Array.from({ length: 11 }, (_, i) => `Причина ${String(i)}`);
+    paste(JSON.stringify({ ...(JSON.parse(VALID_JSON) as object), review_notes }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('review_notes');
+    expect(onImported).not.toHaveBeenCalled();
   });
 
   it('reports unreadable JSON without throwing', async () => {

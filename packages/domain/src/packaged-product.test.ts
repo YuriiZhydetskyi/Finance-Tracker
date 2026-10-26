@@ -151,6 +151,33 @@ describe('makePackagedProduct', () => {
       }),
     ).toThrowError(/variant requires a family/);
   });
+
+  it('defaults review notes to none and normalizes supplied ones', () => {
+    expect(makePackagedProduct({ name: 'Тест', category: 'Інше' }).review_notes).toEqual([]);
+    const product = makePackagedProduct({
+      name: 'Тест',
+      category: 'Інше',
+      review_notes: ['  Нечіткий штрихкод ', 'нечіткий штрихкод', ''],
+    });
+    expect(product.review_notes).toEqual(['Нечіткий штрихкод']);
+  });
+
+  it('rejects a review note longer than 300 characters and more than 50 notes', () => {
+    expect(() =>
+      makePackagedProduct({ name: 'Тест', category: 'Інше', review_notes: ['я'.repeat(301)] }),
+    ).toThrow();
+    expect(() =>
+      makePackagedProduct({
+        name: 'Тест',
+        category: 'Інше',
+        review_notes: Array.from({ length: 51 }, (_, i) => `note ${String(i)}`),
+      }),
+    ).toThrow();
+    expect(
+      makePackagedProduct({ name: 'Тест', category: 'Інше', review_notes: ['я'.repeat(300)] })
+        .review_notes,
+    ).toHaveLength(1);
+  });
 });
 
 describe('packagedProductFromImport', () => {
@@ -212,6 +239,67 @@ describe('packagedProductFromImport', () => {
   it('rejects a non-numeric nutrient at parse time', () => {
     const result = PackagedProductImportSchema.safeParse({ ...PRINGLES, protein_g: 'багато' });
     expect(result.success).toBe(false);
+  });
+
+  describe('review_notes', () => {
+    it.each([
+      ['absent', {}],
+      ['null', { review_notes: null }],
+      ['empty', { review_notes: [] }],
+    ])('means nothing to check when %s', (_name, overrides) => {
+      const parsed = parseImport(overrides);
+      expect(parsed.review_notes).toEqual([]);
+      const product = packagedProductFromImport(parsed, { import_source: 'manual-json' });
+      expect(product.review_notes).toEqual([]);
+    });
+
+    it('persists trimmed, deduplicated notes in order', () => {
+      const parsed = parseImport({
+        review_notes: [
+          '  Штрихкод розмитий: перевір останні цифри ',
+          'Збіг із чеком REWE «Originals» неоднозначний',
+          'штрихкод розмитий: перевір останні цифри',
+        ],
+      });
+      expect(parsed.review_notes).toEqual([
+        'Штрихкод розмитий: перевір останні цифри',
+        'Збіг із чеком REWE «Originals» неоднозначний',
+      ]);
+      const product = packagedProductFromImport(parsed, { import_source: 'manual-json' });
+      expect(product.review_notes).toEqual(parsed.review_notes);
+    });
+
+    it('drops blank entries instead of failing the paste', () => {
+      expect(
+        parseImport({ review_notes: ['', '   ', 'Немає зворотного боку'] }).review_notes,
+      ).toEqual(['Немає зворотного боку']);
+    });
+
+    it('accepts exactly 10 notes of exactly 300 characters', () => {
+      const notes = Array.from({ length: 10 }, (_, i) => `${String(i)}`.padEnd(300, 'я'));
+      expect(parseImport({ review_notes: notes }).review_notes).toHaveLength(10);
+    });
+
+    it.each([
+      ['more than 10 notes', Array.from({ length: 11 }, (_, i) => `note ${String(i)}`)],
+      ['a note over 300 characters', ['я'.repeat(301)]],
+      ['a non-string entry', [42]],
+      ['a bare string instead of an array', 'Перевір штрихкод'],
+    ])('rejects %s', (_name, review_notes) => {
+      expect(PackagedProductImportSchema.safeParse({ ...PRINGLES, review_notes }).success).toBe(
+        false,
+      );
+    });
+
+    it('still tolerates unknown extra fields next to review_notes', () => {
+      const result = PackagedProductImportSchema.safeParse({
+        ...PRINGLES,
+        review_notes: ['Перевір штрихкод'],
+        source_pages: [{ page: 2, kind: 'front' }],
+        confidence: 0.4,
+      });
+      expect(result.success).toBe(true);
+    });
   });
 });
 

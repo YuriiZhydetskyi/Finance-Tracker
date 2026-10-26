@@ -366,6 +366,7 @@ export type Database = {
           product_variant_id: string | null;
           protein_g: number | null;
           raw_import_json: Json | null;
+          review_notes: string[];
           salt_g: number | null;
           saturated_fat_g: number | null;
           serving_size: number | null;
@@ -399,6 +400,7 @@ export type Database = {
           product_variant_id?: string | null;
           protein_g?: number | null;
           raw_import_json?: Json | null;
+          review_notes?: string[];
           salt_g?: number | null;
           saturated_fat_g?: number | null;
           serving_size?: number | null;
@@ -432,6 +434,7 @@ export type Database = {
           product_variant_id?: string | null;
           protein_g?: number | null;
           raw_import_json?: Json | null;
+          review_notes?: string[];
           salt_g?: number | null;
           saturated_fat_g?: number | null;
           serving_size?: number | null;
@@ -1326,6 +1329,7 @@ export type Database = {
         Returns: Json;
       };
       is_allowed_user: { Args: never; Returns: boolean };
+      is_valid_review_notes: { Args: { p_notes: string[] }; Returns: boolean };
       mark_receipt_import_upload_failed: {
         Args: { p_error_message: string; p_file_id: string };
         Returns: undefined;

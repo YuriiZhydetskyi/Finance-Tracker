@@ -93,6 +93,7 @@ try {
   for (const file of [
     '20260912072149_packaged_products.sql',
     '20260912072151_packaging_queue_functions.sql',
+    '20261026190000_packaged_product_review_notes.sql',
   ]) {
     await db.exec(
       await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), 'utf8'),
@@ -182,6 +183,91 @@ try {
        values ('pp-variant', 'Варіант без сімейства', 'Інше', 'potato_chips')`,
     /packaged_products_variant_requires_family/,
   );
+
+  // ── Review notes ("Потрібна перевірка") ──────────────────────────────────
+  // Existing rows and rows inserted without notes mean "nothing to check".
+  const defaults = await db.query(
+    `select review_notes, cardinality(review_notes) as n
+       from public.packaged_products where id = 'pp-pringles'`,
+  );
+  assert.deepEqual(defaults.rows[0].review_notes, []);
+  assert.equal(defaults.rows[0].n, 0);
+
+  // Marking notes as checked rewrites the array; the last one clears the marker.
+  await db.exec(`
+    update public.packaged_products
+       set review_notes = array['Штрихкод розмитий: перевір останні цифри', 'Немає таблиці поживності']
+     where id = 'pp-pringles'
+  `);
+  const flagged = await db.query(
+    `select id from public.packaged_products where cardinality(review_notes) > 0`,
+  );
+  assert.deepEqual(
+    flagged.rows.map((r) => r.id),
+    ['pp-pringles'],
+  );
+  await db.exec(`update public.packaged_products set review_notes = '{}' where id = 'pp-pringles'`);
+  const cleared = await db.query(
+    `select count(*)::int as n from public.packaged_products where cardinality(review_notes) > 0`,
+  );
+  assert.equal(cleared.rows[0].n, 0);
+
+  // Limits: 300 characters per note is legal, 301 is not.
+  await db.exec(
+    `update public.packaged_products
+        set review_notes = array[repeat('я', 300)] where id = 'pp-pringles'`,
+  );
+  await expectFailure(
+    `update public.packaged_products
+        set review_notes = array[repeat('я', 301)] where id = 'pp-pringles'`,
+    /packaged_products_review_notes_valid/,
+  );
+  // Blank, padded and NULL entries are rejected: the client trims before writing.
+  await expectFailure(
+    `update public.packaged_products set review_notes = array[''] where id = 'pp-pringles'`,
+    /packaged_products_review_notes_valid/,
+  );
+  await expectFailure(
+    `update public.packaged_products set review_notes = array['   '] where id = 'pp-pringles'`,
+    /packaged_products_review_notes_valid/,
+  );
+  await expectFailure(
+    `update public.packaged_products set review_notes = array[' padded'] where id = 'pp-pringles'`,
+    /packaged_products_review_notes_valid/,
+  );
+  await expectFailure(
+    `update public.packaged_products
+        set review_notes = array['ok', null] where id = 'pp-pringles'`,
+    /packaged_products_review_notes_valid/,
+  );
+  // 50 notes per card is the ceiling, 51 is not.
+  await db.exec(
+    `update public.packaged_products
+        set review_notes = (select array_agg('note ' || g) from generate_series(1, 50) g)
+      where id = 'pp-pringles'`,
+  );
+  await expectFailure(
+    `update public.packaged_products
+        set review_notes = (select array_agg('note ' || g) from generate_series(1, 51) g)
+      where id = 'pp-pringles'`,
+    /packaged_products_review_notes_valid/,
+  );
+  // The column is NOT NULL: "nothing to check" is an empty array, never NULL.
+  await expectFailure(
+    `update public.packaged_products set review_notes = null where id = 'pp-pringles'`,
+    /review_notes/,
+  );
+  // A new card can carry its notes from the start (the import path).
+  await db.exec(`
+    insert into public.packaged_products (id, name, category, review_notes)
+      values ('pp-flagged', 'Картка з приміткою', 'Інше', array['Збіг із чеком неоднозначний']);
+    update public.packaged_products set review_notes = '{}' where id = 'pp-pringles';
+  `);
+  const insertedFlag = await db.query(
+    `select review_notes from public.packaged_products where id = 'pp-flagged'`,
+  );
+  assert.deepEqual(insertedFlag.rows[0].review_notes, ['Збіг із чеком неоднозначний']);
+  await db.exec(`delete from public.packaged_products where id = 'pp-flagged'`);
 
   // ── The photographing queue ──────────────────────────────────────────────
   await db.exec(`
