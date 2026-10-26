@@ -9,6 +9,7 @@ vi.mock('@/features/auth', () => ({
 
 vi.mock('@/features/imports', () => ({
   BulkImportForm: () => <div>New batch form</div>,
+  GmailImportSettings: () => null,
   ImportBatchDetail: ({ id }: { id: string }) => <div>Batch detail {id}</div>,
   useImportBatches: () => ({ data: [], isError: false }),
 }));

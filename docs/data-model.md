@@ -24,6 +24,44 @@ upload. Semantic duplicate з точним збігом date/time/currency/total
 RLS дає allowlisted користувачам тільки `select`; мутації браузера проходять через вузькі RPC,
 worker RPC відкриті лише ролі `service_role`.
 
+### Листи з Gmail
+
+Міграція `20261026150000_email_receipt_imports.sql` ([ADR-0029](decisions/0029-gmail-receipts-via-owner-apps-script.md)):
+
+- **`email_import_sources`.** Підключення пошти одного власника:
+  - `owner_email`, `paid_by`, `import_after`;
+  - `allowed_sender_domains text[]` (1–20 доменів, нормалізовані в нижній регістр);
+  - `token_hash` (SHA-256 ingest-токена; клієнтам колонка не видана, тому `select` має
+    перелічувати колонки) і `token_hint` (останні 4 символи);
+  - `last_used_at`, `revoked_at`.
+- **`email_import_messages`.** Журнал листів, унікальний за `(source_id, provider_message_id)`:
+  - `status`: `imported` або `skipped`, для пропущених `reason`;
+  - відправник, тема (до 300 символів);
+  - `batch_id`, `file_count` (0–3).
+- **`receipt_import_batches.email_source_id`.** Денний батч джерела (дата за
+  Europe/Berlin).
+- **`receipt_import_files.mime_type`.** Тепер також `text/plain` (тіло листа), але лише
+  для Storage path `…/email/…` (`receipt_import_files_text_only_from_email`).
+
+Обидві нові таблиці читає тільки власник підключення. Документи з листів стають звичайними
+файлами імпорту, видимими всім allowlisted користувачам.
+
+RPC для браузера (з перевіркою allowlist і власника):
+
+- `create_email_import_source(p_id, p_paid_by, p_import_after, p_sender_domains)` повертає
+  токен один раз; одночасно активних підключень максимум 3.
+- `set_email_import_sender_domains(p_id, p_sender_domains)`.
+- `revoke_email_import_source(p_id)`.
+- `retry_email_import_message(p_message_id)` видаляє запис пропущеного листа, щоб скрипт
+  надіслав його знову.
+
+RPC лише для `service_role`:
+
+- `authenticate_email_import_source(p_token_hash)` повертає джерело і кількість листів за
+  24 години.
+- `register_email_import_message(...)` атомарно записує лист, файли й повідомлення PGMQ.
+  Ліміти: 30 листів на добу, 3 файли на лист.
+
 Зберігання — Postgres у Supabase project `<your-project-ref>`. Основні таблиці
 `receipts`, `items`, `products`, `categories`, `product_families` і
 `product_variants` доповнюються `app_users` (allowlist), `pending_parses` (черга

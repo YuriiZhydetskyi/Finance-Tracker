@@ -20,17 +20,20 @@ export function ImportFilePreview({ file }: Props) {
   }
 
   const isPdf = file.mime_type === 'application/pdf';
+  // Email bodies are stored as text/plain and, like PDFs, open in a new tab.
+  const isEmailText = file.mime_type === 'text/plain';
+  const opensInTab = isPdf || isEmailText;
 
   async function handlePreview() {
     if (!file.storage_path) return;
-    if (!isPdf && imageUrl) {
+    if (!opensInTab && imageUrl) {
       setImageUrl(null);
       return;
     }
 
     // Open synchronously so mobile browsers do not treat the PDF tab as an
     // unsolicited popup after the signed-URL request resolves.
-    const pdfWindow = isPdf ? window.open('about:blank', '_blank') : null;
+    const pdfWindow = opensInTab ? window.open('about:blank', '_blank') : null;
     if (pdfWindow) pdfWindow.opener = null;
 
     setIsLoading(true);
@@ -38,7 +41,7 @@ export function ImportFilePreview({ file }: Props) {
     setFallbackPdfUrl(null);
     try {
       const signedUrl = await photoStorage.getSignedUrl(file.storage_path, PREVIEW_URL_TTL_SEC);
-      if (isPdf) {
+      if (opensInTab) {
         if (pdfWindow) pdfWindow.location.replace(signedUrl);
         else setFallbackPdfUrl(signedUrl);
       } else {
@@ -61,7 +64,9 @@ export function ImportFilePreview({ file }: Props) {
             ? 'Сховати оригінал'
             : isPdf
               ? 'Відкрити PDF'
-              : 'Переглянути оригінал'}
+              : isEmailText
+                ? 'Відкрити текст листа'
+                : 'Переглянути оригінал'}
       </Button>
 
       {fallbackPdfUrl && (
@@ -71,7 +76,7 @@ export function ImportFilePreview({ file }: Props) {
           rel="noreferrer"
           className="block text-sm text-slate-700 underline"
         >
-          Відкрити PDF у новій вкладці
+          {isEmailText ? 'Відкрити текст листа в новій вкладці' : 'Відкрити PDF у новій вкладці'}
         </a>
       )}
 

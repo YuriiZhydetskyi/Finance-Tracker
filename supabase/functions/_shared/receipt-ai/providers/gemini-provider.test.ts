@@ -89,6 +89,16 @@ describe('GeminiProvider — Gemini 3.8 request configuration', () => {
     expect(signal?.aborted).toBe(true);
   });
 
+  it('sends an email body as a text part without media resolution', async () => {
+    const provider = new GeminiProvider({ apiKey: 'k' });
+    await provider.parseBulkDetailed(btoa('Gesamtbetrag EUR 15,98'), ctx('text/plain'));
+
+    const body = lastRequest().body as { contents: { parts: Record<string, unknown>[] }[] };
+    const parts = body.contents[0]!.parts;
+    expect(parts[1]).toEqual({ text: 'Gesamtbetrag EUR 15,98' });
+    expect(String(parts[0]!.text)).toContain('plain text of an email');
+  });
+
   it('keeps interactive PDFs at Medium resolution', async () => {
     const provider = new GeminiProvider({ apiKey: 'k' });
     await provider.parse('PDF', ctx('application/pdf'));

@@ -1,0 +1,15 @@
+{
+  "name": "@finance-tracker/ingest-email-receipts-fn",
+  "version": "0.2.7",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "postal-mime": "2.7.6"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.5"
+  }
+}

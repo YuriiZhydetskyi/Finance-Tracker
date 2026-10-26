@@ -34,6 +34,7 @@ jobs:
         run: |
           deno check supabase/functions/parse-receipt/index.ts
           deno check supabase/functions/process-receipt-imports/index.ts
+          deno check supabase/functions/ingest-email-receipts/index.ts
 
       - name: Lint Edge Functions
         run: deno lint supabase/functions

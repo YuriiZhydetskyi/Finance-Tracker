@@ -9,7 +9,7 @@ Before making non-trivial changes, read in order:
 1. **[docs/project-status.md](docs/project-status.md)** — current state, pending deploy steps, lessons learned. The handoff doc.
 2. **[docs/architecture.md](docs/architecture.md)** — layers, request flows, ports & adapters, extension points.
 3. **[docs/data-model.md](docs/data-model.md)** — authoritative Postgres schema, RLS rules, RPC contracts, money/qty/fx conventions.
-4. **[docs/decisions/](docs/decisions/)** — 28 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue. Superseded ADRs are marked in the index.
+4. **[docs/decisions/](docs/decisions/)** — 29 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import. Superseded ADRs are marked in the index.
 5. **[docs/deploy.md](docs/deploy.md)** — operational runbook: secrets, env vars, deploy procedure, troubleshooting.
 6. **[docs/extending.md](docs/extending.md)** — numbered recipes for common extensions (add category, swap AI provider, add column, etc.).
 7. **[docs/refactoring-plan-2026-09.md](docs/refactoring-plan-2026-09.md)** — September 2026 refactoring plan and its status.
@@ -30,6 +30,7 @@ npm run test                         # all Vitest workspaces + PGlite SQL script
 npm run test:purchase-correction-sql # PGlite: purchase correction rules
 npm run test:packaged-products-sql   # PGlite: packaged products constraints, RLS, queue
 npm run test:save-receipt-bundle-sql # PGlite: save_receipt_bundle RPC
+npm run test:email-imports-sql      # PGlite: Gmail import sources, tokens, registration
 npm run sync:edge-domain             # regenerate supabase/functions/_shared/domain from packages/domain
 npm run check:edge-domain            # fail if that generated copy drifted
 npm run format                       # Prettier --write (format:check to verify)
@@ -48,10 +49,12 @@ Edge Functions (Deno toolchain for type/lint; their logic is tested by the Vites
 ```powershell
 deno check supabase/functions/parse-receipt/index.ts             # typecheck
 deno check supabase/functions/process-receipt-imports/index.ts   # typecheck
+deno check supabase/functions/ingest-email-receipts/index.ts     # typecheck
 deno lint  supabase/functions                                    # lint (incl. _shared)
 npx supabase functions serve parse-receipt --env-file ...        # local serve
 npx supabase functions deploy parse-receipt                      # production
 npx supabase functions deploy process-receipt-imports            # production
+npx supabase functions deploy ingest-email-receipts              # production
 ```
 
 Database (Supabase CLI):
@@ -77,13 +80,13 @@ Scope shortcuts when only one workspace changed:
 
 - domain only: `npm run lint --workspace @finance-tracker/domain && npx vitest run --root packages/domain`
 - web only: `npm run lint --workspace @finance-tracker/web && npm run typecheck --workspace @finance-tracker/web`
-- Edge Functions only: `deno check supabase/functions/parse-receipt/index.ts && deno check supabase/functions/process-receipt-imports/index.ts && deno lint supabase/functions`
+- Edge Functions only: `deno check supabase/functions/parse-receipt/index.ts && deno check supabase/functions/process-receipt-imports/index.ts && deno check supabase/functions/ingest-email-receipts/index.ts && deno lint supabase/functions`
 
 Skip these only for doc-only changes (`*.md` outside `CLAUDE.md`/`docs/`-referenced sources).
 
 ## Architecture in one paragraph
 
-React 19 SPA built with Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router (file-based routes), deployed as static files to **Cloudflare Pages**. Backend is **Supabase end-to-end**: Postgres + Auth (magic link) + Storage + PGMQ/`pg_cron` + two Edge Functions. The browser talks **directly** to Supabase via supabase-js — Postgres RLS does authorization (allowlist via `app_users` table, helper `is_allowed_user()`). Multi-table writes and aggregates go through RPCs: receipt save/edit via `save_receipt_bundle` (receipt, items, products and price snapshots in one transaction), `/stats` via `stats_*` RPCs. Edge Functions: **`parse-receipt`** — synchronous OCR for `/photo`, runs under the caller's JWT and exists only because Gemini/Anthropic keys can't be scoped for the browser; **`process-receipt-imports`** — background worker for `/imports`, invoked by `pg_cron` with a Vault-stored cron token (`Authorization: Bearer <token>`), takes one PGMQ message per call and writes with the service-role key. Code shared by both functions lives in `supabase/functions/_shared/` (`receipt-ai/` — providers, prompts, types; `domain/` — a generated copy of selected `packages/domain` files). Vendor-coupled browser code lives in **adapters** at `web/src/shared/lib/<area>/` (one folder per port: auth, fx-rate, parse-receipt, photo-storage); routes/components depend on the singletons from `dependencies.ts` or on feature `api/` hooks, never on supabase-js directly. Domain logic — Zod schemas, ULID, money/qty/fx rounding, factories, pair-detector, taxonomy, receipt evidence — lives in **`packages/domain/`**, a vendor-free TypeScript workspace package. All app routes sit under the pathless `_authed` layout (which mounts `<RequireAuth>` once): `/`, `/photo`, `/imports`, `/imports/$id`, `/pending`, `/manual`, `/recent`, `/edit/$id`, `/stats`, `/waste`, `/reconcile`, `/packaged-products`, `/packaged-products/$id`; `/auth/callback` is public. CI/CD: GitHub Actions runs Deno checks + lint + typecheck + test + build, then `wrangler pages deploy` — see [.github/workflows/deploy.yml](.github/workflows/deploy.yml). Migrations and Edge Functions are deployed manually. FX rates for UAH come live from NBU via direct browser fetch (CORS-open public API). Cost target: $0/month.
+React 19 SPA built with Vite 8 + Tailwind 4 + TanStack Query 5 + TanStack Router (file-based routes), deployed as static files to **Cloudflare Pages**. Backend is **Supabase end-to-end**: Postgres + Auth (magic link) + Storage + PGMQ/`pg_cron` + three Edge Functions. The browser talks **directly** to Supabase via supabase-js — Postgres RLS does authorization (allowlist via `app_users` table, helper `is_allowed_user()`). Multi-table writes and aggregates go through RPCs: receipt save/edit via `save_receipt_bundle` (receipt, items, products and price snapshots in one transaction), `/stats` via `stats_*` RPCs. Edge Functions: **`parse-receipt`** — synchronous OCR for `/photo`, runs under the caller's JWT and exists only because Gemini/Anthropic keys can't be scoped for the browser; **`process-receipt-imports`** — background worker for `/imports`, invoked by `pg_cron` with a Vault-stored cron token (`Authorization: Bearer <token>`), takes one PGMQ message per call and writes with the service-role key; **`ingest-email-receipts`** — receives receipt emails pushed by an Apps Script in the owner's own Google account, authenticated by a per-user ingest token stored only as a SHA-256 hash in `email_import_sources`, and registers their PDFs or text bodies into the same queue (ADR-0029). Code shared by the functions lives in `supabase/functions/_shared/` (`receipt-ai/` — providers, prompts, types; `domain/` — a generated copy of selected `packages/domain` files). Vendor-coupled browser code lives in **adapters** at `web/src/shared/lib/<area>/` (one folder per port: auth, fx-rate, parse-receipt, photo-storage); routes/components depend on the singletons from `dependencies.ts` or on feature `api/` hooks, never on supabase-js directly. Domain logic — Zod schemas, ULID, money/qty/fx rounding, factories, pair-detector, taxonomy, receipt evidence — lives in **`packages/domain/`**, a vendor-free TypeScript workspace package. All app routes sit under the pathless `_authed` layout (which mounts `<RequireAuth>` once): `/`, `/photo`, `/imports`, `/imports/$id`, `/pending`, `/manual`, `/recent`, `/edit/$id`, `/stats`, `/waste`, `/reconcile`, `/packaged-products`, `/packaged-products/$id`; `/auth/callback` is public. CI/CD: GitHub Actions runs Deno checks + lint + typecheck + test + build, then `wrangler pages deploy` — see [.github/workflows/deploy.yml](.github/workflows/deploy.yml). Migrations and Edge Functions are deployed manually. FX rates for UAH come live from NBU via direct browser fetch (CORS-open public API). Cost target: $0/month.
 
 ## Folder structure
 
@@ -121,9 +124,11 @@ finance-tracker/
 │   ├── functions/
 │   │   ├── _shared/               # receipt-ai/ (providers, prompts, types) + domain/ (GENERATED copy)
 │   │   ├── parse-receipt/         # sync OCR: index + handler + config
-│   │   └── process-receipt-imports/ # PGMQ worker: index, handler, job-processor, attempts, parsing, ...
+│   │   ├── process-receipt-imports/ # PGMQ worker: index, handler, job-processor, attempts, parsing, ...
+│   │   └── ingest-email-receipts/ # Gmail push endpoint: handler, email-document (MIME), html-text
 │   └── seed.sql
 ├── scripts/                       # sync-edge-domain, PGlite SQL tests, product-taxonomy tooling
+├── tools/gmail-receipt-sync/      # Apps Script the owner pastes into their Google account (ADR-0029)
 ├── .github/workflows/             # pr-checks.yml, deploy.yml, codeql.yml
 └── docs/                          # architecture, data-model, deploy, ADRs, etc.
 ```
@@ -175,8 +180,8 @@ Vitest everywhere; Deno only for type/lint gates. `npm run test` runs (counts as
 
 - **Domain unit** (`packages/domain`, 263 tests) — pure TS: schemas, factories, pair-detector, money, ulid, time, taxonomy, receipt evidence, bank statements, reconciliation.
 - **Web** (`web`, 528 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
-- **Edge Functions in Node** — `supabase/functions/_shared` (29), `parse-receipt` (20), `process-receipt-imports` (50). Each is its own workspace with a `vitest.config.ts`; handlers take injected dependencies, so only Web Fetch is needed.
-- **SQL on PGlite** — `scripts/test-purchase-correction-rules.mjs`, `scripts/test-packaged-products-sql.mjs`, `scripts/test-save-receipt-bundle-sql.mjs` run migrations in in-process Postgres and assert constraints, RLS and RPC behavior.
+- **Edge Functions in Node** — `supabase/functions/_shared` (29), `parse-receipt` (20), `process-receipt-imports` (50), `ingest-email-receipts` (24). Each is its own workspace with a `vitest.config.ts`; handlers take injected dependencies, so only Web Fetch is needed.
+- **SQL on PGlite** — `scripts/test-purchase-correction-rules.mjs`, `scripts/test-packaged-products-sql.mjs`, `scripts/test-save-receipt-bundle-sql.mjs`, `scripts/test-email-imports-sql.mjs` run migrations in in-process Postgres and assert constraints, RLS and RPC behavior.
 - **Drift guard** — `npm run check:edge-domain` fails if `_shared/domain` differs from `packages/domain`.
 
 CI (`pr-checks.yml` on PRs to `main`, `deploy.yml` on push to `main`) additionally runs `deno check` for both functions and `deno lint supabase/functions`; `pr-checks.yml` also verifies the frozen taxonomy backfill.

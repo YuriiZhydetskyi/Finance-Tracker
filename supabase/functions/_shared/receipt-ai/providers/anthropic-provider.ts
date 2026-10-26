@@ -16,6 +16,7 @@ import type {
   BulkReceiptChunk,
   ParsedReceipt,
 } from '../types.ts';
+import { decodeTextDocument, isTextDocument, TEXT_DOCUMENT_MIME } from '../text-document.ts';
 import { AiProviderError, type IAiProvider } from './ai-provider.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
@@ -107,15 +108,24 @@ export class AnthropicProvider implements IAiProvider {
     normalize: (value: unknown) => T = (value) => value as T,
   ): Promise<AiCallResult<T>> {
     const isPdf = ctx.mimeType === 'application/pdf';
-    const mediaBlock = isPdf
+    const mediaBlock = isTextDocument(ctx.mimeType)
       ? {
           type: 'document',
-          source: { type: 'base64', media_type: 'application/pdf', data: imageBase64 },
+          source: {
+            type: 'text',
+            media_type: TEXT_DOCUMENT_MIME,
+            data: decodeTextDocument(imageBase64),
+          },
         }
-      : {
-          type: 'image',
-          source: { type: 'base64', media_type: ctx.mimeType, data: imageBase64 },
-        };
+      : isPdf
+        ? {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: imageBase64 },
+          }
+        : {
+            type: 'image',
+            source: { type: 'base64', media_type: ctx.mimeType, data: imageBase64 },
+          };
     const model = this.cfg.model ?? DEFAULT_MODEL;
     const baseTrace: AiCallTrace = { provider: 'anthropic', model };
     const body = {
