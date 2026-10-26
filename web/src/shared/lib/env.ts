@@ -6,7 +6,7 @@
 import { z } from 'zod';
 
 const EnvSchema = z.object({
-  VITE_SUPABASE_URL: z.string().url('VITE_SUPABASE_URL must be a valid URL'),
+  VITE_SUPABASE_URL: z.url('VITE_SUPABASE_URL must be a valid URL'),
   VITE_SUPABASE_ANON_KEY: z
     .string()
     .min(

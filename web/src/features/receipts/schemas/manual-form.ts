@@ -48,16 +48,16 @@ const ItemFormSchema = z.object({
   brand: z.string().trim().min(1).nullable().optional(),
   is_organic: z.boolean().nullable().optional(),
   category: z.string().min(1, "Категорія обов'язкова"),
-  qty: z.number().finite().positive('Кількість має бути більша 0'),
-  unit_price_orig: z.number().finite(),
+  qty: z.number().positive('Кількість має бути більша 0'),
+  unit_price_orig: z.number(),
   consumed_by: CONSUMED_BY_SCHEMA,
   note: z.string().nullable().optional(),
-  wasted_qty: z.number().finite().nonnegative().optional(),
+  wasted_qty: z.number().nonnegative().optional(),
   // Carried through edit flow as a pass-through so /edit doesn't reset the
   // "last wasted at" timestamp of items that already had spoilage logged.
   // Set/cleared on /waste, never edited here.
   wasted_at: z.string().nullable().optional(),
-  discount_orig: z.number().finite().nonnegative().optional(),
+  discount_orig: z.number().nonnegative().optional(),
   pair_marker: PairMarkerSchema.optional(),
 });
 export type ItemFormValues = z.infer<typeof ItemFormSchema>;
