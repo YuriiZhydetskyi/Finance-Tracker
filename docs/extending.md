@@ -117,7 +117,7 @@
    ```tsx
    export const Route = createFileRoute('/_authed/subscriptions')({
      component: SubscriptionsList,
-     validateSearch: z.object({}).optional(),
+     validateSearch: z.object({}),
    });
    ```
 
@@ -368,7 +368,7 @@ Reference: [`web/src/routes/_authed/recent.tsx`](../web/src/routes/_authed/recen
 
    export const Route = createFileRoute('/_authed/products')({
      component: ProductsList,
-     validateSearch: z.object({ q: z.string().optional() }).optional(),
+     validateSearch: z.object({ q: z.string().optional().catch(undefined) }),
    });
    ```
 
@@ -384,7 +384,7 @@ Reference: [`web/src/routes/_authed/recent.tsx`](../web/src/routes/_authed/recen
 
 5. **Tests.** Component-tests для `<ProductsList>` через testing-library. Mock `useProducts` hook через `vi.mock`.
 
-6. **Type-safe search params.** TanStack Router infer'ить тип `search` з `validateSearch` schema:
+6. **Type-safe search params.** Схема — це неопціональний `z.object`, а кожне поле закінчується `.catch(undefined)`: тоді `Route.useSearch()` не потребує `?? {}`, а зіпсований вручну URL відкидає лише криве поле, а не валить сторінку. TanStack Router infer'ить тип `search` з `validateSearch` schema:
    ```tsx
    const { q } = Route.useSearch();
    navigate({ to: '/products', search: { q: 'мол' } });

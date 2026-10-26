@@ -1,7 +1,7 @@
 // Stats queries call date-aware database functions. They use security invoker,
 // so the caller's RLS policies still apply to receipts and items.
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 import type {
   StatsByCategoryRow,
@@ -17,13 +17,15 @@ import type {
 
 const FIVE_MIN = 5 * 60_000;
 
-export const statsByMonthQueryKey = ['stats', 'by-month'] as const;
-export const statsByCategoryQueryKey = ['stats', 'by-category'] as const;
-export const statsByUserQueryKey = ['stats', 'by-user'] as const;
-export const statsByStoreQueryKey = ['stats', 'by-store'] as const;
-export const statsSavingsByMonthQueryKey = ['stats', 'savings-by-month'] as const;
-export const wasteByMonthQueryKey = ['stats', 'waste-by-month'] as const;
-export const statsFilterOptionsQueryKey = ['stats', 'filter-options'] as const;
+export const statsQueryKey = ['stats'] as const;
+export const statsByMonthQueryKey = [...statsQueryKey, 'by-month'] as const;
+export const statsByCategoryQueryKey = [...statsQueryKey, 'by-category'] as const;
+export const statsByUserQueryKey = [...statsQueryKey, 'by-user'] as const;
+export const statsByStoreQueryKey = [...statsQueryKey, 'by-store'] as const;
+export const statsSavingsByMonthQueryKey = [...statsQueryKey, 'savings-by-month'] as const;
+export const wasteByMonthQueryKey = [...statsQueryKey, 'waste-by-month'] as const;
+export const statsFilterOptionsQueryKey = [...statsQueryKey, 'filter-options'] as const;
+export const statsCategoryDetailsQueryKey = [...statsQueryKey, 'category-details'] as const;
 
 type RawNumericRow = Record<string, unknown>;
 
@@ -49,16 +51,13 @@ function toRpcArgs(range: StatsDateRange, filters: StatsFilters) {
   };
 }
 
-export function useStatsByMonth(
-  range: StatsDateRange,
-  filters: StatsFilters,
-  options?: { enabled?: boolean },
-) {
-  return useQuery<StatsByMonthRow[]>({
+export function statsByMonthQueryOptions(range: StatsDateRange, filters: StatsFilters) {
+  return queryOptions({
     queryKey: [...statsByMonthQueryKey, range, filters],
-    enabled: options?.enabled ?? true,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('stats_by_month', toRpcArgs(range, filters));
+    queryFn: async ({ signal }): Promise<StatsByMonthRow[]> => {
+      const { data, error } = await supabase
+        .rpc('stats_by_month', toRpcArgs(range, filters))
+        .abortSignal(signal);
       if (error) throw error;
       return (data as RawNumericRow[]).map((row) => ({
         month: asString(row.month),
@@ -70,16 +69,13 @@ export function useStatsByMonth(
   });
 }
 
-export function useStatsByCategory(
-  range: StatsDateRange,
-  filters: StatsFilters,
-  options?: { enabled?: boolean },
-) {
-  return useQuery<StatsByCategoryRow[]>({
+export function statsByCategoryQueryOptions(range: StatsDateRange, filters: StatsFilters) {
+  return queryOptions({
     queryKey: [...statsByCategoryQueryKey, range, filters],
-    enabled: options?.enabled ?? true,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('stats_by_category', toRpcArgs(range, filters));
+    queryFn: async ({ signal }): Promise<StatsByCategoryRow[]> => {
+      const { data, error } = await supabase
+        .rpc('stats_by_category', toRpcArgs(range, filters))
+        .abortSignal(signal);
       if (error) throw error;
       return (data as RawNumericRow[]).map((row) => ({
         category: asString(row.category),
@@ -91,16 +87,13 @@ export function useStatsByCategory(
   });
 }
 
-export function useStatsByUser(
-  range: StatsDateRange,
-  filters: StatsFilters,
-  options?: { enabled?: boolean },
-) {
-  return useQuery<StatsByUserRow[]>({
+export function statsByUserQueryOptions(range: StatsDateRange, filters: StatsFilters) {
+  return queryOptions({
     queryKey: [...statsByUserQueryKey, range, filters],
-    enabled: options?.enabled ?? true,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('stats_by_user', toRpcArgs(range, filters));
+    queryFn: async ({ signal }): Promise<StatsByUserRow[]> => {
+      const { data, error } = await supabase
+        .rpc('stats_by_user', toRpcArgs(range, filters))
+        .abortSignal(signal);
       if (error) throw error;
       return (data as RawNumericRow[]).map((row) => ({
         paid_by: asString(row.paid_by),
@@ -112,19 +105,13 @@ export function useStatsByUser(
   });
 }
 
-export function useStatsSavingsByMonth(
-  range: StatsDateRange,
-  filters: StatsFilters,
-  options?: { enabled?: boolean },
-) {
-  return useQuery<StatsSavingsByMonthRow[]>({
+export function statsSavingsByMonthQueryOptions(range: StatsDateRange, filters: StatsFilters) {
+  return queryOptions({
     queryKey: [...statsSavingsByMonthQueryKey, range, filters],
-    enabled: options?.enabled ?? true,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc(
-        'stats_savings_by_month',
-        toRpcArgs(range, filters),
-      );
+    queryFn: async ({ signal }): Promise<StatsSavingsByMonthRow[]> => {
+      const { data, error } = await supabase
+        .rpc('stats_savings_by_month', toRpcArgs(range, filters))
+        .abortSignal(signal);
       if (error) throw error;
       return (data as RawNumericRow[]).map((row) => ({
         month: asString(row.month),
@@ -136,16 +123,13 @@ export function useStatsSavingsByMonth(
   });
 }
 
-export function useStatsWasteByMonth(
-  range: StatsDateRange,
-  filters: StatsFilters,
-  options?: { enabled?: boolean },
-) {
-  return useQuery<StatsWasteByMonthRow[]>({
+export function statsWasteByMonthQueryOptions(range: StatsDateRange, filters: StatsFilters) {
+  return queryOptions({
     queryKey: [...wasteByMonthQueryKey, range, filters],
-    enabled: options?.enabled ?? true,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('stats_waste_by_month', toRpcArgs(range, filters));
+    queryFn: async ({ signal }): Promise<StatsWasteByMonthRow[]> => {
+      const { data, error } = await supabase
+        .rpc('stats_waste_by_month', toRpcArgs(range, filters))
+        .abortSignal(signal);
       if (error) throw error;
       return (data as RawNumericRow[]).map((row) => ({
         month: asString(row.month),
@@ -157,20 +141,13 @@ export function useStatsWasteByMonth(
   });
 }
 
-export function useStatsByStore(
-  range: StatsDateRange,
-  filters: StatsFilters,
-  limit = 10,
-  options?: { enabled?: boolean },
-) {
-  return useQuery<StatsByStoreRow[]>({
+export function statsByStoreQueryOptions(range: StatsDateRange, filters: StatsFilters, limit = 10) {
+  return queryOptions({
     queryKey: [...statsByStoreQueryKey, range, filters, limit],
-    enabled: options?.enabled ?? true,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('stats_by_store', {
-        ...toRpcArgs(range, filters),
-        p_limit: limit,
-      });
+    queryFn: async ({ signal }): Promise<StatsByStoreRow[]> => {
+      const { data, error } = await supabase
+        .rpc('stats_by_store', { ...toRpcArgs(range, filters), p_limit: limit })
+        .abortSignal(signal);
       if (error) throw error;
       return (data as RawNumericRow[]).map((row) => ({
         store: asString(row.store),
@@ -182,22 +159,99 @@ export function useStatsByStore(
   });
 }
 
-export function useStatsFilterOptions() {
-  return useQuery<StatsFilterOptions>({
-    queryKey: statsFilterOptionsQueryKey,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('stats_filter_options');
-      if (error) throw error;
-      const row = (data as RawNumericRow[])[0];
-      return {
-        categories: Array.isArray(row?.categories)
-          ? row.categories.filter((value): value is string => typeof value === 'string')
-          : [],
-        stores: Array.isArray(row?.stores)
-          ? row.stores.filter((value): value is string => typeof value === 'string')
-          : [],
-      };
-    },
-    staleTime: FIVE_MIN,
+export const statsFilterOptionsQueryOptions = queryOptions({
+  queryKey: statsFilterOptionsQueryKey,
+  queryFn: async ({ signal }): Promise<StatsFilterOptions> => {
+    const { data, error } = await supabase.rpc('stats_filter_options').abortSignal(signal);
+    if (error) throw error;
+    const row = (data as RawNumericRow[])[0];
+    return {
+      categories: Array.isArray(row?.categories)
+        ? row.categories.filter((value): value is string => typeof value === 'string')
+        : [],
+      stores: Array.isArray(row?.stores)
+        ? row.stores.filter((value): value is string => typeof value === 'string')
+        : [],
+    };
+  },
+  staleTime: FIVE_MIN,
+});
+
+type StatsQueryOptions = { enabled?: boolean };
+
+export function useStatsByMonth(
+  range: StatsDateRange,
+  filters: StatsFilters,
+  options?: StatsQueryOptions,
+) {
+  return useQuery({
+    ...statsByMonthQueryOptions(range, filters),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
   });
+}
+
+export function useStatsByCategory(
+  range: StatsDateRange,
+  filters: StatsFilters,
+  options?: StatsQueryOptions,
+) {
+  return useQuery({
+    ...statsByCategoryQueryOptions(range, filters),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useStatsByUser(
+  range: StatsDateRange,
+  filters: StatsFilters,
+  options?: StatsQueryOptions,
+) {
+  return useQuery({
+    ...statsByUserQueryOptions(range, filters),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useStatsSavingsByMonth(
+  range: StatsDateRange,
+  filters: StatsFilters,
+  options?: StatsQueryOptions,
+) {
+  return useQuery({
+    ...statsSavingsByMonthQueryOptions(range, filters),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useStatsWasteByMonth(
+  range: StatsDateRange,
+  filters: StatsFilters,
+  options?: StatsQueryOptions,
+) {
+  return useQuery({
+    ...statsWasteByMonthQueryOptions(range, filters),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useStatsByStore(
+  range: StatsDateRange,
+  filters: StatsFilters,
+  limit = 10,
+  options?: StatsQueryOptions,
+) {
+  return useQuery({
+    ...statsByStoreQueryOptions(range, filters, limit),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useStatsFilterOptions() {
+  return useQuery(statsFilterOptionsQueryOptions);
 }

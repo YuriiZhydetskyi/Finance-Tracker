@@ -6,6 +6,7 @@ import { summarizeCategoryDetails, type StatsDetailItem } from '@/features/stats
 import type { StatsDateRange, StatsFilters } from '@/features/stats';
 import type * as CategoriesFeature from '@/features/categories';
 import { routeTree } from '@/routeTree.gen';
+import { withAbortSignal } from '@/test/with-abort-signal';
 
 type RpcResult = { data: Record<string, unknown>[]; error: null };
 const rpcMock = vi.fn<(name: string, args?: Record<string, unknown>) => Promise<RpcResult>>();
@@ -71,7 +72,9 @@ vi.mock('@/features/stats/api/use-category-details', () => ({
 }));
 
 vi.mock('@/shared/lib/supabase-client', () => ({
-  supabase: { rpc: (name: string, args?: Record<string, unknown>) => rpcMock(name, args) },
+  supabase: {
+    rpc: (name: string, args?: Record<string, unknown>) => withAbortSignal(rpcMock(name, args)),
+  },
 }));
 vi.mock('@/features/auth', () => ({
   Header: () => null,

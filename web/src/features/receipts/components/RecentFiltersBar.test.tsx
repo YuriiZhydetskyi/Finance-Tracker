@@ -11,6 +11,20 @@ vi.mock('@tanstack/react-router', () => ({
 
 const PAID_BY = ['you@example.com', 'partner@example.com'];
 
+type NavigateArg = {
+  to: string;
+  replace?: boolean;
+  search: RecentSearchInput | ((prev: RecentSearchInput) => RecentSearchInput);
+};
+
+// Filter edits navigate with a functional search updater; resolve it against
+// the URL state the router would hand in.
+function lastNavigation(prev: RecentSearchInput = {}) {
+  const arg = navigateMock.mock.calls.at(-1)?.[0] as NavigateArg;
+  const search = typeof arg.search === 'function' ? arg.search(prev) : arg.search;
+  return { to: arg.to, replace: arg.replace, search };
+}
+
 function setup(search: RecentSearchInput = {}) {
   const activeCount = Object.values(search).filter((v) => v != null && v !== '').length;
   return render(
@@ -26,8 +40,9 @@ describe('RecentFiltersBar — immediate writes', () => {
   it('navigates when date "from" changes', () => {
     setup();
     fireEvent.change(screen.getByLabelText('З дати'), { target: { value: '2026-05-01' } });
-    expect(navigateMock).toHaveBeenCalledWith({
+    expect(lastNavigation()).toEqual({
       to: '/recent',
+      replace: true,
       search: { from: '2026-05-01', saved: undefined },
     });
   });
@@ -37,8 +52,9 @@ describe('RecentFiltersBar — immediate writes', () => {
     fireEvent.change(screen.getByLabelText('Оплатив'), {
       target: { value: 'you@example.com' },
     });
-    expect(navigateMock).toHaveBeenCalledWith({
+    expect(lastNavigation()).toEqual({
       to: '/recent',
+      replace: true,
       search: { paid_by: 'you@example.com', saved: undefined },
     });
   });
@@ -46,8 +62,9 @@ describe('RecentFiltersBar — immediate writes', () => {
   it('navigates with undefined when clearing date input back to empty', () => {
     setup({ from: '2026-05-01' });
     fireEvent.change(screen.getByLabelText('З дати'), { target: { value: '' } });
-    expect(navigateMock).toHaveBeenCalledWith({
+    expect(lastNavigation({ from: '2026-05-01' })).toEqual({
       to: '/recent',
+      replace: true,
       search: { from: undefined, saved: undefined },
     });
   });
@@ -55,8 +72,9 @@ describe('RecentFiltersBar — immediate writes', () => {
   it('converts amount input value to number, not string', () => {
     setup();
     fireEvent.change(screen.getByLabelText('Мін €'), { target: { value: '12.5' } });
-    expect(navigateMock).toHaveBeenCalledWith({
+    expect(lastNavigation()).toEqual({
       to: '/recent',
+      replace: true,
       search: { min: 12.5, saved: undefined },
     });
   });
@@ -64,8 +82,9 @@ describe('RecentFiltersBar — immediate writes', () => {
   it('strips the saved banner param when the user changes any filter', () => {
     setup({ saved: '01HZZZZZ' });
     fireEvent.change(screen.getByLabelText('Макс €'), { target: { value: '50' } });
-    expect(navigateMock).toHaveBeenCalledWith({
+    expect(lastNavigation({ saved: '01HZZZZZ' })).toEqual({
       to: '/recent',
+      replace: true,
       search: { saved: undefined, max: 50 },
     });
   });
@@ -91,8 +110,9 @@ describe('RecentFiltersBar — store text input debouncing', () => {
     fireEvent.change(screen.getByLabelText('Магазин'), { target: { value: 'Lidl' } });
     void act(() => vi.advanceTimersByTime(400));
     expect(navigateMock).toHaveBeenCalledTimes(1);
-    expect(navigateMock).toHaveBeenCalledWith({
+    expect(lastNavigation()).toEqual({
       to: '/recent',
+      replace: true,
       search: { q: 'Lidl', saved: undefined },
     });
   });
@@ -101,8 +121,9 @@ describe('RecentFiltersBar — store text input debouncing', () => {
     setup({ q: 'Lidl' });
     fireEvent.change(screen.getByLabelText('Магазин'), { target: { value: '' } });
     void act(() => vi.advanceTimersByTime(400));
-    expect(navigateMock).toHaveBeenCalledWith({
+    expect(lastNavigation({ q: 'Lidl' })).toEqual({
       to: '/recent',
+      replace: true,
       search: { q: undefined, saved: undefined },
     });
   });
@@ -120,6 +141,19 @@ describe('RecentFiltersBar — clear all', () => {
     setup({ q: 'Lidl', from: '2026-05-01' });
     fireEvent.click(screen.getByRole('button', { name: /Очистити все/ }));
     expect(navigateMock).toHaveBeenCalledWith({ to: '/recent', search: {} });
+  });
+});
+
+describe('RecentFiltersBar — keeps the rest of the URL state', () => {
+  it('merges a change into the search the router passes in, not a render-time copy', () => {
+    setup();
+    fireEvent.change(screen.getByLabelText('Макс €'), { target: { value: '50' } });
+    expect(lastNavigation({ q: 'Lidl', from: '2026-05-01' }).search).toEqual({
+      q: 'Lidl',
+      from: '2026-05-01',
+      max: 50,
+      saved: undefined,
+    });
   });
 });
 

@@ -7,6 +7,7 @@ import {
   withinTimeWindow,
   type DuplicateCandidate,
 } from './use-duplicate-receipts';
+import { withAbortSignal } from '@/test/with-abort-signal';
 
 type DataRes = { data: DuplicateCandidate[] | null; error: { message: string } | null };
 
@@ -49,7 +50,7 @@ vi.mock('@/shared/lib/supabase-client', () => ({
         // limit returns the awaited result — PostgREST builder is thenable here.
         limit: (n: number) => {
           captured.limit = n;
-          return finalThenMock();
+          return withAbortSignal(finalThenMock());
         },
       };
       return chain;

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase-client';
 import { wrapError } from '@/shared/utils/wrap-error';
-import { receiptQueryKey, receiptsQueryKey } from '@/features/receipts';
+import { invalidateReceiptDerivedQueries, receiptQueryKey } from '@/features/receipts';
 
 export type ReassignPayerVars = { ids: string[]; paid_by: string };
 
@@ -35,7 +35,7 @@ export function useReassignPayerMutation() {
     },
     onSettled: async (_data, _error, { ids }) => {
       for (const id of ids) queryClient.removeQueries({ queryKey: receiptQueryKey(id) });
-      await queryClient.invalidateQueries({ queryKey: receiptsQueryKey });
+      await invalidateReceiptDerivedQueries(queryClient);
     },
   });
 }

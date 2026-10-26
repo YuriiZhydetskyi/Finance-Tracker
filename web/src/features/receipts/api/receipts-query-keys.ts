@@ -2,4 +2,4 @@
 // Mutation invalidation uses these; queries use them as their queryKey.
 
 export const receiptsQueryKey = ['receipts'] as const;
-export const receiptQueryKey = (id: string) => ['receipt', id] as const;
+export const receiptQueryKey = (id: string | undefined) => ['receipt', id] as const;

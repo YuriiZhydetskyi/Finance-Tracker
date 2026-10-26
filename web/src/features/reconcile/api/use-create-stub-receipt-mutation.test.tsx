@@ -6,7 +6,7 @@ import {
   useCreateStubReceiptMutation,
   type CreateStubReceiptVars,
 } from './use-create-stub-receipt-mutation';
-import { receiptsQueryKey } from '@/features/receipts';
+import { expectReceiptDerivedInvalidation } from '@/test/expect-receipt-derived-invalidation';
 
 type ErrorRes = { error: { message: string } | null };
 
@@ -116,7 +116,7 @@ describe('useCreateStubReceiptMutation', () => {
     expect(returned?.receipt_id).toBe(insertedReceipt.id);
 
     await waitFor(() => {
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: receiptsQueryKey });
+      expectReceiptDerivedInvalidation(invalidateSpy);
     });
   });
 

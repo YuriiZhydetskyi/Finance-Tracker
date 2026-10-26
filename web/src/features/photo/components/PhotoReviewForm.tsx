@@ -9,9 +9,10 @@ import {
   type PairDetectionResult,
 } from '@finance-tracker/domain';
 import { Button } from '@/shared/ui/Button';
+import { useLeaveGuard } from '@/shared/hooks/use-leave-guard';
 import { useAppUsers } from '@/features/auth';
-import { useCategories } from '@/features/categories';
-import { useProducts } from '@/features/products';
+import { useCategoryNames } from '@/features/categories';
+import { useProductNames } from '@/features/products';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
   computeGrandTotal,
@@ -93,8 +94,8 @@ export function PhotoReviewForm({
   onSaved,
 }: Props) {
   const navigate = useNavigate();
-  const categoriesQuery = useCategories();
-  const productsQuery = useProducts();
+  const categoryNames = useCategoryNames();
+  const productNames = useProductNames();
   const taxonomyQuery = useProductTaxonomy();
   const appUsersQuery = useAppUsers();
   const savePhoto = useSavePhotoReceiptMutation();
@@ -136,9 +137,11 @@ export function PhotoReviewForm({
     ...(presetPaidBy ? { paid_by: presetPaidBy } : {}),
   });
 
-  const categoryNames = categoriesQuery.data?.map((c) => c.name) ?? [];
-  const productNames = productsQuery.data?.map((p) => p.name) ?? [];
   const paidByOptions = appUsersQuery.data ?? [];
+
+  // Inside the batch the page-level guard (useBatchLeaveGuard) already prompts, and
+  // two guards would ask twice.
+  useLeaveGuard(methods.formState.isDirty && !onSaved);
 
   const watchedStore = useWatch({ control: methods.control, name: 'store' });
   const watchedDate = useWatch({ control: methods.control, name: 'date' });
@@ -205,7 +208,11 @@ export function PhotoReviewForm({
     if (onSaved) {
       onSaved(result.receipt_id);
     } else {
-      void navigate({ to: '/recent', search: { saved: result.receipt_id } });
+      void navigate({
+        to: '/recent',
+        search: { saved: result.receipt_id },
+        ignoreBlocker: true,
+      });
     }
   });
 

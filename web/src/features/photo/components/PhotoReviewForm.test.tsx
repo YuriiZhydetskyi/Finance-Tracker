@@ -49,16 +49,18 @@ vi.mock('@/features/receipts', () => ({
   },
 }));
 
+vi.mock('@/shared/hooks/use-leave-guard', () => ({ useLeaveGuard: vi.fn() }));
+
 vi.mock('@/features/auth', () => ({
   useAppUsers: () => ({ data: [{ email: 'me@example.com' }] }),
 }));
 
 vi.mock('@/features/categories', () => ({
-  useCategories: () => ({ data: [{ name: 'Бакалія' }] }),
+  useCategoryNames: () => ['Бакалія'],
 }));
 
 vi.mock('@/features/products', () => ({
-  useProducts: () => ({ data: [{ name: 'Bread' }] }),
+  useProductNames: () => ['Bread'],
 }));
 
 vi.mock('@tanstack/react-router', () => ({

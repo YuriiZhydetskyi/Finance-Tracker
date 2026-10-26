@@ -14,6 +14,7 @@ export { useSavePendingReceiptMutation } from './api/use-save-pending-receipt-mu
 export type { SavePendingReceiptVars } from './api/use-save-pending-receipt-mutation';
 
 export { useBatchParser } from './batch/use-batch-parser';
+export { useBatchLeaveGuard } from './batch/use-batch-leave-guard';
 export type { AddFileInput, HydratePendingItem } from './batch/use-batch-parser';
 export { MAX_RETRY_ATTEMPTS } from './batch/types';
 export type { BatchItem, BatchItemStatus, BatchState } from './batch/types';

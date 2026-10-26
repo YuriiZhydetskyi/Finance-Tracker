@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { useCategories } from '@/features/categories';
+import { useCategoryNames } from '@/features/categories';
 import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { formatMoney } from '@/shared/utils/format-money';
 import {
@@ -32,15 +32,12 @@ function sumWastedEur(rows: WasteItemRow[]): number {
 }
 
 function WasteList() {
-  const search = Route.useSearch() ?? {};
+  const search = Route.useSearch();
   const filters = searchToWasteFilters(search);
   const activeCount = countActiveWasteFilters(search);
   const itemsQuery = useWasteItems(filters);
-  const categoriesQuery = useCategories();
-  const categoryNames = useMemo(
-    () => categoriesQuery.data?.map((c) => c.name) ?? [],
-    [categoriesQuery.data],
-  );
+  const isStale = itemsQuery.isPlaceholderData;
+  const categoryNames = useCategoryNames();
 
   const wastedTotalEur = useMemo(() => sumWastedEur(itemsQuery.data ?? []), [itemsQuery.data]);
 
@@ -57,17 +54,22 @@ function WasteList() {
 
       <WasteFiltersBar search={search} categoryOptions={categoryNames} activeCount={activeCount} />
 
-      {itemsQuery.isLoading && <p className="text-sm text-slate-500">Завантажую…</p>}
+      {(itemsQuery.isLoading || (isStale && itemsQuery.data?.length === 0)) && (
+        <p className="text-sm text-slate-500">Завантажую…</p>
+      )}
       {itemsQuery.isError && (
         <ErrorDetails error={itemsQuery.error} label="Не вдалося завантажити" />
       )}
-      {itemsQuery.isSuccess && itemsQuery.data.length === 0 && (
+      {itemsQuery.isSuccess && !isStale && itemsQuery.data.length === 0 && (
         <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
           Жодного товару за цими фільтрами. Спробуй розширити дату або очистити фільтри.
         </div>
       )}
       {itemsQuery.isSuccess && itemsQuery.data.length > 0 && (
-        <ul className="space-y-2">
+        <ul
+          aria-busy={isStale}
+          className={isStale ? 'space-y-2 opacity-60 transition-opacity' : 'space-y-2'}
+        >
           {itemsQuery.data.map((it) => (
             <li key={it.id}>
               <WasteItemCard item={it} />
@@ -77,7 +79,9 @@ function WasteList() {
       )}
 
       {wastedTotalEur > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-red-200 bg-red-50/95 px-4 py-2 backdrop-blur">
+        <div
+          className={`fixed inset-x-0 bottom-0 z-10 border-t border-red-200 bg-red-50/95 px-4 py-2 backdrop-blur ${isStale ? 'opacity-60' : ''}`}
+        >
           <div className="mx-auto flex max-w-3xl items-center justify-between text-sm">
             <span className="text-red-700">Усього викинуто (за фільтром):</span>
             <span className="font-semibold tabular-nums text-red-800">

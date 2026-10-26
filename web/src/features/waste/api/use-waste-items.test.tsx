@@ -18,7 +18,13 @@ beforeEach(() => {
   vi.resetAllMocks();
   operations.length = 0;
   rpc.mockImplementation(() => {
-    const builder: Record<string, unknown> = { range };
+    const builder: Record<string, unknown> = {
+      range: (...args: unknown[]) => {
+        const result: unknown = range(...args);
+        const terminal = { overrideTypes: () => result };
+        return { ...terminal, abortSignal: () => terminal };
+      },
+    };
     for (const method of ['select', 'gt', 'eq', 'gte', 'lte', 'ilike', 'order']) {
       builder[method] = (...args: unknown[]) => {
         operations.push([method, ...args]);
