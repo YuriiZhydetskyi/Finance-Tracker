@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { PackagedProductJsonImportDialog } from './PackagedProductJsonImportDialog';
 import type { PackagedProductListRow } from '../api/use-packaged-products';
@@ -10,16 +10,6 @@ vi.mock('../api/use-packaging-candidates', () => ({
 }));
 const openPdf = vi.hoisted(() => vi.fn());
 vi.mock('@/shared/lib/dependencies', () => ({ openPackagingPdf: openPdf }));
-
-// jsdom does not implement the native <dialog> element.
-beforeAll(() => {
-  HTMLDialogElement.prototype.showModal = vi.fn(function showModal(this: HTMLDialogElement) {
-    this.open = true;
-  });
-  HTMLDialogElement.prototype.close = vi.fn(function close(this: HTMLDialogElement) {
-    this.open = false;
-  });
-});
 
 const CATEGORIES = ['Снеки', 'Молочка', 'Хімія/гігієна'];
 const TAXONOMY = {

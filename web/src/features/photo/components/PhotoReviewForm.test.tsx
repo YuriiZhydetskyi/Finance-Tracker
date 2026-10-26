@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import type { ReactNode } from 'react';
 import type { ParsedReceipt, PairDetectionResult } from '@finance-tracker/domain';
 import { PhotoReviewForm } from './PhotoReviewForm';
+import { QueryClientWrapper } from '@/test/query-client';
 
 type SavedReceipt = {
   receipt: {
@@ -90,11 +90,6 @@ beforeEach(() => {
   navigateMock.mockReset();
 });
 
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-}
-
 const parsedReceipt: ParsedReceipt = {
   store: 'Lidl',
   store_address: 'Hauptstr. 1',
@@ -139,7 +134,7 @@ describe('PhotoReviewForm photoBlob branching', () => {
         photoBlob={null}
         onCancel={onCancel}
       />,
-      { wrapper },
+      { wrapper: QueryClientWrapper },
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Зберегти/i }));
@@ -171,7 +166,7 @@ describe('PhotoReviewForm photoBlob branching', () => {
         photoBlob={blob}
         onCancel={onCancel}
       />,
-      { wrapper },
+      { wrapper: QueryClientWrapper },
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Зберегти/i }));
@@ -201,7 +196,7 @@ describe('PhotoReviewForm photoBlob branching', () => {
         onCancel={onCancel}
         onSaved={onSaved}
       />,
-      { wrapper },
+      { wrapper: QueryClientWrapper },
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Зберегти/i }));

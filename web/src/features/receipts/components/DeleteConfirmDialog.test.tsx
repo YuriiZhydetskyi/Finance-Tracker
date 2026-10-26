@@ -1,25 +1,10 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 const noop = () => {
   // intentionally empty for test stubs
 };
-
-// jsdom (29.x) doesn't implement <dialog> showModal/close. Stub them to act as
-// open-attribute toggles so the component's effect runs without errors.
-beforeAll(() => {
-  if (!HTMLDialogElement.prototype.showModal) {
-    HTMLDialogElement.prototype.showModal = function showModal() {
-      this.open = true;
-    };
-  }
-  if (!HTMLDialogElement.prototype.close) {
-    HTMLDialogElement.prototype.close = function close() {
-      this.open = false;
-    };
-  }
-});
 
 describe('DeleteConfirmDialog', () => {
   it('renders confirmation question and action buttons when open', () => {
