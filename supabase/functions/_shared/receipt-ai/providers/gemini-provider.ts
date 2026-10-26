@@ -130,9 +130,10 @@ export class GeminiProvider implements IAiProvider {
     const responseTrace = { ...baseTrace, requestId };
 
     if (!res.ok) {
+      const detail = await readErrorDetail(res);
       throw new AiProviderError(
         `http_${String(res.status)}`,
-        `Gemini API request failed with status ${String(res.status)}.`,
+        `Gemini API request failed with status ${String(res.status)}.${detail ? ` ${detail}` : ''}`,
         responseTrace,
       );
     }
@@ -156,6 +157,18 @@ export class GeminiProvider implements IAiProvider {
     } catch {
       throw new AiProviderError('invalid_json', 'Gemini returned invalid JSON.', trace);
     }
+  }
+}
+
+// Google explains a 400 (unsupported field, bad schema) only in the body; without
+// it a rejected request looks identical to an outage.
+async function readErrorDetail(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: { message?: unknown } };
+    const message = body.error?.message;
+    return typeof message === 'string' ? message.slice(0, 300) : '';
+  } catch {
+    return '';
   }
 }
 

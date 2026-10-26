@@ -53,7 +53,7 @@ Storage bucket `receipts` для фото.
 
 ### Гроші (precision rule)
 
-- Грошові колонки — `numeric(12, 2)` у Postgres.
+- Грошові колонки — `numeric(12, 2)` у Postgres. Виняток — ціна й знижка **за одиницю** (`items.unit_price_orig`, `items.discount_orig`): `numeric(12, 3)`, округлення `roundUnitPrice(value)` (3dp). Причина: пальне коштує `2.109 €/л`, а акційна ціна «3 за 2.49» дає `1.245`. Сума рядка лишається 2dp: `total_orig = roundMoney(qty * (unit_price_orig - discount_orig))`. `product_prices` зберігає ціни у 2dp.
 - Округлення відбувається **на write** у `Domain.makeReceipt` / `makeItem` / `applyReceiptPatch` через `roundMoney(value)` ([`packages/domain/src/money.ts`](../packages/domain/src/money.ts)). Storage / API не округлюють.
 - Display формат — обов'язок UI ([`web/src/shared/utils/format-money.ts`](../web/src/shared/utils/format-money.ts) через `Intl.NumberFormat`).
 - Чому `numeric` а не `bigint cents`: PostgreSQL native, експорт у CSV/JSON природний, агрегація працює з SUM/AVG без shift'ів.
@@ -207,7 +207,7 @@ create table public.items (
   product_image_url text,
   category        text not null references public.categories(name) on update cascade,
   qty             numeric(10, 3) not null check (qty > 0),
-  unit_price_orig numeric(12, 2) not null,
+  unit_price_orig numeric(12, 3) not null,
   total_orig      numeric(12, 2) not null,
   total_eur       numeric(12, 2) not null,
   consumed_by     text not null check (
@@ -218,7 +218,7 @@ create table public.items (
   wasted_qty      numeric(10, 3) not null default 0
                   check (wasted_qty >= 0 and wasted_qty <= qty),
   wasted_at       timestamptz,
-  discount_orig   numeric(12, 2) not null default 0
+  discount_orig   numeric(12, 3) not null default 0
                   check (discount_orig >= 0),
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
@@ -237,14 +237,14 @@ create table public.items (
 | `product_image_url`  | text          | так            | Thumbnail товару з structured import; UI завантажує тільки `m.media-amazon.com` через HTTPS без referrer. | `https://m.media-amazon.com/images/I/example.jpg` |
 | `category`           | text          | ні             | FK → `categories.name`, CASCADE on update                                                                 | `Бакалія`                                         |
 | `qty`                | numeric(10,3) | ні             | > 0                                                                                                       | `2.000` / `0.350`                                 |
-| `unit_price_orig`    | numeric(12,2) | ні             | у валюті чеку. **Може бути від'ємним** (cancellation, Pfand-refund, Rabatt)                               | `3.49` / `-2.99`                                  |
+| `unit_price_orig`    | numeric(12,3) | ні             | у валюті чеку. **Може бути від'ємним** (cancellation, Pfand-refund, Rabatt)                               | `3.49` / `-2.99`                                  |
 | `total_orig`         | numeric(12,2) | ні             | `round(qty * (unit_price_orig - discount_orig), 2)`                                                       | `6.98` / `-2.99`                                  |
 | `total_eur`          | numeric(12,2) | ні             | `round(total_orig * receipt.fx_rate_eur, 2)`                                                              | `6.98`                                            |
 | `consumed_by`        | text          | ні             | `'his' \| 'hers' \| 'shared' \| 'custom:N/M'`                                                             | `shared` / `custom:30/70`                         |
 | `note`               | text          | так            |                                                                                                           | `Купили на знижці -50%`                           |
 | `wasted_qty`         | numeric(10,3) | ні (default 0) | ≤ `qty`                                                                                                   | `0.000`                                           |
 | `wasted_at`          | timestamptz   | так            | non-null iff `wasted_qty > 0` (Zod-level); перезаписується на останню дату                                | `2026-05-18T12:00:00Z`                            |
-| `discount_orig`      | numeric(12,2) | ні (default 0) | ≥ 0; ≤ `unit_price_orig` коли positive                                                                    | `0.00` / `1.00`                                   |
+| `discount_orig`      | numeric(12,3) | ні (default 0) | ≥ 0; ≤ `unit_price_orig` коли positive                                                                    | `0.00` / `1.00`                                   |
 | `created_at`         | timestamptz   | ні             | default `now()`                                                                                           |                                                   |
 | `updated_at`         | timestamptz   | ні             | trigger                                                                                                   |                                                   |
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { ParsedReceipt } from '@finance-tracker/domain';
 import { useAppUsers, useCurrentUser } from '@/features/auth';
@@ -42,6 +42,14 @@ export function BulkImportForm() {
     [products.data],
   );
   const isBusy = createBatch.isPending || createManualJsonBatch.isPending;
+
+  // Files are sent from this tab; leaving mid-upload strands the rest of the batch.
+  useEffect(() => {
+    if (!createBatch.isPending) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [createBatch.isPending]);
 
   const start = async () => {
     try {

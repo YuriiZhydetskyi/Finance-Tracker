@@ -370,6 +370,45 @@ describe('bulk import domain gate', () => {
     expect(evidence).toEqual({ ok: true, issues: [] });
   });
 
+  it('keeps a three-decimal fuel price so the line reproduces the printed total', () => {
+    const receipt = validateBulkDocument({
+      ...parsed,
+      store: 'AVEX Tankstelle',
+      total_orig: 105.7,
+      total_raw_text: 'Brutto 105,70 EUR',
+      items: [
+        row(
+          'Super SB',
+          50.12,
+          2.109,
+          1,
+          "50,12 L'ter SAULENNUMMER 4 *Super SB 105,70 EUR* 2,109 EUR/Liter",
+          105.7,
+          'weight_or_volume',
+        ),
+      ],
+    });
+
+    expect(checkReceiptArithmetic(receipt)).toMatchObject({ computedTotal: 105.7, matches: true });
+    expect(auditReceiptEvidence(receipt)).toEqual({ ok: true, issues: [] });
+
+    let counter = 0;
+    const prepared = prepareReceipt(
+      receipt,
+      1,
+      new Set(['Авто']),
+      () => `${counter++}`.padEnd(26, 'A'),
+      null,
+    );
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.value.items[0]).toMatchObject({
+      unit_price_orig: 2.109,
+      total_orig: 105.7,
+    });
+    expect(prepared.value.receipt.total_orig).toBe(105.7);
+  });
+
   it('counts printed articles without treating refunds, discounts or weight as quantities', () => {
     const receipt = validateBulkDocument({
       ...parsed,

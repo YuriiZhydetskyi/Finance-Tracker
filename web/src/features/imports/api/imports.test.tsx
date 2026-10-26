@@ -5,17 +5,22 @@ import {
   importBatchQueryKey,
   importBatchesQueryKey,
   useCreateManualJsonImportBatch,
+  useResumeImportUploads,
   useSubmitImportFileJson,
 } from './imports';
 
-const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
+const { rpcMock, prepareFileMock, uploadToPathMock } = vi.hoisted(() => ({
+  rpcMock: vi.fn(),
+  prepareFileMock: vi.fn(),
+  uploadToPathMock: vi.fn(),
+}));
 
 vi.mock('@/features/photo', () => ({
-  prepareFile: vi.fn(),
+  prepareFile: prepareFileMock,
 }));
 
 vi.mock('@/shared/lib/dependencies', () => ({
-  photoStorage: {},
+  photoStorage: { uploadToPath: uploadToPathMock },
 }));
 
 vi.mock('@/shared/lib/supabase-client', () => ({
@@ -24,6 +29,180 @@ vi.mock('@/shared/lib/supabase-client', () => ({
 
 beforeEach(() => {
   rpcMock.mockReset();
+  prepareFileMock.mockReset();
+  uploadToPathMock.mockReset();
+});
+
+function wrapperFor(queryClient: QueryClient) {
+  const Wrapper = ({ children }: PropsWithChildren) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  return Wrapper;
+}
+
+function blobWithBytes(bytes: number[]): Blob {
+  const buffer = new Uint8Array(bytes).buffer;
+  return {
+    size: bytes.length,
+    type: 'application/pdf',
+    arrayBuffer: () => Promise.resolve(buffer),
+  } as Blob;
+}
+
+const realSetTimeout = setTimeout;
+
+// Hashing runs on real async APIs, so timers may not exist yet when the clock first
+// advances; keep advancing until the mutation settles.
+async function settle(promise: PromiseLike<unknown>): Promise<void> {
+  let done = false;
+  const markDone = () => {
+    done = true;
+  };
+  void Promise.resolve(promise).then(markDone, markDone);
+  while (!done) {
+    await vi.advanceTimersByTimeAsync(10_000);
+    await new Promise((resolve) => realSetTimeout(resolve, 0));
+  }
+  await promise;
+}
+
+async function sha256Of(bytes: number[]): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+describe('useResumeImportUploads', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const queryClient = () =>
+    new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+
+  it('uploads and queues only files whose content matches a pending slot', async () => {
+    const known = [1, 2, 3];
+    const stranger = [9, 9, 9];
+    prepareFileMock.mockImplementation((file: File) =>
+      Promise.resolve({
+        blob: blobWithBytes(file.name === 'known.pdf' ? known : stranger),
+        previewUrl: null,
+        mimeType: 'application/pdf',
+      }),
+    );
+    uploadToPathMock.mockResolvedValue(undefined);
+    rpcMock.mockResolvedValue({ error: null });
+    const targets = [
+      {
+        id: 'file-1',
+        original_filename: 'known.pdf',
+        content_sha256: await sha256Of(known),
+        storage_path: 'me/imports/batch-1/file-1.pdf',
+      },
+    ];
+    const { result } = renderHook(() => useResumeImportUploads('batch-1'), {
+      wrapper: wrapperFor(queryClient()),
+    });
+
+    let outcome: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+    await act(async () => {
+      outcome = await result.current.mutateAsync({
+        files: [new File(['a'], 'known.pdf'), new File(['b'], 'other.pdf')],
+        targets,
+      });
+    });
+
+    expect(outcome).toEqual({ resumed: 1, unmatched: 1 });
+    expect(uploadToPathMock).toHaveBeenCalledTimes(1);
+    expect(uploadToPathMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'me/imports/batch-1/file-1.pdf',
+    );
+    expect(rpcMock).toHaveBeenCalledWith('queue_receipt_import_file', { p_file_id: 'file-1' });
+  });
+
+  it('retries a failed upload and treats an already stored object as uploaded', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const bytes = [4, 5, 6];
+      prepareFileMock.mockResolvedValue({
+        blob: blobWithBytes(bytes),
+        previewUrl: null,
+        mimeType: 'application/pdf',
+      });
+      uploadToPathMock
+        .mockRejectedValueOnce(new Error('Photo upload failed: network down'))
+        .mockRejectedValueOnce(new Error('Photo upload failed: The resource already exists'));
+      rpcMock.mockResolvedValue({ error: null });
+      const { result } = renderHook(() => useResumeImportUploads('batch-1'), {
+        wrapper: wrapperFor(queryClient()),
+      });
+
+      const pending = act(async () => {
+        await result.current.mutateAsync({
+          files: [new File(['a'], 'a.pdf')],
+          targets: [
+            {
+              id: 'file-1',
+              original_filename: 'a.pdf',
+              content_sha256: await sha256Of(bytes),
+              storage_path: 'path.pdf',
+            },
+          ],
+        });
+      });
+      await settle(pending);
+
+      expect(uploadToPathMock).toHaveBeenCalledTimes(2);
+      expect(rpcMock).toHaveBeenCalledWith('queue_receipt_import_file', { p_file_id: 'file-1' });
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        'mark_receipt_import_upload_failed',
+        expect.anything(),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  }, 30_000);
+
+  it('marks the file failed when a hung upload times out on every attempt', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const bytes = [7, 8];
+      prepareFileMock.mockResolvedValue({
+        blob: blobWithBytes(bytes),
+        previewUrl: null,
+        mimeType: 'application/pdf',
+      });
+      uploadToPathMock.mockImplementation(() => new Promise(() => undefined));
+      rpcMock.mockResolvedValue({ error: null });
+      const { result } = renderHook(() => useResumeImportUploads('batch-1'), {
+        wrapper: wrapperFor(queryClient()),
+      });
+
+      const pending = act(async () => {
+        await result.current.mutateAsync({
+          files: [new File(['a'], 'a.pdf')],
+          targets: [
+            {
+              id: 'file-1',
+              original_filename: 'a.pdf',
+              content_sha256: await sha256Of(bytes),
+              storage_path: 'path.pdf',
+            },
+          ],
+        });
+      });
+      await settle(pending);
+
+      expect(uploadToPathMock).toHaveBeenCalledTimes(3);
+      expect(rpcMock).toHaveBeenCalledWith('mark_receipt_import_upload_failed', {
+        p_file_id: 'file-1',
+        p_error_message: 'Upload timed out',
+      });
+      expect(rpcMock).not.toHaveBeenCalledWith('queue_receipt_import_file', expect.anything());
+    } finally {
+      vi.useRealTimers();
+    }
+  }, 30_000);
 });
 
 it('queues validated JSON for the selected durable import file', async () => {

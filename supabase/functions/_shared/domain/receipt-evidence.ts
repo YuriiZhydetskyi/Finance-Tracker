@@ -36,17 +36,54 @@ export function integerAppearsInText(text: string, value: number): boolean {
   return new RegExp(String.raw`(?:^|\D)${String(value)}(?:\D|$)`, 'u').test(text);
 }
 
+// Receipts print the same quantity as `2`, `2.00` or `3,000`, and the multiplier as
+// `x`, `×`, `*` or a unit word (Stk, szt), sometimes glued to the price (`3,000 x0,50`,
+// `22.09*6.86`).
 export function hasExplicitMultiplier(text: string, qty: number): boolean {
-  const rawQty = String(roundQty(qty)).replace('.', '[.,]');
+  const [integerPart = '0', fraction = ''] = String(roundQty(qty)).split('.');
+  const printedQty = fraction ? `${integerPart}[.,]${fraction}0*` : `${integerPart}(?:[.,]0+)?`;
   const quantityPattern = new RegExp(
-    String.raw`(?:^|\s)(?:${rawQty}\s*(?:x|×|stk\.?|st\.?|pcs)|(?:x|×)\s*${rawQty})(?:\s|$)`,
+    String.raw`(?:^|\s)(?:${printedQty}\s*(?:x|×|\*|stk\.?|st\.?|pcs|szt\.?)(?=\s|\d|$)|(?:x|×|\*)\s*${printedQty}(?=\s|$))`,
     'iu',
   );
   return quantityPattern.test(text);
 }
 
+// Fuel pumps print the unit as `L'ter`, `Liter` or `Ltr`; the apostrophe survives
+// OCR in several shapes.
 export function hasWeightOrVolume(text: string): boolean {
-  return /(?:^|\s)\d+(?:[.,]\d+)?\s*(?:kg|g|l|ml)(?:\s|$)/iu.test(text);
+  return /(?:^|\s)\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l(?:i?ter|['’´`]ter|tr)?)(?:\s|$)/iu.test(text);
+}
+
+/** A measured quantity is printed either with its unit (0,229 kg) or as `qty x price`. */
+export function hasWeightedQuantity(text: string, qty: number): boolean {
+  return hasWeightOrVolume(text) || hasExplicitMultiplier(text, qty);
+}
+
+export type ArticleCountLine = AccountingLine & {
+  qty_evidence?: string | undefined;
+  row_kind?: string | undefined;
+};
+
+/**
+ * Articles as the receipt prints them. A priced row counts once, or `qty` times when
+ * the row carries an explicit integer multiplier. Aldi also counts every returned
+ * deposit row (negative Pfand) as an article and none of the positive deposit rows;
+ * other stores keep counting positive deposit rows like any priced row.
+ */
+export function countPrintedArticles(
+  store: string | null | undefined,
+  items: readonly ArticleCountLine[],
+): number {
+  const isAldi = /\baldi\b/i.test(store ?? '');
+  return items.reduce((count, item) => {
+    const quantity =
+      item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty) ? item.qty : 1;
+    if (isAldi && item.row_kind === 'deposit') {
+      return item.unit_price_orig < 0 ? count + quantity : count;
+    }
+    return item.unit_price_orig > 0 ? count + quantity : count;
+  }, 0);
 }
 
 /** Cancellation pairs first, then partial discounts; returns a new array. */

@@ -21,6 +21,16 @@ describe('getFxRate', () => {
     expect(String(fetchImpl.mock.calls[0]?.[0])).toContain('valcode=EUR&date=20260801&json');
   });
 
+  it('crosses PLN through UAH: EUR per PLN is rate(PLN) / rate(EUR)', async () => {
+    const fetchImpl = vi.fn<typeof fetch>((input) =>
+      Promise.resolve(jsonResponse([{ rate: String(input).includes('valcode=PLN') ? 11.5 : 46 }])),
+    );
+    await expect(getFxRate(fetchImpl, 'PLN', '2026-08-01')).resolves.toBe(
+      Math.round((11.5 / 46) * 1e6) / 1e6,
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it('walks back one day per failed response and gives up after 7 attempts', async () => {
     const fetchImpl = vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse([], false)));
     await expect(getFxRate(fetchImpl, 'UAH', '2026-08-01')).rejects.toThrow('NBU rate unavailable');

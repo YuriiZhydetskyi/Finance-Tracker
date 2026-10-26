@@ -17,6 +17,12 @@ export function providerPublicMessage(error: unknown): string {
   if (error.code === 'timeout') {
     return `Час очікування відповіді ${error.trace.provider} вичерпано.`;
   }
+  // A 4xx means the provider rejected the request (unsupported field, bad schema)
+  // or throttled it (429 quota); its explanation is the only clue and carries no
+  // secrets.
+  if (/^http_4\d\d$/.test(error.code)) {
+    return `Provider ${error.trace.provider} відхилив запит. ${error.message}`.slice(0, 500);
+  }
   return `Provider ${error.trace.provider} не завершив аналіз.`;
 }
 

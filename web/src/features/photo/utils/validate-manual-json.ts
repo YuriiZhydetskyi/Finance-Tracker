@@ -1,11 +1,13 @@
 import {
   amountAppearsInText,
+  countPrintedArticles,
   hasExplicitMultiplier,
-  hasWeightOrVolume,
+  hasWeightedQuantity,
   integerAppearsInText,
   mergeAccountingPairs,
   roundMoney,
   roundQty,
+  roundUnitPrice,
   type ParsedReceipt,
 } from '@finance-tracker/domain';
 
@@ -38,8 +40,8 @@ function formatMoney(value: number, currency: string): string {
 
 function itemTotal(item: ParsedReceipt['items'][number]): number {
   const qty = roundQty(item.qty);
-  const unitPrice = roundMoney(item.unit_price_orig);
-  const discount = roundMoney(item.discount_orig ?? 0);
+  const unitPrice = roundUnitPrice(item.unit_price_orig);
+  const discount = roundUnitPrice(item.discount_orig ?? 0);
   return roundMoney(qty * (unitPrice - discount));
 }
 
@@ -66,7 +68,7 @@ export function validateManualJsonReceipt(
   if (options.requireSavableReceipt) {
     if (!receipt.store?.trim()) issues.push('Не вказано продавця store.');
     if (!receipt.date) issues.push('Не вказано дату date.');
-    if (!['EUR', 'UAH'].includes(receipt.currency)) {
+    if (!['EUR', 'UAH', 'PLN'].includes(receipt.currency)) {
       issues.push('Валюта ' + receipt.currency + ' не підтримується для автоматичного збереження.');
     }
   }
@@ -215,7 +217,7 @@ function validateRowEvidence(
         ? Math.abs(item.qty - 1) <= 0.001
         : qtyEvidence === 'explicit_multiplier'
           ? hasExplicitMultiplier(rawText, item.qty)
-          : hasWeightOrVolume(rawText);
+          : hasWeightedQuantity(rawText, item.qty);
     if (!quantitySupported) {
       issues.push(
         'Рядок ' + String(rowNumber) + ': qty не підтверджується raw_text і qty_evidence.',
@@ -275,13 +277,7 @@ function validateArticleCount(
     return;
   }
 
-  const computedCount = items.reduce((count, item) => {
-    if (item.unit_price_orig <= 0) return count;
-    if (item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty)) {
-      return count + item.qty;
-    }
-    return count + 1;
-  }, 0);
+  const computedCount = countPrintedArticles(receipt.store, items);
 
   if (computedCount !== receipt.article_count) {
     issues.push(

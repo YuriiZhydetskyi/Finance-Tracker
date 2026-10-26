@@ -218,7 +218,7 @@ export function ItemRow({
           {/* No min: negatives allowed for Pfand refunds, discount lines, cancellations. */}
           <Input
             type="number"
-            step="0.01"
+            step="0.001"
             inputMode="decimal"
             disabled={isCancelled}
             className={cn(priceIsNegative && 'border-red-400 text-red-700')}
@@ -317,7 +317,7 @@ export function ItemRow({
           <label className={FIELD_LABEL_CLASS}>Знижка</label>
           <Input
             type="number"
-            step="0.01"
+            step="0.001"
             min="0"
             inputMode="decimal"
             disabled={isCancelled}

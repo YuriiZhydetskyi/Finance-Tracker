@@ -2,8 +2,9 @@ import type { BulkParsedDocument, ParsedItem } from '../_shared/receipt-ai/types
 import { canonicalizeReceiptTime } from '../_shared/receipt-ai/time-evidence.ts';
 import {
   amountAppearsInText,
+  countPrintedArticles,
   hasExplicitMultiplier,
-  hasWeightOrVolume,
+  hasWeightedQuantity,
   integerAppearsInText,
   mergeAccountingPairs,
   normalizeReceiptText,
@@ -59,6 +60,7 @@ export type MultiplierReassociation = {
   details: Record<string, unknown> | null;
 };
 
+const UNIT_PRICE_DECIMALS = 3;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_TIME = /^\d{2}:\d{2}(:\d{2})?$/;
 
@@ -106,7 +108,7 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
     });
   }
 
-  const items: ParsedItem[] = row.items.map((item, index) => {
+  const items: ParsedItem[] = row.items.map((item, index): ParsedItem => {
     if (!item || typeof item !== 'object') throw new Error(`Invalid item ${String(index + 1)}`);
     const it = item as Record<string, unknown>;
     if (typeof it.product_name !== 'string' || !it.product_name.trim()) {
@@ -153,7 +155,6 @@ export function validateBulkDocument(value: unknown): BulkParsedDocument {
       tax_class: it.tax_class === '1' || it.tax_class === '2' ? it.tax_class : null,
     };
   });
-
   return canonicalizeReceiptTime({
     document_kind: documentKind,
     classification_reason:
@@ -320,7 +321,7 @@ export function auditReceiptEvidence(
         ? Math.abs(item.qty - 1) <= 0.001
         : item.qty_evidence === 'explicit_multiplier'
           ? hasExplicitMultiplier(item.raw_text, item.qty)
-          : hasWeightOrVolume(item.raw_text);
+          : hasWeightedQuantity(item.raw_text, item.qty);
     if (!quantityIsSupported) {
       issues.push({
         code: 'unsupported_quantity',
@@ -512,7 +513,7 @@ export function prepareReceipt(
   ) {
     return { ok: false, reason: 'Час має невірний формат.' };
   }
-  if (!['EUR', 'UAH'].includes(parsed.currency)) {
+  if (!['EUR', 'UAH', 'PLN'].includes(parsed.currency)) {
     return { ok: false, reason: `Валюта ${parsed.currency || 'невідома'} не підтримується.` };
   }
   if (parsed.total_orig == null || !Number.isFinite(parsed.total_orig)) {
@@ -528,8 +529,8 @@ export function prepareReceipt(
   if (normalized.length > 500) return { ok: false, reason: 'У документі забагато позицій.' };
   for (const item of normalized) {
     const qty = round(item.qty, 3);
-    const unitPrice = round(item.unit_price_orig, 2);
-    const discount = round(item.discount_orig ?? 0, 2);
+    const unitPrice = round(item.unit_price_orig, UNIT_PRICE_DECIMALS);
+    const discount = round(item.discount_orig ?? 0, UNIT_PRICE_DECIMALS);
     if (qty <= 0) return { ok: false, reason: `Кількість для «${item.product_name}» надто мала.` };
     if (unitPrice > 0 && discount > unitPrice) {
       return { ok: false, reason: `Знижка для «${item.product_name}» більша за ціну.` };
@@ -541,8 +542,8 @@ export function prepareReceipt(
   const receiptId = makeId();
   const items = normalized.map((item) => {
     const qty = round(item.qty, 3);
-    const unitPrice = round(item.unit_price_orig, 2);
-    const discount = round(item.discount_orig ?? 0, 2);
+    const unitPrice = round(item.unit_price_orig, UNIT_PRICE_DECIMALS);
+    const discount = round(item.discount_orig ?? 0, UNIT_PRICE_DECIMALS);
     const totalOrig = round(qty * (unitPrice - discount), 2);
     return {
       id: makeId(),
@@ -633,8 +634,8 @@ export function checkReceiptArithmetic(parsed: BulkParsedDocument): ReceiptArith
   const computedTotal = round(
     normalizedItems.reduce((sum, item) => {
       const qty = round(item.qty, 3);
-      const unitPrice = round(item.unit_price_orig, 2);
-      const discount = round(item.discount_orig ?? 0, 2);
+      const unitPrice = round(item.unit_price_orig, UNIT_PRICE_DECIMALS);
+      const discount = round(item.discount_orig ?? 0, UNIT_PRICE_DECIMALS);
       return sum + round(qty * (unitPrice - discount), 2);
     }, 0),
     2,
@@ -664,13 +665,7 @@ export function checkReceiptArticleCount(
     return null;
   }
   const normalizedItems = mergeAccountingPairs(parsed.items);
-  const computedCount = normalizedItems.reduce((sum, item) => {
-    if (item.unit_price_orig <= 0) return sum;
-    if (item.qty_evidence === 'explicit_multiplier' && Number.isInteger(item.qty)) {
-      return sum + item.qty;
-    }
-    return sum + 1;
-  }, 0);
+  const computedCount = countPrintedArticles(parsed.store, normalizedItems);
   return {
     printedCount: parsed.article_count,
     computedCount,

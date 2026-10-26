@@ -56,6 +56,7 @@ vi.mock('../api/imports', () => ({
           skip_duplicate_check: false,
         },
       ],
+      canonicalFiles: {},
       attemptsByFile: {
         'file-1': [
           {
@@ -92,6 +93,7 @@ vi.mock('../api/imports', () => ({
   useDiscardImportFile: () => ({ isPending: false, mutate: mutateMock }),
   useResolveImportFile: () => ({ isPending: false, mutate: mutateMock }),
   useSubmitImportFileJson: () => ({ isPending: false, mutateAsync: mutateMock }),
+  useResumeImportUploads: () => ({ isPending: false, mutateAsync: mutateMock }),
 }));
 
 describe('ImportBatchDetail attempt history', () => {
