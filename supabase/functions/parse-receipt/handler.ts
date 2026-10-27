@@ -37,6 +37,8 @@ export type HandlerDeps = {
   isAllowed: (authHeader: string) => Promise<boolean>;
   /** Reads the caller-visible catalogue after authorization. */
   loadTaxonomy?: (authHeader: string) => Promise<ProductTaxonomyContext>;
+  /** Canonical names of the stores the app knows, as a spelling hint for the model. */
+  loadKnownStores?: (authHeader: string) => Promise<string[]>;
   /** Optional logger; defaults to console. Pure-function port over the Deno global. */
   log?: (level: 'info' | 'warn' | 'error', msg: string) => void;
 };
@@ -95,10 +97,21 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
       }
     }
 
+    let knownStores: string[] = [];
+    if (deps.loadKnownStores) {
+      try {
+        knownStores = await deps.loadKnownStores(auth);
+      } catch (error) {
+        // Only a spelling hint: the receipt is still readable without it.
+        log('warn', `Known stores lookup failed: ${(error as Error).message}`);
+      }
+    }
+
     const ctx: AiContext = {
       categories: Array.isArray(body.categories) ? body.categories : [],
       products: Array.isArray(body.products) ? body.products : [],
       taxonomy,
+      known_stores: knownStores,
       mimeType: body.mimeType ?? 'image/jpeg',
     };
 

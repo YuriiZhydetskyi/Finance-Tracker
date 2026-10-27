@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildBulkPrompt } from './bulk-import-prompt.ts';
 import { buildPrompt, buildSchema } from './receipt-prompt.ts';
 import type { AiContext } from '../types.ts';
 
@@ -70,5 +71,46 @@ describe('receipt taxonomy prompt', () => {
     ]);
     expect(item.properties.brand.type).toEqual(['string', 'null']);
     expect(item.properties.is_organic.type).toEqual(['boolean', 'null']);
+  });
+});
+
+describe('receipt store spelling prompt', () => {
+  it('asks for the shop name without legal-form or operator noise', () => {
+    const prompt = buildPrompt(ctx);
+
+    expect(prompt).toContain('store: the shop name as printed in the header or logo');
+    expect(prompt).toContain('Leave out legal-form and operator noise (GmbH, OHG, KG, S.A., Inh.');
+    expect(prompt).toContain('keep a branch or city name the shop prints as part of its name');
+  });
+
+  it('shows the known stores and tells the model to copy their spelling', () => {
+    const prompt = buildPrompt({ ...ctx, known_stores: ['ALDI SÜD', 'EDEKA Musterstadt', 'REWE'] });
+
+    expect(prompt).toContain('Known stores (hint only');
+    expect(prompt).toContain(': ALDI SÜD, EDEKA Musterstadt, REWE');
+    expect(prompt).toContain('copy that spelling exactly');
+  });
+
+  it('adds no known-stores line when there are none, and ignores blanks and repeats', () => {
+    expect(buildPrompt(ctx)).not.toContain('Known stores');
+    expect(buildPrompt({ ...ctx, known_stores: [] })).not.toContain('Known stores');
+    expect(buildPrompt({ ...ctx, known_stores: ['  ', 'Lidl', 'Lidl'] })).toContain(': Lidl\n');
+  });
+
+  it('caps the list so a long registry cannot bloat the prompt', () => {
+    const stores = Array.from({ length: 150 }, (_, index) => `Store ${String(index)}`);
+    const prompt = buildPrompt({ ...ctx, known_stores: stores });
+
+    expect(prompt).toContain('Store 99');
+    expect(prompt).not.toContain('Store 100');
+  });
+
+  it('carries the known stores into the bulk and email prompts as well', () => {
+    const prompt = buildBulkPrompt({ ...ctx, mimeType: 'text/plain', known_stores: ['Amazon'] });
+
+    expect(prompt).toContain('Known stores (hint only');
+    expect(prompt).toContain(
+      'When it is in the known stores list below, copy that spelling exactly.',
+    );
   });
 });

@@ -116,6 +116,12 @@ export type AiContext = {
   products: { name: string }[];
   /** Current catalogue choices. AI may return only these IDs, otherwise null. */
   taxonomy?: ProductTaxonomyContext;
+  /**
+   * Canonical names of the stores the app already knows (store_name_registry and the
+   * chain patterns, ADR-0033). A soft hint so the model copies the app's spelling
+   * instead of inventing a new variant of a store it has seen before.
+   */
+  known_stores?: string[];
   /** MIME of the inline image bytes. Default 'image/jpeg'. */
   mimeType: string;
 };
