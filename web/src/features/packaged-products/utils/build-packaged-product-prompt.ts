@@ -19,6 +19,7 @@ export const VARIANT_HINT_LIMIT = 200;
 export const EXAMPLE_PACKAGED_PRODUCT_JSON = `{
   "schema_version": 1,
   "receipt_pages": [1],
+  "receipt": {"store": "REWE", "date": "2026-09-13", "total": 23.45, "currency": "EUR"},
   "products": [{
   "name": "Pringles Original 165 г",
   "brand": "Pringles",
@@ -84,7 +85,7 @@ export function buildPackagedProductPrompt(
     'Без markdown, без коментарів, без пояснень.',
     'Фото можуть містити лицевий бік, зворот, таблицю харчової цінності, склад і штрихкод,',
     'зокрема сторінками одного PDF.',
-    'Поверни один обʼєкт schema_version: 1, receipt_pages та products, як у прикладі нижче.',
+    'Поверни один обʼєкт schema_version: 1, receipt_pages, receipt та products, як у прикладі нижче.',
     '',
     'JSON має відповідати цій формі:',
     EXAMPLE_PACKAGED_PRODUCT_JSON,
@@ -100,6 +101,11 @@ export function buildPackagedProductPrompt(
     '- Не копіюй номери сторінок або штрихкод із прикладу: перелічуй лише те, що є у вкладенні.',
     '- Якщо одна сторінка містить кілька різних товарів, не призначай її навмання. Залиш source_pages: []',
     '  та додай у review_notes причину: потрібно рознести фото на окремі сторінки. Імпорт такого PDF потребує виправлення.',
+    '- receipt: необовʼязковий короткий опис чека зі сторінок receipt_pages, або null, якщо чека немає:',
+    '  store — надрукований магазин; date — дата покупки YYYY-MM-DD; total — підсумок до сплати',
+    '  ("Summe", "Gesamt", "zu zahlen") одним числом із десятковою крапкою; currency — код валюти, наприклад EUR.',
+    '  Будь-яке поле, яке не видно, — null. Це лише щоб застерегти про дубль: сам чек розбере імпорт чеків,',
+    '  тож НЕ переписуй позиції чека. Якщо receipt_pages: [], постав receipt: null.',
     '- receipt_matches: необовʼязкові ПРИПУЩЕННЯ про відповідність назви в чеку упаковці.',
     '  store — надрукований магазин; receipt_label — ДОСЛІВНИЙ текст позиції, навіть "Originals";',
     '  store_product_code — лише надрукований код або null; receipt_date — надрукована дата YYYY-MM-DD або null;',

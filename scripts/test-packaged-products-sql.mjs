@@ -23,7 +23,7 @@ try {
     create function auth.jwt() returns jsonb language sql stable as $$ select '{}'::jsonb $$;
 
     create table public.categories (name text primary key);
-    insert into public.categories values ('Інше'), ('Снеки'), ('Овочі/фрукти');
+    insert into public.categories values ('Інше'), ('Снеки'), ('Овочі/фрукти'), ('Pfand');
 
     create table public.product_families (id text primary key);
     insert into public.product_families values ('chips'), ('tomatoes');
@@ -94,6 +94,7 @@ try {
     '20260912072149_packaged_products.sql',
     '20260912072151_packaging_queue_functions.sql',
     '20261026190000_packaged_product_review_notes.sql',
+    '20261027090000_packaging_queue_deposits_and_recency.sql',
   ]) {
     await db.exec(
       await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), 'utf8'),
@@ -299,17 +300,125 @@ try {
        from public.search_packaging_candidates()`,
   );
 
-  // Pringles wins: 3 purchases across two stores against 1 each for the others,
-  // and both store rows share one group_key so they sit together.
+  // Newest purchase first (not most-bought): Lidl on 09-03 beats Pringles, whose
+  // newest purchase is 09-02. Both Pringles rows share one group_key, so they sit
+  // together, the group's newest row first.
   assert.deepEqual(
     queue.rows.map((r) => r.product_id),
-    ['prod-rewe-pringles', 'prod-aldi-pringles', 'prod-lidl-milk', 'prod-lidl-tomato'],
+    ['prod-lidl-milk', 'prod-lidl-tomato', 'prod-aldi-pringles', 'prod-rewe-pringles'],
   );
-  assert.equal(queue.rows[0].group_key, queue.rows[1].group_key);
-  assert.equal(Number(queue.rows[0].group_purchases_count), 3);
-  assert.equal(Number(queue.rows[1].group_purchases_count), 3);
-  assert.deepEqual(queue.rows[2].receipt_labels, ['MILBONA MILCH']);
-  assert.equal(Number(queue.rows[0].last_price_orig), 2.99);
+  assert.equal(queue.rows[2].group_key, queue.rows[3].group_key);
+  assert.equal(Number(queue.rows[2].group_purchases_count), 3);
+  assert.equal(Number(queue.rows[3].group_purchases_count), 3);
+  assert.deepEqual(queue.rows[0].receipt_labels, ['MILBONA MILCH']);
+  assert.equal(Number(queue.rows[3].last_price_orig), 2.99);
+
+  // ── Deposit and refund-only lines never reach the queue ──────────────────
+  await db.exec(`
+    insert into public.receipts values
+      ('r-old', 'Kaufland', '2026-05-01'),
+      ('r-new', 'Kaufland', '2026-09-10');
+
+    insert into public.products (id, name, store, category) values
+      -- Pfand by category, whatever it is called.
+      ('prod-pfand-category',  'Flaschenrückgabe',   'ALDI',     'Pfand'),
+      -- Pfand by printed name, filed under another category.
+      ('prod-pfand-name',      'Pfandartikel',       'Kaufland', 'Інше'),
+      ('prod-pfand-leergut',   'Leergut Einw.allg.', 'Lidl',     'Інше'),
+      ('prod-pfand-eigenmarke', 'Eigenmarke: Pfand', 'ALDI',     'Інше'),
+      -- Only ever a negative line: a coupon, not a product.
+      ('prod-rabatt',          'Treue Rabatt',       'Kaufland', 'Інше'),
+      -- Bought once and refunded once: a real product, stays.
+      ('prod-bought-refunded', 'Joghurt Natur',      'Kaufland', 'Інше'),
+      -- Free sample at 0.00: not a refund, stays.
+      ('prod-free',            'Gratisprobe',        'Kaufland', 'Інше'),
+      -- Never bought at all: stays, ranked last.
+      ('prod-never-bought',    'Neues Produkt',      'Kaufland', 'Інше');
+
+    insert into public.items (id, receipt_id, product_id, product_name, raw_product_name, category, qty, total_orig, total_eur) values
+      ('d1', 'r-new', 'prod-pfand-category',   'Pfand', 'Pfand',             'Pfand', 1,  0.25,  0.25),
+      ('d2', 'r-new', 'prod-pfand-name',       'Pfand', 'Pfandartikel',      'Інше',  1,  0.25,  0.25),
+      ('d3', 'r-new', 'prod-pfand-leergut',    'Pfand', 'Leergut Einw.allg.', 'Інше', 1, -0.25, -0.25),
+      ('d4', 'r-new', 'prod-pfand-eigenmarke', 'Pfand', 'Eigenmarke: Pfand', 'Інше',  1, -0.75, -0.75),
+      ('d5', 'r-new', 'prod-rabatt',           'Rabatt', 'Treue Rabatt',     'Інше',  1, -1.00, -1.00),
+      ('d6', 'r-old', 'prod-bought-refunded',  'Joghurt', 'Joghurt Natur',   'Інше',  1,  0.89,  0.89),
+      ('d7', 'r-new', 'prod-bought-refunded',  'Joghurt', 'Joghurt Natur',   'Інше',  1, -0.89, -0.89),
+      ('d8', 'r-new', 'prod-free',             'Probe',  'Gratisprobe',      'Інше',  1,  0.00,  0.00);
+  `);
+
+  const withDeposits = await db.query(
+    `select product_id from public.search_packaging_candidates()`,
+  );
+  assert.deepEqual(
+    withDeposits.rows.map((r) => r.product_id),
+    [
+      // Newest positive purchase first; the joghurt's last one is 05-01 (the refund
+      // does not count). The free sample and the never-bought row have no purchase
+      // date, so they come last.
+      'prod-lidl-milk',
+      'prod-lidl-tomato',
+      'prod-aldi-pringles',
+      'prod-rewe-pringles',
+      'prod-bought-refunded',
+      'prod-free',
+      'prod-never-bought',
+    ],
+  );
+
+  // A deposit row stays out even when a search names it, and out of the summary.
+  const searchedDeposit = await db.query(
+    `select product_id from public.search_packaging_candidates('pfand')`,
+  );
+  assert.deepEqual(searchedDeposit.rows, []);
+  const summaryAll = await db.query(`select * from public.packaging_queue_summary()`);
+  assert.deepEqual(summaryAll.rows, [{ total_count: 7, recent_count: 7 }]);
+
+  // ── The recency window ───────────────────────────────────────────────────
+  const since = async (date, query = '') =>
+    (
+      await db.query(
+        `select product_id, group_purchases_count
+           from public.search_packaging_candidates($1, null, null, null, null, 100, 0, $2)`,
+        [query, date],
+      )
+    ).rows;
+
+  // On or after the date, and never-bought rows (no date) are outside any window.
+  assert.deepEqual(
+    (await since('2026-09-03')).map((r) => r.product_id),
+    ['prod-lidl-milk', 'prod-lidl-tomato'],
+  );
+  assert.deepEqual(
+    (await since('2026-09-11')).map((r) => r.product_id),
+    [],
+  );
+
+  // The hidden Pringles row still counts toward the cross-store hint: the visible
+  // Aldi row is part of a 3-purchase group even though the REWE row is outside.
+  const windowed = await since('2026-09-02');
+  assert.deepEqual(
+    windowed.map((r) => r.product_id),
+    ['prod-lidl-milk', 'prod-lidl-tomato', 'prod-aldi-pringles'],
+  );
+  assert.equal(Number(windowed[2].group_purchases_count), 3);
+
+  // The summary splits the same candidate set: 7 rows, 3 of them in the window.
+  const summaryWindow = await db.query(
+    `select * from public.packaging_queue_summary('', '2026-09-02')`,
+  );
+  assert.deepEqual(summaryWindow.rows, [{ total_count: 7, recent_count: 3 }]);
+  // A search counts every match, wherever it falls relative to the window.
+  const summarySearch = await db.query(
+    `select * from public.packaging_queue_summary('pringles', '2026-09-03')`,
+  );
+  assert.deepEqual(summarySearch.rows, [{ total_count: 2, recent_count: 0 }]);
+
+  await db.exec(`
+    delete from public.items where id in ('d1','d2','d3','d4','d5','d6','d7','d8');
+    delete from public.products where id like 'prod-pfand-%' or id in
+      ('prod-rabatt', 'prod-bought-refunded', 'prod-free', 'prod-never-bought');
+    delete from public.receipts where id in ('r-old', 'r-new');
+  `);
 
   // Search is literal: LIKE metacharacters must not act as wildcards.
   const wildcard = await db.query(`select product_id from public.search_packaging_candidates('%')`);
@@ -320,7 +429,7 @@ try {
   );
   assert.deepEqual(
     byBrand.rows.map((r) => r.product_id),
-    ['prod-rewe-pringles', 'prod-aldi-pringles'],
+    ['prod-aldi-pringles', 'prod-rewe-pringles'],
   );
 
   // ── Linking and opting out both empty the queue ──────────────────────────

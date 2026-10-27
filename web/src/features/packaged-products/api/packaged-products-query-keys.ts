@@ -5,4 +5,3 @@ export const packagedProductPhotosQueryKey = (id: string) =>
 export const packagedProductStoreLabelsQueryKey = (id: string) =>
   ['packaged-products', id, 'store-labels'] as const;
 export const packagingCandidatesQueryKey = ['packaging-candidates'] as const;
-export const packagingCandidatesCountQueryKey = ['packaging-candidates', 'count'] as const;

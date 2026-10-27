@@ -3,6 +3,7 @@
 export { PackagedProductDetail } from './components/PackagedProductDetail';
 export { PackagedProductsList } from './components/PackagedProductsList';
 export { PackagingCandidatesList } from './components/PackagingCandidatesList';
+export { PackagingQueueScopeBar } from './components/PackagingQueueScopeBar';
 export { PackagedProductJsonImportDialog } from './components/PackagedProductJsonImportDialog';
 export type { ImportedPackagedProduct } from './components/PackagedProductJsonImportDialog';
 export { LinkStoreProductDialog } from './components/LinkStoreProductDialog';
@@ -14,8 +15,15 @@ export type { PackagedProductListRow } from './api/use-packaged-products';
 export {
   usePackagingCandidates,
   usePackagingCandidatesCount,
+  usePackagingQueueSummary,
   usePackagedProductStoreLabels,
 } from './api/use-packaging-candidates';
+export {
+  PACKAGING_QUEUE_WINDOW_DAYS,
+  packagingQueueRowsSince,
+  packagingQueueScope,
+  packagingQueueWindowStart,
+} from './utils/packaging-queue-window';
 export { useSavePackagedProductsMutation } from './api/use-save-packaged-products-mutation';
 export {
   useLinkStoreProductMutation,

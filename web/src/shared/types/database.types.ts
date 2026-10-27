@@ -1138,6 +1138,20 @@ export type Database = {
       };
     };
     Views: {
+      v_packaging_queue_products: {
+        Row: {
+          brand: string | null;
+          category: string | null;
+          id: string | null;
+          is_organic: boolean | null;
+          name: string | null;
+          product_family_id: string | null;
+          product_variant_id: string | null;
+          store: string | null;
+          store_product_code: string | null;
+        };
+        Relationships: [];
+      };
       v_stats_by_category: {
         Row: {
           category: string | null;
@@ -1329,6 +1343,10 @@ export type Database = {
         Returns: Json;
       };
       is_allowed_user: { Args: never; Returns: boolean };
+      is_deposit_product: {
+        Args: { p_category: string; p_name: string };
+        Returns: boolean;
+      };
       is_valid_review_notes: { Args: { p_notes: string[] }; Returns: boolean };
       mark_receipt_import_upload_failed: {
         Args: { p_error_message: string; p_file_id: string };
@@ -1357,6 +1375,13 @@ export type Database = {
           receipt_labels: string[];
           store: string;
           store_product_code: string;
+        }[];
+      };
+      packaging_queue_summary: {
+        Args: { p_last_purchased_since?: string; p_query?: string };
+        Returns: {
+          recent_count: number;
+          total_count: number;
         }[];
       };
       queue_receipt_import_file: {
@@ -1428,6 +1453,7 @@ export type Database = {
           p_categories?: string[];
           p_date_from?: string;
           p_date_to?: string;
+          p_last_purchased_since?: string;
           p_limit?: number;
           p_offset?: number;
           p_query?: string;

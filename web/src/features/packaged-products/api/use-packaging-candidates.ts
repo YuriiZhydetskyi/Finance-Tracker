@@ -6,7 +6,6 @@ import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/shared/lib/supabase-client';
 import {
   packagedProductStoreLabelsQueryKey,
-  packagingCandidatesCountQueryKey,
   packagingCandidatesQueryKey,
 } from './packaged-products-query-keys';
 import type { PackagedProductStoreLabelRow, PackagingCandidateRow } from '../types';
@@ -68,14 +67,23 @@ export type PackagingCandidateFilters = {
   query?: string;
   categories?: string[];
   stores?: string[];
+  /** YYYY-MM-DD; keep only rows last bought on or after it. Absent lists every row. */
+  lastPurchasedSince?: string | undefined;
   limit?: number;
 };
 
 export function packagingCandidatesQueryOptions(filters: PackagingCandidateFilters = {}) {
-  const { query = '', categories, stores, limit = DEFAULT_LIMIT } = filters;
+  const { query = '', categories, stores, lastPurchasedSince, limit = DEFAULT_LIMIT } = filters;
 
   return queryOptions({
-    queryKey: [...packagingCandidatesQueryKey, query, categories ?? null, stores ?? null, limit],
+    queryKey: [
+      ...packagingCandidatesQueryKey,
+      query,
+      categories ?? null,
+      stores ?? null,
+      lastPurchasedSince ?? null,
+      limit,
+    ],
     staleTime: ONE_MIN,
     queryFn: async ({ signal }): Promise<PackagingCandidateRow[]> => {
       const { data, error } = await supabase
@@ -86,6 +94,7 @@ export function packagingCandidatesQueryOptions(filters: PackagingCandidateFilte
           // never an explicit undefined.
           ...(categories && categories.length > 0 ? { p_categories: categories } : {}),
           ...(stores && stores.length > 0 ? { p_stores: stores } : {}),
+          ...(lastPurchasedSince ? { p_last_purchased_since: lastPurchasedSince } : {}),
         })
         .abortSignal(signal);
       if (error) throw error;
@@ -134,25 +143,52 @@ export function usePackagedProductStoreLabels(id: string) {
   return useQuery(packagedProductStoreLabelsQueryOptions(id));
 }
 
-export const packagingCandidatesCountQueryOptions = queryOptions({
-  queryKey: packagingCandidatesCountQueryKey,
-  staleTime: ONE_MIN,
-  queryFn: async ({ signal }): Promise<number> => {
-    const { count, error } = await supabase
-      .from('products')
-      .select('id', { count: 'exact', head: true })
-      .is('packaged_product_id', null)
-      .eq('packaging_not_applicable', false)
-      .abortSignal(signal);
-    if (error) throw error;
-    return count ?? 0;
-  },
-});
+export type PackagingQueueSummary = {
+  /** Every queue row matching the query. */
+  total_count: number;
+  /** Those last bought on or after `lastPurchasedSince` (all of them when it is absent). */
+  recent_count: number;
+};
+
+export function packagingQueueSummaryQueryOptions(
+  filters: { query?: string; lastPurchasedSince?: string | undefined } = {},
+) {
+  const { query = '', lastPurchasedSince } = filters;
+
+  return queryOptions({
+    queryKey: [...packagingCandidatesQueryKey, 'summary', query, lastPurchasedSince ?? null],
+    staleTime: ONE_MIN,
+    queryFn: async ({ signal }): Promise<PackagingQueueSummary> => {
+      const { data, error } = await supabase
+        .rpc('packaging_queue_summary', {
+          p_query: query,
+          ...(lastPurchasedSince ? { p_last_purchased_since: lastPurchasedSince } : {}),
+        })
+        .abortSignal(signal);
+      if (error) throw error;
+      const row = (data?.[0] ?? {}) as Record<string, unknown>;
+      return { total_count: asNumber(row.total_count), recent_count: asNumber(row.recent_count) };
+    },
+  });
+}
+
+/** How many queue rows there are, and how many of them fall inside the recency window. */
+export function usePackagingQueueSummary(
+  filters: { query?: string; lastPurchasedSince?: string | undefined } = {},
+) {
+  return useQuery({
+    ...packagingQueueSummaryQueryOptions(filters),
+    placeholderData: keepPreviousData,
+  });
+}
 
 /**
- * Just the size of the queue, for the home-page badge. A HEAD count instead of
- * the ranking RPC so opening the home page never pays for the aggregate.
+ * The home-page badge: queue rows bought within the window, i.e. exactly what the
+ * queue opens with. The same cached summary as the queue tab, so one RPC serves both.
  */
-export function usePackagingCandidatesCount() {
-  return useQuery(packagingCandidatesCountQueryOptions);
+export function usePackagingCandidatesCount(windowStart: string) {
+  return useQuery({
+    ...packagingQueueSummaryQueryOptions({ lastPurchasedSince: windowStart }),
+    select: (summary) => summary.recent_count,
+  });
 }

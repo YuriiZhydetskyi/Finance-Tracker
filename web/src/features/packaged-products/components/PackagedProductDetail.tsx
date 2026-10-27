@@ -13,10 +13,12 @@ import {
 } from '../api/use-packaging-photos';
 import { useDeletePackagedProductMutation } from '../api/use-update-packaged-product-mutation';
 import { useLinkStoreProductMutation } from '../api/use-link-store-product-mutation';
+import { usePackagedProductReceiptHints } from '../api/use-receipt-hints';
 import { useUpdateReviewNotesMutation } from '../api/use-update-review-notes-mutation';
 import { NutritionFactsTable } from './NutritionFactsTable';
 import { PackagingPhotoGallery } from './PackagingPhotoGallery';
 import { PackagingPhotoUploader } from './PackagingPhotoUploader';
+import { ReceiptHintsPanel } from './ReceiptHintsPanel';
 import { ReviewNotesPanel } from './ReviewNotesPanel';
 import { StoreLabelsTable } from './StoreLabelsTable';
 import type { PackagedProductRow } from '../types';
@@ -99,6 +101,7 @@ export function PackagedProductDetail({ id }: Readonly<{ id: string }>) {
   const productQuery = usePackagedProduct(id);
   const photosQuery = usePackagedProductPhotos(id);
   const labelsQuery = usePackagedProductStoreLabels(id);
+  const hintsQuery = usePackagedProductReceiptHints(id);
   const uploadPhotos = useUploadPackagingPhotosMutation();
   const deletePhoto = useDeletePackagingPhotoMutation();
   const deleteProduct = useDeletePackagedProductMutation();
@@ -192,6 +195,18 @@ export function PackagedProductDetail({ id }: Readonly<{ id: string }>) {
         <Section title="Склад">
           <p className="text-sm leading-6 text-slate-800">{product.ingredients_text}</p>
         </Section>
+      ) : null}
+
+      {labelsQuery.isSuccess && hintsQuery.data ? (
+        <ReceiptHintsPanel
+          hints={hintsQuery.data}
+          linked={labelsQuery.data.map((row) => ({
+            store: row.store,
+            store_product_code: row.store_product_code,
+            product_name: row.product_name,
+            receipt_labels: row.receipt_labels,
+          }))}
+        />
       ) : null}
 
       <Section title="Назви в чеках">

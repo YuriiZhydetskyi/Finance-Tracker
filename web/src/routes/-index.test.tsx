@@ -29,6 +29,8 @@ vi.mock('@/shared/lib/supabase-client', () => {
         tables.requested.push(table);
         return builder();
       },
+      // The home-page packaging badge reads its count through an RPC.
+      rpc: () => builder(),
     },
   };
 });

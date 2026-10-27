@@ -523,15 +523,18 @@ alter table public.products
 
 `on delete set null` навмисно: видалення картки розлінковує магазинні рядки, і вони повертаються в чергу на фотографування.
 
-`packaging_not_applicable` виключає вагові овочі, хліб із прилавка, послуги та Pfand — без нього черга назавжди забита шумом.
+`packaging_not_applicable` виключає вагові овочі, хліб із прилавка, послуги та Pfand — без нього черга назавжди забита шумом. Pfand і рядки, що були лише від’ємними (повернення тари, купон), виключаються ще й автоматично view `v_packaging_queue_products` (нижче, ADR-0031).
 
 `items` **не** має власного FK на `packaged_products`: пакований товар це ідентичність SKU, а не рішення на момент покупки. Обґрунтування й готовий backfill — в ADR-0027.
 
 ## Функції черги фотографування
 
-Обидві `language sql stable security invoker set search_path = ''`, тож RLS викликача лишається в силі:
+Усі `language sql stable security invoker set search_path = ''` (view — `security_invoker = on`), тож RLS викликача лишається в силі. Міграції `20260912072151_packaging_queue_functions.sql` і `20261027090000_packaging_queue_deposits_and_recency.sql`:
 
-- `search_packaging_candidates(p_query, p_categories, p_stores, p_date_from, p_date_to, p_limit, p_offset)` — магазинні позиції без картки, найчастіше куповані зверху. Повертає `receipt_labels` (дослівні `items.raw_product_name`) і `group_key` = `normalize_product_search(brand || ' ' || name)`, щоб той самий товар із двох магазинів утворював одну задачу сфотографувати. Пошук через `strpos`, не `LIKE`.
+- `is_deposit_product(p_category, p_name)` — `immutable`: `true`, якщо категорія `Pfand` або ім’я містить `pfand`/`leergut` (без урахування регістру).
+- view `v_packaging_queue_products` — єдине визначення «рядок потребує картки»: `packaged_product_id is null`, `packaging_not_applicable = false`, не `is_deposit_product`, і не «лише від’ємні позиції» (є `items.total_orig < 0` і немає `> 0`). Рядок без позицій і рядок із нульовою сумою лишаються.
+- `search_packaging_candidates(p_query, p_categories, p_stores, p_date_from, p_date_to, p_limit, p_offset, p_last_purchased_since)` — рядки view без картки, **найновіша остання покупка зверху** (кластер одного товару впорядковано за найновішою покупкою групи, рядки без покупок — в кінці). `p_last_purchased_since` залишає лише рядки з останньою покупкою не раніше цієї дати; `group_purchases_count` для підказки «купувався і в інших магазинах» рахується до цього відсікання. Повертає `receipt_labels` (дослівні `items.raw_product_name`) і `group_key` = `normalize_product_search(brand || ' ' || name)`, щоб той самий товар із двох магазинів утворював одну задачу сфотографувати. Пошук через `strpos`, не `LIKE`.
+- `packaging_queue_summary(p_query, p_last_purchased_since)` — `total_count` (усі збіги) і `recent_count` (останні покупки не раніше дати; усі, якщо дата `null`) для того самого набору, що й список. Значок на головній показує `recent_count`.
 - `packaged_product_store_labels(p_packaged_product_id)` — усі назви цієї картки по магазинах із кількістю покупок і останньою ціною.
 
 ## Storage bucket `packaging`

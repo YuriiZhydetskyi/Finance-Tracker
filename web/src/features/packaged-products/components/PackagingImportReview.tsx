@@ -166,9 +166,10 @@ export function PackagingImportReview({
       </p>
       {batch.receipt_pages.length ? (
         <section className="space-y-2 rounded border border-slate-200 p-3">
-          <p className="text-sm font-medium">Сторінки чека — лише для перевірки відповідностей</p>
+          <p className="text-sm font-medium">Сторінки чека</p>
           <p className="text-xs text-slate-500">
-            Цей імпорт не створює чек. За потреби додай його через звичайний імпорт чеків.
+            Допомагають звірити назви в чеку з упаковками. Сам чек додається окремо — див. «Чек із
+            PDF» нижче.
           </p>
           <div className="flex flex-wrap gap-2">
             {batch.receipt_pages.map((page) => {

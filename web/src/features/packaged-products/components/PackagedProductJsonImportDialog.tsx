@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type SubmitEvent } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useCopyToClipboard } from '@/shared/hooks/use-copy-to-clipboard';
 import { useModalDialog } from '@/shared/hooks/use-modal-dialog';
 import { openPackagingPdf } from '@/shared/lib/dependencies';
@@ -15,15 +16,21 @@ import {
   type ExistingPackagingIdentity,
   type PackagingImport,
 } from '../utils/packaging-import';
+import { receiptImportFileName } from '../utils/packaging-receipt';
 import {
   createPackagingSavePlan,
   type PackagingSavePlan,
   type PackagingImportSource,
 } from '../api/use-save-packaged-products-mutation';
+import { usePackagingReceiptDuplicates } from '../api/use-receipt-duplicates';
 import { PackagingImportReview } from './PackagingImportReview';
+import { PackagingReceiptOption } from './PackagingReceiptOption';
 import type { PackagingCandidateRow } from '../types';
 
 export type { ImportedPackagedProduct } from '../utils/packaging-import';
+
+export type SavedPackagedProduct = { id: string; name: string };
+export type PackagingReceiptRequest = { file: File; paidBy: string };
 
 type Props = Readonly<{
   open: boolean;
@@ -32,11 +39,23 @@ type Props = Readonly<{
   existing: ExistingPackagingIdentity[];
   candidate?: PackagingCandidateRow | null;
   submitting: boolean;
+  /** People who can be named as the payer of the receipt on the PDF. */
+  payerOptions?: string[];
+  /** Pre-selected payer: the signed-in user. */
+  defaultPayer?: string;
   onClose: () => void;
+  /** Saves the cards and photos. */
   onImported: (
     plan: PackagingSavePlan,
     onProgress: (message: string) => void,
-  ) => void | Promise<void>;
+  ) => void | SavedPackagedProduct[] | Promise<void | SavedPackagedProduct[]>;
+  /**
+   * Sends the receipt pages to the durable receipt import and resolves with the new
+   * batch id. Without it the receipt pages are only used as evidence for the cards.
+   */
+  onEnqueueReceipt?: (request: PackagingReceiptRequest) => Promise<string>;
+  /** Called once the person is done with the dialog after everything that was asked has run. */
+  onFinished?: (saved: SavedPackagedProduct[]) => void;
 }>;
 
 type Review = {
@@ -44,7 +63,14 @@ type Review = {
   source: PackagingImportSource | null;
   pageCount: number | null;
   pages: Map<number, Blob>;
+  /** The receipt pages cut out into a PDF of their own; null when there is none or cutting failed. */
+  receiptPdf: Blob | null;
+  receiptCutError: string | null;
 };
+
+type ReceiptOutcome = { status: 'queued'; batchId: string } | { status: 'failed'; message: string };
+
+type Outcome = { saved: SavedPackagedProduct[]; receipt: ReceiptOutcome };
 
 export function PackagedProductJsonImportDialog({
   open,
@@ -53,11 +79,16 @@ export function PackagedProductJsonImportDialog({
   existing,
   candidate = null,
   submitting,
+  payerOptions = [],
+  defaultPayer = '',
   onClose,
   onImported,
+  onEnqueueReceipt,
+  onFinished,
 }: Props) {
   const dialogRef = useModalDialog(open);
   const savePlan = useRef<PackagingSavePlan | null>(null);
+  const receiptRequest = useRef<PackagingReceiptRequest | null>(null);
   const prompt = useMemo(
     () => buildPackagedProductPrompt(categories, taxonomy, candidate),
     [categories, taxonomy, candidate],
@@ -66,6 +97,9 @@ export function PackagedProductJsonImportDialog({
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [review, setReview] = useState<Review | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [addReceipt, setAddReceipt] = useState(true);
+  const [payerChoice, setPayerChoice] = useState('');
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [preparing, setPreparing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [startedSave, setStartedSave] = useState(false);
@@ -74,8 +108,37 @@ export function PackagedProductJsonImportDialog({
   const { copyState, copy } = useCopyToClipboard(prompt);
   const busy = preparing || saving || submitting;
 
+  const receiptPages = review?.batch.receipt_pages ?? [];
+  const offersReceipt = onEnqueueReceipt != null && receiptPages.length > 0;
+  const payer = payerChoice || defaultPayer;
+  const receiptDuplicates = usePackagingReceiptDuplicates(
+    review && offersReceipt ? review.batch.receipt : null,
+  );
+
+  const resetAll = () => {
+    setJsonText('');
+    setPdfFile(null);
+    setReview(null);
+    setConfirmed(false);
+    setAddReceipt(true);
+    setPayerChoice('');
+    setOutcome(null);
+    setError(null);
+    setStartedSave(false);
+    savePlan.current = null;
+    receiptRequest.current = null;
+  };
+
+  const finish = (saved: SavedPackagedProduct[]) => {
+    resetAll();
+    onFinished?.(saved);
+    onClose();
+  };
+
   const handleClose = () => {
-    if (!busy) onClose();
+    if (busy) return;
+    if (outcome) finish(outcome.saved);
+    else onClose();
   };
 
   const prepareReview = async () => {
@@ -86,6 +149,8 @@ export function PackagedProductJsonImportDialog({
       let source: PackagingImportSource | null = null;
       let pageCount: number | null = null;
       let pages = new Map<number, Blob>();
+      let receiptPdf: Blob | null = null;
+      let receiptCutError: string | null = null;
       if (pdfFile) {
         setProgress('Читаю PDF…');
         const pdf = await openPackagingPdf(pdfFile);
@@ -105,15 +170,26 @@ export function PackagedProductJsonImportDialog({
             receipt_pages: batch.receipt_pages,
             pages,
           };
+          if (onEnqueueReceipt && batch.receipt_pages.length > 0) {
+            setProgress('Вирізаю сторінки чека…');
+            try {
+              receiptPdf = await pdf.extractPages(batch.receipt_pages);
+            } catch (e) {
+              // A receipt that cannot be cut out must never block the cards.
+              receiptCutError = e instanceof Error ? e.message : 'невідома помилка';
+            }
+          }
         } finally {
           await pdf.close();
         }
       } else {
         validatePackagingPages(batch, null);
       }
-      setReview({ batch, source, pageCount, pages });
+      setReview({ batch, source, pageCount, pages, receiptPdf, receiptCutError });
       setConfirmed(false);
+      setAddReceipt(true);
       savePlan.current = null;
+      receiptRequest.current = null;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не вдалося перевірити імпорт.');
     } finally {
@@ -122,22 +198,56 @@ export function PackagedProductJsonImportDialog({
     }
   };
 
+  const enqueueReceipt = async (
+    request: PackagingReceiptRequest,
+    saved: SavedPackagedProduct[],
+  ): Promise<void> => {
+    if (!onEnqueueReceipt) return;
+    setProgress('Додаю чек до імпорту чеків…');
+    try {
+      const batchId = await onEnqueueReceipt(request);
+      setOutcome({ saved, receipt: { status: 'queued', batchId } });
+    } catch (e) {
+      setOutcome({
+        saved,
+        receipt: {
+          status: 'failed',
+          message: e instanceof Error ? e.message : 'Не вдалося додати чек до імпорту.',
+        },
+      });
+    }
+  };
+
   const save = async () => {
     if (!review || !confirmed || busy) return;
     setError(null);
+    const wantsReceipt = offersReceipt && addReceipt && review.receiptPdf != null;
+    if (wantsReceipt && !payer) {
+      setError('Вибери, хто оплатив чек, або зніми позначку про додавання чека.');
+      return;
+    }
     setSaving(true);
     try {
       validatePackagingLinks(review.batch.products);
       savePlan.current ??= createPackagingSavePlan(review.batch.products, review.source);
       setStartedSave(true);
-      await onImported(savePlan.current, setProgress);
-      setJsonText('');
-      setPdfFile(null);
-      setReview(null);
-      setConfirmed(false);
-      setStartedSave(false);
-      savePlan.current = null;
-      onClose();
+      const saved = (await onImported(savePlan.current, setProgress)) ?? [];
+      if (wantsReceipt && review.receiptPdf) {
+        const request: PackagingReceiptRequest = {
+          file: new File(
+            [review.receiptPdf],
+            receiptImportFileName(review.source?.file_name ?? 'чек.pdf', receiptPages),
+            { type: 'application/pdf' },
+          ),
+          paidBy: payer,
+        };
+        receiptRequest.current = request;
+        // The cards are saved at this point; the receipt is a second, separate step
+        // whose failure is shown and can be retried without touching them again.
+        await enqueueReceipt(request, saved);
+      } else {
+        finish(saved);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не вдалося зберегти імпорт.');
     } finally {
@@ -146,9 +256,22 @@ export function PackagedProductJsonImportDialog({
     }
   };
 
+  const retryReceipt = async () => {
+    const request = receiptRequest.current;
+    if (!outcome || !request || busy) return;
+    setSaving(true);
+    try {
+      await enqueueReceipt(request, outcome.saved);
+    } finally {
+      setSaving(false);
+      setProgress('');
+    }
+  };
+
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!busy) void (review ? save() : prepareReview());
+    if (busy || outcome) return;
+    void (review ? save() : prepareReview());
   };
 
   return (
@@ -168,9 +291,11 @@ export function PackagedProductJsonImportDialog({
               Товари з JSON і PDF
             </h2>
             <p className="text-xs text-slate-600">
-              {review
-                ? 'Перевір фото та вибери відповідні назви в чеках.'
-                : 'Скопіюй запит для ШІ, додай той самий PDF і встав отриманий JSON.'}
+              {outcome
+                ? 'Картки збережено.'
+                : review
+                  ? 'Перевір фото та вибери відповідні назви в чеках.'
+                  : 'Скопіюй запит для ШІ, додай той самий PDF і встав отриманий JSON.'}
             </p>
           </div>
           <Button type="button" variant="ghost" disabled={busy} onClick={handleClose}>
@@ -178,7 +303,44 @@ export function PackagedProductJsonImportDialog({
           </Button>
         </div>
         <div className="space-y-4 overflow-y-auto p-4">
-          {!review ? (
+          {outcome ? (
+            <div className="space-y-3">
+              <p
+                role="status"
+                className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"
+              >
+                Збережено карток: {outcome.saved.length}.
+              </p>
+              {outcome.receipt.status === 'queued' ? (
+                <p
+                  role="status"
+                  className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"
+                >
+                  Чек додано до імпорту чеків. Він опрацьовується у фоні; результат і можливі
+                  винятки видно на сторінці імпорту.{' '}
+                  <Link
+                    to="/imports/$id"
+                    params={{ id: outcome.receipt.batchId }}
+                    className="font-medium underline"
+                  >
+                    Відкрити імпорт чека
+                  </Link>
+                </p>
+              ) : (
+                <div
+                  role="alert"
+                  className="space-y-1 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+                >
+                  <p className="font-medium">Картки збережено, але чек не додано до імпорту.</p>
+                  <p>{outcome.receipt.message}</p>
+                  <p>
+                    Спробуй ще раз кнопкою нижче або додай чек вручну через «Масовий імпорт» на
+                    головній сторінці.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : !review ? (
             <>
               <div className="rounded border border-slate-200 p-3 text-sm text-slate-700">
                 Одна сторінка упаковки — один товар. Фото лицевого боку й звороту можуть бути на
@@ -259,6 +421,20 @@ export function PackagedProductJsonImportDialog({
                   setConfirmed(false);
                 }}
               />
+              {offersReceipt ? (
+                <PackagingReceiptOption
+                  pages={receiptPages}
+                  summary={review.batch.receipt}
+                  cutError={review.receiptCutError}
+                  enabled={addReceipt}
+                  onEnabledChange={setAddReceipt}
+                  payerOptions={payerOptions}
+                  payer={payer}
+                  onPayerChange={setPayerChoice}
+                  duplicates={receiptDuplicates.data ?? []}
+                  disabled={busy || startedSave}
+                />
+              ) : null}
               {review.batch.warnings.length ? (
                 <div className="space-y-1 rounded bg-amber-50 p-3 text-sm text-amber-900">
                   {review.batch.warnings.map((warning, i) => (
@@ -301,31 +477,51 @@ export function PackagedProductJsonImportDialog({
           ) : null}
         </div>
         <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-4 py-3">
-          {review && (!startedSave || error) ? (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={busy}
-              onClick={() => {
-                setReview(null);
-                setConfirmed(false);
-                setError(null);
-                setStartedSave(false);
-                savePlan.current = null;
-              }}
-            >
-              {startedSave ? 'Перевірити імпорт заново' : 'Змінити JSON або PDF'}
-            </Button>
-          ) : null}
-          <Button type="submit" disabled={busy || (review != null && !confirmed)}>
-            {busy
-              ? 'Обробляю…'
-              : review
-                ? startedSave
-                  ? 'Повторити збереження'
-                  : 'Зберегти товари та фото'
-                : 'Перевірити JSON і PDF'}
-          </Button>
+          {outcome ? (
+            <>
+              {outcome.receipt.status === 'failed' ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => void retryReceipt()}
+                >
+                  {busy ? 'Додаю…' : 'Повторити додавання чека'}
+                </Button>
+              ) : null}
+              <Button type="button" disabled={busy} onClick={handleClose}>
+                {outcome.receipt.status === 'failed' ? 'Закрити без чека' : 'Готово'}
+              </Button>
+            </>
+          ) : (
+            <>
+              {review && (!startedSave || error) ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    setReview(null);
+                    setConfirmed(false);
+                    setError(null);
+                    setStartedSave(false);
+                    savePlan.current = null;
+                  }}
+                >
+                  {startedSave ? 'Перевірити імпорт заново' : 'Змінити JSON або PDF'}
+                </Button>
+              ) : null}
+              <Button type="submit" disabled={busy || (review != null && !confirmed)}>
+                {busy
+                  ? 'Обробляю…'
+                  : review
+                    ? startedSave
+                      ? 'Повторити збереження'
+                      : 'Зберегти товари та фото'
+                    : 'Перевірити JSON і PDF'}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </dialog>

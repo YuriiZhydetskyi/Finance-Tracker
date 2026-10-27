@@ -5,6 +5,7 @@ import type { PackagedProductRow } from '../types';
 
 const mocks = vi.hoisted(() => ({
   product: { current: null as PackagedProductRow | null },
+  hints: { current: [] as unknown[] },
   updateNotes: vi.fn(),
   updateState: { isPending: false, isError: false, error: null as Error | null },
 }));
@@ -19,7 +20,10 @@ vi.mock('../api/use-packaged-products', () => ({
   usePackagedProduct: () => ({ isPending: false, isError: false, data: mocks.product.current }),
 }));
 vi.mock('../api/use-packaging-candidates', () => ({
-  usePackagedProductStoreLabels: () => ({ isError: false, data: [] }),
+  usePackagedProductStoreLabels: () => ({ isError: false, isSuccess: true, data: [] }),
+}));
+vi.mock('../api/use-receipt-hints', () => ({
+  usePackagedProductReceiptHints: () => ({ data: mocks.hints.current }),
 }));
 vi.mock('../api/use-packaging-photos', () => ({
   usePackagedProductPhotos: () => ({ isError: false, data: [] }),
@@ -84,6 +88,28 @@ beforeEach(() => {
   mocks.updateState.isPending = false;
   mocks.updateState.isError = false;
   mocks.updateState.error = null;
+  mocks.hints.current = [];
+});
+
+describe('PackagedProductDetail receipt hints', () => {
+  it('lists the import hints without linking anything', () => {
+    mocks.product.current = product([]);
+    mocks.hints.current = [
+      { store: 'REWE', receipt_label: 'Originals', receipt_date: '2026-09-13' },
+    ];
+    render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
+    expect(
+      screen.getByRole('heading', { name: 'Підказки з імпорту: назви в чеках' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/REWE · «Originals»/)).toBeInTheDocument();
+    expect(screen.getByText(/нічого не прив’язано/)).toBeInTheDocument();
+  });
+
+  it('shows no hints block for a card without hints', () => {
+    mocks.product.current = product([]);
+    render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
+    expect(screen.queryByText(/Підказки з імпорту/)).not.toBeInTheDocument();
+  });
 });
 
 describe('PackagedProductDetail review notes', () => {

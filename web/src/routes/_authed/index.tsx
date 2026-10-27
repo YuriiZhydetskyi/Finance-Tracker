@@ -5,7 +5,10 @@ import { categoriesQueryOptions } from '@/features/categories';
 import { usePendingParses } from '@/features/pending-parses';
 import { productsQueryOptions } from '@/features/products';
 import { receiptsQueryOptions, searchToFilters } from '@/features/receipts';
-import { usePackagingCandidatesCount } from '@/features/packaged-products';
+import {
+  packagingQueueWindowStart,
+  usePackagingCandidatesCount,
+} from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
 
 const HomeSearchSchema = z.object({
@@ -26,7 +29,8 @@ function HomeNav() {
   usePrefetchQuery(productsQueryOptions);
   const pendingQuery = usePendingParses();
   const pendingCount = pendingQuery.data?.length ?? 0;
-  const packagingQuery = usePackagingCandidatesCount();
+  // The badge counts what the queue opens with: rows bought in the last 30 days.
+  const packagingQuery = usePackagingCandidatesCount(packagingQueueWindowStart());
   const packagingCount = packagingQuery.data ?? 0;
 
   return (
