@@ -5,7 +5,13 @@ import {
   createPreDeployDatabase,
   scalar,
 } from './lib/pglite-app-schema.mjs';
-import { iid, loadDuplicateProductsFixture, pid, PP } from './lib/duplicate-products-fixture.mjs';
+import {
+  iid,
+  loadDuplicateProductsFixture,
+  pid,
+  PP,
+  rid,
+} from './lib/duplicate-products-fixture.mjs';
 
 const OWNER = 'a@example.com';
 const STRANGER = 'b@example.com';
@@ -280,6 +286,40 @@ try {
     asUser(db, OWNER, 'delete from public.product_merge_log'),
     /permission denied/,
   );
+
+  // ── 8. A group of three with a skipped member ────────────────────────────
+  // The survivor is stored as "Aldi Süd", one loser (canonical spelling, a different
+  // card) is skipped, the other loser merges. Writing the canonical spelling onto the
+  // survivor would collide with the skipped row on (store, code): it must keep its own.
+  await db.exec('begin');
+  try {
+    const trio = (n) => pid(800 + n);
+    await db.exec(`
+      insert into public.products (id, name, category, store, store_product_code, packaged_product_id)
+        values ('${trio(1)}', 'Trio', 'Бакалія', 'Aldi Süd', '808080', '${PP.one}'),
+               ('${trio(2)}', 'Trio', 'Бакалія', 'ALDI SÜD', '808080', '${PP.two}'),
+               ('${trio(3)}', 'Trio', 'Бакалія', 'Aldi', '808080', null);
+      insert into public.items (id, receipt_id, product_id, product_name, raw_product_name, category,
+                                qty, unit_price_orig, discount_orig, total_orig, total_eur, consumed_by)
+        values ('${iid(900)}', '${rid(4)}', '${trio(1)}', 'Trio', 'Trio', 'Бакалія', 1, 1, 0, 1, 1, 'shared');
+    `);
+    const trioBatch = await q(
+      `select keep_id, drop_id, status from public.merge_duplicate_products(false)
+        where keep_id = $1 order by drop_id`,
+      [trio(1)],
+    );
+    assert.deepEqual(trioBatch, [
+      { keep_id: trio(1), drop_id: trio(2), status: 'skipped_conflict' },
+      { keep_id: trio(1), drop_id: trio(3), status: 'merged' },
+    ]);
+    assert.equal(
+      await one('select store from public.products where id = $1', [trio(1)]),
+      'Aldi Süd',
+      'the survivor keeps its spelling while a twin holds the canonical one',
+    );
+  } finally {
+    await db.exec('rollback');
+  }
 
   console.log('merge_products SQL tests passed');
 } finally {

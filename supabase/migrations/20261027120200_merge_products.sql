@@ -311,8 +311,17 @@ begin
       using errcode = '42501';
   end if;
 
+  -- The survivor takes the canonical spelling unless another row (a pair someone
+  -- left unresolved) already holds that exact (store, code) / (store, name): then
+  -- it keeps its own spelling rather than break the unique indexes.
   update public.products set
-    store = v_store,
+    store = case when exists (
+        select 1 from public.products other
+         where other.id <> p_keep_id
+           and other.store = v_store
+           and ((v_code is not null and other.store_product_code = v_code)
+                or (v_code is null and other.store_product_code is null and other.name = v_keep.name))
+      ) then store else v_store end,
     store_product_code = v_code,
     category = v_category,
     product_family_id = v_family,
