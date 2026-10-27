@@ -9,7 +9,7 @@ Before making non-trivial changes, read in order:
 1. **[docs/project-status.md](docs/project-status.md)** — current state, pending deploy steps, lessons learned. The handoff doc.
 2. **[docs/architecture.md](docs/architecture.md)** — layers, request flows, ports & adapters, extension points.
 3. **[docs/data-model.md](docs/data-model.md)** — authoritative Postgres schema, RLS rules, RPC contracts, money/qty/fx conventions.
-4. **[docs/decisions/](docs/decisions/)** — 32 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import; 0030 covers the packaged-product "needs manual check" notes; 0031 the «Без картки» queue (Pfand exclusion, newest-first order, 30-day window); 0032 creating the receipt from a JSON + PDF import. Superseded ADRs are marked in the index.
+4. **[docs/decisions/](docs/decisions/)** — 34 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import; 0030 covers the packaged-product "needs manual check" notes; 0031 the «Без картки» queue (Pfand exclusion, newest-first order, 30-day window); 0032 creating the receipt from a JSON + PDF import; 0033 canonical store names (registry + chain patterns, write-path triggers, importer canonicalisation) and merging duplicate product rows (`merge_products`); 0034 the bulk «Без упаковки» rule and the other-store queue hint. Superseded ADRs are marked in the index.
 5. **[docs/deploy.md](docs/deploy.md)** — operational runbook: secrets, env vars, deploy procedure, troubleshooting.
 6. **[docs/extending.md](docs/extending.md)** — numbered recipes for common extensions (add category, swap AI provider, add column, etc.).
 7. **[docs/refactoring-plan-2026-09.md](docs/refactoring-plan-2026-09.md)** — September 2026 refactoring plan and its status.
@@ -32,6 +32,9 @@ npm run test:purchase-correction-sql # PGlite: purchase correction rules
 npm run test:packaged-products-sql   # PGlite: packaged products constraints, RLS, queue
 npm run test:save-receipt-bundle-sql # PGlite: save_receipt_bundle RPC
 npm run test:email-imports-sql      # PGlite: Gmail import sources, tokens, registration
+npm run test:canonical-stores-sql    # PGlite: store registry/patterns, write-path triggers, importers, whole deploy on a fixture
+npm run test:merge-products-sql      # PGlite: merge_products / unmerge_product / merge_duplicate_products
+npm run test:packaging-exclusion-sql # PGlite: bulk «Без упаковки» rule and its undo
 npm run sync:edge-domain             # regenerate supabase/functions/_shared/domain from packages/domain
 npm run check:edge-domain            # fail if that generated copy drifted
 npm run format                       # Prettier --write (format:check to verify)
@@ -119,7 +122,7 @@ finance-tracker/
 │   └── styles/tailwind.css
 ├── packages/domain/src/           # vendor-free domain logic + tests
 ├── supabase/
-│   ├── migrations/                # 46 timestamped SQL files (see folder); key ones: initial_schema,
+│   ├── migrations/                # 53 timestamped SQL files (see folder); key ones: initial_schema,
 │   │                              # background_receipt_imports, multilingual_product_taxonomy,
 │   │                              # purchase_correction_rules, packaged_products, save_receipt_bundle
 │   ├── functions/
@@ -128,7 +131,7 @@ finance-tracker/
 │   │   ├── process-receipt-imports/ # PGMQ worker: index, handler, job-processor, attempts, parsing, ...
 │   │   └── ingest-email-receipts/ # Gmail push endpoint: handler, email-document (MIME), html-text
 │   └── seed.sql
-├── scripts/                       # sync-edge-domain, PGlite SQL tests, product-taxonomy tooling
+├── scripts/                       # sync-edge-domain, PGlite SQL tests (shared bootstrap + fixture in lib/), product-taxonomy tooling
 ├── tools/gmail-receipt-sync/      # Apps Script the owner pastes into their Google account (ADR-0029)
 ├── .github/workflows/             # pr-checks.yml, deploy.yml, codeql.yml
 └── docs/                          # architecture, data-model, deploy, ADRs, etc.
@@ -177,12 +180,12 @@ These rules live in `packages/domain/`:
 
 ## Testing strategy
 
-Vitest everywhere; Deno only for type/lint gates. The root `vitest.config.mts` lists every workspace under `test.projects`, so `npx vitest run` from the repo root covers all of them (each keeps its own config and its own `npm run test` script). `npm run test` runs (counts as of 2026-10-27 — 1285 Vitest tests in 146 files):
+Vitest everywhere; Deno only for type/lint gates. The root `vitest.config.mts` lists every workspace under `test.projects`, so `npx vitest run` from the repo root covers all of them (each keeps its own config and its own `npm run test` script). `npm run test` runs (counts as of 2026-10-27 — 1316 Vitest tests in 151 files):
 
 - **Domain unit** (`packages/domain`, 296 tests) — pure TS: schemas, factories, pair-detector, money, ulid, time, taxonomy, receipt evidence, bank statements, reconciliation.
-- **Web** (`web`, 850 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
-- **Edge Functions in Node** — `supabase/functions/_shared` (38), `parse-receipt` (20), `process-receipt-imports` (57), `ingest-email-receipts` (24). Each is its own workspace with a `vitest.config.ts`; handlers take injected dependencies, so only Web Fetch is needed.
-- **SQL on PGlite** — `scripts/test-purchase-correction-rules.mjs`, `scripts/test-packaged-products-sql.mjs`, `scripts/test-save-receipt-bundle-sql.mjs`, `scripts/test-email-imports-sql.mjs` run migrations in in-process Postgres and assert constraints, RLS and RPC behavior.
+- **Web** (`web`, 871 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
+- **Edge Functions in Node** — `supabase/functions/_shared` (46), `parse-receipt` (22), `process-receipt-imports` (57), `ingest-email-receipts` (24). Each is its own workspace with a `vitest.config.ts`; handlers take injected dependencies, so only Web Fetch is needed.
+- **SQL on PGlite** — `scripts/test-purchase-correction-rules.mjs`, `scripts/test-packaged-products-sql.mjs`, `scripts/test-save-receipt-bundle-sql.mjs`, `scripts/test-email-imports-sql.mjs`, `scripts/test-canonical-stores-sql.mjs`, `scripts/test-merge-products-sql.mjs`, `scripts/test-packaging-exclusion-sql.mjs` run migrations in in-process Postgres and assert constraints, RLS and RPC behavior. The last three share `scripts/lib/pglite-app-schema.mjs` (the production schema just before the canonical-stores migrations, with stubs only for pgmq/unaccent/import tables) and `scripts/lib/duplicate-products-fixture.mjs` (synthetic data), then apply the new migrations in order, i.e. they rehearse the whole deploy.
 - **Drift guard** — `npm run check:edge-domain` fails if `_shared/domain` differs from `packages/domain`.
 
 CI (`pr-checks.yml` on PRs to `main`, `deploy.yml` on push to `main`) additionally runs `deno check` for both functions and `deno lint supabase/functions`; `pr-checks.yml` also verifies the frozen taxonomy backfill.
@@ -229,6 +232,7 @@ The most expensive lessons:
 - **jsdom does not implement native `<dialog>`.** Tests for `<DeleteConfirmDialog>` stub `HTMLDialogElement.prototype.showModal/close` in `beforeAll`.
 - **TanStack Router `<Link>` needs router context.** Render-only component tests mock `@tanstack/react-router` to return a plain `<a>` with `href` built from `params`.
 - **Deno does NOT resolve Vite-style workspace packages.** `@finance-tracker/domain` uses `"main": "./src/index.ts"` + extension-less internal imports — Deno chokes. `ParsedReceipt` types are mirrored in `_shared/receipt-ai/types.ts`; client-side Zod validation covers runtime safety.
+- **`store` is canonical, not free text (ADR-0033).** `products.store` / `receipts.store` are rewritten to the registry's canonical spelling by `BEFORE INSERT/UPDATE OF store` triggers, so the `(store, …)` unique indexes and `ON CONFLICT` arbiters keep working. A trigger alone is not enough: it fires after a writer has looked a product up by the raw spelling. New write paths must canonicalise their input first: the durable import finalizers call `canonicalize_receipt_json` on entry, the browser calls the `canonical_store_name` RPC before resolving products. Chain aliases are data in `store_name_patterns` (see [docs/extending.md](docs/extending.md) recipe 11); never commit operator, franchisee or branch names, the repo is public. To delete a `products` row use `merge_products`, never a bare `DELETE`: `items` → `SET NULL`, `product_prices` → `RESTRICT`, `product_match_rules` → `CASCADE`.
 - **`supabase/functions/_shared/domain/` is a generated copy.** `scripts/sync-edge-domain.mjs` copies selected `packages/domain` files and rewrites relative imports to `.ts` for Deno. Never edit the copy: change the domain source, run `npm run sync:edge-domain`, commit both. `check:edge-domain` (in `npm run test` and CI) fails on drift.
 - **PowerShell `>` redirect → UTF-16 LE with BOM.** Vite/TS/ESLint want UTF-8. For `supabase gen types`: `[System.IO.File]::WriteAllText(path, ($output -join "`n"), [System.Text.UTF8Encoding]::new($false))`.
 - **TanStack Router `routeTree.gen.ts` is generated and gitignored.** Any script that triggers `tsc` must call `tsr generate` first. Wired into `web/package.json` scripts.

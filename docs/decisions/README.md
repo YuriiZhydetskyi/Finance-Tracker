@@ -52,3 +52,5 @@
 | [0030](0030-packaged-product-review-notes.md) | Позначка «Потрібна перевірка» для карток упаковок | accepted | Schema / Import / UI |
 | [0031](0031-packaging-queue-deposits-and-recency.md) | Черга «Без картки»: без Pfand, найновіші зверху, вікно 30 днів | accepted | Schema / Queue / UI |
 | [0032](0032-receipt-from-packaging-pdf.md) | Чек зі сторінок PDF через імпорт чеків | accepted | Import / Queue / UI |
+| [0033](0033-canonical-store-names-and-product-merge.md) | Канонічні назви магазинів і злиття дублікатів товарів | accepted | Schema / Import / Data |
+| [0034](0034-bulk-no-packaging-and-other-store-hint.md) | «Без упаковки» масово за правилом і підказка про інші магазини | accepted | Schema / Queue / UI |

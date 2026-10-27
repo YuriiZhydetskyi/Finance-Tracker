@@ -246,6 +246,190 @@ URL-кодується і маскується в логах. Далі `supabase
 
 ---
 
+## Перед деплоєм канонічних назв і злиття (ADR-0033)
+
+Міграції `20261027120000…120600` одним `db push` і змінюють дані (злиття дублікатів товарів,
+`products.store`, `receipts.store`, ключі правил, «Без упаковки» масово). Між схемою й міграцією даних
+паузи немає, а підтвердження `production` лише останній шлюз. Тому перегляд робимо до merge.
+
+### 1. Копія даних
+
+`pg_dump` таблиць `products`, `items`, `product_prices`, `product_match_rules`, `receipts`,
+`store_aliases` (рядок підключення береться зі змінної середовища, у документи й чат не копіюється).
+Злиття має логічний відкат (`unmerge_product`), але не фізичний.
+
+### 2. Запити, що працюють ДО міграцій
+
+`merge_duplicate_products(true)` з’являється лише після міграцій, тож до них перевіряємо так:
+
+```sql
+-- Написання магазинів у товарах і чеках.
+select store, count(*) as products from public.products group by 1 order by 1;
+select store, count(*) as receipts from public.receipts group by 1 order by 1;
+
+-- Грубо однакові магазини: нижній регістр без пунктуації. Мережі з різними
+-- назвами (Netto / Netto Marken-Discount, оператори REWE) тут не видно: їх шукай очима в списку вище.
+select regexp_replace(lower(store), '[^[:alnum:]]+', '', 'g') as rough_key,
+       array_agg(distinct store) as spellings
+  from public.products
+ group by 1 having count(distinct store) > 1;
+
+-- Той самий артикул під кількома написаннями магазину: це пари рівня 1.
+select regexp_replace(lower(store), '[^[:alnum:]]+', '', 'g') as rough_key,
+       store_product_code, count(*) as rows, array_agg(id) as ids
+  from public.products
+ where store_product_code is not null
+ group by 1, 2 having count(*) > 1;
+
+-- Що доведеться переносити: правила й знімки цін на рядках із цих груп.
+select count(*) as rules from public.product_match_rules;
+select count(*) as prices from public.product_prices;
+select p.store, count(*) as rules
+  from public.product_match_rules r join public.products p on p.id = r.product_id
+ group by 1 order by 1;
+select store_key, count(*) from public.product_match_rules group by 1 order by 1;
+
+-- Чи згортає база великі літери з діакритикою (потрібно для ключів правил).
+select lower('ALDI SÜD') = lower('Aldi Süd') as lower_folds_umlaut;
+
+-- Зіткнення (store, merchant_order_id) після зведення написань: ті чеки міграція лишить як є.
+select regexp_replace(lower(store), '[^[:alnum:]]+', '', 'g') as rough_key,
+       merchant_order_id, array_agg(id) as receipt_ids
+  from public.receipts
+ where merchant_order_id is not null
+ group by 1, 2 having count(*) > 1;
+
+-- Один і той самий похід, імпортований двічі під двома написаннями мережі.
+select a.id as first_id, b.id as second_id, a.date, a.total_orig, a.store as first_store, b.store as second_store
+  from public.receipts a
+  join public.receipts b
+    on b.id > a.id and b.date = a.date and b.currency = a.currency
+   and b.total_orig = a.total_orig and b.store <> a.store;
+```
+
+Другий і третій запити підказують, що очікувати від рівнів 1 і 2; подвійні чеки міграція не чіпає
+(рішення власника).
+
+### 3. Сухий прогін усього деплою
+
+Спершу список пар, які правило злило б (міграції лише до `120200`, потім відкат): кожен рядок —
+`would_merge` або `skipped_conflict` з причиною в `detail`.
+
+```bash
+psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+begin;
+\i supabase/migrations/20261027120000_store_name_registry.sql
+\i supabase/migrations/20261027120100_packaging_not_applicable_reason.sql
+\i supabase/migrations/20261027120200_merge_products.sql
+select * from public.merge_duplicate_products(true);
+rollback;
+SQL
+```
+
+Потім усі сім міграцій в одній транзакції, яку відкочено; NOTICE показує, що було б зроблено:
+
+```bash
+psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+begin;
+\i supabase/migrations/20261027120000_store_name_registry.sql
+\i supabase/migrations/20261027120100_packaging_not_applicable_reason.sql
+\i supabase/migrations/20261027120200_merge_products.sql
+\i supabase/migrations/20261027120300_canonicalize_stores_and_merge_duplicates.sql
+\i supabase/migrations/20261027120400_canonical_store_write_path.sql
+\i supabase/migrations/20261027120500_packaging_exclusion_rule.sql
+\i supabase/migrations/20261027120600_packaging_queue_other_store_hint.sql
+rollback;
+SQL
+```
+
+`SUPABASE_DB_URL` — рядок підключення до бази (session pooler); у репозиторій і чат він не потрапляє.
+Скрипти запускають із кореня репозиторію (шляхи `\i` відносні).
+Той самий вміст можна вставити в SQL editor у Studio між `begin;` і `rollback;`; якщо Studio не
+показує `RAISE NOTICE`, користуйся `psql`. Міграція 20261027120300 сама падає, якщо кількості
+`items`, `product_prices`, `receipts` змінились або товарів не стало «було мінус злиті».
+
+Що читати в NOTICE: `MERGED` (пара злита), `SKIPPED` (пара з конфліктом — рішення власника), `STAYS`
+(рядок лишився на старому написанні через зіткнення), підсумкові рядки `canonical stores:` і
+`packaging exclusion:`, та `FLAGGED` для кожного рядка «Без упаковки». NOTICE містить назви товарів і
+магазинів — не публікуй їх.
+
+### 4. Після деплою
+
+```sql
+-- Лишились тільки пропущені пари.
+select tier, status, count(*) from public.merge_duplicate_products(true) group by 1, 2;
+-- Рядки з неканонічним написанням (пара ще чекає рішення).
+select count(*) from public.products where store <> public.canonical_store_name(store);
+select count(*) from public.receipts where store <> public.canonical_store_name(store);
+-- Журнал злиттів і масова позначка.
+select count(*) from public.product_merge_log where reverted_at is null;
+select packaging_not_applicable_reason, count(*)
+  from public.products where packaging_not_applicable group by 1 order by 1;
+select count(*) from public.v_packaging_queue_products;
+select * from public.store_name_registry order by created_at;
+select * from public.store_name_patterns order by pattern;
+```
+
+Потім `npx supabase gen types typescript --linked` (через UTF-8 helper, див. «Common operations»):
+`database.types.ts` для цієї зміни оновлено вручну.
+
+### Додати мережу магазинів або псевдонім
+
+Рецепт «додати мережу» — у [extending.md](extending.md#рецепт-11-додати-мережу-магазинів-або-псевдонім).
+Після нового шаблону вже наявні рядки зводять тим самим правилом, що й міграція:
+
+```sql
+select * from public.merge_duplicate_products(true);    -- нові двійники, які шаблон об’єднав
+select * from public.merge_duplicate_products(false);  -- злити те, що без конфліктів
+update public.products
+   set store = public.canonical_store_name(store)
+ where store <> public.canonical_store_name(store);
+```
+
+Для чеків тригер `trg_receipts_canonical_store` обнулив би `store_printed`, тож на час ручного
+перепису його вимикають:
+
+```sql
+begin;
+alter table public.receipts disable trigger trg_receipts_canonical_store;
+update public.receipts
+   set store_printed = coalesce(store_printed, store), store = public.canonical_store_name(store)
+ where store <> public.canonical_store_name(store);
+alter table public.receipts enable trigger trg_receipts_canonical_store;
+commit;
+```
+
+Ключі навчених правил (`product_match_rules.store_key`, нижній регістр назви магазину) треба
+переписати так само: `store_key = public.normalize_product_match_key(public.canonical_store_name(store_key))`.
+Зіткнення первинного ключа Postgres покаже помилкою: розв’яжи його вручну.
+
+### Перейменувати канонічну назву магазину
+
+Наприклад, обрати `Netto Marken-Discount` замість `Netto`. Усі рядки мережі мають однакову назву,
+тож відображення взаємно однозначне:
+
+```sql
+begin;
+update public.store_name_patterns
+   set canonical_name = 'Netto Marken-Discount'
+ where pattern = '^netto( marken discount)?$';
+-- якщо канонічну назву дав реєстр, а не шаблон:
+-- update public.store_name_registry set canonical_name = '…' where store_key = '…';
+update public.products set store = 'Netto Marken-Discount' where store = 'Netto';
+alter table public.receipts disable trigger trg_receipts_canonical_store;
+update public.receipts set store = 'Netto Marken-Discount' where store = 'Netto';
+alter table public.receipts enable trigger trg_receipts_canonical_store;
+update public.product_match_rules
+   set store_key = public.normalize_product_match_key('Netto Marken-Discount')
+ where store_key = public.normalize_product_match_key('Netto');
+commit;
+```
+
+Якщо серед рядків мережі є такі, що ще лежать на неканонічному написанні (пари, пропущені
+міграцією), спершу розв’яжи ці пари.
+
+---
+
 ## Common operations
 
 ### Додати нову env var
