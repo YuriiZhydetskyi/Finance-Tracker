@@ -18,7 +18,9 @@ type Props = Readonly<{
  * The work list for photographing. Rows arrive already ranked by the date of the
  * last purchase (newest first) and clustered by `group_key`, so the same product
  * bought at two stores sits together — it is one thing to photograph, even though
- * it is two rows to link.
+ * it is two rows to link. The hint says "other stores" only when the cluster has
+ * purchases in a different canonical store; a spelling twin or another code of
+ * the same article in the same chain is not another store.
  */
 export function PackagingCandidatesList({
   candidates,
@@ -42,7 +44,7 @@ export function PackagingCandidatesList({
       {candidates.map((candidate, index) => {
         const previous = candidates[index - 1];
         const startsGroup = previous?.group_key !== candidate.group_key;
-        const groupSpansStores = candidate.group_purchases_count > candidate.purchases_count;
+        const boughtElsewhere = candidate.other_store_purchases_count > 0;
         const busy = busyProductId === candidate.product_id;
 
         return (
@@ -78,7 +80,7 @@ export function PackagingCandidatesList({
                     ? ` · ${formatMoney(candidate.last_price_orig, candidate.last_currency ?? 'EUR')}`
                     : ''}
                 </p>
-                {startsGroup && groupSpansStores ? (
+                {startsGroup && boughtElsewhere ? (
                   <p className="mt-1 text-xs text-teal-700">
                     Цей товар купувався і в інших магазинах — сфотографуй один раз, потім привʼяжи
                     решту позицій до тієї ж картки.

@@ -35,6 +35,7 @@ function candidateRow(overrides: Record<string, unknown> = {}) {
     last_currency: 'EUR',
     group_key: 'pringles original',
     group_purchases_count: 3,
+    other_store_purchases_count: 1,
     ...overrides,
   };
 }
@@ -56,6 +57,8 @@ describe('usePackagingCandidates', () => {
     });
     expect(result.current.data?.[0]).toMatchObject({
       product_id: 'p1',
+      group_purchases_count: 3,
+      other_store_purchases_count: 1,
       total_eur: 5.98,
       last_purchased_on: '2026-10-20',
     });

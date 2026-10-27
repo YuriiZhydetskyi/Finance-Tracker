@@ -32,6 +32,7 @@ type RpcArgs = {
 const productsSelectMock = vi.fn<(col: string, val: string) => Promise<DataRes>>();
 const rpcMock = vi.fn<(name: string, args: RpcArgs) => Promise<DataRes>>();
 const fxRateMock = vi.fn<(currency: string, dateIso: string) => Promise<number>>();
+const canonicalStoreMock = vi.fn<(store: string) => Promise<DataRes>>();
 
 vi.mock('@/shared/lib/supabase-client', () => ({
   supabase: {
@@ -45,7 +46,10 @@ vi.mock('@/shared/lib/supabase-client', () => ({
       }
       throw new Error(`Unexpected table in test: ${table}`);
     },
-    rpc: (name: string, args: RpcArgs) => rpcMock(name, args),
+    rpc: (name: string, args: RpcArgs | { p_store: string }) =>
+      name === 'canonical_store_name'
+        ? canonicalStoreMock((args as { p_store: string }).p_store)
+        : rpcMock(name, args as RpcArgs),
   },
 }));
 
@@ -56,6 +60,8 @@ vi.mock('@/shared/lib/dependencies', () => ({
 }));
 
 beforeEach(() => {
+  canonicalStoreMock.mockReset();
+  canonicalStoreMock.mockImplementation((store) => Promise.resolve({ data: store, error: null }));
   productsSelectMock.mockReset();
   rpcMock.mockReset();
   fxRateMock.mockReset();
@@ -163,6 +169,26 @@ describe('useUpdateReceiptMutation', () => {
     expect(args.p_items[0]?.product_id).toBe(args.p_new_products[0]?.id);
     expect(args.p_items[0]?.price_id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
     expect(returned).toEqual({ receipt_id: RECEIPT_ID, items_count: 1 });
+  });
+
+  it('re-resolves an edited store name to its canonical spelling', async () => {
+    canonicalStoreMock.mockResolvedValue({ data: 'REWE', error: null });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useUpdateReceiptMutation(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        id: RECEIPT_ID,
+        existing,
+        receipt: { ...receiptInput, store: 'REWE Müller oHG' },
+        items,
+      });
+    });
+
+    expect(canonicalStoreMock).toHaveBeenCalledWith('REWE Müller oHG');
+    expect(productsSelectMock).toHaveBeenCalledWith('store', 'REWE');
+    expect(rpcArgs().p_receipt.store).toBe('REWE');
+    expect(rpcArgs().p_new_products[0]?.store).toBe('REWE');
   });
 
   it('keeps the existing FX rate when currency and date are unchanged', async () => {

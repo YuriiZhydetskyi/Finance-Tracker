@@ -60,6 +60,7 @@ function toCandidate(row: Record<string, unknown>): PackagingCandidateRow {
     last_currency: asNullableString(row.last_currency),
     group_key: asString(row.group_key),
     group_purchases_count: asNumber(row.group_purchases_count),
+    other_store_purchases_count: asNumber(row.other_store_purchases_count),
   };
 }
 
