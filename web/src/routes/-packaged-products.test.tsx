@@ -53,6 +53,8 @@ const queue = vi.hoisted(() => ({
   rows: [] as unknown[],
   summary: { total_count: 0, recent_count: 0 },
   candidateCalls: [] as { query?: string; lastPurchasedSince?: string | undefined }[],
+  skippedRows: [] as unknown[],
+  skipMutate: vi.fn(),
 }));
 
 vi.mock('@/shared/lib/supabase-client', () => ({ supabase: {} }));
@@ -95,7 +97,12 @@ vi.mock('@/features/packaged-products', async (importOriginal) => {
     usePackagingQueueSummary: () => ({ data: queue.summary }),
     useSavePackagedProductsMutation: () => idle,
     useLinkStoreProductMutation: () => idle,
-    useSkipPackagingMutation: () => idle,
+    useSkipPackagingMutation: () => ({ ...idle, mutate: queue.skipMutate }),
+    useSkippedPackagingProducts: () => ({
+      data: queue.skippedRows,
+      isPending: false,
+      isError: false,
+    }),
   };
 });
 
@@ -243,5 +250,71 @@ describe('/packaged-products queue recency window', () => {
 
     expect(await screen.findByText(/куплені за останні 30 днів/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Показати всі' })).not.toBeInTheDocument();
+  });
+});
+
+describe('/packaged-products «Без упаковки» tab', () => {
+  const skippedRow = (id: string, name: string, reason: string | null) => ({
+    id,
+    name,
+    store: 'REWE',
+    store_product_code: null,
+    category: 'Овочі/фрукти',
+    brand: null,
+    packaging_not_applicable_reason: reason,
+  });
+
+  beforeEach(() => {
+    queue.rows = [];
+    queue.summary = { total_count: 0, recent_count: 0 };
+    queue.skippedRows = [
+      skippedRow('p1', 'Bananen', 'weighed'),
+      skippedRow('p2', 'Von Hand', null),
+    ];
+    queue.skipMutate.mockReset();
+  });
+
+  it('is reachable from the tab bar and keeps the choice in the URL', async () => {
+    const router = await openCatalogue('/packaged-products?tab=queue');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Без упаковки' }));
+
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'skipped' }));
+    expect(await screen.findByText('Bananen')).toBeInTheDocument();
+    expect(screen.getByText('Von Hand')).toBeInTheDocument();
+    expect(screen.getAllByText('вагове').length).toBeGreaterThan(0);
+  });
+
+  it('puts a row back into the queue (the flag is cleared, nothing else)', async () => {
+    await openCatalogue('/packaged-products?tab=skipped');
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Повернути в чергу' }))[0]!);
+
+    expect(queue.skipMutate).toHaveBeenCalledExactlyOnceWith({
+      productIds: ['p1'],
+      notApplicable: false,
+    });
+  });
+
+  it('undoes the rule only for the rows it flagged, after a confirmation', async () => {
+    await openCatalogue('/packaged-products?tab=skipped');
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Повернути в чергу всі, позначені правилом (1)' }),
+    );
+    expect(queue.skipMutate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Так, повернути 1 у чергу' }));
+
+    expect(queue.skipMutate).toHaveBeenCalledExactlyOnceWith({
+      productIds: ['p1'],
+      notApplicable: false,
+    });
+  });
+
+  it('filters by the search box', async () => {
+    await openCatalogue('/packaged-products?tab=skipped&q=hand');
+
+    expect(await screen.findByText('Von Hand')).toBeInTheDocument();
+    expect(screen.queryByText('Bananen')).not.toBeInTheDocument();
   });
 });
