@@ -180,10 +180,10 @@ These rules live in `packages/domain/`:
 
 ## Testing strategy
 
-Vitest everywhere; Deno only for type/lint gates. The root `vitest.config.mts` lists every workspace under `test.projects`, so `npx vitest run` from the repo root covers all of them (each keeps its own config and its own `npm run test` script). `npm run test` runs (counts as of 2026-10-27 — 1316 Vitest tests in 151 files):
+Vitest everywhere; Deno only for type/lint gates. The root `vitest.config.mts` lists every workspace under `test.projects`, so `npx vitest run` from the repo root covers all of them (each keeps its own config and its own `npm run test` script). `npm run test` runs (counts as of 2026-10-27 — 1320 Vitest tests in 151 files):
 
 - **Domain unit** (`packages/domain`, 296 tests) — pure TS: schemas, factories, pair-detector, money, ulid, time, taxonomy, receipt evidence, bank statements, reconciliation.
-- **Web** (`web`, 871 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
+- **Web** (`web`, 875 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
 - **Edge Functions in Node** — `supabase/functions/_shared` (46), `parse-receipt` (22), `process-receipt-imports` (57), `ingest-email-receipts` (24). Each is its own workspace with a `vitest.config.ts`; handlers take injected dependencies, so only Web Fetch is needed.
 - **SQL on PGlite** — `scripts/test-purchase-correction-rules.mjs`, `scripts/test-packaged-products-sql.mjs`, `scripts/test-save-receipt-bundle-sql.mjs`, `scripts/test-email-imports-sql.mjs`, `scripts/test-canonical-stores-sql.mjs`, `scripts/test-merge-products-sql.mjs`, `scripts/test-packaging-exclusion-sql.mjs` run migrations in in-process Postgres and assert constraints, RLS and RPC behavior. The last three share `scripts/lib/pglite-app-schema.mjs` (the production schema just before the canonical-stores migrations, with stubs only for pgmq/unaccent/import tables) and `scripts/lib/duplicate-products-fixture.mjs` (synthetic data), then apply the new migrations in order, i.e. they rehearse the whole deploy.
 - **Drift guard** — `npm run check:edge-domain` fails if `_shared/domain` differs from `packages/domain`.
