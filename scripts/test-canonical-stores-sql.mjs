@@ -327,9 +327,9 @@ try {
   assert.deepEqual(
     notices.filter((n) => n.startsWith('canonical stores:')),
     [
-      'canonical stores: products 55 -> 41 (14 pair(s) merged, 15 item(s) re-pointed, 4 pair(s) skipped for the owner)',
+      `canonical stores: products ${String(meta.productCount)} -> ${String(meta.productCount - 14)} (14 pair(s) merged, 15 item(s) re-pointed, 4 pair(s) skipped for the owner)`,
       'canonical stores: products re-stored 3, left on their own spelling 4; receipts re-stored 9 (printed spelling kept), left 1; rules re-keyed 1, deduplicated 1, left 1',
-      'canonical stores: items 83, items without a product 0, product_prices 83, receipts 20 (all unchanged)',
+      `canonical stores: items ${String(meta.itemCount)}, items without a product 0, product_prices ${String(meta.itemCount)}, receipts ${String(meta.receiptCount)} (all unchanged)`,
     ],
   );
   assert.equal(notices.filter((n) => n.startsWith('SKIPPED')).length, 4);
@@ -357,6 +357,79 @@ try {
   );
   // Both Netto receipts survive: deleting the double import is the owner's call.
   assert.equal(await one(`select count(*)::int from public.receipts where store = 'Netto'`), 2);
+
+  // Undoing every merge on the deployed database: the canonical-store trigger must
+  // not rewrite the re-created rows onto the survivors' keys, the spellings come
+  // back, and the rules (re-keyed by the data migration) go back with their rows.
+  const productsAfterDeploy = Number(await one('select count(*) from public.products'));
+  const logIds = (await q('select id from public.product_merge_log order by id desc')).map(
+    (r) => r.id,
+  );
+  await live.exec('begin');
+  try {
+    for (const id of logIds) {
+      assert.equal(
+        (await q('select public.unmerge_product($1) as result', [id]))[0].result.status,
+        'reverted',
+      );
+    }
+    assert.equal(
+      Number(await one('select count(*) from public.products')),
+      productsAfterDeploy + 14,
+    );
+    assert.deepEqual(
+      (await q(`select store, store_product_code from public.products where id = $1`, [pid(2)]))[0],
+      { store: 'Aldi Süd', store_product_code: '111111' },
+      'the dropped twin is back under the spelling it had',
+    );
+    assert.equal(
+      await one('select store from public.products where id = $1', [pid(1)]),
+      'ALDI SÜD',
+    );
+    assert.equal(await one(`select count(*)::int from public.items where product_id is null`), 0);
+    assert.equal(await one('select product_id from public.items where id = $1', [iid(4)]), pid(2));
+    assert.equal(
+      await one(`select product_id from public.product_match_rules where raw_product_name_key = 'süßkartoffeln lose'
+                  order by store_key limit 1`),
+      pid(4),
+      'the rule that followed the merge goes back to the dropped row',
+    );
+    assert.equal(
+      await one(`select count(*)::int from public.product_merge_log where reverted_at is null`),
+      0,
+    );
+  } finally {
+    await live.exec('rollback');
+  }
+  // A NULL dry-run flag must never mean "apply".
+  assert.equal(
+    (await q('select public.merge_products($1, $2, null) as result', [pid(5), pid(6)]))[0].result
+      .status,
+    'dry_run',
+  );
+  assert.equal(
+    (
+      await q(
+        'select count(*)::int as n from public.merge_duplicate_products(null) where status = $1',
+        ['merged'],
+      )
+    )[0].n,
+    0,
+  );
+  assert.equal(await one('select count(*)::int from public.products where id = $1', [pid(6)]), 1);
+
+  // Tabs and newlines at the edge of a store name must not trip the registry's own checks.
+  assert.equal(
+    await one(`select public.register_store_name(E'	Tab Laden
+')`),
+    'Tab Laden',
+  );
+  assert.equal(
+    await one(`select public.canonical_store_name(E' 
+ ')`),
+    '',
+  );
+  await live.exec(`delete from public.store_name_registry where store_key = 'tab laden'`);
 
   // Re-running the rule finds nothing new: only the four skipped pairs remain.
   const remaining = await q(

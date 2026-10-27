@@ -18,7 +18,7 @@ const STRANGER = 'b@example.com';
 
 const database = await createPreDeployDatabase();
 const { db } = database;
-await loadDuplicateProductsFixture(db);
+const meta = await loadDuplicateProductsFixture(db);
 // Only the machinery: the data migration (20261027120300) is not applied, so every
 // duplicate is still there and every merge in this script is an explicit call.
 await applyCanonicalStoresMigrations(database, { upTo: '20261027120200_merge_products.sql' });
@@ -64,7 +64,7 @@ const tablesOnly = ({ merge_log: _ignored, ...rest }) => rest;
 
 try {
   const initial = await dump();
-  assert.equal(initial.products_count, 55);
+  assert.equal(initial.products_count, meta.productCount);
 
   // ── 1. Dry run (the default) writes nothing and says what would happen ────
   const plan = await one('select public.merge_products($1, $2)', [pid(3), pid(4)]);

@@ -15,6 +15,10 @@ security invoker
 set search_path = ''
 as $$
 begin
+  -- unmerge_product restores the spellings a merge removed; see 20261027120200.
+  if coalesce(current_setting('app.bypass_canonical_store', true), '') = 'on' then
+    return new;
+  end if;
   new.store := public.register_store_name(new.store);
   return new;
 end;
@@ -41,8 +45,11 @@ begin
   end if;
   v_canonical := public.register_store_name(new.store);
   if v_canonical is distinct from new.store then
-    new.store_printed := case when tg_op = 'INSERT'
-      then coalesce(new.store_printed, new.store) else new.store end;
+    new.store_printed := case
+      when btrim(new.store) = '' then null
+      when tg_op = 'INSERT' then coalesce(new.store_printed, new.store)
+      else new.store
+    end;
     new.store := v_canonical;
   elsif tg_op = 'UPDATE' then
     new.store_printed := null;

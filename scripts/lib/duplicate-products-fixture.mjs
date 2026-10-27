@@ -86,6 +86,8 @@ const PRODUCTS = [
   [86, 'REWE', null, 'Selten gewogen', 'Бакалія', {}],
   [87, 'REWE', null, 'Von Hand markiert', 'Бакалія', { na: true }],
   [88, 'REWE', null, 'Mit Karte', 'Бакалія', { pp: PP.two }],
+  // Weighed pre-packed meat keeps its card path (barcode null, identity by name).
+  [89, 'REWE', null, 'Schweinefilet', 'М’ясо/риба', {}],
 ];
 
 // [number, store, date, extra]
@@ -198,6 +200,8 @@ const PURCHASES = [
   [86, 13, 1, 1],
   [87, 13, 1, 1],
   [88, 13, 1, 1],
+  [89, 13, 0.5, 8.99],
+  [89, 13, 0.7, 8.99],
 ];
 
 const round2 = (value) => Math.round(value * 100) / 100;

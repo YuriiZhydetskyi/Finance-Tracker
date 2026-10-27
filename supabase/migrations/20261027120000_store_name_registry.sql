@@ -135,7 +135,7 @@ set search_path = ''
 as $$
   select coalesce(
     public.lookup_store_name(public.normalize_store_key(p_store)),
-    regexp_replace(btrim(coalesce(p_store, '')), '[[:space:]]+', ' ', 'g')
+    btrim(regexp_replace(coalesce(p_store, ''), '[[:space:]]+', ' ', 'g'))
   );
 $$;
 
@@ -155,7 +155,7 @@ security invoker
 set search_path = ''
 as $$
 declare
-  v_display text := regexp_replace(btrim(coalesce(p_store, '')), '[[:space:]]+', ' ', 'g');
+  v_display text := btrim(regexp_replace(coalesce(p_store, ''), '[[:space:]]+', ' ', 'g'));
   v_key     text := public.normalize_store_key(p_store);
   v_name    text;
 begin

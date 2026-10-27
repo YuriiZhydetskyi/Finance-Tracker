@@ -54,6 +54,9 @@ try {
     ['Овочі/фрукти', 'Bananen', 2, 2, 'weighed'],
     ['Бакалія', 'Halb gewogen', 4, 2, 'weighed'],
     ['Бакалія', 'Selten gewogen', 3, 1, null],
+    // weighed, pre-packed meat and fish still get a card (barcode null)
+    ['М’ясо/риба', 'Schweinefilet', 2, 2, null],
+    ["М'ясо/риба", 'Lachsfilet', 3, 3, null],
     // whole-quantity loose produce stays in the queue: that decision is the owner's
     ['Овочі/фрукти', 'Äpfel Schale', 3, 0, null],
     ['Овочі/фрукти', 'Karotten 1kg', 5, 0, null],
@@ -129,6 +132,7 @@ try {
     'deposit rows': pid(22),
     'deposit rows by name': pid(44),
     'a row linked to a card': pid(88),
+    'weighed meat': pid(89),
   };
   for (const [label, id] of Object.entries(untouched)) {
     assert.equal(

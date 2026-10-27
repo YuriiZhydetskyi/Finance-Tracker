@@ -98,6 +98,8 @@ declare
   v_rows integer;
   v_plan jsonb;
 begin
+  -- A NULL flag must never mean "apply".
+  p_dry_run := coalesce(p_dry_run, true);
   if p_keep_id is null or p_drop_id is null or p_keep_id = p_drop_id then
     raise exception 'merge_products: keep and drop must be two different ids' using errcode = '22023';
   end if;
@@ -377,6 +379,10 @@ begin
   if v_log.reverted_at is not null then
     return jsonb_build_object('status', 'already_reverted', 'log_id', p_log_id);
   end if;
+  -- An undo restores the spellings the rows had, so the canonical-store trigger
+  -- (20261027120400) must stand aside for this transaction: it would rewrite the
+  -- re-created row onto the survivor's (store, code) and the insert would fail.
+  perform set_config('app.bypass_canonical_store', 'on', true);
   k := jsonb_populate_record(null::public.products, v_log.keep_before);
   d := jsonb_populate_record(null::public.products, v_log.drop_row);
 
@@ -406,10 +412,23 @@ begin
   insert into public.products select d.*;
 
   -- 3. Move back only what the merge moved.
+  -- A rule is recognised by its exact logged key. The data migration may have
+  -- re-keyed it to the canonical store since the merge; only then (no rule left
+  -- under the logged key) is it recognised by its label and canonical store.
   update public.product_match_rules r set product_id = v_log.drop_id
     from jsonb_to_recordset(v_log.rule_keys) as q(store_key text, raw_product_name_key text)
    where r.store_key = q.store_key and r.raw_product_name_key = q.raw_product_name_key
      and r.product_id = v_log.keep_id;
+  update public.product_match_rules r set product_id = v_log.drop_id
+    from jsonb_to_recordset(v_log.rule_keys) as q(store_key text, raw_product_name_key text)
+   where r.raw_product_name_key = q.raw_product_name_key
+     and r.product_id = v_log.keep_id
+     and not exists (
+       select 1 from public.product_match_rules exact
+        where exact.store_key = q.store_key and exact.raw_product_name_key = q.raw_product_name_key
+     )
+     and public.normalize_product_match_key(public.canonical_store_name(r.store_key))
+         = public.normalize_product_match_key(public.canonical_store_name(q.store_key));
   update public.product_prices set product_id = v_log.drop_id
    where id = any (v_log.price_ids) and product_id = v_log.keep_id;
   update public.items set product_id = v_log.drop_id
@@ -419,6 +438,7 @@ begin
    where i.id = s.id and i.product_id = v_log.drop_id;
 
   update public.product_merge_log set reverted_at = now() where id = p_log_id;
+  perform set_config('app.bypass_canonical_store', 'off', true);
   return jsonb_build_object('status', 'reverted', 'log_id', p_log_id);
 end;
 $$;
@@ -460,6 +480,7 @@ declare
   v_plan jsonb;
   v_blocked jsonb;
 begin
+  p_dry_run := coalesce(p_dry_run, true);
   for r in
     with base as (
       select p.id, p.store, p.store_product_code as code,
@@ -512,8 +533,16 @@ begin
       status := 'would_merge';
       detail := v_plan -> 'will_move';
     else
-      status := public.merge_products(r.keep_id, r.drop_id, false, '{}'::jsonb) ->> 'status';
-      detail := v_plan -> 'will_move';
+      -- merge_products already avoids the collisions it can foresee; this is the
+      -- safety net for one it cannot, so a surprise skips the pair instead of
+      -- blocking the whole deploy.
+      begin
+        status := public.merge_products(r.keep_id, r.drop_id, false, '{}'::jsonb) ->> 'status';
+        detail := v_plan -> 'will_move';
+      exception when unique_violation then
+        status := 'skipped_conflict';
+        detail := jsonb_build_object('error', sqlerrm);
+      end;
     end if;
     return next;
   end loop;

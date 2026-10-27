@@ -96,7 +96,8 @@ begin
   ),
   restored as (
     update public.receipts rc
-       set store_printed = coalesce(rc.store_printed, rc.store),
+       set store_printed = case when btrim(rc.store) = '' then null
+                                else coalesce(rc.store_printed, rc.store) end,
            store = s.canon
       from sized s
      where s.id = rc.id and s.store <> s.canon
@@ -119,7 +120,8 @@ begin
 
   -- ── 4. Learned rules are keyed by the lower-cased store; follow the rename ──
   for r in
-    select m.store_key, m.raw_product_name_key, m.product_id,
+    select m.store_key, m.raw_product_name_key, m.product_id, m.product_name, m.category,
+           m.product_family_id, m.product_variant_id,
            public.normalize_product_match_key(public.canonical_store_name(m.store_key)) as new_key
       from public.product_match_rules m
      where m.store_key <> public.normalize_product_match_key(public.canonical_store_name(m.store_key))
@@ -131,17 +133,22 @@ begin
        where store_key = r.store_key and raw_product_name_key = r.raw_product_name_key;
       v_rules_rekeyed := v_rules_rekeyed + 1;
     exception when unique_violation then
+      -- Only an identical rule is redundant; one with another snapshot is a decision.
       if exists (
         select 1 from public.product_match_rules t
          where t.store_key = r.new_key and t.raw_product_name_key = r.raw_product_name_key
            and t.product_id = r.product_id
+           and t.product_name = r.product_name
+           and t.category = r.category
+           and t.product_family_id is not distinct from r.product_family_id
+           and t.product_variant_id is not distinct from r.product_variant_id
       ) then
         delete from public.product_match_rules
          where store_key = r.store_key and raw_product_name_key = r.raw_product_name_key;
         v_rules_deduplicated := v_rules_deduplicated + 1;
       else
         v_rules_left := v_rules_left + 1;
-        raise notice 'STAYS   rule "%" / "%": the canonical key already maps this label to another product',
+        raise notice 'STAYS   rule "%" / "%": the canonical key already holds a different rule for this label',
           r.store_key, r.raw_product_name_key;
       end if;
     end;

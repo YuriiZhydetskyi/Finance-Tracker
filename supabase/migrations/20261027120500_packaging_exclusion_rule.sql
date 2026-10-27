@@ -11,6 +11,7 @@
 --     piece or in a tray): whether it gets a shelf-tag card is an open decision;
 --   * deposit and refund rows: v_packaging_queue_products (ADR-0031) already
 --     keeps them out of the queue, one definition for all of it;
+--   * weighed meat and fish: pre-packed, they still get a card without a barcode;
 --   * household and pharmacy goods: those do have a package to photograph.
 
 -- The decision on its own, so it can be tested without a table.
@@ -38,8 +39,11 @@ as $$
     when coalesce(p_name, '') ~* '(trage|einkaufs|papier|gewebe|plastik)(tasche|t[üu]te|beutel)|knotenbeutel'
       then 'bag'
     -- Sold by weight: at least half of the purchases have a fractional quantity
-    -- (0.67 kg), so there is no pack and no barcode.
-    when coalesce(p_positive_lines, 0) > 0 and p_fractional_lines * 2 >= p_positive_lines then 'weighed'
+    -- (0.67 kg), so there is no pack and no barcode. Meat and fish are the
+    -- exception: weighed, pre-packed meat and fish still get a card (barcode
+    -- null, identity by name), as decided when the packaging PDFs were imported.
+    when coalesce(p_positive_lines, 0) > 0 and p_fractional_lines * 2 >= p_positive_lines
+         and p_category not like 'М%ясо/риба' then 'weighed'
   end;
 $$;
 
@@ -68,6 +72,7 @@ security invoker
 set search_path = ''
 as $$
 begin
+  p_dry_run := coalesce(p_dry_run, true);
   return query
   with lines as (
     select i.product_id as line_product_id,
