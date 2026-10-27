@@ -1,5 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { makePackagedProductPhoto, packagedProductFromImport } from '@finance-tracker/domain';
+import {
+  CARD_REVIEW_NOTES_MAX,
+  makePackagedProductPhoto,
+  mergeReviewNotes,
+  packagedProductFromImport,
+  sameReviewNotes,
+} from '@finance-tracker/domain';
 import { authService, packagingPhotoStorage } from '@/shared/lib/dependencies';
 import { productsQueryKey } from '@/features/products/api/use-products';
 import { supabase } from '@/shared/lib/supabase-client';
@@ -55,10 +61,38 @@ export function createPackagingSavePlan(
       row: product.existing_product_id ? null : row,
       photos,
       links: product.link_product_ids,
+      // Written with the new row; merged into the stored card when one is reused.
+      review_notes: product.parsed.review_notes,
     };
   });
 }
 export type PackagingSavePlan = ReturnType<typeof createPackagingSavePlan>;
+
+/**
+ * A reused card keeps its name and nutrition (ADR-0028), but a doubt reported by a
+ * newer import must not vanish: append it, dropping only exact duplicates.
+ * Idempotent, so a replayed save does not grow the list.
+ */
+async function mergeReviewNotesIntoCard(
+  id: string,
+  stored: string[] | null | undefined,
+  incoming: string[],
+) {
+  if (incoming.length === 0) return;
+  const current = stored ?? [];
+  const merged = mergeReviewNotes(current, incoming);
+  if (sameReviewNotes(merged, current)) return;
+  if (merged.length > CARD_REVIEW_NOTES_MAX) {
+    throw new Error(
+      `Картка вже має ${String(current.length)} приміток до перевірки, а з новими їх було б ${String(merged.length)} (максимум ${String(CARD_REVIEW_NOTES_MAX)}). Познач частину приміток перевіреними в картці й повтори збереження.`,
+    );
+  }
+  const { error } = await supabase
+    .from('packaged_products')
+    .update({ review_notes: merged })
+    .eq('id', id);
+  if (error) throw wrapError('Не вдалося додати примітки до перевірки', error);
+}
 
 export async function savePackagingPlan(
   plan: PackagingSavePlan,
@@ -87,10 +121,11 @@ export async function savePackagingPlan(
     }
     const { data: card, error: cardError } = await supabase
       .from('packaged_products')
-      .select('id')
+      .select('id, review_notes')
       .eq('id', entry.id)
       .single();
     if (cardError || !card) throw wrapError('Картка недоступна або видалена', cardError);
+    if (!entry.row) await mergeReviewNotesIntoCard(entry.id, card.review_notes, entry.review_notes);
 
     for (const [photoIndex, photo] of entry.photos.entries()) {
       const path = `${user.email}/${entry.id}/${photo.filename}`;

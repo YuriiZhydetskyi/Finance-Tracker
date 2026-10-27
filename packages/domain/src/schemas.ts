@@ -19,6 +19,12 @@ import {
   PACKAGED_PRODUCT_IMPORT_SOURCES,
   PACKAGED_PRODUCT_PHOTO_KINDS,
 } from './nutrition';
+import {
+  CARD_REVIEW_NOTES_MAX,
+  IMPORT_REVIEW_NOTES_MAX,
+  REVIEW_NOTE_MAX_LENGTH,
+  normalizeReviewNotes,
+} from './review-notes';
 
 // ── Reusable atoms ──────────────────────────────────────────────────────────
 
@@ -372,6 +378,11 @@ export const PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA = z.enum(PACKAGED_PRODUCT_IMP
 // in-store weight-embedded codes legitimately fail it. See ADR-0027.
 export const BARCODE_SCHEMA = z.string().regex(/^[0-9]{8,14}$/, 'Barcode must be 8-14 digits');
 
+// One reason a card still needs a manual check (ADR-0030). Mirrors
+// public.is_valid_review_notes: trimmed, 1..300 characters, at most 50 per card.
+export const REVIEW_NOTE_SCHEMA = z.string().trim().min(1).max(REVIEW_NOTE_MAX_LENGTH);
+export const REVIEW_NOTES_SCHEMA = z.array(REVIEW_NOTE_SCHEMA).max(CARD_REVIEW_NOTES_MAX);
+
 const GRAM_NUTRIENT_SCHEMA = z.number().finite().min(0).max(100).nullable();
 
 const PACKAGED_PRODUCT_NUTRITION_SHAPE = {
@@ -482,6 +493,7 @@ export const PackagedProductSchema = z
     allergen_traces: z.array(EU_ALLERGEN_SCHEMA),
     ingredients_text: z.string().nullable(),
     notes: z.string().nullable(),
+    review_notes: REVIEW_NOTES_SCHEMA,
     import_source: PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA,
     raw_import_json: z.unknown().nullable(),
     created_at: ISO_DATETIME_SCHEMA,
@@ -539,6 +551,7 @@ export const PackagedProductInputSchema = z.object({
   allergen_traces: z.array(EU_ALLERGEN_SCHEMA).optional(),
   ingredients_text: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  review_notes: z.array(z.string()).optional(),
   import_source: PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA.optional(),
   raw_import_json: z.unknown().nullable().optional(),
 });
@@ -585,6 +598,16 @@ const LOOSE_NUMBER_SCHEMA = z
 
 const LOOSE_TEXT_SCHEMA = z.union([z.string(), z.number()]).nullable().optional();
 
+// Absent, null and [] all mean "nothing to check". A blank entry carries no
+// information and is dropped rather than costing the user a whole paste, but an
+// over-long note or more than 10 of them is a malformed answer and is rejected.
+const IMPORT_REVIEW_NOTES_SCHEMA = z
+  .array(z.string().trim().max(REVIEW_NOTE_MAX_LENGTH))
+  .max(IMPORT_REVIEW_NOTES_MAX)
+  .nullable()
+  .optional()
+  .transform((notes) => normalizeReviewNotes(notes));
+
 export const PackagedProductImportSchema = z.object({
   name: z.string().trim().min(1, 'name is required'),
   brand: z.string().nullable().optional(),
@@ -612,5 +635,6 @@ export const PackagedProductImportSchema = z.object({
   allergen_traces: z.array(z.string()).nullable().optional(),
   ingredients_text: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  review_notes: IMPORT_REVIEW_NOTES_SCHEMA,
 });
 export type PackagedProductImport = z.infer<typeof PackagedProductImportSchema>;

@@ -86,12 +86,13 @@ vi.mock('@/shared/lib/supabase-client', () => ({
   },
 }));
 
-function plan() {
+function plan(extra: Record<string, unknown> = {}) {
   const batch = parsePackagingImport(
     JSON.stringify({
       name: 'Pringles',
       category: 'Снеки',
       source_pages: [{ page: 2, kind: 'front' }],
+      ...extra,
     }),
     {
       categories: ['Снеки'],
@@ -158,5 +159,65 @@ describe('saving packaging evidence', () => {
     await savePackagingPlan(pending);
     expect(state.tables.get('packaged_products')).toEqual([{ id: entry.id, energy_kcal: 123 }]);
     expect(state.tables.get('packaged_product_photos')).toHaveLength(1);
+  });
+
+  describe('review notes', () => {
+    function reuseCard(stored: Record<string, unknown>, incoming: string[]) {
+      const pending = plan({ review_notes: incoming });
+      const entry = pending[0];
+      if (!entry) throw new Error('Fixture');
+      state.tables.set('packaged_products', [{ id: entry.id, ...stored }]);
+      entry.row = null;
+      return pending;
+    }
+
+    it('stores the notes with a new card', async () => {
+      const pending = plan({ review_notes: ['  Штрихкод розмитий ', 'Немає звороту'] });
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]?.review_notes).toEqual([
+        'Штрихкод розмитий',
+        'Немає звороту',
+      ]);
+    });
+    it('merges new notes into a reused card without duplicates and keeps nutrition and name', async () => {
+      const pending = reuseCard(
+        { name: 'Стара назва', energy_kcal: 123, review_notes: ['Штрихкод розмитий'] },
+        ['штрихкод  розмитий', 'Немає звороту'],
+      );
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')).toEqual([
+        {
+          id: pending[0]?.id,
+          name: 'Стара назва',
+          energy_kcal: 123,
+          review_notes: ['Штрихкод розмитий', 'Немає звороту'],
+        },
+      ]);
+    });
+    it('adds notes to a reused card that had none', async () => {
+      const pending = reuseCard({ energy_kcal: 123, review_notes: [] }, ['Немає звороту']);
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]?.review_notes).toEqual(['Немає звороту']);
+    });
+    it('does not touch a reused card when the import has no notes', async () => {
+      const pending = reuseCard({ energy_kcal: 123, review_notes: ['Стара'] }, []);
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')).toEqual([
+        { id: pending[0]?.id, energy_kcal: 123, review_notes: ['Стара'] },
+      ]);
+    });
+    it('is idempotent when the same save is replayed', async () => {
+      const pending = reuseCard({ review_notes: ['Стара'] }, ['Нова']);
+      await savePackagingPlan(pending);
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]?.review_notes).toEqual(['Стара', 'Нова']);
+    });
+    it('refuses to drop a note when the card would exceed the per-card limit', async () => {
+      const stored = Array.from({ length: 49 }, (_, i) => `Стара ${String(i)}`);
+      const pending = reuseCard({ review_notes: stored }, ['Нова 1', 'Нова 2']);
+      await expect(savePackagingPlan(pending)).rejects.toThrow('максимум 50');
+      expect(state.tables.get('packaged_products')?.[0]?.review_notes).toEqual(stored);
+      expect(state.tables.get('packaged_product_photos') ?? []).toHaveLength(0);
+    });
   });
 });

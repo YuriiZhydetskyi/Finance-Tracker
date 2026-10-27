@@ -13,9 +13,11 @@ import {
 } from '../api/use-packaging-photos';
 import { useDeletePackagedProductMutation } from '../api/use-update-packaged-product-mutation';
 import { useLinkStoreProductMutation } from '../api/use-link-store-product-mutation';
+import { useUpdateReviewNotesMutation } from '../api/use-update-review-notes-mutation';
 import { NutritionFactsTable } from './NutritionFactsTable';
 import { PackagingPhotoGallery } from './PackagingPhotoGallery';
 import { PackagingPhotoUploader } from './PackagingPhotoUploader';
+import { ReviewNotesPanel } from './ReviewNotesPanel';
 import { StoreLabelsTable } from './StoreLabelsTable';
 import type { PackagedProductRow } from '../types';
 
@@ -101,6 +103,7 @@ export function PackagedProductDetail({ id }: Readonly<{ id: string }>) {
   const deletePhoto = useDeletePackagingPhotoMutation();
   const deleteProduct = useDeletePackagedProductMutation();
   const unlink = useLinkStoreProductMutation();
+  const updateReviewNotes = useUpdateReviewNotesMutation();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (productQuery.isPending) return <p className="text-sm text-slate-500">Завантажую картку…</p>;
@@ -150,6 +153,15 @@ export function PackagedProductDetail({ id }: Readonly<{ id: string }>) {
 
       {deleteProduct.isError ? (
         <ErrorDetails error={deleteProduct.error} label="Не вдалося видалити" />
+      ) : null}
+
+      <ReviewNotesPanel
+        notes={product.review_notes}
+        saving={updateReviewNotes.isPending}
+        onChange={(next) => updateReviewNotes.mutateAsync({ id, review_notes: next })}
+      />
+      {updateReviewNotes.isError ? (
+        <ErrorDetails error={updateReviewNotes.error} label="Не вдалося оновити примітки" />
       ) : null}
 
       <Section title="Товар">

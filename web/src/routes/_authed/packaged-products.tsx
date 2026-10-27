@@ -8,11 +8,14 @@ import {
   PackagedProductJsonImportDialog,
   PackagedProductsList,
   PackagingCandidatesList,
+  ReviewFilterToggle,
   useLinkStoreProductMutation,
   usePackagedProducts,
   usePackagingCandidates,
   useSavePackagedProductsMutation,
   useSkipPackagingMutation,
+  filterCatalogue,
+  needsReview,
   type PackagingCandidateRow,
 } from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
@@ -24,6 +27,7 @@ import type { PackagingSavePlan } from '@/features/packaged-products/api/use-sav
 const PackagedProductsSearchSchema = z.object({
   tab: z.enum(['catalogue', 'queue']).optional().catch(undefined),
   q: z.string().optional().catch(undefined),
+  review: z.boolean().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/_authed/packaged-products')({
@@ -36,6 +40,7 @@ function PackagedProductsFlow() {
   const navigate = useNavigate({ from: Route.fullPath });
   const tab = search.tab ?? 'queue';
   const query = search.q ?? '';
+  const onlyNeedingReview = search.review === true;
 
   const categoriesQuery = useCategories();
   const categoryNames = useCategoryNames();
@@ -62,16 +67,11 @@ function PackagedProductsFlow() {
   );
   const products = useMemo(() => productsQuery.data ?? [], [productsQuery.data]);
 
-  const catalogue = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return products;
-    return products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(needle) ||
-        (product.brand?.toLowerCase().includes(needle) ?? false) ||
-        (product.barcode?.includes(needle) ?? false),
-    );
-  }, [products, query]);
+  const catalogue = useMemo(
+    () => filterCatalogue(products, { query, onlyNeedingReview }),
+    [products, query, onlyNeedingReview],
+  );
+  const reviewCount = useMemo(() => products.filter(needsReview).length, [products]);
 
   // Only the row actually being acted on is disabled, not the whole list.
   const busyProductId = skipPackaging.isPending
@@ -80,7 +80,11 @@ function PackagedProductsFlow() {
       ? (linkProduct.variables.productIds[0] ?? null)
       : null;
 
-  const setSearch = (next: { tab?: 'catalogue' | 'queue'; q?: string }) => {
+  const setSearch = (next: {
+    tab?: 'catalogue' | 'queue';
+    q?: string;
+    review?: boolean | undefined;
+  }) => {
     void navigate({
       search: (current) => ({ ...current, ...next }),
       replace: true,
@@ -92,7 +96,7 @@ function PackagedProductsFlow() {
     const first = saved[0];
     if (saved.length === 1 && first)
       void navigate({ to: '/packaged-products/$id', params: { id: first.id } });
-    else setSearch({ tab: 'catalogue', q: '' });
+    else setSearch({ tab: 'catalogue', q: '', review: undefined });
   };
 
   return (
@@ -139,6 +143,13 @@ function PackagedProductsFlow() {
           value={query}
           onChange={(event) => setSearch({ q: event.target.value })}
         />
+        {tab === 'catalogue' ? (
+          <ReviewFilterToggle
+            checked={onlyNeedingReview}
+            count={reviewCount}
+            onChange={(checked) => setSearch({ review: checked ? true : undefined })}
+          />
+        ) : null}
       </div>
 
       {saveProducts.isError ? (
@@ -206,7 +217,9 @@ function PackagedProductsFlow() {
           emptyMessage={
             query
               ? 'За цим запитом нічого не знайдено.'
-              : 'Каталог порожній. Створи першу картку з вкладки «Без картки».'
+              : onlyNeedingReview
+                ? 'Карток, що потребують перевірки, немає.'
+                : 'Каталог порожній. Створи першу картку з вкладки «Без картки».'
           }
         />
       )}

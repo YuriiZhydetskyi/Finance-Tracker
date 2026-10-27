@@ -193,6 +193,21 @@ export function PackagingImportReview({
             {product.existing_product_id ? 'Використати наявну картку' : 'Створити нову картку'}
             {product.parsed.barcode ? ` · штрихкод ${String(product.parsed.barcode)}` : ''}
           </p>
+          {product.parsed.review_notes.length ? (
+            <div className="space-y-1 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="font-medium">Потрібна перевірка</p>
+              <ul className="list-disc space-y-0.5 pl-5">
+                {product.parsed.review_notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+              <p className="text-xs">
+                {product.existing_product_id
+                  ? 'Нові примітки додадуться до наявних на картці без дублікатів. Назва та харчові дані не змінюються.'
+                  : 'Примітки збережуться на новій картці, поки ти не позначиш їх перевіреними.'}
+              </p>
+            </div>
+          ) : null}
           {!product.source_pages.length ? (
             <p className="text-sm text-amber-800">Лише дані: фото упаковки ще не додано.</p>
           ) : null}

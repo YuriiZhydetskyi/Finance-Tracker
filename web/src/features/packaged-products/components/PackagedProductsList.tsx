@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { PackagedProductListRow } from '../api/use-packaged-products';
+import { needsReview } from '../utils/catalogue-filter';
+import { NeedsReviewBadge } from './NeedsReviewBadge';
 
 function packageLabel(row: PackagedProductListRow): string | null {
   if (row.package_size == null || row.package_unit == null) return null;
@@ -32,7 +34,10 @@ export function PackagedProductsList({
             className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3 hover:bg-slate-50"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-900">{product.name}</p>
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-slate-900">
+                <span>{product.name}</span>
+                {needsReview(product) ? <NeedsReviewBadge notes={product.review_notes} /> : null}
+              </p>
               <p className="text-xs text-slate-600">
                 {product.category}
                 {packageLabel(product) ? ` · ${packageLabel(product) ?? ''}` : ''}

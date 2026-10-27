@@ -6,6 +6,8 @@ export { PackagingCandidatesList } from './components/PackagingCandidatesList';
 export { PackagedProductJsonImportDialog } from './components/PackagedProductJsonImportDialog';
 export type { ImportedPackagedProduct } from './components/PackagedProductJsonImportDialog';
 export { LinkStoreProductDialog } from './components/LinkStoreProductDialog';
+export { ReviewFilterToggle } from './components/ReviewFilterToggle';
+export { filterCatalogue, needsReview } from './utils/catalogue-filter';
 
 export { usePackagedProducts, usePackagedProduct } from './api/use-packaged-products';
 export type { PackagedProductListRow } from './api/use-packaged-products';
