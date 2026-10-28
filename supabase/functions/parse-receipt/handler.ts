@@ -86,26 +86,16 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
       return jsonError(400, 'imageBase64 is required (base64-encoded image, no data: prefix)');
     }
 
-    let taxonomy = EMPTY_PRODUCT_TAXONOMY;
-    if (deps.loadTaxonomy) {
-      try {
-        taxonomy = await deps.loadTaxonomy(auth);
-      } catch (error) {
-        // Classification is optional; a catalogue lookup outage must not turn a
-        // readable receipt into a failed OCR request.
-        log('warn', `Product taxonomy lookup failed: ${(error as Error).message}`);
-      }
-    }
-
-    let knownStores: string[] = [];
-    if (deps.loadKnownStores) {
-      try {
-        knownStores = await deps.loadKnownStores(auth);
-      } catch (error) {
-        // Only a spelling hint: the receipt is still readable without it.
-        log('warn', `Known stores lookup failed: ${(error as Error).message}`);
-      }
-    }
+    // Classification and the store-spelling hint are optional: a catalogue lookup
+    // outage must not turn a readable receipt into a failed OCR request.
+    const taxonomy = await loadOptional(
+      deps.loadTaxonomy,
+      auth,
+      EMPTY_PRODUCT_TAXONOMY,
+      'Product taxonomy',
+      log,
+    );
+    const knownStores = await loadOptional(deps.loadKnownStores, auth, [], 'Known stores', log);
 
     const ctx: AiContext = {
       categories: Array.isArray(body.categories) ? body.categories : [],
@@ -146,6 +136,22 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
       },
     );
   };
+}
+
+async function loadOptional<T>(
+  load: ((authHeader: string) => Promise<T>) | undefined,
+  authHeader: string,
+  fallback: T,
+  label: string,
+  log: (level: 'info' | 'warn' | 'error', msg: string) => void,
+): Promise<T> {
+  if (!load) return fallback;
+  try {
+    return await load(authHeader);
+  } catch (error) {
+    log('warn', `${label} lookup failed: ${(error as Error).message}`);
+    return fallback;
+  }
 }
 
 function jsonError(status: number, message: string): Response {

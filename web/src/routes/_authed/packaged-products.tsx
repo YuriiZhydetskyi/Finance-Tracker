@@ -74,7 +74,6 @@ function PackagedProductsFlow() {
     limit: QUEUE_ROW_LIMIT,
   });
   const queueSummary = usePackagingQueueSummary({ query, lastPurchasedSince: windowStart });
-  const skippedQuery = useSkippedPackagingProducts({ enabled: tab === 'skipped' });
   const catalogueReady =
     categoriesQuery.isSuccess && taxonomyQuery.isSuccess && productsQuery.isSuccess;
 
@@ -274,23 +273,11 @@ function PackagedProductsFlow() {
           </div>
         )
       ) : tab === 'skipped' ? (
-        skippedQuery.isPending ? (
-          <p className="text-sm text-slate-500">Шукаю позиції без упаковки…</p>
-        ) : skippedQuery.isError ? (
-          <ErrorDetails
-            error={skippedQuery.error}
-            label="Не вдалося прочитати позиції без упаковки"
-          />
-        ) : (
-          <PackagingSkippedList
-            rows={filterSkippedProducts(skippedQuery.data, query)}
-            busy={skipPackaging.isPending}
-            emptyMessage={
-              query ? 'За цим запитом нічого не знайдено.' : 'Позицій без упаковки немає.'
-            }
-            onRestore={(productIds) => skipPackaging.mutate({ productIds, notApplicable: false })}
-          />
-        )
+        <SkippedPackagingTab
+          query={query}
+          busy={skipPackaging.isPending}
+          onRestore={(productIds) => skipPackaging.mutate({ productIds, notApplicable: false })}
+        />
       ) : productsQuery.isPending ? (
         <p className="text-sm text-slate-500">Завантажую каталог…</p>
       ) : productsQuery.isError ? (
@@ -341,5 +328,35 @@ function PackagedProductsFlow() {
         }}
       />
     </div>
+  );
+}
+
+// Mounted only on its tab, so the list is read when the tab is opened and not before.
+function SkippedPackagingTab({
+  query,
+  busy,
+  onRestore,
+}: Readonly<{
+  query: string;
+  busy: boolean;
+  onRestore: (productIds: string[]) => void;
+}>) {
+  const skippedQuery = useSkippedPackagingProducts();
+
+  if (skippedQuery.isPending) {
+    return <p className="text-sm text-slate-500">Шукаю позиції без упаковки…</p>;
+  }
+  if (skippedQuery.isError) {
+    return (
+      <ErrorDetails error={skippedQuery.error} label="Не вдалося прочитати позиції без упаковки" />
+    );
+  }
+  return (
+    <PackagingSkippedList
+      rows={filterSkippedProducts(skippedQuery.data, query)}
+      busy={busy}
+      emptyMessage={query ? 'За цим запитом нічого не знайдено.' : 'Позицій без упаковки немає.'}
+      onRestore={onRestore}
+    />
   );
 }

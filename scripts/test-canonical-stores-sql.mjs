@@ -250,7 +250,7 @@ try {
     // 'AMAZON.DE' stays a separate row (see below); everything else must add up.
     if (store === 'Amazon.de') continue;
     assert.ok(
-      Math.abs((actualByStore.get(store) ?? NaN) - total) < 0.005,
+      Math.abs((actualByStore.get(store) ?? Number.NaN) - total) < 0.005,
       `${store}: ${String(actualByStore.get(store))} vs ${String(total)}`,
     );
   }
@@ -271,7 +271,7 @@ try {
       [pid(30), 'Netto'],
       [pid(50), 'REWE'],
       [pid(60), 'AVEX'],
-    ].sort(),
+    ].sort(([left], [right]) => left.localeCompare(right)),
   );
   const refined = survivors.find((r) => r.id === pid(19));
   assert.deepEqual([refined.product_family_id, refined.product_variant_id], ['milk', 'whole_milk']);
@@ -280,7 +280,7 @@ try {
   );
   assert.deepEqual(
     strays.map((r) => r.id),
-    [pid(10), pid(21), pid(6), pid(8)].sort(),
+    [pid(10), pid(21), pid(6), pid(8)].sort((left, right) => left.localeCompare(right)),
     'exactly the four conflicting pairs keep their own spelling',
   );
   // Both rows of every skipped pair survive untouched.

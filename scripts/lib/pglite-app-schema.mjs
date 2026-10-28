@@ -8,10 +8,9 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 
 export const migrationText = async (name) =>
-  (await readFile(new URL(`../../supabase/migrations/${name}`, import.meta.url), 'utf8')).replace(
-    /\r\n/g,
-    '\n',
-  );
+  (
+    await readFile(new URL(`../../supabase/migrations/${name}`, import.meta.url), 'utf8')
+  ).replaceAll('\r\n', '\n');
 
 export const ULID = (suffix) => String(suffix).padStart(26, '0');
 
