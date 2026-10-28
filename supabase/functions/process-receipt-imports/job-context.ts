@@ -1,3 +1,4 @@
+import { mergeKnownStores } from '../_shared/receipt-ai/known-stores.ts';
 import { EMPTY_PRODUCT_TAXONOMY } from '../_shared/receipt-ai/taxonomy.ts';
 import type { AiContext, ProductTaxonomyContext } from '../_shared/receipt-ai/types.ts';
 import { BUCKET } from './constants.ts';
@@ -40,16 +41,25 @@ export async function loadJobContext(run: JobRun): Promise<JobContext> {
   // file-backed JSON correction remains evidence-audited as a receipt.
   const structuredPastedOrder = manualSubmission && !importFile.storage_path;
 
-  const [documentResult, categoriesResult, productsResult, familiesResult, variantsResult] =
-    await Promise.all([
-      manualSubmission
-        ? Promise.resolve({ data: null, error: null })
-        : db.storage.from(BUCKET).download(importFile.storage_path!),
-      db.from('categories').select('name'),
-      db.from('products').select('name').limit(50),
-      db.from('product_families').select('id, name_uk, name_en, name_de').order('id'),
-      db.from('product_variants').select('id, family_id, name_uk, name_en, name_de').order('id'),
-    ]);
+  const [
+    documentResult,
+    categoriesResult,
+    productsResult,
+    familiesResult,
+    variantsResult,
+    storeRegistryResult,
+    storePatternsResult,
+  ] = await Promise.all([
+    manualSubmission
+      ? Promise.resolve({ data: null, error: null })
+      : db.storage.from(BUCKET).download(importFile.storage_path!),
+    db.from('categories').select('name'),
+    db.from('products').select('name').limit(50),
+    db.from('product_families').select('id, name_uk, name_en, name_de').order('id'),
+    db.from('product_variants').select('id, family_id, name_uk, name_en, name_de').order('id'),
+    db.from('store_name_registry').select('canonical_name'),
+    db.from('store_name_patterns').select('canonical_name'),
+  ]);
   if (!manualSubmission && (documentResult.error || !documentResult.data)) {
     throw new Error('Stored document download failed');
   }
@@ -64,6 +74,11 @@ export async function loadJobContext(run: JobRun): Promise<JobContext> {
     categories,
     products: productsResult.error ? [] : (productsResult.data ?? []),
     taxonomy,
+    // A failed lookup only costs the spelling hint, never the import.
+    known_stores: mergeKnownStores(
+      storeRegistryResult.error ? null : storeRegistryResult.data,
+      storePatternsResult.error ? null : storePatternsResult.data,
+    ),
     mimeType: importFile.mime_type,
   };
   const base64 = documentResult.data

@@ -35,6 +35,19 @@ export type ReceiptBundle = {
 const PRODUCT_COLUMNS =
   'id, name, store, store_product_code, category, product_family_id, product_variant_id, brand, is_organic';
 
+/**
+ * The spelling the database will store this store under (ADR-0033): the registry's
+ * canonical name, else the input trimmed. Product lookups and the duplicate-receipt
+ * check compare store names for equality, so they must ask with that spelling; the
+ * database trigger rewrites the same way as a backstop. Read-only: a half-typed
+ * store name leaves no trace.
+ */
+export async function fetchCanonicalStoreName(store: string): Promise<string> {
+  const { data, error } = await supabase.rpc('canonical_store_name', { p_store: store });
+  if (error) throw wrapError('Store name lookup failed', error);
+  return data !== '' ? data : store;
+}
+
 export async function fetchStoreProducts(store: string): Promise<ProductRow[]> {
   const { data, error } = await supabase
     .from('products')

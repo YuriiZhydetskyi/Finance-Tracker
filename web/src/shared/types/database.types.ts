@@ -587,6 +587,54 @@ export type Database = {
           },
         ];
       };
+      product_merge_log: {
+        Row: {
+          drop_id: string;
+          drop_row: Json;
+          id: number;
+          item_ids: string[];
+          item_taxonomy: Json;
+          keep_before: Json;
+          keep_id: string;
+          merged_at: string;
+          merged_by: string | null;
+          price_ids: string[];
+          resolution: Json;
+          reverted_at: string | null;
+          rule_keys: Json;
+        };
+        Insert: {
+          drop_id: string;
+          drop_row: Json;
+          id?: never;
+          item_ids?: string[];
+          item_taxonomy?: Json;
+          keep_before: Json;
+          keep_id: string;
+          merged_at?: string;
+          merged_by?: string | null;
+          price_ids?: string[];
+          resolution?: Json;
+          reverted_at?: string | null;
+          rule_keys?: Json;
+        };
+        Update: {
+          drop_id?: string;
+          drop_row?: Json;
+          id?: never;
+          item_ids?: string[];
+          item_taxonomy?: Json;
+          keep_before?: Json;
+          keep_id?: string;
+          merged_at?: string;
+          merged_by?: string | null;
+          price_ids?: string[];
+          resolution?: Json;
+          reverted_at?: string | null;
+          rule_keys?: Json;
+        };
+        Relationships: [];
+      };
       product_prices: {
         Row: {
           created_at: string;
@@ -681,6 +729,7 @@ export type Database = {
           notes: string | null;
           packaged_product_id: string | null;
           packaging_not_applicable: boolean;
+          packaging_not_applicable_reason: string | null;
           product_family_id: string | null;
           product_variant_id: string | null;
           store: string;
@@ -699,6 +748,7 @@ export type Database = {
           notes?: string | null;
           packaged_product_id?: string | null;
           packaging_not_applicable?: boolean;
+          packaging_not_applicable_reason?: string | null;
           product_family_id?: string | null;
           product_variant_id?: string | null;
           store?: string;
@@ -717,6 +767,7 @@ export type Database = {
           notes?: string | null;
           packaged_product_id?: string | null;
           packaging_not_applicable?: boolean;
+          packaging_not_applicable_reason?: string | null;
           product_family_id?: string | null;
           product_variant_id?: string | null;
           store?: string;
@@ -1009,6 +1060,7 @@ export type Database = {
           source: Database['public']['Enums']['receipt_source'];
           store: string;
           store_address: string | null;
+          store_printed: string | null;
           time: string | null;
           total_eur: number;
           total_orig: number;
@@ -1029,6 +1081,7 @@ export type Database = {
           source: Database['public']['Enums']['receipt_source'];
           store: string;
           store_address?: string | null;
+          store_printed?: string | null;
           time?: string | null;
           total_eur: number;
           total_orig: number;
@@ -1049,6 +1102,7 @@ export type Database = {
           source?: Database['public']['Enums']['receipt_source'];
           store?: string;
           store_address?: string | null;
+          store_printed?: string | null;
           time?: string | null;
           total_eur?: number;
           total_orig?: number;
@@ -1136,6 +1190,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      store_name_patterns: {
+        Row: {
+          canonical_name: string;
+          created_at: string;
+          pattern: string;
+        };
+        Insert: {
+          canonical_name: string;
+          created_at?: string;
+          pattern: string;
+        };
+        Update: {
+          canonical_name?: string;
+          created_at?: string;
+          pattern?: string;
+        };
+        Relationships: [];
+      };
+      store_name_registry: {
+        Row: {
+          canonical_name: string;
+          created_at: string;
+          store_key: string;
+        };
+        Insert: {
+          canonical_name: string;
+          created_at?: string;
+          store_key: string;
+        };
+        Update: {
+          canonical_name?: string;
+          created_at?: string;
+          store_key?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       v_packaging_queue_products: {
@@ -1210,6 +1300,17 @@ export type Database = {
       };
     };
     Functions: {
+      apply_packaging_exclusion_rule: {
+        Args: { p_dry_run?: boolean };
+        Returns: {
+          category: string;
+          product_id: string;
+          product_name: string;
+          purchases_count: number;
+          reason: string;
+          store: string;
+        }[];
+      };
       authenticate_email_import_source: {
         Args: { p_token_hash: string };
         Returns: {
@@ -1221,6 +1322,8 @@ export type Database = {
           paid_by: string;
         }[];
       };
+      canonical_store_name: { Args: { p_store: string }; Returns: string };
+      canonicalize_receipt_json: { Args: { p_receipt: Json }; Returns: Json };
       claim_receipt_import_jobs: {
         Args: { p_limit?: number };
         Returns: {
@@ -1348,9 +1451,31 @@ export type Database = {
         Returns: boolean;
       };
       is_valid_review_notes: { Args: { p_notes: string[] }; Returns: boolean };
+      lookup_store_name: { Args: { p_key: string }; Returns: string };
       mark_receipt_import_upload_failed: {
         Args: { p_error_message: string; p_file_id: string };
         Returns: undefined;
+      };
+      merge_duplicate_products: {
+        Args: { p_dry_run?: boolean };
+        Returns: {
+          detail: Json;
+          drop_id: string;
+          identity_key: string;
+          keep_id: string;
+          status: string;
+          store_name: string;
+          tier: number;
+        }[];
+      };
+      merge_products: {
+        Args: {
+          p_drop_id: string;
+          p_dry_run?: boolean;
+          p_keep_id: string;
+          p_resolution?: Json;
+        };
+        Returns: Json;
       };
       normalize_email_sender_domains: {
         Args: { p_domains: string[] };
@@ -1360,6 +1485,7 @@ export type Database = {
         Args: { p_value: string };
         Returns: string;
       };
+      normalize_store_key: { Args: { p_value: string }; Returns: string };
       normalize_product_search: { Args: { p_value: string }; Returns: string };
       packaged_product_store_labels: {
         Args: { p_packaged_product_id: string };
@@ -1376,6 +1502,15 @@ export type Database = {
           store: string;
           store_product_code: string;
         }[];
+      };
+      packaging_exclusion_reason: {
+        Args: {
+          p_category: string;
+          p_fractional_lines: number;
+          p_name: string;
+          p_positive_lines: number;
+        };
+        Returns: string;
       };
       packaging_queue_summary: {
         Args: { p_last_purchased_since?: string; p_query?: string };
@@ -1410,6 +1545,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      register_store_name: { Args: { p_store: string }; Returns: string };
       requeue_receipt_import_file: {
         Args: {
           p_file_id: string;
@@ -1468,6 +1604,7 @@ export type Database = {
           last_currency: string;
           last_price_orig: number;
           last_purchased_on: string;
+          other_store_purchases_count: number;
           product_family_id: string;
           product_id: string;
           product_name: string;
@@ -1607,6 +1744,7 @@ export type Database = {
         Args: { p_file_id: string; p_manual_json: Json };
         Returns: undefined;
       };
+      unmerge_product: { Args: { p_log_id: number }; Returns: Json };
     };
     Enums: {
       eu_allergen:
@@ -1642,12 +1780,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1667,13 +1805,12 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1692,13 +1829,12 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1717,13 +1853,12 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
@@ -1734,13 +1869,12 @@ export type Enums<
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }

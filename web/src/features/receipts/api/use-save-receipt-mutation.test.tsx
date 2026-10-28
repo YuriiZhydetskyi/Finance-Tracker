@@ -39,6 +39,7 @@ const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 const productsSelectMock = vi.fn<(col: string, val: string) => Promise<DataRes>>();
 const rpcMock = vi.fn<(name: string, args: RpcArgs) => Promise<DataRes>>();
 const fxRateMock = vi.fn<(currency: string, dateIso: string) => Promise<number>>();
+const canonicalStoreMock = vi.fn<(store: string) => Promise<DataRes>>();
 
 vi.mock('@/shared/lib/supabase-client', () => ({
   supabase: {
@@ -52,7 +53,10 @@ vi.mock('@/shared/lib/supabase-client', () => ({
       }
       throw new Error(`Unexpected table in test: ${table}`);
     },
-    rpc: (name: string, args: RpcArgs) => rpcMock(name, args),
+    rpc: (name: string, args: RpcArgs | { p_store: string }) =>
+      name === 'canonical_store_name'
+        ? canonicalStoreMock((args as { p_store: string }).p_store)
+        : rpcMock(name, args as RpcArgs),
   },
 }));
 
@@ -63,6 +67,8 @@ vi.mock('@/shared/lib/dependencies', () => ({
 }));
 
 beforeEach(() => {
+  canonicalStoreMock.mockReset();
+  canonicalStoreMock.mockImplementation((store) => Promise.resolve({ data: store, error: null }));
   productsSelectMock.mockReset();
   rpcMock.mockReset();
   fxRateMock.mockReset();
@@ -179,6 +185,45 @@ describe('useSaveReceiptMutation', () => {
     expect(returned?.items_count).toBe(2);
     expect(returned?.receipt_id).toMatch(ULID_PATTERN);
     expect(returned?.receipt_id).toBe(args.p_receipt.id);
+  });
+
+  it('resolves products and saves under the canonical spelling of the store', async () => {
+    fxRateMock.mockResolvedValue(1.0);
+    canonicalStoreMock.mockResolvedValue({ data: 'ALDI SÜD', error: null });
+    productsSelectMock.mockResolvedValue({ data: [], error: null });
+    mockRpcSuccess();
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useSaveReceiptMutation(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        receipt: { ...baseReceipt, store: 'Aldi Süd' },
+        items: [singleItem({})],
+      });
+    });
+
+    expect(canonicalStoreMock).toHaveBeenCalledWith('Aldi Süd');
+    expect(productsSelectMock).toHaveBeenCalledWith('store', 'ALDI SÜD');
+    const args = rpcArgs();
+    expect(args.p_receipt.store).toBe('ALDI SÜD');
+    expect(args.p_new_products[0]?.store).toBe('ALDI SÜD');
+  });
+
+  it('saves nothing when the store name lookup fails', async () => {
+    fxRateMock.mockResolvedValue(1.0);
+    canonicalStoreMock.mockResolvedValue({ data: null, error: { message: 'offline' } });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useSaveReceiptMutation(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ receipt: baseReceipt, items: baseItems }),
+      ).rejects.toThrow('Store name lookup failed');
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 
   it('links to an existing product matched by code without creating a new one', async () => {

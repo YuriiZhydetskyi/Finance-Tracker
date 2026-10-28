@@ -132,6 +132,7 @@ React SPA → Supabase
 | `supabase/migrations/20260507000002_storage_bucket.sql`                 | `receipts` bucket + 4 RLS policies на `storage.objects`. Bucket `packaging` (фото упаковок) — у `20260912072150_packaging_photos_bucket.sql`.                                                                                                                                                                      |
 | `supabase/migrations/20260507000003_stats_views.sql`                    | 4 view-и `v_stats_by_*` з `security_invoker = on`.                                                                                                                                                                                                                                                                 |
 | `supabase/migrations/20260907202419_multilingual_product_taxonomy.sql`  | Family/variant schema, багатомовні category labels/aliases, item snapshot і `search_waste_items`.                                                                                                                                                                                                                  |
+| `supabase/migrations/20261027120000…120600_*.sql`                       | Канонічні назви магазинів (реєстр, шаблони, тригери, канонізація фіналайзерів), `merge_products` / `unmerge_product` / `merge_duplicate_products`, міграція даних злиття, масова позначка «Без упаковки», `other_store_purchases_count` у черзі (ADR-0033, ADR-0034).                                              |
 | `supabase/seed.sql`                                                     | 20 категорій.                                                                                                                                                                                                                                                                                                      |
 | `supabase/functions/parse-receipt/index.ts`                             | Deno entry — 3 рядки: `Deno.serve(createHandler(loadDeps()))`.                                                                                                                                                                                                                                                     |
 | `supabase/functions/parse-receipt/handler.ts`                           | Pure `(Request) => Promise<Response>` з deps DI. CORS, 401/403/400/502 paths, primary→fallback orchestration. **Runtime-portable** — на Cloudflare Worker / Vercel Edge нічого не треба переписувати окрім entry.                                                                                                  |
@@ -301,6 +302,30 @@ Photo не видаляється — orphan у Storage. Periodic Storage sweep 
    │ if allowed → <Outlet />
    │ if not allowed → "Доступ заборонено" page
 ```
+
+### Потік 6: назва магазину при записі (канонічні назви, ADR-0033)
+
+`products.store` і `receipts.store` — частина ідентичності (унікальні індекси `(store, code)` /
+`(store, name)`, пошуки в імпортерах, перевірка дубліката чека). Тому будь-яке написання приводиться
+до канонічного на вході, у два шари:
+
+```
+[Браузер: /manual, /photo, /edit]
+   │ canonical_store_name(rpc, лише читає) ──► resolveProducts / дублікат чека шукають за канонічною
+   │ save_receipt_bundle(rpc) ───────────────┐
+                                             ▼
+[Імпортери: finalize_receipt_import,         [Шар 2 — страховка: BEFORE-тригери
+ finalize_pasted_json_import*]                trg_products_canonical_store,
+   │ ШАР 1: p_receipt := canonicalize_receipt_json(p_receipt)   trg_receipts_canonical_store]
+   │   (register_store_name: реєстр → шаблон мережі → перше побачене написання)
+   ▼
+ пошук товару, advisory lock, ON CONFLICT (store, …), lower(trim(store)) — бачать одне написання
+```
+
+Шар 1 обов'язковий: тригер спрацьовує вже після того, як автор запису шукав товар за сирим
+написанням, і пошук би промахнувся. Реєстр (`store_name_registry`) і шаблони мереж
+(`store_name_patterns`) — дані, не код. Злиття вже наявних дублікатів — `merge_products` /
+`merge_duplicate_products`. Деталі, варіанти й відкат — у [ADR-0033](decisions/0033-canonical-store-names-and-product-merge.md).
 
 ## Точки розширення (ports)
 

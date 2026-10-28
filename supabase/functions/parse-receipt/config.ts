@@ -13,6 +13,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { GeminiProvider } from '../_shared/receipt-ai/providers/gemini-provider.ts';
 import { AnthropicProvider } from '../_shared/receipt-ai/providers/anthropic-provider.ts';
+import { mergeKnownStores } from '../_shared/receipt-ai/known-stores.ts';
 import type { HandlerDeps } from './handler.ts';
 import type { ProductTaxonomyContext } from '../_shared/receipt-ai/types.ts';
 
@@ -64,5 +65,17 @@ export function loadDeps(): HandlerDeps {
     return { families: families.data ?? [], variants: variants.data ?? [] };
   };
 
-  return { primary, fallback, isAllowed, loadTaxonomy };
+  const loadKnownStores = async (authHeader: string): Promise<string[]> => {
+    const supabase = callerClient(authHeader);
+    const [registry, patterns] = await Promise.all([
+      supabase.from('store_name_registry').select('canonical_name'),
+      supabase.from('store_name_patterns').select('canonical_name'),
+    ]);
+    if (registry.error || patterns.error) {
+      throw new Error(registry.error?.message ?? patterns.error?.message ?? 'store lookup failed');
+    }
+    return mergeKnownStores(registry.data, patterns.data);
+  };
+
+  return { primary, fallback, isAllowed, loadTaxonomy, loadKnownStores };
 }

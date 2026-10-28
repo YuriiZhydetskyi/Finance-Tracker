@@ -12,6 +12,8 @@ import { withAbortSignal } from '@/test/with-abort-signal';
 type DataRes = { data: DuplicateCandidate[] | null; error: { message: string } | null };
 
 const finalThenMock = vi.fn<() => Promise<DataRes>>();
+const canonicalStoreMock =
+  vi.fn<(store: string) => Promise<{ data: string | null; error: { message: string } | null }>>();
 const captured = {
   eqs: [] as { col: string; val: unknown }[],
   gte: null as { col: string; val: unknown } | null,
@@ -55,10 +57,16 @@ vi.mock('@/shared/lib/supabase-client', () => ({
       };
       return chain;
     },
+    rpc: (name: string, args: { p_store: string }) => {
+      if (name !== 'canonical_store_name') throw new Error(`Unexpected rpc in test: ${name}`);
+      return canonicalStoreMock(args.p_store);
+    },
   },
 }));
 
 beforeEach(() => {
+  canonicalStoreMock.mockReset();
+  canonicalStoreMock.mockImplementation((store) => Promise.resolve({ data: store, error: null }));
   finalThenMock.mockReset();
   captured.eqs = [];
   captured.gte = null;
@@ -138,6 +146,26 @@ describe('useDuplicateReceipts — query shape', () => {
     expect(captured.order).toEqual({ col: 'created_at', asc: false });
     expect(captured.limit).toBe(3);
     expect(captured.neq).toBeNull();
+  });
+
+  it('looks the store up by its canonical spelling, so another spelling still finds the receipt', async () => {
+    const { Wrapper } = makeWrapper();
+    canonicalStoreMock.mockResolvedValue({ data: 'Netto', error: null });
+    finalThenMock.mockResolvedValue({ data: [], error: null });
+    const { result } = renderHook(
+      () =>
+        useDuplicateReceipts({
+          store: 'Netto Marken-Discount',
+          date: '2026-05-16',
+          total_orig: 29.32,
+          time: null,
+        }),
+      { wrapper: Wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(canonicalStoreMock).toHaveBeenCalledWith('Netto Marken-Discount');
+    expect(captured.eqs).toContainEqual({ col: 'store', val: 'Netto' });
   });
 
   it('adds .neq("id", excludeId) when excludeId is passed', async () => {

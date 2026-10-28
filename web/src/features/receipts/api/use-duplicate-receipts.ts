@@ -1,6 +1,7 @@
 import { queryOptions, skipToken, useQuery } from '@tanstack/react-query';
 import { roundMoney } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
+import { fetchCanonicalStoreName } from './receipt-bundle';
 import { receiptsQueryKey } from './receipts-query-keys';
 
 export type DuplicateCandidate = {
@@ -40,12 +41,15 @@ export function duplicateReceiptsQueryOptions(input: DuplicateCheckInput) {
         ? async ({ signal }): Promise<DuplicateCandidate[]> => {
             const lo = roundMoney(total_orig - TOTAL_TOLERANCE);
             const hi = roundMoney(total_orig + TOTAL_TOLERANCE);
+            // Receipts are stored under the canonical spelling (ADR-0033), so the same
+            // purchase typed as another spelling of the shop is still found.
+            const canonicalStore = await fetchCanonicalStoreName(store);
             // Filters first, then ordering + limit. PostgREST is order-agnostic but
             // chaining .neq after .limit confuses some thenable implementations.
             let q = supabase
               .from('receipts')
               .select('id, store, date, time, total_orig, currency')
-              .eq('store', store)
+              .eq('store', canonicalStore)
               .eq('date', date)
               .gte('total_orig', lo)
               .lte('total_orig', hi);

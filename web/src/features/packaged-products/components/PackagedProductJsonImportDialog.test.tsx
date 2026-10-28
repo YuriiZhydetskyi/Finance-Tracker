@@ -113,6 +113,7 @@ const CANDIDATE: PackagingCandidateRow = {
   last_currency: 'EUR',
   group_key: 'pringles original',
   group_purchases_count: 3,
+  other_store_purchases_count: 1,
 };
 
 function renderDialog(

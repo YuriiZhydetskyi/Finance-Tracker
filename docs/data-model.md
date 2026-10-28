@@ -181,7 +181,8 @@ Policies:
 create table public.receipts (
   id            text primary key,            -- ULID 26 chars
   date          date not null,
-  store         text not null,
+  store         text not null,                    -- канонічна назва магазину (ADR-0033)
+  store_printed text check (store_printed is null or btrim(store_printed) <> ''),
   currency      text not null check (currency ~ '^[A-Z]{3}$'),
   total_orig    numeric(12, 2) not null,
   fx_rate_eur   numeric(14, 6) not null check (fx_rate_eur > 0),
@@ -201,7 +202,8 @@ create table public.receipts (
 | ------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | `id`                | text (ULID)   | ні       | 26 символів                                                                                                                                                                                                                                                                    | `01HM4N6RXX5K2P9F8DZ7QWERTY`                                                           |
 | `date`              | date          | ні       | ISO 8601 yyyy-mm-dd                                                                                                                                                                                                                                                            | `2026-05-04`                                                                           |
-| `store`             | text          | ні       | вільний текст; рекомендована soft-нормалізація на UI                                                                                                                                                                                                                           | `ALDI Süd`                                                                             |
+| `store`             | text          | ні       | **канонічна** назва магазину: `register_store_name` у тригері `trg_receipts_canonical_store` переписує будь-яке написання на перше побачене або на назву мережі з `store_name_patterns` (див. «Канонічні назви магазинів»)                                                     | `ALDI SÜD`                                                                             |
+| `store_printed`     | text          | так      | написання, яке ввели чи надрукували, **лише коли воно відрізняється** від `store` (оператор франшизи, юридична форма, регістр). Заповнює тригер чека і міграція `20261027120300`; для імпортованих чеків друковане написання є також у `receipt_import_files.parsed_json`      | `REWE <оператор> oHG`                                                                  |
 | `currency`          | text          | ні       | ISO 4217                                                                                                                                                                                                                                                                       | `EUR` / `UAH`                                                                          |
 | `total_orig`        | numeric(12,2) | ні       | у валюті чеку, 2dp                                                                                                                                                                                                                                                             | `34.78`                                                                                |
 | `fx_rate_eur`       | numeric(14,6) | ні       | курс currency→EUR на дату чеку, 6dp; > 0                                                                                                                                                                                                                                       | `1.000000` (EUR) / `0.024500` (UAH)                                                    |
@@ -315,12 +317,14 @@ create table public.items (
 
 ## Таблиця `products`
 
-Один рядок = один **канонічний** товар (бренд + розмір/обсяг). Каталог **селективний** — тільки те, що варто трекати.
+Один рядок = одна позиція **конкретного магазину** (мітка, якою магазин друкує товар), а не фізичний товар: той самий товар у двох магазинах — два рядки, які зводить `packaged_product_id` (див. ADR-0027). Ідентичність рядка — `(store, store_product_code)`, а без коду — `(store, name)`; `store` завжди канонічна назва (ADR-0033).
 
 ```sql
 create table public.products (
   id          text primary key,
-  name        text not null unique,
+  name        text not null,
+  store       text not null default '',        -- канонічна назва магазину (ADR-0033)
+  store_product_code text,                     -- артикул магазину (ALDI друкує його в чеку)
   category    text not null references public.categories(name) on update cascade,
   product_family_id text references public.product_families(id),
   product_variant_id text,
@@ -329,32 +333,125 @@ create table public.products (
   unit        public.product_unit,             -- enum: 'pcs' | 'g' | 'kg' | 'ml' | 'l'
   unit_size   numeric(10, 3),
   notes       text,
+  packaged_product_id text references public.packaged_products(id) on delete set null,
+  packaging_not_applicable boolean not null default false,
+  packaging_not_applicable_reason text,        -- лише від apply_packaging_exclusion_rule (ADR-0034)
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- Ідентичність рядка: магазин + код, а без коду — магазин + назва.
+create unique index products_store_code_uniq
+  on public.products (store, store_product_code) where store_product_code is not null;
+create unique index products_store_name_nocode_uniq
+  on public.products (store, name) where store_product_code is null;
+create index idx_products_store_name on public.products (store, name);
 ```
 
-| Колонка              | Тип           | Nullable    | Приклад                                                             |
-| -------------------- | ------------- | ----------- | ------------------------------------------------------------------- |
-| `id`                 | text (ULID)   | ні          | `01HM4N6RPP3K2P9F8DZ7QWERTZ`                                        |
-| `name`               | text          | ні (UNIQUE) | `Pesto Barilla Genovese 190g`                                       |
-| `category`           | text (FK)     | ні          | `Бакалія`                                                           |
-| `product_family_id`  | text (FK)     | так         | стабільне сімейство товару, напр. `tomato`                          |
-| `product_variant_id` | text          | так         | варіант у межах сімейства, напр. `cherry_tomato`                    |
-| `brand`              | text          | так         | явно надрукована марка, не просто магазин, напр. `Barilla`          |
-| `is_organic`         | boolean       | так         | `true`/`false` лише коли ознаку можна встановити; `null` — невідомо |
-| `unit`               | enum          | так         | `g`                                                                 |
-| `unit_size`          | numeric(10,3) | так         | `190.000`                                                           |
-| `notes`              | text          | так         | `Улюблений бренд`                                                   |
+| Колонка              | Тип           | Nullable | Приклад                                                             |
+| -------------------- | ------------- | -------- | ------------------------------------------------------------------- |
+| `id`                 | text (ULID)   | ні       | `01HM4N6RPP3K2P9F8DZ7QWERTZ`                                        |
+| `name`               | text          | ні       | `Pesto Barilla Genovese 190g`                                       |
+| `store`              | text          | ні       | канонічна назва магазину, `ALDI SÜD`                                |
+| `store_product_code` | text          | так      | артикул у магазині, `297855`                                        |
+| `category`           | text (FK)     | ні       | `Бакалія`                                                           |
+| `product_family_id`  | text (FK)     | так      | стабільне сімейство товару, напр. `tomato`                          |
+| `product_variant_id` | text          | так      | варіант у межах сімейства, напр. `cherry_tomato`                    |
+| `brand`              | text          | так      | явно надрукована марка, не просто магазин, напр. `Barilla`          |
+| `is_organic`         | boolean       | так      | `true`/`false` лише коли ознаку можна встановити; `null` — невідомо |
+| `unit`               | enum          | так      | `g`                                                                 |
+| `unit_size`          | numeric(10,3) | так      | `190.000`                                                           |
+| `notes`              | text          | так      | `Улюблений бренд`                                                   |
 
 **Правила:**
 
-- `name` UNIQUE на DB-level (Postgres ловить дублі при INSERT).
+- `name` **не** унікальне саме по собі (старе `UNIQUE(name)` прибрано в `20260510000001`): унікальні
+  партіальні індекси `products_store_code_uniq (store, store_product_code)` для рядків із кодом і
+  `products_store_name_nocode_uniq (store, name)` для рядків без коду. Дубль ловить Postgres.
+- `store` пишеться лише канонічним: тригер `trg_products_canonical_store` (`BEFORE INSERT OR UPDATE OF
+store`) переписує будь-яке написання через `register_store_name`, тож ці індекси порівнюють
+  вже канонічний текст. Артикул, який магазин друкує двома написаннями, більше не дає двох рядків.
+- `packaging_not_applicable_reason` не `null` лише за `packaging_not_applicable = true`
+  (`CHECK products_na_reason_requires_flag`); тригер `clear_packaging_na_reason` обнуляє причину, коли
+  позначку знято.
 - При перейменуванні `name` — `items.product_name` НЕ оновлюється (snapshot rule).
 - `product_variant_id` вимагає `product_family_id` і посилається на варіант саме
   цього сімейства. Brand і Bio — незалежні від ієрархії атрибути каталогу.
 
 ---
+
+## Канонічні назви магазинів
+
+ADR-0033, міграції `20261027120000_store_name_registry.sql` і `20261027120400_canonical_store_write_path.sql`.
+
+```sql
+create table public.store_name_registry (
+  store_key      text primary key check (store_key <> '' and store_key = public.normalize_store_key(store_key)),
+  canonical_name text not null check (canonical_name <> '' and canonical_name = btrim(canonical_name)),
+  created_at     timestamptz not null default now()
+);
+create table public.store_name_patterns (
+  pattern        text primary key check (('' ~ pattern) is not null),   -- POSIX-регулярка проти store_key
+  canonical_name text not null check (canonical_name <> '' and canonical_name = btrim(canonical_name)),
+  created_at     timestamptz not null default now()
+);
+```
+
+- `store_name_registry` — перше побачене написання кожного ключа («перше перемагає»). Рядки
+  з’являються самі при першому записі магазину; на момент міграції засіяні всіма наявними написаннями
+  від найстаршого.
+- `store_name_patterns` — псевдоніми мереж як **дані**. Засіяно лише загальними брендами: `aldi` /
+  `aldi sud` / `aldi sued` → `ALDI SÜD`, `netto` / `netto marken discount` → `Netto`, слово `rewe` →
+  `REWE`, префікси `avex` → `AVEX`, `orlen` → `ORLEN`. Операторів, франчайзі й філій у репозиторії
+  немає (він публічний); їх власник додає в Studio. Точний рядок реєстру сильніший за шаблон, довший
+  шаблон сильніший за коротший.
+- RLS: allowlist. `authenticated`: `select, insert` на реєстр, `select` на шаблони. `service_role`: усе.
+
+| Функція                             | Властивості                     | Контракт                                                                                                                                                                                   |
+| ----------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `normalize_store_key(text) → text`  | `immutable`                     | діакритика складена (`ß` = `ss`), нижній регістр, пунктуація й пробіли → один пробіл; порожній рядок для порожнього вводу                                                                  |
+| `lookup_store_name(key) → text`     | `stable`                        | рядок реєстру → шаблон → `null`                                                                                                                                                            |
+| `canonical_store_name(text) → text` | `stable`, лише читає            | канонічна назва; невідомий магазин лишається зі своїм написанням (обрізаним, пробіли стиснуті). Викликає браузер                                                                           |
+| `register_store_name(text) → text`  | `volatile`                      | те саме, але невідомий магазин **додається** в реєстр під своїм написанням. Викликають тригери й фіналайзери                                                                               |
+| `canonicalize_receipt_json(jsonb)`  | `volatile`, лише `service_role` | `p_receipt` із `store`, заміненим на `register_store_name(...)`; перший оператор `finalize_receipt_import`, `finalize_pasted_json_import` і `finalize_pasted_json_import_review_duplicate` |
+
+Тригери: `trg_products_canonical_store` на `products` і `trg_receipts_canonical_store` на `receipts`
+(`BEFORE INSERT OR UPDATE OF store`). Тригер чека, якщо `store` змінено, а нова назва відрізняється від
+введеної, кладе введене в `store_printed`; `UPDATE`, що лишає `store` як є, `store_printed` не чіпає.
+
+## Злиття товарів
+
+ADR-0033, міграція `20261027120200_merge_products.sql`.
+
+- `product_merge_log` — журнал злиттів: `keep_id`, `drop_id`, `keep_before` / `drop_row` (jsonb обох
+  рядків до злиття), `item_ids`, `price_ids`, `rule_keys` (що перенесено), `item_taxonomy` (знімок
+  family/variant кожної покупки), `resolution`, `merged_by`, `merged_at`, `reverted_at`. Часткова
+  унікальність на `drop_id where reverted_at is null`. RLS allowlist; `select, insert, update`, без `delete`.
+- `merge_products(p_keep_id, p_drop_id, p_dry_run default true, p_resolution default '{}') → jsonb`:
+  `security invoker`. Сухий прогін повертає `{status:'dry_run', will_move, result, conflicts}`;
+  застосування — `{status:'merged', log_id, …}` або `{status:'already_merged'}`. Помилки: `22023`
+  (той самий id, різні канонічні магазини, різні `store_product_code`, `p_resolution` не об’єкт),
+  `P0002` (рядка немає), `23505` (`drop` уже злито в інший), `23514` (нерозв’язані блокуючі
+  конфлікти). Ключі `p_resolution`: `prefer`, `packaged_product_id`, `taxonomy`, `is_organic`, `unit`
+  (`keep` / `drop`) і `category` (`drop`). Порядок застосування — правила, ціни, покупки (із
+  відновленням знімка таксономії другим `UPDATE`), видалення, лише потім поля survivor.
+- `unmerge_product(p_log_id) → jsonb`: відновлює survivor, повертає видалений рядок і лише записане
+  в журналі; `already_reverted` на повторний виклик.
+- `merge_duplicate_products(p_dry_run default true)` повертає таблицю `(tier, keep_id, drop_id,
+store_name, identity_key, status, detail)`: рівень 1 — той самий канонічний магазин і код, рівень 2 —
+  той самий канонічний магазин і нормалізована назва без кодів. `status`: `would_merge` / `merged` /
+  `skipped_conflict`.
+
+## Масова позначка «Без упаковки»
+
+ADR-0034, міграції `20261027120100_packaging_not_applicable_reason.sql` і
+`20261027120500_packaging_exclusion_rule.sql`.
+
+- `packaging_exclusion_reason(category, name, positive_lines, fractional_lines) → text` — `immutable`:
+  `service`, `non_food`, `bag`, `weighed` або `null`.
+- `apply_packaging_exclusion_rule(p_dry_run default true)` повертає таблицю `(product_id,
+product_name, store, category, reason, purchases_count)`: рядки без картки, не позначені й не
+  застава. `false` ставить `packaging_not_applicable` і `packaging_not_applicable_reason`.
 
 ## RPC `save_receipt_bundle`
 
@@ -523,7 +620,7 @@ alter table public.products
 
 `on delete set null` навмисно: видалення картки розлінковує магазинні рядки, і вони повертаються в чергу на фотографування.
 
-`packaging_not_applicable` виключає вагові овочі, хліб із прилавка, послуги та Pfand — без нього черга назавжди забита шумом. Pfand і рядки, що були лише від’ємними (повернення тари, купон), виключаються ще й автоматично view `v_packaging_queue_products` (нижче, ADR-0031).
+`packaging_not_applicable` виключає вагові овочі, хліб із прилавка, послуги та Pfand — без нього черга назавжди забита шумом. Колонка `packaging_not_applicable_reason` (ADR-0034) каже, яке правило поставило позначку (`NULL` — позначено вручну). Pfand і рядки, що були лише від’ємними (повернення тари, купон), виключаються ще й автоматично view `v_packaging_queue_products` (нижче, ADR-0031).
 
 `items` **не** має власного FK на `packaged_products`: пакований товар це ідентичність SKU, а не рішення на момент покупки. Обґрунтування й готовий backfill — в ADR-0027.
 
@@ -533,7 +630,7 @@ alter table public.products
 
 - `is_deposit_product(p_category, p_name)` — `immutable`: `true`, якщо категорія `Pfand` або ім’я містить `pfand`/`leergut` (без урахування регістру).
 - view `v_packaging_queue_products` — єдине визначення «рядок потребує картки»: `packaged_product_id is null`, `packaging_not_applicable = false`, не `is_deposit_product`, і не «лише від’ємні позиції» (є `items.total_orig < 0` і немає `> 0`). Рядок без позицій і рядок із нульовою сумою лишаються.
-- `search_packaging_candidates(p_query, p_categories, p_stores, p_date_from, p_date_to, p_limit, p_offset, p_last_purchased_since)` — рядки view без картки, **найновіша остання покупка зверху** (кластер одного товару впорядковано за найновішою покупкою групи, рядки без покупок — в кінці). `p_last_purchased_since` залишає лише рядки з останньою покупкою не раніше цієї дати; `group_purchases_count` для підказки «купувався і в інших магазинах» рахується до цього відсікання. Повертає `receipt_labels` (дослівні `items.raw_product_name`) і `group_key` = `normalize_product_search(brand || ' ' || name)`, щоб той самий товар із двох магазинів утворював одну задачу сфотографувати. Пошук через `strpos`, не `LIKE`.
+- `search_packaging_candidates(p_query, p_categories, p_stores, p_date_from, p_date_to, p_limit, p_offset, p_last_purchased_since)` — рядки view без картки, **найновіша остання покупка зверху** (кластер одного товару впорядковано за найновішою покупкою групи, рядки без покупок — в кінці). `p_last_purchased_since` залишає лише рядки з останньою покупкою не раніше цієї дати; `group_purchases_count` для підказки «купувався і в інших магазинах» рахується до цього відсікання. Повертає `receipt_labels` (дослівні `items.raw_product_name`) і `group_key` = `normalize_product_search(brand || ' ' || name)`, щоб той самий товар із двох магазинів утворював одну задачу сфотографувати. `group_purchases_count` — покупки всього кластера, `other_store_purchases_count` (ADR-0034, `20261027120600`) — лише покупки в **інших канонічних магазинах** (`canonical_store_name(store)`); підказка «купувався і в інших магазинах» показується тільки коли це число більше нуля. Обидві цифри рахуються до відсікання вікном. Пошук через `strpos`, не `LIKE`.
 - `packaging_queue_summary(p_query, p_last_purchased_since)` — `total_count` (усі збіги) і `recent_count` (останні покупки не раніше дати; усі, якщо дата `null`) для того самого набору, що й список. Значок на головній показує `recent_count`.
 - `packaged_product_store_labels(p_packaged_product_id)` — усі назви цієї картки по магазинах із кількістю покупок і останньою ціною.
 
@@ -738,6 +835,8 @@ create table public.store_aliases (
 **RLS:** policy `allowlist_all_store_aliases` (full read+write, gated `is_allowed_user()`). Unique index `uq_store_aliases_pair (statement_name, receipt_store)` — повторне підтвердження тієї ж пари no-op (upsert `ignoreDuplicates`).
 
 Обидві колонки зберігаються нормалізованими (нормалізація — у [`makeStoreAlias`](../packages/domain/src/factories.ts)), бо unique-індекс має дедупити "McDonald's" і "MCDONALDS". Матчинг читає таблицю як `Set` ключів `"statement_name|receipt_store"` ([`makeStoreAliasKey`](../packages/domain/src/store-match.ts)) і передає в `reconcileStatement` через `options.storeAliasKeys` — domain лишається vendor-free.
+
+`receipt_store` тут — `normalizeStoreName(receipts.store)` на момент підтвердження. Міграція `20261027120300` (ADR-0033) переписує `receipts.store` на канонічні назви, але ці ключі **не чіпає**: пара, навчена за старим написанням (оператор франшизи, юридична форма), перестає збігатися, і звіряння виписок навчиться її один раз заново. Збіг за спільним словом назви від цього не страждає.
 
 ---
 

@@ -14,6 +14,7 @@ export function buildPrompt(ctx: AiContext): string {
     .map((p) => p.name)
     .join(', ');
   const taxonomyHints = formatTaxonomyHints(ctx);
+  const knownStores = formatKnownStores(ctx);
   return [
     'Extract receipt line items from this image.',
     '',
@@ -28,7 +29,7 @@ export function buildPrompt(ctx: AiContext): string {
     '- product_family_id and product_variant_id: classify the actual product only with IDs from the supplied taxonomy. product_variant_id must belong to product_family_id. If the product is clear but no matching variant exists, return the family ID and variant null. If the printed name is truncated, ambiguous, or the taxonomy has no matching family, return both null. Never infer a product from a flavour-only word such as "Original" or "Wings".',
     '- brand: copy a brand only when it is explicitly printed as part of the product identity. A retailer/store (for example Aldi) is not automatically a brand. Return null when the receipt does not establish a brand.',
     '- is_organic: true only when the product itself explicitly says Bio/organic/öko (not words such as Biotin or bioavailable). For an identified FOOD product whose printed name has no such label, return false. For an ambiguous product or a non-food item, return null. Missing "Bio" alone is never evidence for a specific product identity.',
-    '- store: best-effort store/merchant name; null if illegible.',
+    '- store: the shop name as printed in the header or logo. Leave out legal-form and operator noise (GmbH, OHG, KG, S.A., Inh., the franchise operator) but keep a branch or city name the shop prints as part of its name. When the shop is in the known stores list below, copy that spelling exactly (capitalisation and accents included). null if illegible.',
     '- store_address: street address printed on receipt header (street, number, city); null if not printed or illegible. Copy as a single line, comma-separated.',
     '- date: receipt date as YYYY-MM-DD; null if illegible.',
     '- A receipt can show two legitimate times: a fiscal cash-register sale time and a later/earlier card-payment authorization time. Extract BOTH separately whenever they are printed. Never use a filename, PDF creation metadata, phone status bar, or an inferred time.',
@@ -53,11 +54,26 @@ export function buildPrompt(ctx: AiContext): string {
     'Final reminder: qty stays POSITIVE even on negative-price rows — only the price flips sign. Do not invent items not visible on the receipt; do not net out cancellations. Never add a balancing or rounding item merely to match the final total.',
     '',
     `Allowed categories: ${categories}`,
+    knownStores,
     taxonomyHints,
     productHints
       ? `\nKnown product names from prior purchases (hint only — do not force a match): ${productHints}`
       : '',
   ].join('\n');
+}
+
+// The store is the key products are matched under. Spelling one shop two ways
+// splits its history in two, so the model is shown how the app already spells
+// the shops it knows. Capped, like the product hints, to keep the prompt small.
+const MAX_KNOWN_STORES = 100;
+
+function formatKnownStores(ctx: AiContext): string {
+  const stores = [...new Set((ctx.known_stores ?? []).map((store) => store.trim()))]
+    .filter((store) => store !== '')
+    .slice(0, MAX_KNOWN_STORES);
+  return stores.length > 0
+    ? `Known stores (hint only — if the receipt is from one of them, copy that spelling exactly; otherwise print the name as the receipt shows it): ${stores.join(', ')}`
+    : '';
 }
 
 export function buildSchema(ctx: AiContext): Record<string, unknown> {

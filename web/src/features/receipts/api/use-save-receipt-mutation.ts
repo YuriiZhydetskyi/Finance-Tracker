@@ -5,6 +5,7 @@ import { computeGrandTotal } from '../utils/totals';
 import { invalidateReceiptDerivedQueries } from './invalidate-receipt-derived-queries';
 import {
   buildReceiptBundle,
+  fetchCanonicalStoreName,
   fetchStoreProducts,
   saveReceiptBundle,
   type SaveItemInput,
@@ -27,7 +28,8 @@ export type SaveReceiptResult = {
  * Save flow:
  *   1. Fetch FX rate (live NBU for UAH; 1.0 for EUR).
  *   2. Build Receipt via factory.
- *   3. Fetch existing products for receipt.store; resolve each item to a
+ *   3. Ask the database for the canonical spelling of receipt.store (ADR-0033),
+ *      fetch the existing products of that store and resolve each item to a
  *      product_id (link / backfill code / create new). See resolve-products.ts.
  *   4. Build Items via factory with assigned product_id and a price-snapshot id.
  *
@@ -49,17 +51,18 @@ export function useSaveReceiptMutation() {
 
       const receipt = makeReceipt({ ...receiptInput, fx_rate_eur, total_orig });
 
-      const existingProducts = await fetchStoreProducts(receipt.store);
+      const store = await fetchCanonicalStoreName(receipt.store);
+      const existingProducts = await fetchStoreProducts(store);
 
       const bundle = buildReceiptBundle({
         receipt_id: receipt.id,
-        store: receipt.store,
+        store,
         fx_rate_eur,
         items: itemInputs,
         existingProducts,
       });
 
-      return saveReceiptBundle({ receipt, bundle, replace: false });
+      return saveReceiptBundle({ receipt: { ...receipt, store }, bundle, replace: false });
     },
     onSuccess: () => invalidateReceiptDerivedQueries(queryClient),
   });

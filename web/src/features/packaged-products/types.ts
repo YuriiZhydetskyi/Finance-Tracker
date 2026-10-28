@@ -75,7 +75,26 @@ export type PackagingCandidateRow = {
   last_currency: string | null;
   /** Normalized brand+name; rows sharing it are one thing to photograph. */
   group_key: string;
+  /** Purchases of the whole cluster, same-store rows included. */
   group_purchases_count: number;
+  /**
+   * Purchases of the cluster in genuinely different canonical stores (ADR-0034).
+   * Only this number justifies "bought in other stores": another spelling of the
+   * same chain, another code or a code-less twin do not count.
+   */
+  other_store_purchases_count: number;
+};
+
+/** A store row marked «Без упаковки» (`packaging_not_applicable`). */
+export type SkippedPackagingProductRow = {
+  id: string;
+  name: string;
+  store: string;
+  store_product_code: string | null;
+  category: string;
+  brand: string | null;
+  /** The rule that flagged it (apply_packaging_exclusion_rule); null = flagged by hand. */
+  packaging_not_applicable_reason: string | null;
 };
 
 /** One row of `public.packaged_product_store_labels(...)`. */

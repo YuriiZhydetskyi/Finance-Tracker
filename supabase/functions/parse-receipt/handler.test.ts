@@ -38,6 +38,7 @@ function makeDeps(overrides: Partial<HandlerDeps> = {}): HandlerDeps & {
     primary: overrides.primary ?? provider('gemini', primaryParse),
     fallback: overrides.fallback ?? provider('claude', fallbackParse),
     ...(overrides.loadTaxonomy ? { loadTaxonomy: overrides.loadTaxonomy } : {}),
+    ...(overrides.loadKnownStores ? { loadKnownStores: overrides.loadKnownStores } : {}),
     primaryParse,
     fallbackParse,
     isAllowed: (overrides.isAllowed as ReturnType<typeof vi.fn>) ?? isAllowed,
@@ -255,6 +256,45 @@ describe('handler — AI orchestration', () => {
 // ── Body normalization ───────────────────────────────────────────────────────
 
 describe('handler — body normalization', () => {
+  it('hands the known store names to the model after authorization', async () => {
+    let captured: AiContext | undefined;
+    const deps = makeDeps({
+      loadKnownStores: vi.fn(() => Promise.resolve(['ALDI SÜD', 'REWE'])),
+      primary: provider(
+        'gemini',
+        vi.fn((_image, ctx) => {
+          captured = ctx;
+          return Promise.resolve(sampleResult);
+        }),
+      ),
+    });
+    const handler = createHandler(deps);
+    const response = await handler(authedReq({ imageBase64: 'AAA' }));
+
+    expect(response.status).toBe(200);
+    expect(captured?.known_stores).toEqual(['ALDI SÜD', 'REWE']);
+  });
+
+  it('still reads the receipt when the known-stores lookup fails', async () => {
+    let captured: AiContext | undefined;
+    const deps = makeDeps({
+      loadKnownStores: vi.fn(() => Promise.reject(new Error('registry offline'))),
+      primary: provider(
+        'gemini',
+        vi.fn((_image, ctx) => {
+          captured = ctx;
+          return Promise.resolve(sampleResult);
+        }),
+      ),
+    });
+    const handler = createHandler(deps);
+    const response = await handler(authedReq({ imageBase64: 'AAA' }));
+
+    expect(response.status).toBe(200);
+    expect(captured?.known_stores).toEqual([]);
+    expect(deps.log).toHaveBeenCalledWith('warn', expect.stringContaining('registry offline'));
+  });
+
   it('loads the allowed taxonomy after authorization and removes an invalid AI suggestion', async () => {
     let captured: AiContext | undefined;
     const deps = makeDeps({

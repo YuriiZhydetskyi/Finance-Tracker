@@ -6,6 +6,7 @@ import { invalidateReceiptDerivedQueries } from './invalidate-receipt-derived-qu
 import { receiptQueryKey } from './receipts-query-keys';
 import {
   buildReceiptBundle,
+  fetchCanonicalStoreName,
   fetchStoreProducts,
   saveReceiptBundle,
   type SaveItemInput,
@@ -28,9 +29,9 @@ export type UpdateReceiptResult = {
  * Update flow (mirrors legacy Web.updateReceipt semantics):
  *   1. Re-fetch FX rate ONLY if currency or date changed.
  *   2. Recompute total_orig + apply patch.
- *   3. Resolve products for the new items (fresh link / backfill / create);
- *      reusing the same logic as save makes editing the store name auto-create
- *      the right products.
+ *   3. Resolve products for the new items (fresh link / backfill / create)
+ *      against the canonical spelling of the store (ADR-0033); reusing the same
+ *      logic as save makes editing the store name auto-create the right products.
  *   4. Replace the receipt, its items and price snapshots through the
  *      save_receipt_bundle RPC (p_replace = true) in one transaction; a failure
  *      keeps the previous version intact.
@@ -67,17 +68,18 @@ export function useUpdateReceiptMutation() {
         total_orig,
       });
 
-      const existingProducts = await fetchStoreProducts(patched.store);
+      const store = await fetchCanonicalStoreName(patched.store);
+      const existingProducts = await fetchStoreProducts(store);
 
       const bundle = buildReceiptBundle({
         receipt_id: id,
-        store: patched.store,
+        store,
         fx_rate_eur,
         items: itemInputs,
         existingProducts,
       });
 
-      return saveReceiptBundle({ receipt: { ...patched, id }, bundle, replace: true });
+      return saveReceiptBundle({ receipt: { ...patched, id, store }, bundle, replace: true });
     },
     onSuccess: async (_result, { id }) => {
       await Promise.all([

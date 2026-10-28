@@ -11,6 +11,7 @@ import {
   PackagedProductsList,
   PackagingCandidatesList,
   PackagingQueueScopeBar,
+  PackagingSkippedList,
   ReviewFilterToggle,
   useLinkStoreProductMutation,
   usePackagedProducts,
@@ -18,7 +19,9 @@ import {
   usePackagingQueueSummary,
   useSavePackagedProductsMutation,
   useSkipPackagingMutation,
+  useSkippedPackagingProducts,
   filterCatalogue,
+  filterSkippedProducts,
   needsReview,
   packagingQueueRowsSince,
   packagingQueueScope,
@@ -37,7 +40,7 @@ import type { PackagingSavePlan } from '@/features/packaged-products/api/use-sav
 const QUEUE_ROW_LIMIT = 500;
 
 const PackagedProductsSearchSchema = z.object({
-  tab: z.enum(['catalogue', 'queue']).optional().catch(undefined),
+  tab: z.enum(['catalogue', 'queue', 'skipped']).optional().catch(undefined),
   q: z.string().optional().catch(undefined),
   review: z.boolean().optional().catch(undefined),
   all: z.boolean().optional().catch(undefined),
@@ -114,7 +117,7 @@ function PackagedProductsFlow() {
       : null;
 
   const setSearch = (next: {
-    tab?: 'catalogue' | 'queue';
+    tab?: 'catalogue' | 'queue' | 'skipped';
     q?: string;
     review?: boolean | undefined;
     all?: boolean | undefined;
@@ -173,10 +176,18 @@ function PackagedProductsFlow() {
           >
             Каталог
           </Button>
+          <Button
+            type="button"
+            variant={tab === 'skipped' ? 'primary' : 'ghost'}
+            className="h-8 px-3 text-xs"
+            onClick={() => setSearch({ tab: 'skipped' })}
+          >
+            Без упаковки
+          </Button>
         </div>
         <Input
           aria-label="Пошук"
-          placeholder={tab === 'queue' ? 'Пошук серед позицій' : 'Назва, бренд або штрихкод'}
+          placeholder={tab === 'catalogue' ? 'Назва, бренд або штрихкод' : 'Пошук серед позицій'}
           className="max-w-xs"
           value={query}
           onChange={(event) => setSearch({ q: event.target.value })}
@@ -261,6 +272,12 @@ function PackagedProductsFlow() {
             />
           </div>
         )
+      ) : tab === 'skipped' ? (
+        <SkippedPackagingTab
+          query={query}
+          busy={skipPackaging.isPending}
+          onRestore={(productIds) => skipPackaging.mutate({ productIds, notApplicable: false })}
+        />
       ) : productsQuery.isPending ? (
         <p className="text-sm text-slate-500">Завантажую каталог…</p>
       ) : productsQuery.isError ? (
@@ -311,5 +328,35 @@ function PackagedProductsFlow() {
         }}
       />
     </div>
+  );
+}
+
+// Mounted only on its tab, so the list is read when the tab is opened and not before.
+function SkippedPackagingTab({
+  query,
+  busy,
+  onRestore,
+}: Readonly<{
+  query: string;
+  busy: boolean;
+  onRestore: (productIds: string[]) => void;
+}>) {
+  const skippedQuery = useSkippedPackagingProducts();
+
+  if (skippedQuery.isPending) {
+    return <p className="text-sm text-slate-500">Шукаю позиції без упаковки…</p>;
+  }
+  if (skippedQuery.isError) {
+    return (
+      <ErrorDetails error={skippedQuery.error} label="Не вдалося прочитати позиції без упаковки" />
+    );
+  }
+  return (
+    <PackagingSkippedList
+      rows={filterSkippedProducts(skippedQuery.data, query)}
+      busy={busy}
+      emptyMessage={query ? 'За цим запитом нічого не знайдено.' : 'Позицій без упаковки немає.'}
+      onRestore={onRestore}
+    />
   );
 }
