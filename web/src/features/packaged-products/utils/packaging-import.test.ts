@@ -4,6 +4,7 @@ import {
   validatePackagingPages,
   validatePackagingLinks,
   matchesReceiptHint,
+  receiptHintsFromRawImport,
 } from './packaging-import';
 import type { PackagingCandidateRow } from '../types';
 
@@ -143,6 +144,76 @@ describe('packaging document import contract', () => {
       );
       expect(batch.products[0]?.existing_product_id).toBe('old-card');
       expect(batch.products[0]?.parsed.review_notes).toEqual(['Нова причина']);
+    });
+  });
+  describe('receiptHintsFromRawImport', () => {
+    const hint = { store: 'REWE', receipt_label: 'Originals', receipt_date: '2026-09-13' };
+
+    it('reads the hints back from the stored import payload', () => {
+      expect(
+        receiptHintsFromRawImport({
+          product: { name: 'Pringles', receipt_matches: [hint] },
+          source: { file_name: 'a.pdf' },
+        }),
+      ).toEqual([hint]);
+    });
+    it('skips a hint that no longer fits the contract, keeps the rest', () => {
+      expect(
+        receiptHintsFromRawImport({
+          product: { receipt_matches: [{ store: '', receipt_label: 'x' }, hint, 'REWE'] },
+        }),
+      ).toEqual([hint]);
+    });
+    it.each([
+      [null],
+      [undefined],
+      ['text'],
+      [{}],
+      [{ product: null }],
+      [{ product: {} }],
+      [{ product: { receipt_matches: 'x' } }],
+    ])('returns nothing for %j', (raw) => {
+      expect(receiptHintsFromRawImport(raw)).toEqual([]);
+    });
+  });
+  describe('receipt summary', () => {
+    const withReceipt = (receipt: unknown) =>
+      parse({
+        receipt_pages: [1],
+        receipt,
+        products: [{ ...product, source_pages: [{ page: 2, kind: 'front' }] }],
+      });
+
+    it('is optional', () => {
+      expect(parse({ receipt_pages: [1], products: [product] }).receipt).toBeNull();
+      expect(withReceipt(null).receipt).toBeNull();
+      expect(withReceipt({}).receipt).toBeNull();
+    });
+    it('keeps what the transcriber read and fills the rest with null', () => {
+      expect(withReceipt({ store: ' REWE ', date: '2026-09-13', total: 23.45 }).receipt).toEqual({
+        store: 'REWE',
+        date: '2026-09-13',
+        total: 23.45,
+        currency: null,
+      });
+      expect(withReceipt({ store: null, date: null, total: 5, currency: 'EUR' }).receipt).toEqual({
+        store: null,
+        date: null,
+        total: 5,
+        currency: 'EUR',
+      });
+    });
+    it('tolerates unknown extra keys', () => {
+      expect(withReceipt({ store: 'REWE', cashier: 'Anna' }).receipt?.store).toBe('REWE');
+    });
+    it.each([
+      ['a date that is not a date', { date: '13.09.2026' }],
+      ['a non-numeric total', { total: '23,45' }],
+      ['a zero total', { total: 0 }],
+      ['a lower-case currency', { currency: 'eur' }],
+      ['a receipt that is not an object', 'REWE'],
+    ])('rejects %s before any PDF work', (_name, receipt) => {
+      expect(() => withReceipt(receipt)).toThrow(/receipt/);
     });
   });
   it('a nearby date alone cannot suggest an unrelated store label', () => {

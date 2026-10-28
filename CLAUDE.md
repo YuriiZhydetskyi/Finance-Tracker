@@ -9,7 +9,7 @@ Before making non-trivial changes, read in order:
 1. **[docs/project-status.md](docs/project-status.md)** — current state, pending deploy steps, lessons learned. The handoff doc.
 2. **[docs/architecture.md](docs/architecture.md)** — layers, request flows, ports & adapters, extension points.
 3. **[docs/data-model.md](docs/data-model.md)** — authoritative Postgres schema, RLS rules, RPC contracts, money/qty/fx conventions.
-4. **[docs/decisions/](docs/decisions/)** — 30 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import; 0030 covers the packaged-product "needs manual check" notes. Superseded ADRs are marked in the index.
+4. **[docs/decisions/](docs/decisions/)** — 32 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import; 0030 covers the packaged-product "needs manual check" notes; 0031 the «Без картки» queue (Pfand exclusion, newest-first order, 30-day window); 0032 creating the receipt from a JSON + PDF import. Superseded ADRs are marked in the index.
 5. **[docs/deploy.md](docs/deploy.md)** — operational runbook: secrets, env vars, deploy procedure, troubleshooting.
 6. **[docs/extending.md](docs/extending.md)** — numbered recipes for common extensions (add category, swap AI provider, add column, etc.).
 7. **[docs/refactoring-plan-2026-09.md](docs/refactoring-plan-2026-09.md)** — September 2026 refactoring plan and its status.
@@ -108,7 +108,7 @@ finance-tracker/
 │   │   │   ├── fx-rate/           # IFxRateProvider + nbuFxRateProvider
 │   │   │   ├── parse-receipt/     # IParseReceiptService + edgeFunctionParseReceiptService
 │   │   │   ├── photo-storage/     # IPhotoStorage + supabasePhotoStorage
-│   │   │   ├── pdf/               # packaging PDF page rendering
+│   │   │   ├── pdf/               # packaging PDF page rendering (pdf.js) + cutting pages out (pdf-lib)
 │   │   │   ├── supabase-client.ts # PRIVATE — only adapters and feature api/ import it
 │   │   │   ├── dependencies.ts    # public barrel: re-exports all singletons
 │   │   │   ├── query-client.ts    # TanStack Query config
@@ -119,7 +119,7 @@ finance-tracker/
 │   └── styles/tailwind.css
 ├── packages/domain/src/           # vendor-free domain logic + tests
 ├── supabase/
-│   ├── migrations/                # 45 timestamped SQL files (see folder); key ones: initial_schema,
+│   ├── migrations/                # 46 timestamped SQL files (see folder); key ones: initial_schema,
 │   │                              # background_receipt_imports, multilingual_product_taxonomy,
 │   │                              # purchase_correction_rules, packaged_products, save_receipt_bundle
 │   ├── functions/
@@ -177,11 +177,11 @@ These rules live in `packages/domain/`:
 
 ## Testing strategy
 
-Vitest everywhere; Deno only for type/lint gates. The root `vitest.config.mts` lists every workspace under `test.projects`, so `npx vitest run` from the repo root covers all of them (each keeps its own config and its own `npm run test` script). `npm run test` runs (counts as of 2026-09-22 — 890 Vitest tests in 98 files):
+Vitest everywhere; Deno only for type/lint gates. The root `vitest.config.mts` lists every workspace under `test.projects`, so `npx vitest run` from the repo root covers all of them (each keeps its own config and its own `npm run test` script). `npm run test` runs (counts as of 2026-10-27 — 1285 Vitest tests in 146 files):
 
-- **Domain unit** (`packages/domain`, 263 tests) — pure TS: schemas, factories, pair-detector, money, ulid, time, taxonomy, receipt evidence, bank statements, reconciliation.
-- **Web** (`web`, 528 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
-- **Edge Functions in Node** — `supabase/functions/_shared` (29), `parse-receipt` (20), `process-receipt-imports` (50), `ingest-email-receipts` (24). Each is its own workspace with a `vitest.config.ts`; handlers take injected dependencies, so only Web Fetch is needed.
+- **Domain unit** (`packages/domain`, 296 tests) — pure TS: schemas, factories, pair-detector, money, ulid, time, taxonomy, receipt evidence, bank statements, reconciliation.
+- **Web** (`web`, 850 tests) — adapters mocked via `vi.mock`; hooks via `renderHook` + QueryClient wrapper; components via `@testing-library/react`; route tests in `routes/-*.test.tsx`. Chart components NOT tested (Chart.js needs canvas, jsdom doesn't implement it).
+- **Edge Functions in Node** — `supabase/functions/_shared` (38), `parse-receipt` (20), `process-receipt-imports` (57), `ingest-email-receipts` (24). Each is its own workspace with a `vitest.config.ts`; handlers take injected dependencies, so only Web Fetch is needed.
 - **SQL on PGlite** — `scripts/test-purchase-correction-rules.mjs`, `scripts/test-packaged-products-sql.mjs`, `scripts/test-save-receipt-bundle-sql.mjs`, `scripts/test-email-imports-sql.mjs` run migrations in in-process Postgres and assert constraints, RLS and RPC behavior.
 - **Drift guard** — `npm run check:edge-domain` fails if `_shared/domain` differs from `packages/domain`.
 

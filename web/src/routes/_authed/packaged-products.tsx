@@ -1,21 +1,29 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
+import { useAppUsers, useCurrentUser } from '@/features/auth';
 import { useCategories, useCategoryNames } from '@/features/categories';
+import { useCreateImportBatch } from '@/features/imports';
 import { useProductTaxonomy } from '@/features/products/api/use-products';
 import {
   LinkStoreProductDialog,
   PackagedProductJsonImportDialog,
   PackagedProductsList,
   PackagingCandidatesList,
+  PackagingQueueScopeBar,
   ReviewFilterToggle,
   useLinkStoreProductMutation,
   usePackagedProducts,
   usePackagingCandidates,
+  usePackagingQueueSummary,
   useSavePackagedProductsMutation,
   useSkipPackagingMutation,
   filterCatalogue,
   needsReview,
+  packagingQueueRowsSince,
+  packagingQueueScope,
+  packagingQueueWindowStart,
+  PACKAGING_QUEUE_WINDOW_DAYS,
   type PackagingCandidateRow,
 } from '@/features/packaged-products';
 import { Button } from '@/shared/ui/Button';
@@ -24,10 +32,15 @@ import { ErrorDetails } from '@/shared/ui/ErrorDetails';
 import { PageTitle } from '@/shared/ui/PageTitle';
 import type { PackagingSavePlan } from '@/features/packaged-products/api/use-save-packaged-products-mutation';
 
+// The queue lists at most this many rows; it is far above a day's photographing, and
+// below the 1000-row cap PostgREST puts on every response.
+const QUEUE_ROW_LIMIT = 500;
+
 const PackagedProductsSearchSchema = z.object({
   tab: z.enum(['catalogue', 'queue']).optional().catch(undefined),
   q: z.string().optional().catch(undefined),
   review: z.boolean().optional().catch(undefined),
+  all: z.boolean().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/_authed/packaged-products')({
@@ -41,18 +54,38 @@ function PackagedProductsFlow() {
   const tab = search.tab ?? 'queue';
   const query = search.q ?? '';
   const onlyNeedingReview = search.review === true;
+  const showAll = search.all === true;
+
+  // A typed query searches every row; the recency window applies only to the plain list.
+  const queueScope = packagingQueueScope(query, showAll);
+  const windowStart = packagingQueueWindowStart();
+  const lastPurchasedSince = packagingQueueRowsSince(queueScope, windowStart);
 
   const categoriesQuery = useCategories();
   const categoryNames = useCategoryNames();
   const taxonomyQuery = useProductTaxonomy();
   const productsQuery = usePackagedProducts();
-  const candidatesQuery = usePackagingCandidates({ query });
+  const candidatesQuery = usePackagingCandidates({
+    query,
+    lastPurchasedSince,
+    limit: QUEUE_ROW_LIMIT,
+  });
+  const queueSummary = usePackagingQueueSummary({ query, lastPurchasedSince: windowStart });
   const catalogueReady =
     categoriesQuery.isSuccess && taxonomyQuery.isSuccess && productsQuery.isSuccess;
 
   const saveProducts = useSavePackagedProductsMutation();
   const linkProduct = useLinkStoreProductMutation();
   const skipPackaging = useSkipPackagingMutation();
+  // The receipt on the PDF goes through the same durable import as /imports.
+  const createReceiptBatch = useCreateImportBatch();
+  const appUsers = useAppUsers();
+  const currentUser = useCurrentUser();
+  const payerOptions = appUsers.data ?? [];
+  const defaultPayer =
+    currentUser.data?.email && payerOptions.includes(currentUser.data.email)
+      ? currentUser.data.email
+      : (payerOptions[0] ?? '');
 
   const [importFor, setImportFor] = useState<PackagingCandidateRow | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -84,6 +117,7 @@ function PackagedProductsFlow() {
     tab?: 'catalogue' | 'queue';
     q?: string;
     review?: boolean | undefined;
+    all?: boolean | undefined;
   }) => {
     void navigate({
       search: (current) => ({ ...current, ...next }),
@@ -91,8 +125,12 @@ function PackagedProductsFlow() {
     });
   };
 
-  const handleImported = async (plan: PackagingSavePlan, onProgress: (message: string) => void) => {
-    const saved = await saveProducts.mutateAsync({ plan, onProgress });
+  const handleImported = (plan: PackagingSavePlan, onProgress: (message: string) => void) =>
+    saveProducts.mutateAsync({ plan, onProgress });
+
+  // The dialog calls this once everything it was asked to do has run, so the page the
+  // person lands on is not chosen before they have seen what happened to the receipt.
+  const handleFinished = (saved: { id: string }[]) => {
     const first = saved[0];
     if (saved.length === 1 && first)
       void navigate({ to: '/packaged-products/$id', params: { id: first.id } });
@@ -190,12 +228,28 @@ function PackagedProductsFlow() {
         ) : (
           <div
             aria-busy={candidatesQuery.isPlaceholderData}
-            className={candidatesQuery.isPlaceholderData ? 'opacity-60 transition-opacity' : ''}
+            className={`space-y-3 ${candidatesQuery.isPlaceholderData ? 'opacity-60 transition-opacity' : ''}`}
           >
+            <PackagingQueueScopeBar
+              scope={queueScope}
+              shown={candidatesQuery.data.length}
+              total={queueSummary.data?.total_count ?? null}
+              recent={queueSummary.data?.recent_count ?? null}
+              truncated={candidatesQuery.data.length >= QUEUE_ROW_LIMIT}
+              onShowAll={() => setSearch({ all: true })}
+              onShowRecent={() => setSearch({ all: undefined })}
+            />
             <PackagingCandidatesList
               candidates={candidatesQuery.data}
               catalogueReady={catalogueReady}
               busyProductId={busyProductId}
+              emptyMessage={
+                queueScope === 'recent' &&
+                queueSummary.data &&
+                queueSummary.data.total_count > queueSummary.data.recent_count
+                  ? `За останні ${String(PACKAGING_QUEUE_WINDOW_DAYS)} днів нових позицій без картки немає. Давніші приховано — натисни «Показати всі».`
+                  : undefined
+              }
               onCreateCard={(candidate) => {
                 setImportFor(candidate);
                 setImportOpen(true);
@@ -231,8 +285,14 @@ function PackagedProductsFlow() {
         existing={products}
         candidate={importFor}
         submitting={saveProducts.isPending}
+        payerOptions={payerOptions}
+        defaultPayer={defaultPayer}
         onClose={() => setImportOpen(false)}
         onImported={handleImported}
+        onEnqueueReceipt={({ file, paidBy }) =>
+          createReceiptBatch.mutateAsync({ files: [file], paidBy })
+        }
+        onFinished={handleFinished}
       />
 
       <LinkStoreProductDialog

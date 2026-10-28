@@ -1,4 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { extractPdfPages } from './extract-pdf-pages';
 
 const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_PAGES = 100;
@@ -12,6 +13,8 @@ export type PackagingPdf = {
     pages: number[],
     onProgress?: (done: number, total: number) => void,
   ): Promise<Map<number, Blob>>;
+  /** A new PDF made only of these pages (1-based, in the order given); the original bytes are kept. */
+  extractPages(pages: number[]): Promise<Blob>;
   close(): Promise<void>;
 };
 
@@ -31,7 +34,9 @@ export async function openPackagingPdf(file: File): Promise<PackagingPdf> {
   ).join('');
   const assets = `${import.meta.env.BASE_URL}pdfjs/`;
   const loading = pdfjs.getDocument({
-    data: new Uint8Array(bytes),
+    // PDF.js hands its buffer to the worker; give it a copy so the original bytes
+    // stay available for cutting pages out later.
+    data: new Uint8Array(bytes.slice(0)),
     useSystemFonts: true,
     stopAtErrors: true,
     wasmUrl: `${assets}wasm/`,
@@ -57,6 +62,10 @@ export async function openPackagingPdf(file: File): Promise<PackagingPdf> {
     pageCount: doc.numPages,
     fingerprint,
     close: () => loading.destroy(),
+    async extractPages(pages) {
+      const cut = await extractPdfPages(new Uint8Array(bytes), pages);
+      return new Blob([cut.slice().buffer], { type: 'application/pdf' });
+    },
     async renderPages(pages, onProgress) {
       const unique = [...new Set(pages)];
       if (unique.some((page) => !Number.isInteger(page) || page < 1 || page > doc.numPages)) {

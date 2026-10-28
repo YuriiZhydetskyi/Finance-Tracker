@@ -49,11 +49,18 @@ const PRODUCTS = [
   row('01JCCCCCCCCCCCCCCCCCCCCCCC', 'Ще один сумнівний', ['Немає звороту', 'Смак під питанням']),
 ];
 
+const queue = vi.hoisted(() => ({
+  rows: [] as unknown[],
+  summary: { total_count: 0, recent_count: 0 },
+  candidateCalls: [] as { query?: string; lastPurchasedSince?: string | undefined }[],
+}));
+
 vi.mock('@/shared/lib/supabase-client', () => ({ supabase: {} }));
 vi.mock('@/features/auth', () => ({
   Header: () => null,
   RequireAuth: ({ children }: { children: React.ReactNode }) => children,
-  useAppUsers: () => ({ data: [] }),
+  useAppUsers: () => ({ data: ['me@example.com'] }),
+  useCurrentUser: () => ({ data: { email: 'me@example.com' } }),
 }));
 vi.mock('@/features/categories', () => ({
   useCategories: () => ({ isSuccess: true, isPending: false, isError: false }),
@@ -78,12 +85,14 @@ vi.mock('@/features/packaged-products', async (importOriginal) => {
       isPending: false,
       isError: false,
     }),
-    usePackagingCandidates: () => ({
-      data: [],
-      isPending: false,
-      isError: false,
-      isPlaceholderData: false,
-    }),
+    usePackagingCandidates: (filters: {
+      query?: string;
+      lastPurchasedSince?: string | undefined;
+    }) => {
+      queue.candidateCalls.push(filters);
+      return { data: queue.rows, isPending: false, isError: false, isPlaceholderData: false };
+    },
+    usePackagingQueueSummary: () => ({ data: queue.summary }),
     useSavePackagedProductsMutation: () => idle,
     useLinkStoreProductMutation: () => idle,
     useSkipPackagingMutation: () => idle,
@@ -171,5 +180,68 @@ describe('/packaged-products catalogue review filter', () => {
     PRODUCTS.splice(0, PRODUCTS.length, row('01JAAAAAAAAAAAAAAAAAAAAAAA', 'Чистий товар', []));
     await openCatalogue('/packaged-products?tab=catalogue&review=true');
     expect(await screen.findByText('Карток, що потребують перевірки, немає.')).toBeInTheDocument();
+  });
+});
+
+describe('/packaged-products queue recency window', () => {
+  const lastCall = () => queue.candidateCalls[queue.candidateCalls.length - 1];
+
+  beforeEach(() => {
+    queue.rows = [];
+    queue.summary = { total_count: 0, recent_count: 0 };
+    queue.candidateCalls.length = 0;
+  });
+
+  it('opens with the last 30 days and says how many rows that hides', async () => {
+    queue.summary = { total_count: 120, recent_count: 18 };
+    await openCatalogue('/packaged-products?tab=queue');
+
+    expect(await screen.findByText(/Приховано давніших: 102/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Показати всі' })).toBeInTheDocument();
+    expect(lastCall()?.lastPurchasedSince).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('«Показати всі» lists every row, keeps the choice in the URL and offers a way back', async () => {
+    queue.summary = { total_count: 120, recent_count: 18 };
+    const router = await openCatalogue('/packaged-products?tab=queue');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Показати всі' }));
+
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ all: true }));
+    expect(lastCall()?.lastPurchasedSince).toBeUndefined();
+    expect(screen.getByText(/Показано всі позиції без картки: 120/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Лише останні 30 днів' }));
+
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty('all'));
+    expect(lastCall()?.lastPurchasedSince).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(await screen.findByRole('button', { name: 'Показати всі' })).toBeInTheDocument();
+  });
+
+  it('searches every row: a typed query drops the window', async () => {
+    queue.summary = { total_count: 3, recent_count: 0 };
+    await openCatalogue('/packaged-products?tab=queue&q=pesto');
+
+    expect(await screen.findByText(/Пошук іде по всіх позиціях/)).toBeInTheDocument();
+    expect(lastCall()).toMatchObject({ query: 'pesto', lastPurchasedSince: undefined });
+    expect(screen.queryByRole('button', { name: 'Показати всі' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Приховано давніших/)).not.toBeInTheDocument();
+  });
+
+  it('points at the hidden rows when nothing was bought recently', async () => {
+    queue.summary = { total_count: 40, recent_count: 0 };
+    await openCatalogue('/packaged-products?tab=queue');
+
+    expect(
+      await screen.findByText(/нових позицій без картки немає. Давніші приховано/),
+    ).toBeInTheDocument();
+  });
+
+  it('shows no toggle when the window hides nothing', async () => {
+    queue.summary = { total_count: 7, recent_count: 7 };
+    await openCatalogue('/packaged-products?tab=queue');
+
+    expect(await screen.findByText(/куплені за останні 30 днів/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Показати всі' })).not.toBeInTheDocument();
   });
 });

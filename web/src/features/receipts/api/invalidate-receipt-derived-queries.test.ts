@@ -3,7 +3,6 @@ import { QueryClient, type QueryKey } from '@tanstack/react-query';
 import { categoriesQueryKey } from '@/features/categories/api/use-categories';
 import {
   packagedProductsQueryKey,
-  packagingCandidatesCountQueryKey,
   packagingCandidatesQueryKey,
 } from '@/features/packaged-products/api/packaged-products-query-keys';
 import { productsQueryKey } from '@/features/products/api/use-products';
@@ -30,8 +29,8 @@ const derivedKeys: Record<string, QueryKey> = {
   'stats filter options': statsFilterOptionsQueryKey,
   'stats category details': [...statsCategoryDetailsQueryKey, {}, {}],
   'waste items': [...wasteItemsQueryKey, { filters: { showFullyWasted: false } }],
-  'packaging candidates': [...packagingCandidatesQueryKey, '', null, null, 200],
-  'packaging candidates count': packagingCandidatesCountQueryKey,
+  'packaging candidates': [...packagingCandidatesQueryKey, '', null, null, '2026-09-27', 200],
+  'packaging queue summary': [...packagingCandidatesQueryKey, 'summary', '', '2026-09-27'],
 };
 
 const untouchedKeys: Record<string, QueryKey> = {

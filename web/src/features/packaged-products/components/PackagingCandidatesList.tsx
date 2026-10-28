@@ -11,11 +11,12 @@ type Props = Readonly<{
   onSkip: (candidate: PackagingCandidateRow) => void;
   busyProductId?: string | null;
   catalogueReady?: boolean;
+  emptyMessage?: string | undefined;
 }>;
 
 /**
- * The work list for photographing. Rows arrive already ranked by how often the
- * physical product was bought and clustered by `group_key`, so the same product
+ * The work list for photographing. Rows arrive already ranked by the date of the
+ * last purchase (newest first) and clustered by `group_key`, so the same product
  * bought at two stores sits together — it is one thing to photograph, even though
  * it is two rows to link.
  */
@@ -26,11 +27,12 @@ export function PackagingCandidatesList({
   onSkip,
   busyProductId = null,
   catalogueReady = true,
+  emptyMessage = 'Позицій без картки за цим запитом немає. Наявність фото перевіряй у каталозі.',
 }: Props) {
   if (candidates.length === 0) {
     return (
       <p className="rounded-md border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
-        Позицій без картки за цим запитом немає. Наявність фото перевіряй у каталозі.
+        {emptyMessage}
       </p>
     );
   }

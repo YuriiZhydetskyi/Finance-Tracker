@@ -38,9 +38,28 @@ const Evidence = z.object({
   source_pages: z.array(PageReference).max(MAX_PDF_PAGES).default([]),
   receipt_matches: z.array(ReceiptHint).max(50).default([]),
 });
+// What the transcriber read at the top and bottom of the receipt page. It only feeds
+// the «this receipt may already exist» warning; the receipt itself is parsed by the
+// import queue, never from these values. Unknown keys are dropped, not rejected.
+const ReceiptSummary = z.object({
+  store: z.string().trim().min(1).nullish(),
+  date: z.iso.date().nullish(),
+  total: z.number().finite().positive().nullish(),
+  currency: z
+    .string()
+    .trim()
+    .regex(/^[A-Z]{3}$/)
+    .nullish(),
+});
 
 export type PackagingPageReference = z.infer<typeof PageReference>;
 export type PackagingReceiptHint = z.infer<typeof ReceiptHint>;
+export type PackagingReceiptSummary = {
+  store: string | null;
+  date: string | null;
+  total: number | null;
+  currency: string | null;
+};
 export type ExistingPackagingIdentity = { id: string; name: string; barcode: string | null };
 export type ImportedPackagedProduct = {
   parsed: PackagedProductImport;
@@ -54,6 +73,8 @@ export type ImportedPackagedProduct = {
 export type PackagingImport = {
   products: ImportedPackagedProduct[];
   receipt_pages: number[];
+  /** Optional description of the receipt on `receipt_pages`; null when absent or empty. */
+  receipt: PackagingReceiptSummary | null;
   warnings: string[];
 };
 
@@ -77,6 +98,18 @@ export function parsePackagingImport(
   if (!receipts.success) throw new Error('receipt_pages: очікується масив номерів сторінок від 1.');
   if (new Set(receipts.data).size !== receipts.data.length)
     throw new Error('Сторінки чека повторюються.');
+  const summary = ReceiptSummary.nullish().safeParse(envelope?.receipt);
+  if (!summary.success) throw new Error(`receipt: ${formatZodIssues(summary.error)}`);
+  const receipt: PackagingReceiptSummary | null =
+    summary.data &&
+    (summary.data.store != null || summary.data.date != null || summary.data.total != null)
+      ? {
+          store: summary.data.store ?? null,
+          date: summary.data.date ?? null,
+          total: summary.data.total ?? null,
+          currency: summary.data.currency ?? null,
+        }
+      : null;
   const candidates = toPackagedProductCandidates(value);
   if (candidates.length === 0 || candidates.length > MAX_IMPORT_PRODUCTS) {
     throw new Error(`JSON має містити від 1 до ${String(MAX_IMPORT_PRODUCTS)} товарів.`);
@@ -136,7 +169,7 @@ export function parsePackagingImport(
       link_product_ids: [],
     };
   });
-  return { products, receipt_pages: receipts.data, warnings };
+  return { products, receipt_pages: receipts.data, receipt, warnings };
 }
 
 export function validatePackagingPages(batch: PackagingImport, pageCount: number | null): void {
@@ -161,9 +194,37 @@ export function validatePackagingPages(batch: PackagingImport, pageCount: number
   }
 }
 
+/**
+ * What of a store row a hint can be compared with: a queue row, or a store label
+ * already linked to a card.
+ */
+export type ReceiptHintTarget = Pick<
+  PackagingCandidateRow,
+  'store' | 'store_product_code' | 'product_name' | 'receipt_labels'
+>;
+
+/**
+ * The AI's receipt hints as stored on a card created by an import
+ * (`raw_import_json.product.receipt_matches`); anything that no longer fits the
+ * contract is skipped rather than failing the card page.
+ */
+export function receiptHintsFromRawImport(raw: unknown): PackagingReceiptHint[] {
+  const product =
+    raw != null && typeof raw === 'object' ? (raw as Record<string, unknown>).product : null;
+  const matches =
+    product != null && typeof product === 'object'
+      ? (product as Record<string, unknown>).receipt_matches
+      : null;
+  if (!Array.isArray(matches)) return [];
+  return matches.flatMap((match) => {
+    const parsed = ReceiptHint.safeParse(match);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
+
 /** Date is deliberately excluded: a date alone is never identity evidence. */
 export function matchesReceiptHint(
-  candidate: PackagingCandidateRow,
+  candidate: ReceiptHintTarget,
   hints: PackagingReceiptHint[],
 ): boolean {
   const norm = (value: string) => value.trim().toLocaleLowerCase().replace(/\s+/g, ' ');

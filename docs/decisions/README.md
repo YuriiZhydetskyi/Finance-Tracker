@@ -50,3 +50,5 @@
 | [0028](0028-packaging-pdf-evidence-import.md) | JSON із PDF-сторінками упаковок і підтвердженими прив’язками | accepted | Import / Storage / UI |
 | [0029](0029-gmail-receipts-via-owner-apps-script.md) | Чеки з Gmail через Apps Script в акаунті власника | accepted | Import / Security / Queue |
 | [0030](0030-packaged-product-review-notes.md) | Позначка «Потрібна перевірка» для карток упаковок | accepted | Schema / Import / UI |
+| [0031](0031-packaging-queue-deposits-and-recency.md) | Черга «Без картки»: без Pfand, найновіші зверху, вікно 30 днів | accepted | Schema / Queue / UI |
+| [0032](0032-receipt-from-packaging-pdf.md) | Чек зі сторінок PDF через імпорт чеків | accepted | Import / Queue / UI |
