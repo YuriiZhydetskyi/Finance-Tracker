@@ -25,6 +25,12 @@ import {
   REVIEW_NOTE_MAX_LENGTH,
   normalizeReviewNotes,
 } from './review-notes';
+import {
+  CARD_ATTRIBUTES_MAX,
+  IMPORT_ATTRIBUTES_MAX,
+  attributePairProblem,
+  normalizeAttributes,
+} from './product-attributes';
 
 // ── Reusable atoms ──────────────────────────────────────────────────────────
 
@@ -383,6 +389,25 @@ export const BARCODE_SCHEMA = z.string().regex(/^[0-9]{8,14}$/, 'Barcode must be
 export const REVIEW_NOTE_SCHEMA = z.string().trim().min(1).max(REVIEW_NOTE_MAX_LENGTH);
 export const REVIEW_NOTES_SCHEMA = z.array(REVIEW_NOTE_SCHEMA).max(CARD_REVIEW_NOTES_MAX);
 
+// «Інше» on a card (ADR-0035). Mirrors public.is_valid_packaged_product_attributes:
+// at most 30 pairs, keys and values trimmed, 1..60 and 1..300 characters. This
+// validates, it does not repair: normalizeAttributes runs before it.
+export const PRODUCT_ATTRIBUTES_SCHEMA = z
+  .record(z.string(), z.string())
+  .superRefine((attributes, ctx) => {
+    const entries = Object.entries(attributes);
+    if (entries.length > CARD_ATTRIBUTES_MAX) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `At most ${String(CARD_ATTRIBUTES_MAX)} attributes per card`,
+      });
+    }
+    for (const [key, value] of entries) {
+      const problem = attributePairProblem(key, value);
+      if (problem != null) ctx.addIssue({ code: 'custom', message: problem, path: [key] });
+    }
+  });
+
 const GRAM_NUTRIENT_SCHEMA = z.number().finite().min(0).max(100).nullable();
 
 const PACKAGED_PRODUCT_NUTRITION_SHAPE = {
@@ -494,6 +519,7 @@ export const PackagedProductSchema = z
     ingredients_text: z.string().nullable(),
     notes: z.string().nullable(),
     review_notes: REVIEW_NOTES_SCHEMA,
+    attributes: PRODUCT_ATTRIBUTES_SCHEMA,
     import_source: PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA,
     raw_import_json: z.unknown().nullable(),
     created_at: ISO_DATETIME_SCHEMA,
@@ -552,6 +578,7 @@ export const PackagedProductInputSchema = z.object({
   ingredients_text: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   review_notes: z.array(z.string()).optional(),
+  attributes: z.record(z.string(), z.string()).optional(),
   import_source: PACKAGED_PRODUCT_IMPORT_SOURCE_SCHEMA.optional(),
   raw_import_json: z.unknown().nullable().optional(),
 });
@@ -608,6 +635,31 @@ const IMPORT_REVIEW_NOTES_SCHEMA = z
   .optional()
   .transform((notes) => normalizeReviewNotes(notes));
 
+// Label facts with no field of their own, as a flat name -> text object (ADR-0035).
+// Absent, null and {} all mean "nothing recorded". A blank key or value carries no
+// information (the label printed nothing) and is dropped; a number is read as its
+// text. A value that is not text or a number, an over-long key or value, or more
+// than 15 pairs is a malformed answer and is rejected.
+const IMPORT_ATTRIBUTES_SCHEMA = z
+  .record(z.string(), z.union([z.string(), z.number(), z.null()]))
+  .nullable()
+  .optional()
+  .transform((attributes, ctx) => {
+    const normalized = normalizeAttributes(attributes);
+    const entries = Object.entries(normalized);
+    for (const [key, value] of entries) {
+      const problem = attributePairProblem(key, value);
+      if (problem != null) ctx.addIssue({ code: 'custom', message: problem, path: [key] });
+    }
+    if (entries.length > IMPORT_ATTRIBUTES_MAX) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `At most ${String(IMPORT_ATTRIBUTES_MAX)} attributes per product`,
+      });
+    }
+    return normalized;
+  });
+
 export const PackagedProductImportSchema = z.object({
   name: z.string().trim().min(1, 'name is required'),
   brand: z.string().nullable().optional(),
@@ -636,5 +688,6 @@ export const PackagedProductImportSchema = z.object({
   ingredients_text: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   review_notes: IMPORT_REVIEW_NOTES_SCHEMA,
+  attributes: IMPORT_ATTRIBUTES_SCHEMA,
 });
 export type PackagedProductImport = z.infer<typeof PackagedProductImportSchema>;

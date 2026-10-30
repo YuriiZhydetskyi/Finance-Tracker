@@ -49,6 +49,7 @@ function row(overrides: Partial<PackagedProductListRow>): PackagedProductListRow
     ingredients_text: null,
     notes: null,
     review_notes: [],
+    attributes: {},
     import_source: 'manual-json',
     created_at: '2026-09-01T00:00:00Z',
     updated_at: '2026-09-01T00:00:00Z',

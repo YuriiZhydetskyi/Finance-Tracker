@@ -95,6 +95,7 @@ try {
     '20260912072151_packaging_queue_functions.sql',
     '20261026190000_packaged_product_review_notes.sql',
     '20261027090000_packaging_queue_deposits_and_recency.sql',
+    '20261030110000_packaged_product_attributes.sql',
   ]) {
     await db.exec(
       await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), 'utf8'),
@@ -269,6 +270,123 @@ try {
   );
   assert.deepEqual(insertedFlag.rows[0].review_notes, ['Збіг із чеком неоднозначний']);
   await db.exec(`delete from public.packaged_products where id = 'pp-flagged'`);
+
+  // ── Attributes («Інше») ──────────────────────────────────────────────────
+  // Existing rows and rows inserted without attributes mean "nothing recorded".
+  const attributeDefaults = await db.query(
+    `select attributes, attributes = '{}'::jsonb as is_empty
+       from public.packaged_products where id = 'pp-pringles'`,
+  );
+  assert.deepEqual(attributeDefaults.rows[0].attributes, {});
+  assert.equal(attributeDefaults.rows[0].is_empty, true);
+
+  await db.exec(`
+    update public.packaged_products
+       set attributes = '{"Сорт": "Jonagold", "Калібр": "65–70 мм"}'::jsonb
+     where id = 'pp-pringles'
+  `);
+  const stored = await db.query(
+    `select attributes->>'Сорт' as variety, attributes->>'Калібр' as calibre
+       from public.packaged_products where id = 'pp-pringles'`,
+  );
+  assert.deepEqual(stored.rows[0], { variety: 'Jonagold', calibre: '65–70 мм' });
+
+  // Boundaries: 60-character key, 300-character value and 30 pairs are legal.
+  await db.exec(
+    `update public.packaged_products
+        set attributes = jsonb_build_object(repeat('к', 60), repeat('я', 300))
+      where id = 'pp-pringles'`,
+  );
+  await db.exec(
+    `update public.packaged_products
+        set attributes = (select jsonb_object_agg('ключ ' || g, 'значення ' || g)
+                            from generate_series(1, 30) g)
+      where id = 'pp-pringles'`,
+  );
+  await expectFailure(
+    `update public.packaged_products
+        set attributes = (select jsonb_object_agg('ключ ' || g, 'значення ' || g)
+                            from generate_series(1, 31) g)
+      where id = 'pp-pringles'`,
+    /packaged_products_attributes_valid/,
+  );
+  await expectFailure(
+    `update public.packaged_products
+        set attributes = jsonb_build_object(repeat('к', 61), 'значення') where id = 'pp-pringles'`,
+    /packaged_products_attributes_valid/,
+  );
+  await expectFailure(
+    `update public.packaged_products
+        set attributes = jsonb_build_object('Сорт', repeat('я', 301)) where id = 'pp-pringles'`,
+    /packaged_products_attributes_valid/,
+  );
+
+  // Blank and padded keys or values are rejected: the client trims before writing.
+  for (const rejected of [
+    `'{"": "значення"}'`,
+    `'{"   ": "значення"}'`,
+    `'{" Сорт": "Jonagold"}'`,
+    `'{"Сорт": ""}'`,
+    `'{"Сорт": "   "}'`,
+    `'{"Сорт": "Jonagold "}'`,
+  ]) {
+    await expectFailure(
+      `update public.packaged_products set attributes = ${rejected}::jsonb where id = 'pp-pringles'`,
+      /packaged_products_attributes_valid/,
+    );
+  }
+  // Only flat string values: no numbers, nulls, booleans, arrays or nested objects.
+  for (const rejected of [
+    `'{"Клас": 1}'`,
+    `'{"Клас": null}'`,
+    `'{"Bio": true}'`,
+    `'{"Сертифікати": ["Bio", "Fairtrade"]}'`,
+    `'{"Походження": {"країна": "Польща"}}'`,
+  ]) {
+    await expectFailure(
+      `update public.packaged_products set attributes = ${rejected}::jsonb where id = 'pp-pringles'`,
+      /packaged_products_attributes_valid/,
+    );
+  }
+  // The root must be an object, and "nothing recorded" is {} never NULL. The
+  // validator answers false for a scalar or array instead of raising from inside.
+  for (const rejected of [`'[]'`, `'["Сорт"]'`, `'"Сорт"'`, `'1'`, `'null'`]) {
+    await expectFailure(
+      `update public.packaged_products set attributes = ${rejected}::jsonb where id = 'pp-pringles'`,
+      /packaged_products_attributes_valid/,
+    );
+  }
+  await expectFailure(
+    `update public.packaged_products set attributes = null where id = 'pp-pringles'`,
+    /attributes/,
+  );
+  const validatorOnScalar = await db.query(
+    `select public.is_valid_packaged_product_attributes('1'::jsonb) as scalar,
+            public.is_valid_packaged_product_attributes(null) as missing,
+            public.is_valid_packaged_product_attributes('{}'::jsonb) as empty`,
+  );
+  assert.deepEqual(validatorOnScalar.rows[0], { scalar: false, missing: false, empty: true });
+
+  // A new card can carry its attributes from the start (the import path), and
+  // clearing them is writing {}.
+  await db.exec(`
+    insert into public.packaged_products (id, name, category, attributes)
+      values ('pp-apple', 'Яблука Jonagold', 'Овочі/фрукти',
+              '{"Сорт": "Jonagold", "Країна походження": "Німеччина"}'::jsonb);
+    update public.packaged_products set attributes = '{}' where id = 'pp-pringles';
+  `);
+  const insertedAttributes = await db.query(
+    `select attributes from public.packaged_products where id = 'pp-apple'`,
+  );
+  assert.deepEqual(insertedAttributes.rows[0].attributes, {
+    Сорт: 'Jonagold',
+    'Країна походження': 'Німеччина',
+  });
+  const clearedAttributes = await db.query(
+    `select attributes from public.packaged_products where id = 'pp-pringles'`,
+  );
+  assert.deepEqual(clearedAttributes.rows[0].attributes, {});
+  await db.exec(`delete from public.packaged_products where id = 'pp-apple'`);
 
   // ── The photographing queue ──────────────────────────────────────────────
   await db.exec(`

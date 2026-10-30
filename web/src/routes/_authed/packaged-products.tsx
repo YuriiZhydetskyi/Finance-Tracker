@@ -187,7 +187,9 @@ function PackagedProductsFlow() {
         </div>
         <Input
           aria-label="Пошук"
-          placeholder={tab === 'catalogue' ? 'Назва, бренд або штрихкод' : 'Пошук серед позицій'}
+          placeholder={
+            tab === 'catalogue' ? 'Назва, бренд, штрихкод або «Інше»' : 'Пошук серед позицій'
+          }
           className="max-w-xs"
           value={query}
           onChange={(event) => setSearch({ q: event.target.value })}

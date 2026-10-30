@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   hints: { current: [] as unknown[] },
   updateNotes: vi.fn(),
   updateState: { isPending: false, isError: false, error: null as Error | null },
+  updateAttributes: vi.fn(),
+  attributesState: { isPending: false, isError: false, error: null as Error | null },
 }));
 
 vi.mock('@tanstack/react-router', () => ({
@@ -42,12 +44,21 @@ vi.mock('../api/use-update-review-notes-mutation', () => ({
     ...mocks.updateState,
   }),
 }));
+vi.mock('../api/use-update-attributes-mutation', () => ({
+  useUpdateAttributesMutation: () => ({
+    mutateAsync: mocks.updateAttributes,
+    ...mocks.attributesState,
+  }),
+}));
 vi.mock('./NutritionFactsTable', () => ({ NutritionFactsTable: () => null }));
 vi.mock('./PackagingPhotoGallery', () => ({ PackagingPhotoGallery: () => null }));
 vi.mock('./PackagingPhotoUploader', () => ({ PackagingPhotoUploader: () => null }));
 vi.mock('./StoreLabelsTable', () => ({ StoreLabelsTable: () => null }));
 
-function product(review_notes: string[]): PackagedProductRow {
+function product(
+  review_notes: string[],
+  extra: Partial<PackagedProductRow> = {},
+): PackagedProductRow {
   return {
     id: '01JAAAAAAAAAAAAAAAAAAAAAAA',
     name: 'Pringles Original 165 г',
@@ -77,14 +88,20 @@ function product(review_notes: string[]): PackagedProductRow {
     ingredients_text: null,
     notes: null,
     review_notes,
+    attributes: {},
     import_source: 'manual-json',
     created_at: '2026-09-01T00:00:00Z',
     updated_at: '2026-09-01T00:00:00Z',
+    ...extra,
   };
 }
 
 beforeEach(() => {
   mocks.updateNotes.mockReset().mockResolvedValue(undefined);
+  mocks.updateAttributes.mockReset().mockResolvedValue(undefined);
+  mocks.attributesState.isPending = false;
+  mocks.attributesState.isError = false;
+  mocks.attributesState.error = null;
   mocks.updateState.isPending = false;
   mocks.updateState.isError = false;
   mocks.updateState.error = null;
@@ -159,5 +176,52 @@ describe('PackagedProductDetail review notes', () => {
     mocks.updateState.error = new Error('RLS denied');
     render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
     expect(screen.getByText(/Не вдалося оновити примітки/)).toBeInTheDocument();
+  });
+});
+
+describe('PackagedProductDetail «Інше»', () => {
+  it('shows the label facts of the card', () => {
+    mocks.product.current = product([], {
+      attributes: { Сорт: 'Jonagold', Калібр: '65–70 мм' },
+    });
+    render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
+    expect(screen.getByRole('heading', { name: 'Інше' })).toBeInTheDocument();
+    expect(screen.getByText('Jonagold')).toBeInTheDocument();
+    expect(screen.getByText('65–70 мм')).toBeInTheDocument();
+  });
+
+  it('shows the free-text note that nothing displayed before', () => {
+    mocks.product.current = product([], { notes: 'Сорт на ціннику не вказано' });
+    render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
+    expect(screen.getByText('Примітка')).toBeInTheDocument();
+    expect(screen.getByText('Сорт на ціннику не вказано')).toBeInTheDocument();
+  });
+
+  it('keeps «Інше» apart from the review notes', () => {
+    mocks.product.current = product(['Штрихкод розмитий'], { attributes: { Сорт: 'Gala' } });
+    render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
+    expect(screen.getByRole('heading', { name: 'Потрібна перевірка' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Інше' })).toBeInTheDocument();
+  });
+
+  it('writes the remaining pairs for this card when one is removed', async () => {
+    mocks.product.current = product([], { attributes: { Сорт: 'Jonagold', Клас: 'I' } });
+    render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Видалити: Клас' }));
+    await waitFor(() =>
+      expect(mocks.updateAttributes).toHaveBeenCalledWith({
+        id: '01JAAAAAAAAAAAAAAAAAAAAAAA',
+        attributes: { Сорт: 'Jonagold' },
+      }),
+    );
+    expect(mocks.updateNotes).not.toHaveBeenCalled();
+  });
+
+  it('shows the failure of an update', () => {
+    mocks.product.current = product([], { attributes: { Сорт: 'Jonagold' } });
+    mocks.attributesState.isError = true;
+    mocks.attributesState.error = new Error('RLS denied');
+    render(<PackagedProductDetail id="01JAAAAAAAAAAAAAAAAAAAAAAA" />);
+    expect(screen.getByText(/Не вдалося оновити розділ «Інше»/)).toBeInTheDocument();
   });
 });
