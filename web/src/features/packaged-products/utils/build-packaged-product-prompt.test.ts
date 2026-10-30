@@ -22,6 +22,25 @@ describe('buildPackagedProductPrompt', () => {
     expect(parsed.review_notes).toEqual([]);
     expect(EXAMPLE_PACKAGED_PRODUCT_JSON).toContain('"review_notes": []');
   });
+  it('documents the optional attributes object, its limits and what does not belong in it', () => {
+    const prompt = buildPackagedProductPrompt(['Снеки'], taxonomy);
+    expect(prompt).toContain('Правила розділу «Інше» (attributes)');
+    expect(prompt).toContain('до 15 пар');
+    expect(prompt).toContain('до 60 символів');
+    expect(prompt).toContain('до 300 символів');
+    for (const key of ['Сорт', 'Калібр', 'Клас', 'Країна походження', 'Виробник']) {
+      expect(prompt).toContain(`"${key}"`);
+    }
+    expect(prompt).toContain('дослівно з етикетки');
+    expect(prompt).toContain('Не копіюй значення attributes із прикладу');
+    expect(prompt).toContain('{} або null');
+  });
+  it('keeps the example JSON valid for the import contract with a few attributes', () => {
+    const example = JSON.parse(EXAMPLE_PACKAGED_PRODUCT_JSON) as { products: unknown[] };
+    const parsed = PackagedProductImportSchema.parse(example.products[0]);
+    expect(Object.keys(parsed.attributes).length).toBeGreaterThan(0);
+    expect(EXAMPLE_PACKAGED_PRODUCT_JSON).toContain('"attributes": {');
+  });
   it('documents the optional receipt summary and forbids transcribing receipt lines', () => {
     const prompt = buildPackagedProductPrompt(['Снеки'], taxonomy);
     expect(prompt).toContain('receipt: необовʼязковий короткий опис чека');

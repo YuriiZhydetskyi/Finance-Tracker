@@ -342,6 +342,7 @@ export type Database = {
         Row: {
           allergen_traces: Database['public']['Enums']['eu_allergen'][];
           allergens: Database['public']['Enums']['eu_allergen'][];
+          attributes: Json;
           barcode: string | null;
           brand: string | null;
           carbohydrate_g: number | null;
@@ -376,6 +377,7 @@ export type Database = {
         Insert: {
           allergen_traces?: Database['public']['Enums']['eu_allergen'][];
           allergens?: Database['public']['Enums']['eu_allergen'][];
+          attributes?: Json;
           barcode?: string | null;
           brand?: string | null;
           carbohydrate_g?: number | null;
@@ -410,6 +412,7 @@ export type Database = {
         Update: {
           allergen_traces?: Database['public']['Enums']['eu_allergen'][];
           allergens?: Database['public']['Enums']['eu_allergen'][];
+          attributes?: Json;
           barcode?: string | null;
           brand?: string | null;
           carbohydrate_g?: number | null;
@@ -1465,6 +1468,7 @@ export type Database = {
         Args: { p_category: string; p_name: string };
         Returns: boolean;
       };
+      is_valid_packaged_product_attributes: { Args: { p_attributes: Json }; Returns: boolean };
       is_valid_review_notes: { Args: { p_notes: string[] }; Returns: boolean };
       lookup_store_name: { Args: { p_key: string }; Returns: string };
       mark_receipt_import_upload_failed: {

@@ -146,6 +146,55 @@ describe('packaging document import contract', () => {
       expect(batch.products[0]?.parsed.review_notes).toEqual(['Нова причина']);
     });
   });
+  describe('attributes', () => {
+    const apple = { Сорт: 'Jonagold', Калібр: '65–70 мм' };
+
+    it.each([
+      ['absent', {}],
+      ['null', { attributes: null }],
+      ['empty', { attributes: {} }],
+    ])('means nothing recorded when %s', (_name, extra) => {
+      expect(parse({ ...product, ...extra }).products[0]?.parsed.attributes).toEqual({});
+    });
+    it('keeps trimmed pairs per product and tolerates unknown extra fields', () => {
+      const batch = parse([
+        {
+          ...product,
+          attributes: { ' Сорт ': ' Jonagold ', Калібр: '65–70 мм' },
+          confidence: 'low',
+        },
+        { name: 'Paprika', category: 'Снеки' },
+      ]);
+      expect(batch.products[0]?.parsed.attributes).toEqual(apple);
+      expect(batch.products[1]?.parsed.attributes).toEqual({});
+    });
+    it('keeps the original object for the audit payload', () => {
+      const raw = { ...product, attributes: { ' Сорт ': ' Jonagold ' } };
+      expect(parse(raw).products[0]?.raw).toEqual(raw);
+    });
+    it('names the product and the field when the pairs break the contract', () => {
+      expect(() =>
+        parse({
+          ...product,
+          attributes: Object.fromEntries(
+            Array.from({ length: 16 }, (_, i) => [`Ключ ${String(i)}`, 'значення']),
+          ),
+        }),
+      ).toThrow(/Товар 1.*attributes/);
+      expect(() => parse({ ...product, attributes: { Сорт: 'я'.repeat(301) } })).toThrow(
+        'attributes.Сорт',
+      );
+      expect(() => parse({ ...product, attributes: { Bio: true } })).toThrow('attributes');
+    });
+    it('does not change which existing card is reused', () => {
+      const batch = parsePackagingImport(JSON.stringify({ ...product, attributes: apple }), {
+        ...context,
+        existing: [{ id: 'old-card', name: 'Old name', barcode: product.barcode }],
+      });
+      expect(batch.products[0]?.existing_product_id).toBe('old-card');
+      expect(batch.products[0]?.parsed.attributes).toEqual(apple);
+    });
+  });
   describe('receiptHintsFromRawImport', () => {
     const hint = { store: 'REWE', receipt_label: 'Originals', receipt_date: '2026-09-13' };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { PackagingCandidateRow } from '../types';
 import {
   matchesReceiptHint,
@@ -206,6 +206,24 @@ export function PackagingImportReview({
                 {product.existing_product_id
                   ? 'Нові примітки додадуться до наявних на картці без дублікатів. Назва та харчові дані не змінюються.'
                   : 'Примітки збережуться на новій картці, поки ти не позначиш їх перевіреними.'}
+              </p>
+            </div>
+          ) : null}
+          {Object.keys(product.parsed.attributes).length ? (
+            <div className="space-y-1 rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+              <p className="font-medium">Інше</p>
+              <dl className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-x-4 gap-y-0.5">
+                {Object.entries(product.parsed.attributes).map(([key, value]) => (
+                  <Fragment key={key}>
+                    <dt className="text-slate-600">{key}</dt>
+                    <dd className="text-slate-900">{value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+              <p className="text-xs text-slate-500">
+                {product.existing_product_id
+                  ? 'Нові пункти додадуться до наявних на картці. Значення, які там уже є, не змінюються.'
+                  : 'Пункти збережуться на новій картці; їх можна змінити на сторінці картки.'}
               </p>
             </div>
           ) : null}

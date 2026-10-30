@@ -178,6 +178,49 @@ describe('makePackagedProduct', () => {
         .review_notes,
     ).toHaveLength(1);
   });
+
+  it('defaults attributes to none and normalizes supplied ones', () => {
+    expect(makePackagedProduct({ name: 'Тест', category: 'Інше' }).attributes).toEqual({});
+    const product = makePackagedProduct({
+      name: 'Тест',
+      category: 'Інше',
+      attributes: { ' Сорт ': ' Jonagold ', сорт: 'Gala', Клас: '' },
+    });
+    expect(product.attributes).toEqual({ Сорт: 'Jonagold' });
+  });
+
+  it('rejects an attribute key over 60 characters, a value over 300 and more than 30 pairs', () => {
+    expect(() =>
+      makePackagedProduct({
+        name: 'Тест',
+        category: 'Інше',
+        attributes: { ['к'.repeat(61)]: 'x' },
+      }),
+    ).toThrow();
+    expect(() =>
+      makePackagedProduct({
+        name: 'Тест',
+        category: 'Інше',
+        attributes: { Сорт: 'я'.repeat(301) },
+      }),
+    ).toThrow();
+    expect(() =>
+      makePackagedProduct({
+        name: 'Тест',
+        category: 'Інше',
+        attributes: Object.fromEntries(
+          Array.from({ length: 31 }, (_, i) => [`ключ ${String(i)}`, 'значення']),
+        ),
+      }),
+    ).toThrow();
+    expect(
+      makePackagedProduct({
+        name: 'Тест',
+        category: 'Інше',
+        attributes: { ['к'.repeat(60)]: 'я'.repeat(300) },
+      }).attributes,
+    ).toEqual({ ['к'.repeat(60)]: 'я'.repeat(300) });
+  });
 });
 
 describe('packagedProductFromImport', () => {
@@ -295,6 +338,93 @@ describe('packagedProductFromImport', () => {
       const result = PackagedProductImportSchema.safeParse({
         ...PRINGLES,
         review_notes: ['Перевір штрихкод'],
+        source_pages: [{ page: 2, kind: 'front' }],
+        confidence: 0.4,
+      });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('attributes', () => {
+    const APPLE_LABEL = {
+      Сорт: 'Jonagold',
+      Калібр: '65–70 мм',
+      Клас: 'I',
+      'Країна походження': 'Німеччина',
+    };
+
+    it.each([
+      ['absent', {}],
+      ['null', { attributes: null }],
+      ['empty', { attributes: {} }],
+    ])('means nothing recorded when %s', (_name, overrides) => {
+      const parsed = parseImport(overrides);
+      expect(parsed.attributes).toEqual({});
+      const product = packagedProductFromImport(parsed, { import_source: 'manual-json' });
+      expect(product.attributes).toEqual({});
+    });
+
+    it('persists the pairs of a label', () => {
+      const parsed = parseImport({ attributes: APPLE_LABEL });
+      expect(parsed.attributes).toEqual(APPLE_LABEL);
+      const product = packagedProductFromImport(parsed, { import_source: 'manual-json' });
+      expect(product.attributes).toEqual(APPLE_LABEL);
+    });
+
+    it('trims, reads numbers as text and drops blank, null and duplicate pairs', () => {
+      const parsed = parseImport({
+        attributes: {
+          ' Сорт ': ' Jonagold ',
+          сорт: 'Gala',
+          Клас: 1,
+          Калібр: '   ',
+          Походження: null,
+          '': 'без назви',
+        },
+      });
+      expect(parsed.attributes).toEqual({ Сорт: 'Jonagold', Клас: '1' });
+    });
+
+    it('accepts exactly 15 pairs of 60 + 300 characters', () => {
+      const attributes = Object.fromEntries(
+        Array.from({ length: 15 }, (_, i) => [`${String(i)}`.padEnd(60, 'к'), 'я'.repeat(300)]),
+      );
+      expect(Object.keys(parseImport({ attributes }).attributes)).toHaveLength(15);
+    });
+
+    it.each([
+      [
+        'more than 15 pairs',
+        Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`ключ ${String(i)}`, 'x'])),
+      ],
+      ['a key over 60 characters', { ['к'.repeat(61)]: 'x' }],
+      ['a value over 300 characters', { Сорт: 'я'.repeat(301) }],
+      ['a boolean value', { Bio: true }],
+      ['an array value', { Сертифікати: ['Bio', 'Fairtrade'] }],
+      ['a nested object', { Походження: { країна: 'Польща' } }],
+      ['an array instead of an object', ['Сорт: Jonagold']],
+      ['a bare string instead of an object', 'Сорт: Jonagold'],
+    ])('rejects %s', (_name, attributes) => {
+      expect(PackagedProductImportSchema.safeParse({ ...PRINGLES, attributes }).success).toBe(
+        false,
+      );
+    });
+
+    it('names the field and the offending key in the issue', () => {
+      const result = PackagedProductImportSchema.safeParse({
+        ...PRINGLES,
+        attributes: { Сорт: 'я'.repeat(301) },
+      });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues.map((issue) => issue.path.join('.'))).toContain(
+        'attributes.Сорт',
+      );
+    });
+
+    it('still tolerates unknown extra fields next to attributes', () => {
+      const result = PackagedProductImportSchema.safeParse({
+        ...PRINGLES,
+        attributes: { Сорт: 'Jonagold' },
         source_pages: [{ page: 2, kind: 'front' }],
         confidence: 0.4,
       });

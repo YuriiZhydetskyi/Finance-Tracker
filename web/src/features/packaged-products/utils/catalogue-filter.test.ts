@@ -6,13 +6,22 @@ const pringles = {
   brand: 'Pringles',
   barcode: '5053990101658',
   review_notes: ['Штрихкод розмитий'],
+  attributes: {},
 };
-const milk = { name: 'Молоко 1 л', brand: null, barcode: null, review_notes: [] };
+const milk = { name: 'Молоко 1 л', brand: null, barcode: null, review_notes: [], attributes: {} };
 const paprika = {
   name: 'Pringles Paprika',
   brand: 'Pringles',
   barcode: null,
   review_notes: ['Немає звороту', 'Смак під питанням'],
+  attributes: {},
+};
+const apples = {
+  name: 'Яблука 1 кг',
+  brand: null,
+  barcode: null,
+  review_notes: [],
+  attributes: { Сорт: 'Jonagold', 'Країна походження': 'Німеччина' },
 };
 const catalogue = [pringles, milk, paprika];
 
@@ -46,6 +55,16 @@ describe('filterCatalogue', () => {
     expect(filterCatalogue(catalogue, { query: '5053990', onlyNeedingReview: false })).toEqual([
       pringles,
     ]);
+  });
+  it('finds a card by a value of «Інше», case-insensitively', () => {
+    const all = [...catalogue, apples];
+    expect(filterCatalogue(all, { query: 'jonagold', onlyNeedingReview: false })).toEqual([apples]);
+    expect(filterCatalogue(all, { query: 'НІМЕЧЧИНА', onlyNeedingReview: false })).toEqual([
+      apples,
+    ]);
+  });
+  it('does not match the names of the «Інше» pairs, only their values', () => {
+    expect(filterCatalogue([apples], { query: 'сорт', onlyNeedingReview: false })).toEqual([]);
   });
   it('combines the text search with the review filter', () => {
     expect(filterCatalogue(catalogue, { query: 'paprika', onlyNeedingReview: true })).toEqual([

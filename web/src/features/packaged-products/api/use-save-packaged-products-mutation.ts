@@ -1,10 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  CARD_ATTRIBUTES_MAX,
   CARD_REVIEW_NOTES_MAX,
+  attributesFromJson,
   makePackagedProductPhoto,
+  mergeAttributes,
   mergeReviewNotes,
   packagedProductFromImport,
+  sameAttributes,
   sameReviewNotes,
+  type ProductAttributes,
 } from '@finance-tracker/domain';
 import { authService, packagingPhotoStorage } from '@/shared/lib/dependencies';
 import { productsQueryKey } from '@/features/products/api/use-products';
@@ -63,35 +68,54 @@ export function createPackagingSavePlan(
       links: product.link_product_ids,
       // Written with the new row; merged into the stored card when one is reused.
       review_notes: product.parsed.review_notes,
+      attributes: product.parsed.attributes,
     };
   });
 }
 export type PackagingSavePlan = ReturnType<typeof createPackagingSavePlan>;
 
 /**
- * A reused card keeps its name and nutrition (ADR-0028), but a doubt reported by a
- * newer import must not vanish: append it, dropping only exact duplicates.
- * Idempotent, so a replayed save does not grow the list.
+ * A reused card keeps its name and nutrition (ADR-0028), but what a newer import
+ * found must not vanish. Doubts are appended, dropping only exact duplicates
+ * (ADR-0030). «Інше» pairs are added when their key is new; a value already on the
+ * card is the owner's edit or an earlier import and is never overwritten (ADR-0035).
+ * Idempotent, so a replayed save does not grow either of them, and one write
+ * carries both.
  */
-async function mergeReviewNotesIntoCard(
+async function mergeIntoReusedCard(
   id: string,
-  stored: string[] | null | undefined,
-  incoming: string[],
+  stored: { review_notes: string[] | null | undefined; attributes: unknown },
+  incoming: { review_notes: string[]; attributes: ProductAttributes },
 ) {
-  if (incoming.length === 0) return;
-  const current = stored ?? [];
-  const merged = mergeReviewNotes(current, incoming);
-  if (sameReviewNotes(merged, current)) return;
-  if (merged.length > CARD_REVIEW_NOTES_MAX) {
+  const currentNotes = stored.review_notes ?? [];
+  const mergedNotes =
+    incoming.review_notes.length > 0
+      ? mergeReviewNotes(currentNotes, incoming.review_notes)
+      : currentNotes;
+  const currentAttributes = attributesFromJson(stored.attributes);
+  const mergedAttributes = mergeAttributes(currentAttributes, incoming.attributes);
+  const notesChanged = !sameReviewNotes(mergedNotes, currentNotes);
+  const attributesChanged = !sameAttributes(mergedAttributes, currentAttributes);
+  if (!notesChanged && !attributesChanged) return;
+  if (mergedNotes.length > CARD_REVIEW_NOTES_MAX) {
     throw new Error(
-      `Картка вже має ${String(current.length)} приміток до перевірки, а з новими їх було б ${String(merged.length)} (максимум ${String(CARD_REVIEW_NOTES_MAX)}). Познач частину приміток перевіреними в картці й повтори збереження.`,
+      `Картка вже має ${String(currentNotes.length)} приміток до перевірки, а з новими їх було б ${String(mergedNotes.length)} (максимум ${String(CARD_REVIEW_NOTES_MAX)}). Познач частину приміток перевіреними в картці й повтори збереження.`,
+    );
+  }
+  const mergedCount = Object.keys(mergedAttributes).length;
+  if (mergedCount > CARD_ATTRIBUTES_MAX) {
+    throw new Error(
+      `Картка вже має ${String(Object.keys(currentAttributes).length)} пунктів «Інше», а з новими їх було б ${String(mergedCount)} (максимум ${String(CARD_ATTRIBUTES_MAX)}). Видали частину пунктів у картці й повтори збереження.`,
     );
   }
   const { error } = await supabase
     .from('packaged_products')
-    .update({ review_notes: merged })
+    .update({
+      ...(notesChanged ? { review_notes: mergedNotes } : {}),
+      ...(attributesChanged ? { attributes: mergedAttributes } : {}),
+    })
     .eq('id', id);
-  if (error) throw wrapError('Не вдалося додати примітки до перевірки', error);
+  if (error) throw wrapError('Не вдалося додати до картки примітки та пункти «Інше»', error);
 }
 
 export async function savePackagingPlan(
@@ -121,11 +145,11 @@ export async function savePackagingPlan(
     }
     const { data: card, error: cardError } = await supabase
       .from('packaged_products')
-      .select('id, review_notes')
+      .select('id, review_notes, attributes')
       .eq('id', entry.id)
       .single();
     if (cardError || !card) throw wrapError('Картка недоступна або видалена', cardError);
-    if (!entry.row) await mergeReviewNotesIntoCard(entry.id, card.review_notes, entry.review_notes);
+    if (!entry.row) await mergeIntoReusedCard(entry.id, card, entry);
 
     for (const [photoIndex, photo] of entry.photos.entries()) {
       const path = `${user.email}/${entry.id}/${photo.filename}`;

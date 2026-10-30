@@ -9,7 +9,7 @@ Before making non-trivial changes, read in order:
 1. **[docs/project-status.md](docs/project-status.md)** — current state, pending deploy steps, lessons learned. The handoff doc.
 2. **[docs/architecture.md](docs/architecture.md)** — layers, request flows, ports & adapters, extension points.
 3. **[docs/data-model.md](docs/data-model.md)** — authoritative Postgres schema, RLS rules, RPC contracts, money/qty/fx conventions.
-4. **[docs/decisions/](docs/decisions/)** — 34 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import; 0030 covers the packaged-product "needs manual check" notes; 0031 the «Без картки» queue (Pfand exclusion, newest-first order, 30-day window); 0032 creating the receipt from a JSON + PDF import; 0033 canonical store names (registry + chain patterns, write-path triggers, importer canonicalisation) and merging duplicate product rows (`merge_products`); 0034 the bulk «Без упаковки» rule and the other-store queue hint. Superseded ADRs are marked in the index.
+4. **[docs/decisions/](docs/decisions/)** — 35 MADR ADRs (index in its `README.md`). ADR-0013 covers the Apps Script → React/Supabase migration; 0016–0028 cover durable background imports, receipt verification, product taxonomy, store-scoped product rules and the packaged-product catalogue; 0029 covers the Gmail receipt import; 0030 covers the packaged-product "needs manual check" notes; 0031 the «Без картки» queue (Pfand exclusion, newest-first order, 30-day window); 0032 creating the receipt from a JSON + PDF import; 0033 canonical store names (registry + chain patterns, write-path triggers, importer canonicalisation) and merging duplicate product rows (`merge_products`); 0034 the bulk «Без упаковки» rule and the other-store queue hint; 0035 the free-form «Інше» key-value section (`packaged_products.attributes`). Superseded ADRs are marked in the index.
 5. **[docs/deploy.md](docs/deploy.md)** — operational runbook: secrets, env vars, deploy procedure, troubleshooting.
 6. **[docs/extending.md](docs/extending.md)** — numbered recipes for common extensions (add category, swap AI provider, add column, etc.).
 7. **[docs/refactoring-plan-2026-09.md](docs/refactoring-plan-2026-09.md)** — September 2026 refactoring plan and its status.
@@ -122,7 +122,7 @@ finance-tracker/
 │   └── styles/tailwind.css
 ├── packages/domain/src/           # vendor-free domain logic + tests
 ├── supabase/
-│   ├── migrations/                # 53 timestamped SQL files (see folder); key ones: initial_schema,
+│   ├── migrations/                # 54 timestamped SQL files (see folder); key ones: initial_schema,
 │   │                              # background_receipt_imports, multilingual_product_taxonomy,
 │   │                              # purchase_correction_rules, packaged_products, save_receipt_bundle
 │   ├── functions/
