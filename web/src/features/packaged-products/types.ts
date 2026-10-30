@@ -4,6 +4,7 @@ import type {
   NutritionBasis,
   PackagedProductImportSource,
   PackagedProductPhotoKind,
+  ProductAttributes,
 } from '@finance-tracker/domain';
 
 /** One row of `public.packaged_products`, as PostgREST returns it. */
@@ -37,6 +38,8 @@ export type PackagedProductRow = {
   notes: string | null;
   /** Reasons the card needs a manual check; empty means nothing to verify (ADR-0030). */
   review_notes: string[];
+  /** «Інше»: label facts without a column of their own, key -> text (ADR-0035). */
+  attributes: ProductAttributes;
   import_source: PackagedProductImportSource;
   created_at: string;
   updated_at: string;

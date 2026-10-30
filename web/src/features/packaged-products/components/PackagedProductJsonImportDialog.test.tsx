@@ -85,6 +85,7 @@ function existingRow(overrides: Partial<PackagedProductListRow>): PackagedProduc
     ingredients_text: null,
     notes: null,
     review_notes: [],
+    attributes: {},
     import_source: 'manual',
     created_at: '2026-09-01T00:00:00Z',
     updated_at: '2026-09-01T00:00:00Z',
@@ -250,6 +251,13 @@ describe('PackagedProductJsonImportDialog', () => {
     expect(prompt).toContain('до 10 коротких рядків');
   });
 
+  it('tells the AI about the optional attributes field', () => {
+    renderDialog();
+    const prompt = promptText();
+    expect(prompt).toContain('"attributes": {');
+    expect(prompt).toContain('Правила розділу «Інше» (attributes)');
+  });
+
   it('shows review notes before saving and keeps them in the save plan', async () => {
     const { onImported } = renderDialog();
     const payload = {
@@ -297,6 +305,62 @@ describe('PackagedProductJsonImportDialog', () => {
     paste(JSON.stringify({ ...(JSON.parse(VALID_JSON) as object), review_notes }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('review_notes');
+    expect(onImported).not.toHaveBeenCalled();
+  });
+
+  it('shows the proposed «Інше» pairs before saving and keeps them in the save plan', async () => {
+    const { onImported } = renderDialog();
+    paste(
+      JSON.stringify({
+        ...(JSON.parse(VALID_JSON) as object),
+        attributes: { ' Сорт ': ' Jonagold ', Калібр: '65–70 мм' },
+      }),
+    );
+
+    expect(await screen.findByText('Jonagold')).toBeInTheDocument();
+    expect(screen.getByText('65–70 мм')).toBeInTheDocument();
+    expect(screen.getByText('Калібр')).toBeInTheDocument();
+    expect(screen.getByText(/Пункти збережуться на новій картці/)).toBeInTheDocument();
+
+    await confirmSave();
+    await vi.waitFor(() => expect(onImported).toHaveBeenCalled());
+    expect(onImported.mock.calls[0]?.[0][0]?.attributes).toEqual({
+      Сорт: 'Jonagold',
+      Калібр: '65–70 мм',
+    });
+    expect(onImported.mock.calls[0]?.[0][0]?.row?.attributes).toEqual({
+      Сорт: 'Jonagold',
+      Калібр: '65–70 мм',
+    });
+  });
+
+  it('explains that only new keys are added to a reused card', async () => {
+    renderDialog({
+      existing: [existingRow({ barcode: '5053990101658', attributes: { Сорт: 'Gala' } })],
+    });
+    paste(
+      JSON.stringify({ ...(JSON.parse(VALID_JSON) as object), attributes: { Сорт: 'Jonagold' } }),
+    );
+
+    expect(await screen.findByText(/Значення, які там уже є, не змінюються/)).toBeInTheDocument();
+  });
+
+  it('shows no «Інше» block when the product has no attributes', async () => {
+    renderDialog();
+    paste(JSON.stringify({ ...(JSON.parse(VALID_JSON) as object), attributes: null }));
+
+    await screen.findByLabelText(/Я перевірив сторінки/);
+    expect(screen.queryByText('Інше')).not.toBeInTheDocument();
+  });
+
+  it('rejects more than 15 pairs before any PDF work', async () => {
+    const { onImported } = renderDialog();
+    const attributes = Object.fromEntries(
+      Array.from({ length: 16 }, (_, i) => [`Ключ ${String(i)}`, 'значення']),
+    );
+    paste(JSON.stringify({ ...(JSON.parse(VALID_JSON) as object), attributes }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('attributes');
     expect(onImported).not.toHaveBeenCalled();
   });
 

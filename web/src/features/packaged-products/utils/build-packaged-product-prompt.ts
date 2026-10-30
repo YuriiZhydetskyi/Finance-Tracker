@@ -3,8 +3,14 @@
 // carries most of the data quality: every rule here exists because getting it
 // wrong silently produces a plausible-looking but false nutrition record.
 
-import { EU_ALLERGENS } from '@finance-tracker/domain';
+import {
+  ATTRIBUTE_KEY_MAX_LENGTH,
+  ATTRIBUTE_VALUE_MAX_LENGTH,
+  EU_ALLERGENS,
+  IMPORT_ATTRIBUTES_MAX,
+} from '@finance-tracker/domain';
 import type { PackagingCandidateRow } from '../types';
+import { SUGGESTED_ATTRIBUTE_KEYS } from './attribute-keys';
 
 export type PromptTaxonomy = {
   families: { id: string; name_uk: string; name_de: string }[];
@@ -48,6 +54,7 @@ export const EXAMPLE_PACKAGED_PRODUCT_JSON = `{
   "ingredients_text": "Kartoffelflocken, Pflanzenöle (Sonnenblume, Mais), Maismehl",
   "notes": null,
   "review_notes": [],
+  "attributes": {"Країна походження": "Бельгія", "Умови зберігання": "Зберігати в сухому й прохолодному місці"},
   "source_pages": [{"page": 2, "kind": "front"}, {"page": 3, "kind": "back"}],
   "receipt_matches": [{"store": "REWE", "receipt_label": "Originals", "store_product_code": null, "receipt_date": null, "receipt_page": 1}]
   }]
@@ -179,6 +186,19 @@ export function buildPackagedProductPrompt(
     '- Якщо перевіряти нічого — [] або null. Не додавай причин про всяк випадок.',
     '- Сумніви щодо транскрибування пиши в review_notes, а не в notes. notes — лише те, що',
     '  надруковано на упаковці (наприклад, що значення є тільки на порцію).',
+    '',
+    'Правила розділу «Інше» (attributes):',
+    `- attributes: необовʼязковий обʼєкт «назва → значення», до ${String(IMPORT_ATTRIBUTES_MAX)} пар. Сюди йде те, що надруковано на`,
+    '  етикетці, але не має власного поля вище: сорт, калібр чи розмір плоду, клас якості,',
+    '  країна походження, виробник чи фасувальник, умови зберігання, сертифікація.',
+    `- Назва — коротка, українською, до ${String(ATTRIBUTE_KEY_MAX_LENGTH)} символів, наприклад ${SUGGESTED_ATTRIBUTE_KEYS.map((key) => `"${key}"`).join(', ')}.`,
+    '  Одну й ту саму назву не повторюй.',
+    `- Значення — дослівно з етикетки, мовою етикетки, до ${String(ATTRIBUTE_VALUE_MAX_LENGTH)} символів, одним рядком`,
+    '  (наприклад "Jonagold" або "65–70 мм"). Нічого не перекладай, не обчислюй і не додумуй.',
+    '- Не дублюй те, що вже має поле: бренд, нетто, штрихкод, склад, харчову цінність, алергени, Nutri-Score.',
+    '  Рекламні гасла сюди не пиши, а сумніви щодо транскрибування йдуть у review_notes.',
+    '- Те, що не надруковано або не видно, просто не вноси: жодних порожніх значень, null чи "невідомо".',
+    '  Якщо додати нічого — {} або null. Не копіюй значення attributes із прикладу.',
     ...(candidate ? candidateHint(candidate) : []),
     '',
     `Дозволені категорії: ${categoryList}`,

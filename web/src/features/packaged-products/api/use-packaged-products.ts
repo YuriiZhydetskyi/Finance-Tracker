@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  attributesFromJson,
   normalizeNutriScore,
   PACKAGED_PRODUCT_IMPORT_SOURCES,
   type PackagedProductImportSource,
 } from '@finance-tracker/domain';
 import { supabase } from '@/shared/lib/supabase-client';
+import type { Json } from '@/shared/types/database.types';
 import { packagedProductQueryKey, packagedProductsQueryKey } from './packaged-products-query-keys';
 import type { PackagedProductRow } from '../types';
 
@@ -14,7 +16,7 @@ const FIVE_MIN = 5 * 60_000;
 // the column list when it is a literal type, and `raw_import_json` is deliberately
 // left out — it is an audit payload, not something any screen renders.
 // prettier-ignore
-const ROW_COLUMNS = 'id, name, brand, barcode, category, product_family_id, product_variant_id, is_organic, package_size, package_unit, package_count, serving_size, nutrition_basis, energy_kj, energy_kcal, fat_g, saturated_fat_g, carbohydrate_g, sugars_g, fibre_g, protein_g, salt_g, nutri_score, allergens, allergen_traces, ingredients_text, notes, review_notes, import_source, created_at, updated_at';
+const ROW_COLUMNS = 'id, name, brand, barcode, category, product_family_id, product_variant_id, is_organic, package_size, package_unit, package_count, serving_size, nutrition_basis, energy_kj, energy_kcal, fat_g, saturated_fat_g, carbohydrate_g, sugars_g, fibre_g, protein_g, salt_g, nutri_score, allergens, allergen_traces, ingredients_text, notes, review_notes, attributes, import_source, created_at, updated_at';
 
 export type PackagedProductListRow = PackagedProductRow & {
   photos_count: number;
@@ -25,22 +27,26 @@ function embeddedCount(value: { count: number }[] | null): number {
   return value?.[0]?.count ?? 0;
 }
 
-// `nutri_score` and `import_source` are text + CHECK in Postgres, so the generated
-// types widen them to `string`. Narrow once here rather than casting at each use.
+// `nutri_score` and `import_source` are text + CHECK in Postgres and `attributes` is
+// jsonb, so the generated types widen them to `string` / `Json`. Narrow once here
+// rather than casting at each use.
 function toImportSource(value: string): PackagedProductImportSource {
   return (PACKAGED_PRODUCT_IMPORT_SOURCES as readonly string[]).includes(value)
     ? (value as PackagedProductImportSource)
     : 'manual';
 }
 
-function narrowRow<T extends { nutri_score: string | null; import_source: string }>(
+function narrowRow<
+  T extends { nutri_score: string | null; import_source: string; attributes: Json },
+>(
   row: T,
-): Omit<T, 'nutri_score' | 'import_source'> &
-  Pick<PackagedProductRow, 'nutri_score' | 'import_source'> {
+): Omit<T, 'nutri_score' | 'import_source' | 'attributes'> &
+  Pick<PackagedProductRow, 'nutri_score' | 'import_source' | 'attributes'> {
   return {
     ...row,
     nutri_score: row.nutri_score == null ? null : normalizeNutriScore(row.nutri_score),
     import_source: toImportSource(row.import_source),
+    attributes: attributesFromJson(row.attributes),
   };
 }
 

@@ -220,4 +220,116 @@ describe('saving packaging evidence', () => {
       expect(state.tables.get('packaged_product_photos') ?? []).toHaveLength(0);
     });
   });
+
+  describe('attributes («Інше»)', () => {
+    function reuseCardWithAttributes(
+      stored: Record<string, unknown>,
+      incoming: Record<string, unknown>,
+      extra: Record<string, unknown> = {},
+    ) {
+      const pending = plan({ attributes: incoming, ...extra });
+      const entry = pending[0];
+      if (!entry) throw new Error('Fixture');
+      state.tables.set('packaged_products', [{ id: entry.id, ...stored }]);
+      entry.row = null;
+      return pending;
+    }
+
+    it('stores the pairs with a new card', async () => {
+      const pending = plan({ attributes: { ' Сорт ': ' Jonagold ', Калібр: '65–70 мм' } });
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]?.attributes).toEqual({
+        Сорт: 'Jonagold',
+        Калібр: '65–70 мм',
+      });
+    });
+    it('stores an empty object when the import has no attributes', async () => {
+      await savePackagingPlan(plan());
+      expect(state.tables.get('packaged_products')?.[0]?.attributes).toEqual({});
+    });
+    it('adds new keys to a reused card and never overwrites a value already there', async () => {
+      const pending = reuseCardWithAttributes(
+        { name: 'Стара назва', energy_kcal: 123, attributes: { Сорт: 'Jonagold (виправлено)' } },
+        { сорт: 'Gala', Калібр: '65–70 мм' },
+      );
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')).toEqual([
+        {
+          id: pending[0]?.id,
+          name: 'Стара назва',
+          energy_kcal: 123,
+          attributes: { Сорт: 'Jonagold (виправлено)', Калібр: '65–70 мм' },
+        },
+      ]);
+    });
+    it('adds pairs to a reused card that had none', async () => {
+      const pending = reuseCardWithAttributes({ attributes: {} }, { Клас: 'I' });
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]?.attributes).toEqual({ Клас: 'I' });
+    });
+    it('does not touch a reused card when every key is already there', async () => {
+      const pending = reuseCardWithAttributes(
+        { energy_kcal: 123, attributes: { Сорт: 'Jonagold' } },
+        { Сорт: 'Gala' },
+      );
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')).toEqual([
+        { id: pending[0]?.id, energy_kcal: 123, attributes: { Сорт: 'Jonagold' } },
+      ]);
+    });
+    it('does not touch a reused card when the import has no attributes', async () => {
+      const pending = reuseCardWithAttributes({ attributes: { Сорт: 'Jonagold' } }, {});
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')).toEqual([
+        { id: pending[0]?.id, attributes: { Сорт: 'Jonagold' } },
+      ]);
+    });
+    it('reads a reused card without the column as having no pairs', async () => {
+      const pending = reuseCardWithAttributes({ energy_kcal: 123 }, { Сорт: 'Gala' });
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]?.attributes).toEqual({ Сорт: 'Gala' });
+    });
+    it('is idempotent when the same save is replayed', async () => {
+      const pending = reuseCardWithAttributes({ attributes: { Сорт: 'Jonagold' } }, { Клас: 'I' });
+      await savePackagingPlan(pending);
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]?.attributes).toEqual({
+        Сорт: 'Jonagold',
+        Клас: 'I',
+      });
+    });
+    it('merges notes and pairs into the same card', async () => {
+      const pending = reuseCardWithAttributes(
+        { review_notes: ['Стара'], attributes: { Сорт: 'Jonagold' } },
+        { Клас: 'I' },
+        { review_notes: ['Нова'] },
+      );
+      await savePackagingPlan(pending);
+      expect(state.tables.get('packaged_products')?.[0]).toMatchObject({
+        review_notes: ['Стара', 'Нова'],
+        attributes: { Сорт: 'Jonagold', Клас: 'I' },
+      });
+    });
+    it('refuses to drop a pair when the card would exceed the per-card limit', async () => {
+      const stored = Object.fromEntries(
+        Array.from({ length: 29 }, (_, i) => [`Стара ${String(i)}`, 'значення']),
+      );
+      const pending = reuseCardWithAttributes({ attributes: stored }, { Нова1: 'a', Нова2: 'b' });
+      await expect(savePackagingPlan(pending)).rejects.toThrow('максимум 30');
+      expect(state.tables.get('packaged_products')?.[0]?.attributes).toEqual(stored);
+      expect(state.tables.get('packaged_product_photos') ?? []).toHaveLength(0);
+    });
+    it('leaves the notes alone when the pairs overflow, so the card is never half merged', async () => {
+      const stored = Object.fromEntries(
+        Array.from({ length: 30 }, (_, i) => [`Стара ${String(i)}`, 'значення']),
+      );
+      const pending = reuseCardWithAttributes(
+        { review_notes: ['Стара'], attributes: stored },
+        { Нова: 'a' },
+        { review_notes: ['Нова причина'] },
+      );
+      await expect(savePackagingPlan(pending)).rejects.toThrow('максимум 30');
+      expect(state.tables.get('packaged_products')?.[0]?.review_notes).toEqual(['Стара']);
+    });
+  });
 });

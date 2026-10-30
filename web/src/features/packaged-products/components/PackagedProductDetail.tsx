@@ -14,7 +14,9 @@ import {
 import { useDeletePackagedProductMutation } from '../api/use-update-packaged-product-mutation';
 import { useLinkStoreProductMutation } from '../api/use-link-store-product-mutation';
 import { usePackagedProductReceiptHints } from '../api/use-receipt-hints';
+import { useUpdateAttributesMutation } from '../api/use-update-attributes-mutation';
 import { useUpdateReviewNotesMutation } from '../api/use-update-review-notes-mutation';
+import { AttributesPanel } from './AttributesPanel';
 import { NutritionFactsTable } from './NutritionFactsTable';
 import { PackagingPhotoGallery } from './PackagingPhotoGallery';
 import { PackagingPhotoUploader } from './PackagingPhotoUploader';
@@ -107,6 +109,7 @@ export function PackagedProductDetail({ id }: Readonly<{ id: string }>) {
   const deleteProduct = useDeletePackagedProductMutation();
   const unlink = useLinkStoreProductMutation();
   const updateReviewNotes = useUpdateReviewNotesMutation();
+  const updateAttributes = useUpdateAttributesMutation();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (productQuery.isPending) return <p className="text-sm text-slate-500">Завантажую картку…</p>;
@@ -170,6 +173,16 @@ export function PackagedProductDetail({ id }: Readonly<{ id: string }>) {
       <Section title="Товар">
         <IdentityFacts product={product} />
       </Section>
+
+      <AttributesPanel
+        attributes={product.attributes}
+        legacyNote={product.notes?.trim() ? product.notes : null}
+        saving={updateAttributes.isPending}
+        onChange={(next) => updateAttributes.mutateAsync({ id, attributes: next })}
+      />
+      {updateAttributes.isError ? (
+        <ErrorDetails error={updateAttributes.error} label="Не вдалося оновити розділ «Інше»" />
+      ) : null}
 
       <Section title="Харчова цінність">
         <NutritionFactsTable product={product} />
