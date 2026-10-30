@@ -25,6 +25,7 @@ describe('skipReasonLabel', () => {
     expect(skipReasonLabel('service')).toBe('послуга, паливо');
     expect(skipReasonLabel('non_food')).toBe('не їжа');
     expect(skipReasonLabel('bag')).toBe('пакет');
+    expect(skipReasonLabel('loose_produce')).toBe('розсипне');
     expect(skipReasonLabel(null)).toBe('позначено вручну');
   });
 

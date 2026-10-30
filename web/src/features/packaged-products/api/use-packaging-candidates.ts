@@ -70,11 +70,20 @@ export type PackagingCandidateFilters = {
   stores?: string[];
   /** YYYY-MM-DD; keep only rows last bought on or after it. Absent lists every row. */
   lastPurchasedSince?: string | undefined;
+  /** Also list rows flagged «Без упаковки», e.g. loose produce a shelf-tag card can still link to. */
+  includeNotApplicable?: boolean;
   limit?: number;
 };
 
 export function packagingCandidatesQueryOptions(filters: PackagingCandidateFilters = {}) {
-  const { query = '', categories, stores, lastPurchasedSince, limit = DEFAULT_LIMIT } = filters;
+  const {
+    query = '',
+    categories,
+    stores,
+    lastPurchasedSince,
+    includeNotApplicable = false,
+    limit = DEFAULT_LIMIT,
+  } = filters;
 
   return queryOptions({
     queryKey: [
@@ -83,6 +92,7 @@ export function packagingCandidatesQueryOptions(filters: PackagingCandidateFilte
       categories ?? null,
       stores ?? null,
       lastPurchasedSince ?? null,
+      includeNotApplicable,
       limit,
     ],
     staleTime: ONE_MIN,
@@ -96,6 +106,7 @@ export function packagingCandidatesQueryOptions(filters: PackagingCandidateFilte
           ...(categories && categories.length > 0 ? { p_categories: categories } : {}),
           ...(stores && stores.length > 0 ? { p_stores: stores } : {}),
           ...(lastPurchasedSince ? { p_last_purchased_since: lastPurchasedSince } : {}),
+          ...(includeNotApplicable ? { p_include_not_applicable: true } : {}),
         })
         .abortSignal(signal);
       if (error) throw error;

@@ -5,7 +5,13 @@ import {
   migrationText,
   scalar,
 } from './lib/pglite-app-schema.mjs';
-import { loadDuplicateProductsFixture, pid } from './lib/duplicate-products-fixture.mjs';
+import {
+  PP,
+  iid,
+  loadDuplicateProductsFixture,
+  pid,
+  rid,
+} from './lib/duplicate-products-fixture.mjs';
 
 const database = await createPreDeployDatabase();
 const { db } = database;
@@ -36,6 +42,9 @@ try {
   // The functions live in the next migration; create them without its apply step.
   const source = await migrationText('20261027120500_packaging_exclusion_rule.sql');
   await db.exec(source.slice(0, source.indexOf('-- ── Apply it once')));
+  // Loose produce, the split queue view and the card-wins trigger replace parts of it.
+  const looseSource = await migrationText('20261030100000_loose_produce_packaging_rule.sql');
+  await db.exec(looseSource.slice(0, looseSource.indexOf('-- ── Apply it once')));
 
   const cases = [
     // category decides: nothing to photograph
@@ -57,9 +66,35 @@ try {
     // weighed, pre-packed meat and fish still get a card (barcode null)
     ['М’ясо/риба', 'Schweinefilet', 2, 2, null],
     ["М'ясо/риба", 'Lachsfilet', 3, 3, null],
-    // whole-quantity loose produce stays in the queue: that decision is the owner's
+    // produce bought in whole quantities with no pack marker in its name is loose...
+    ['Овочі/фрукти', 'Kaki St.', 2, 0, 'loose_produce'],
+    ['Овочі/фрукти', 'Papaya Fairtrade', 1, 0, 'loose_produce'],
+    ['Овочі/фрукти', 'Avocado Stk', 3, 0, 'loose_produce'],
+    // ...but a weight, count, tray or net in the name means a pack with a label
     ['Овочі/фрукти', 'Äpfel Schale', 3, 0, null],
     ['Овочі/фрукти', 'Karotten 1kg', 5, 0, null],
+    ['Овочі/фрукти', 'Heidelbeeren 200g', 2, 0, null],
+    ['Овочі/фрукти', 'Eier 10er', 1, 0, null],
+    ['Овочі/фрукти', 'Aepfel 2kg VKE QS', 1, 0, null],
+    // prepared or pre-bagged produce keeps its label in the queue
+    ['Овочі/фрукти', 'Herz.Guacamole', 1, 0, null],
+    ['Овочі/фрукти', 'Bio-Babyspinat', 1, 0, null],
+    ['Овочі/фрукти', 'Topf Basilikum XL', 1, 0, null],
+    ['Овочі/фрукти', 'Zwiebel-Mix Stk', 1, 0, null],
+    // berries, grapes, asparagus and mushrooms are nearly always pre-packed
+    ['Овочі/фрукти', 'Erdbeeren', 1, 0, null],
+    ['Овочі/фрукти', 'Kult.Heidelb.', 1, 0, null],
+    ['Овочі/фрукти', 'Tafeltrauben', 1, 0, null],
+    ['Овочі/фрукти', 'Spargel', 1, 0, null],
+    ['Овочі/фрукти', 'G&G Champignons', 1, 0, null],
+    // the shop's own abbreviated lines
+    ['Овочі/фрукти', 'Herz.Mangos', 1, 0, null],
+    ['Овочі/фрукти', 'G&G Paprika', 1, 0, null],
+    ['Овочі/фрукти', 'E.Regio.Möhren', 1, 0, null],
+    // never bought: no evidence
+    ['Овочі/фрукти', 'Nie gekauft Birne', 0, 0, null],
+    // the till's produce bag
+    ['Інше', '2 Cent OuG Beutel', 1, 0, 'bag'],
     // packaged goods, household and pharmacy do have a package
     ['Молочка', 'Joghurt', 4, 0, null],
     ['Хімія/гігієна', 'Duschgel', 2, 0, null],
@@ -89,9 +124,12 @@ try {
     'select product_id, reason from public.apply_packaging_exclusion_rule() order by product_id',
   );
   // The duplicate pairs are already merged by the data migration, so each survivor appears once.
+  const cherryTomatoes = await q(`select id from public.products where name = 'CHERRYROMATOMATE'`);
+  assert.equal(cherryTomatoes.length, 1, 'the REWE pair of loose cherry tomatoes is one row');
   const expected = [
     [pid(34), 'bag'],
     [pid(80), 'bag'],
+    [cherryTomatoes[0].id, 'loose_produce'],
     [pid(3), 'weighed'],
     [pid(81), 'weighed'],
     [pid(85), 'weighed'],
@@ -191,6 +229,76 @@ try {
     3,
   );
 
+  // ── 4. Loose produce leaves the queue but stays linkable; a card wins ─────
+  const looseId = pid(900);
+  await db.exec(`
+    insert into public.products (id, name, category, store)
+      values ('${looseId}', 'Kaki St.', 'Овочі/фрукти', 'REWE');
+    insert into public.items (id, receipt_id, product_id, product_name, raw_product_name, category,
+                              qty, unit_price_orig, discount_orig, total_orig, total_eur, consumed_by)
+      values ('${iid(900)}', '${rid(13)}', '${looseId}', 'Kaki St.', 'Kaki St.', 'Овочі/фрукти',
+              1, 0.49, 0, 0.49, 0.49, 'shared');
+  `);
+  const flaggedLoose = await q(
+    'select product_id, reason from public.apply_packaging_exclusion_rule(false)',
+  );
+  assert.deepEqual(flaggedLoose, [{ product_id: looseId, reason: 'loose_produce' }]);
+
+  const candidateIds = async (includeFlagged) =>
+    (
+      await q(
+        'select product_id from public.search_packaging_candidates($1, null, null, null, null, 100, 0, null, $2)',
+        ['kaki', includeFlagged],
+      )
+    ).map((r) => r.product_id);
+  assert.deepEqual(await candidateIds(false), [], 'the queue does not list it');
+  assert.deepEqual(await candidateIds(true), [looseId], 'the import review still finds it');
+  assert.deepEqual(
+    await q(`select product_id from public.search_packaging_candidates('kaki')`),
+    [],
+    'the default call is the queue',
+  );
+  assert.equal(
+    await one(`select total_count::int from public.packaging_queue_summary('kaki', null)`),
+    0,
+    'the count and the badge leave it out too',
+  );
+  assert.equal(
+    Number(
+      await one('select count(*) from public.v_packaging_link_targets where id = $1', [looseId]),
+    ),
+    1,
+  );
+
+  const flagState = async (id) =>
+    (
+      await q(
+        'select packaging_not_applicable as na, packaging_not_applicable_reason as why, packaged_product_id as card from public.products where id = $1',
+        [id],
+      )
+    )[0];
+  // A tag card linked to the flagged row clears both the flag and its reason.
+  await db.exec(
+    `update public.products set packaged_product_id = '${PP.one}' where id = '${looseId}'`,
+  );
+  assert.deepEqual(await flagState(looseId), { na: false, why: null, card: PP.one });
+  assert.deepEqual(await candidateIds(true), [], 'a linked row is no longer a candidate');
+
+  // Same for a row flagged by hand (no reason), and for a row created with a card.
+  await db.exec(`update public.products set packaged_product_id = null where id = '${looseId}'`);
+  await db.exec(
+    `update public.products set packaging_not_applicable = true where id = '${looseId}'`,
+  );
+  assert.deepEqual(await flagState(looseId), { na: true, why: null, card: null });
+  await db.exec(
+    `update public.products set packaged_product_id = '${PP.two}' where id = '${looseId}'`,
+  );
+  assert.deepEqual(await flagState(looseId), { na: false, why: null, card: PP.two });
+  await db.exec(`
+    insert into public.products (id, name, category, store, packaged_product_id, packaging_not_applicable)
+      values ('${pid(901)}', 'Mango St', 'Овочі/фрукти', 'REWE', '${PP.three}', true)`);
+  assert.deepEqual(await flagState(pid(901)), { na: false, why: null, card: PP.three });
+
   // A reason without the flag is not representable.
   await expectFailure(
     db.exec(
@@ -198,6 +306,41 @@ try {
     ),
     /products_na_reason_requires_flag/,
   );
+
+  // ── 5. The whole migration, as the deploy runs it ─────────────────────────
+  const deploy = await createPreDeployDatabase();
+  try {
+    await loadDuplicateProductsFixture(deploy.db);
+    await applyCanonicalStoresMigrations(deploy);
+    await deploy.db.exec(looseSource, { onNotice: deploy.onNotice });
+    const summary = deploy.notices.find((line) => line.startsWith('loose produce rule:'));
+    assert.match(
+      summary ?? '',
+      /1 row\(s\) newly flagged.*1 loose_produce/,
+      'the REWE cherry tomatoes are flagged once',
+    );
+    assert.equal(
+      Number(
+        (await deploy.db.query('select count(*) from public.apply_packaging_exclusion_rule(true)'))
+          .rows[0].count,
+      ),
+      0,
+      'a second run flags nothing',
+    );
+    assert.equal(
+      Number(
+        (
+          await deploy.db.query(
+            `select count(*) from public.search_packaging_candidates('cherryroma', null, null, null, null, 100, 0, null, true)`,
+          )
+        ).rows[0].count,
+      ),
+      1,
+      'the flagged row is still listed for the import review',
+    );
+  } finally {
+    await deploy.db.close();
+  }
 
   console.log('packaging exclusion SQL tests passed');
 } finally {

@@ -6,6 +6,7 @@ const REASON_LABELS: Record<string, string> = {
   service: 'послуга, паливо',
   non_food: 'не їжа',
   bag: 'пакет',
+  loose_produce: 'розсипне',
 };
 
 /** NULL means the owner pressed «Без упаковки» by hand. */

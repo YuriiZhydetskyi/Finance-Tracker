@@ -1228,6 +1228,21 @@ export type Database = {
       };
     };
     Views: {
+      v_packaging_link_targets: {
+        Row: {
+          brand: string | null;
+          category: string | null;
+          id: string | null;
+          is_organic: boolean | null;
+          name: string | null;
+          packaging_not_applicable: boolean | null;
+          product_family_id: string | null;
+          product_variant_id: string | null;
+          store: string | null;
+          store_product_code: string | null;
+        };
+        Relationships: [];
+      };
       v_packaging_queue_products: {
         Row: {
           brand: string | null;
@@ -1589,6 +1604,7 @@ export type Database = {
           p_categories?: string[];
           p_date_from?: string;
           p_date_to?: string;
+          p_include_not_applicable?: boolean;
           p_last_purchased_since?: string;
           p_limit?: number;
           p_offset?: number;

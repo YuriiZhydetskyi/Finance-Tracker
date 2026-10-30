@@ -42,7 +42,7 @@ function ProductLinks({
   onChange: (ids: string[]) => void;
 }) {
   const [query, setQuery] = useState('');
-  const candidates = usePackagingCandidates({ query });
+  const candidates = usePackagingCandidates({ query, includeNotApplicable: true });
   // Keep selected rows visible while the server-side search changes.
   const [selectedRows, setSelectedRows] = useState<PackagingCandidateRow[]>([]);
   const rows = [

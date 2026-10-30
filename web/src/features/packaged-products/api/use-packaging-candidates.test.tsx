@@ -77,6 +77,29 @@ describe('usePackagingCandidates', () => {
     expect(args).not.toHaveProperty('p_last_purchased_since');
   });
 
+  it('also asks for rows flagged «Без упаковки» only when the import review needs them', async () => {
+    rpc.mockReturnValue(withAbortSignal(Promise.resolve({ data: [], error: null })));
+
+    const { result: queue } = renderHook(() => usePackagingCandidates({ query: 'kaki' }), {
+      wrapper: QueryClientWrapper,
+    });
+    const { result: review } = renderHook(
+      () => usePackagingCandidates({ query: 'kaki', includeNotApplicable: true }),
+      { wrapper: QueryClientWrapper },
+    );
+
+    await waitFor(() => expect(queue.current.isSuccess).toBe(true));
+    await waitFor(() => expect(review.current.isSuccess).toBe(true));
+    expect(rpc).toHaveBeenCalledTimes(2);
+    const argLists = rpc.mock.calls.map((call) => call[1] as Record<string, unknown>);
+    expect(argLists).toContainEqual({ p_query: 'kaki', p_limit: 200 });
+    expect(argLists).toContainEqual({
+      p_query: 'kaki',
+      p_limit: 200,
+      p_include_not_applicable: true,
+    });
+  });
+
   it('keeps a windowed and an unwindowed list apart in the cache', async () => {
     rpc.mockReturnValue(withAbortSignal(Promise.resolve({ data: [], error: null })));
 
