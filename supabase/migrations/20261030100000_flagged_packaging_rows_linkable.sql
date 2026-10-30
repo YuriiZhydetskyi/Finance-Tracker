@@ -1,23 +1,25 @@
--- Loose produce is not a problem in the photographing queue (ADR-0034, amended).
+-- Rows flagged «Без упаковки» stay linkable from the card import (ADR-0034, amended).
 --
--- Whole-quantity loose produce (apples by the piece, a kaki, a mango) has no pack
--- and no barcode. A shelf-tag photo is welcome when the owner took one (its fuller
--- name beats the truncated receipt label), but it is optional, so such rows must
--- not sit in the work list saying "no card".
+-- Loose produce is sold by weight: the receipt multiplies by a non-round quantity,
+-- and the 'weighed' rule already keeps those rows out of the photographing queue.
+-- A shelf-tag photo of such produce is welcome when the owner took one (its fuller
+-- name beats the truncated receipt label) but never required. Until now a flagged
+-- row vanished from the import review, so a tag card could not be linked to it.
 --
---   1. packaging_exclusion_reason() learns two things: produce bought in whole
---      quantities without a pack marker in its name is 'loose_produce', and the
---      till's produce bag ("OuG Beutel") is a 'bag'.
---   2. A flagged row must still be findable when a tag card is imported. The queue
+--   1. A flagged row must still be findable when a card is imported. The queue
 --      view is split: v_packaging_link_targets keeps every unlinked, non-deposit
 --      row and exposes the flag; v_packaging_queue_products is that view without
 --      the flagged rows, so the queue, its count and the badge are unchanged.
 --      search_packaging_candidates gets p_include_not_applicable (default false)
 --      for the import review.
---   3. Linking a card clears the flag and its reason: a card wins over "no
+--   2. Linking a card clears the flag and its reason: a card wins over "no
 --      packaging", as in merge_products (ADR-0033).
---   4. The rule is applied once to the existing rows. The batch is reversible from
---      the «Без упаковки» tab ("Повернути в чергу всі, позначені правилом").
+--   3. The till's produce bag ("OuG Beutel") is a 'bag'. The rule is applied once
+--      to the existing rows, reversible from the «Без упаковки» tab.
+--
+-- Deliberately NOT done: whole-quantity produce is not flagged as "loose". A bag
+-- or a net rung up as 1 x price is packed, and an integer quantity says nothing
+-- else, so those rows stay in the queue.
 
 -- ── 1. The decision ─────────────────────────────────────────────────────────
 create or replace function public.packaging_exclusion_reason(
@@ -49,27 +51,11 @@ as $$
     -- null, identity by name), as decided when the packaging PDFs were imported.
     when coalesce(p_positive_lines, 0) > 0 and p_fractional_lines * 2 >= p_positive_lines
          and p_category not like 'М%ясо/риба' then 'weighed'
-    -- Loose produce bought by the piece: nothing on the receipt says it came in a
-    -- pack (no weight, volume or count in the name, no tray or net), and it is
-    -- not a prepared or usually pre-packed product, which keeps a label worth
-    -- photographing: guacamole, sauerkraut, bagged salad, herbs, spinach,
-    -- assortments; berries, grapes, asparagus and mushrooms; and the shop's own
-    -- abbreviated lines (EDEKA "Herz.", "G&G", "E.Regio.", ...).
-    when p_category = 'Овочі/фрукти' and coalesce(p_positive_lines, 0) > 0
-         and coalesce(p_name, '') !~* '\d\s*(g|gr|kg|ml|l|cl)\y|\d+\s*(er|x|stk|st)\y|\y(vke|pack|gepackt|verpackt|schale|netz)\y'
-         and coalesce(p_name, '') !~* 'guacamole|sauerkraut|mix|sortim|fresh-cut|bonduelle|\ytk\y|tiefk|spinat|rauke|kräuter|basilikum|kresse|schnitt|beere|heidelb|traube|spargel|champign|pilz|^(herz\.|g&g|e\.regio\.|egen |pura |bond\.|pau\.|bio ml |errr |outs |bioe |2e |ze )'
-      then 'loose_produce'
   end;
 $$;
 
-comment on function public.packaging_exclusion_reason(text, text, integer, integer) is
-  'Why a store row can never get a packaging card: service, non_food, bag, weighed or loose_produce; NULL when it can. Pure; apply_packaging_exclusion_rule() feeds it.';
-
-comment on function public.apply_packaging_exclusion_rule(boolean) is
-  'Marks rows that need no packaging card (services, non-food, bags, weighed goods, loose produce) as packaging_not_applicable, recording the rule in packaging_not_applicable_reason. p_dry_run (default true) only lists them. Undo per row or per reason from the «Без упаковки» tab.';
-
 comment on column public.products.packaging_not_applicable_reason is
-  'Set only by apply_packaging_exclusion_rule(): the rule that flagged the row (service, non_food, bag, weighed, loose_produce). NULL = flagged by hand or not flagged. Cleared whenever the flag is cleared or a card is linked.';
+  'Set only by apply_packaging_exclusion_rule(): the rule that flagged the row (service, non_food, bag, weighed). NULL = flagged by hand or not flagged. Cleared whenever the flag is cleared or a card is linked.';
 
 
 -- ── 2. Flagged rows stay findable for the import review ─────────────────────
@@ -299,6 +285,6 @@ begin
     raise exception 'apply_packaging_exclusion_rule is not idempotent';
   end if;
 
-  raise notice 'loose produce rule: % row(s) newly flagged; all reasons now: %', v_total, v_summary;
+  raise notice 'packaging exclusion: % row(s) newly flagged; all reasons now: %', v_total, v_summary;
 end;
 $$;
