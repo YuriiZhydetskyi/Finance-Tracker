@@ -43,7 +43,7 @@ try {
   const source = await migrationText('20261027120500_packaging_exclusion_rule.sql');
   await db.exec(source.slice(0, source.indexOf('-- ── Apply it once')));
   // The produce-bag pattern, the split queue view and the card-wins trigger replace parts of it.
-  const linkableSource = await migrationText('20261030100000_flagged_packaging_rows_linkable.sql');
+  const linkableSource = await migrationText('20261030120000_flagged_packaging_rows_linkable.sql');
   await db.exec(linkableSource.slice(0, linkableSource.indexOf('-- ── Apply it once')));
 
   const cases = [
