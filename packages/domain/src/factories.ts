@@ -58,6 +58,7 @@ import {
   roundNutrientGrams,
   type PackagedProductImportSource,
 } from './nutrition';
+import { normalizeAttributes } from './product-attributes';
 import { normalizeReviewNotes } from './review-notes';
 
 export function makeReceipt(input: ReceiptInput): Receipt {
@@ -329,6 +330,7 @@ export function makePackagedProduct(input: PackagedProductInput): PackagedProduc
     ingredients_text: trimToNull(input.ingredients_text),
     notes: trimToNull(input.notes),
     review_notes: normalizeReviewNotes(input.review_notes),
+    attributes: normalizeAttributes(input.attributes),
     import_source: input.import_source ?? 'manual',
     raw_import_json: input.raw_import_json ?? null,
     created_at: now,
@@ -403,6 +405,7 @@ export function packagedProductFromImport(
     ingredients_text: raw.ingredients_text ?? null,
     notes: raw.notes ?? null,
     review_notes: raw.review_notes,
+    attributes: raw.attributes,
     import_source: extras.import_source,
     raw_import_json: extras.raw_import_json ?? null,
   });
