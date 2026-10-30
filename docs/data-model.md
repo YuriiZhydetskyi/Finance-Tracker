@@ -567,6 +567,7 @@ create table public.packaged_products (
   ingredients_text    text,
   notes               text,
   review_notes        text[] not null default '{}',    -- «Потрібна перевірка», ADR-0030
+  attributes          jsonb not null default '{}',     -- «Інше»: назва → значення, ADR-0035
   import_source       text not null default 'manual-json',
   raw_import_json     jsonb,                           -- дослівний вхід імпорту
   created_at          timestamptz not null default now(),
@@ -586,6 +587,8 @@ create table public.packaged_products (
 - `variant_requires_family` + композитний FK на `product_variants(id, family_id)`, як у `products` та `items`.
 
 **`review_notes` — «Потрібна перевірка»** ([ADR-0030](decisions/0030-packaged-product-review-notes.md), міграція `20261026190000_packaged_product_review_notes.sql`). Причини, які власник має звірити з упаковкою; картка при цьому лишається придатною. Непорожній масив і є позначкою, окремого boolean чи індексу немає (каталог фільтрується в браузері). `NOT NULL default '{}'`: «нічого перевіряти» — завжди `{}`, ніколи `NULL`. CHECK `packaged_products_review_notes_valid` викликає чисту `immutable` функцію `is_valid_review_notes(text[])`: не більше 50 приміток на картку, кожна обрізана й завдовжки 1..300 символів, без `NULL`. Ліміт імпорту — 10 на товар (`PackagedProductImportSchema.review_notes`), тобто нижчий за ліміт картки, щоб злиття повторних імпортів не відкидало примітки. Позначення примітки перевіреною = запис масиву без неї; остання прибирає позначку. RLS і гранти таблиці не змінені. Константи й чисті функції (`normalizeReviewNotes`, `mergeReviewNotes`) — `packages/domain/src/review-notes.ts`.
+
+**`attributes` — «Інше»** ([ADR-0035](decisions/0035-packaged-product-attributes.md), міграція `20261030110000_packaged_product_attributes.sql`). Вільні факти з етикетки, для яких немає колонки: сорт, калібр, клас, країна походження, виробник, умови зберігання, сертифікація. Плаский об’єкт «назва → рядок»; `NOT NULL default '{}'`: «нічого не внесено» — завжди `{}`, ніколи `NULL`. CHECK `packaged_products_attributes_valid` викликає чисту `immutable` функцію `is_valid_packaged_product_attributes(jsonb)`: корінь — об’єкт, не більше 30 пар, назва обрізана 1..60 символів, значення — обрізаний **рядок** 1..300 символів (числа, `null`, булеві, масиви й вкладені об’єкти не проходять). Ліміт імпорту — 15 пар на товар (`PackagedProductImportSchema.attributes`), тобто нижчий за ліміт картки, щоб злиття повторних імпортів не відкидало пари. Унікальність назви без урахування регістру БД не перевіряє — це робить клієнт (`normalizeAttributes`, форма, `mergeAttributes`). `jsonb` не зберігає порядок ключів, тож UI сортує пари за абеткою. Імпорт у наявну картку додає лише нові назви й ніколи не перезаписує значення. Це не `review_notes` (сумніви щодо транскрипції) і не `notes` (старе вільне поле, яке тепер показується лише для читання як «Примітка»). RLS і гранти таблиці не змінені. Константи й чисті функції (`normalizeAttributes`, `mergeAttributes`, `attributeEntries`) — `packages/domain/src/product-attributes.ts`.
 
 Грамові нутрієнти мають однакову точність `numeric(6,3)`: 3 dp потрібні для `salt 0.001 g`. Округлення — `roundNutrientGrams` (3 dp) і `roundEnergy` (1 dp) у `packages/domain/src/nutrition.ts`, застосовані у фабриці `makePackagedProduct`.
 
